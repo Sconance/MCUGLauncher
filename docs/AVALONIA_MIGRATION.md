@@ -69,3 +69,7 @@ dotnet build src/MCUGLauncher.Avalonia/MCUGLauncher.Avalonia.csproj -c Debug
 ```
 
 启动后应显示 Avalonia 窗口并加载现有 UI；WPF 主程序构建保持不变。
+
+## 发布方式
+
+阶段 4 起发布改为文件夹 + zip（`scripts/build.ps1 -Publish`），避免单文件 apphost 的 `%TEMP%\.net` 解压缓存问题。

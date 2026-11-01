@@ -109,8 +109,8 @@ src/MCUGLauncher/            WPF 宿主、服务、桥接
 src/MCUGLauncher.Core/       启动核心（沿用 0.22.2）
 community/                   数据源示例 JSON
 docs/images/                 README 截图
-dist/full/                   完整版发布产物
-dist/lite/                   轻量版发布产物
+artifacts/full/                   完整版发布产物
+artifacts/lite/                   轻量版发布产物
 ```
 
 ## 运行要求
@@ -120,10 +120,10 @@ dist/lite/                   轻量版发布产物
 - 完整版：无需安装 .NET。
 - 轻量版：需要 **.NET 8 Desktop Runtime x64**。
 
-| 版本 | 文件 |
+| 版本 | 产物 |
 | --- | --- |
-| 完整版 | `dist/full/MCUGLauncher-0.22.3-Windows-x64.exe` |
-| 轻量版 | `dist/lite/MCUGLauncher-0.22.3-Windows-x64-Lite.exe` |
+| 完整版 | `artifacts/release/MCUGLauncher-0.22.3-Windows-x64.zip`（解压后运行 `MCUGLauncher.exe`） |
+| 轻量版 | `artifacts/release/MCUGLauncher-0.22.3-Windows-x64-Lite.zip` |
 
 ## 构建
 
@@ -133,21 +133,13 @@ dotnet build MCUGLauncher.sln -c Release
 
 ## 发布
 
-完整版（自包含单文件）：
-
 ```powershell
-dotnet publish src\MCUGLauncher\MCUGLauncher.csproj -c Release -r win-x64 `
-  --self-contained true -o dist\full
+.\scriptsuild.ps1 -Publish
 ```
 
-轻量版（依赖 .NET 8 Desktop Runtime）：
+脚本发布 `artifacts/full`（自包含）与 `artifacts/lite`（依赖 .NET 8 Desktop Runtime），再打包为两个 zip 放到 `artifacts/release`。
 
-```powershell
-dotnet publish src\MCUGLauncher\MCUGLauncher.csproj -c Release -r win-x64 `
-  --self-contained false -p:EnableCompressionInSingleFile=false -o dist\lite
-```
-
-> 轻量版不能启用单文件压缩，否则 .NET SDK 会报 `NETSDK1176`。
+> 发布不再使用单文件 EXE：单文件 apphost 需要把原生库解压到 `%TEMP%\.net`，该缓存不可写时 EXE 会以 `error 160` 退出。若仍遇到旧包，删除 `%TEMP%\.net` 后重试。
 
 ## 本地数据
 

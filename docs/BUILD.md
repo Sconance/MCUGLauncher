@@ -6,7 +6,7 @@
 | --- | --- |
 | `src/MCUGLauncher/` | WPF 界面、认证、图标与功能交互 |
 | `src/MCUGLauncher.Core/` | 下载、Java、实例、整合包等服务 |
-| `test/` | 27 个检查项目（含 WebBridgeChecks 与 WebUiChecks） |
+| `test/` | 0 个检查项目（含 WebBridgeChecks 与 WebUiChecks） |
 | `tools/` | 4 个界面预览程序与源码格式工具 |
 | `scripts/` | 构建、发布、指定检查、布局与 Web 边界校验 |
 | `docs/` | 使用指南、构建说明、依赖清单、历史测试记录与截图 |
@@ -27,12 +27,12 @@
 也可以直接使用 SDK：
 
 ```powershell
-dotnet restore src/MCUGLauncher/MCUGLauncher.csproj
-dotnet build src/MCUGLauncher/MCUGLauncher.csproj -c Release
-dotnet publish src/MCUGLauncher/MCUGLauncher.csproj -c Release -o artifacts/publish
+dotnet restore src/MCUGLauncher.Avalonia/MCUGLauncher.Avalonia.csproj
+dotnet build src/MCUGLauncher.Avalonia/MCUGLauncher.Avalonia.csproj -c Release
+dotnet publish src/MCUGLauncher.Avalonia/MCUGLauncher.Avalonia.csproj -c Release -o artifacts/publish
 ```
 
-输出 `artifacts/publish/MCUGLauncher.exe`。项目已配置自包含、Windows x64 单文件。
+发布使用文件夹 + zip：`artifacts/full`、`artifacts/lite`，由 `scripts/build.ps1 -Publish` 打包到 `artifacts/release`。单文件 apphost 依赖 `%TEMP%\.net`，缓存不可写时会以 error 160 退出，因此不再作为默认发布格式。
 游戏仍需 Java，微软内嵌授权需要 WebView2。Linux 不能直接运行 WPF 界面。
 
 ## 运行检查
