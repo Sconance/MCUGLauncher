@@ -236,6 +236,12 @@ catch (AccountLoginException)
 }
 
 Check(!MicrosoftAccountService.Translate(new Exception("access_token=private-test-token"), false).Message.Contains("private-test-token"), "AUTH_ERRORS_DO_NOT_EXPOSE_PAYLOADS");
+Check(!MicrosoftAccountService.Translate(new InvalidOperationException("unknown"), true).RequiresInteractive, "UNKNOWN_REFRESH_FAILURE_DOES_NOT_INVALIDATE_AUTHORIZATION");
+Check(!MicrosoftAccountService.Translate(new AggregateException(new InvalidOperationException(), new HttpRequestException("private-url")), true).RequiresInteractive, "AGGREGATE_NETWORK_FAILURE_PRESERVES_AUTHORIZATION");
+Check(MicrosoftAccountService.Translate(new Exception("invalid_grant"), true).RequiresInteractive, "EXPLICIT_REVOKED_OAUTH_REQUIRES_LOGIN");
+Check(MicrosoftAccountService.Translate(new AggregateException(new AccountLoginException("expired", true)), true).RequiresInteractive, "WRAPPED_KNOWN_AUTH_FAILURE_RETAINS_CLASSIFICATION");
+Check(MicrosoftAccountService.Translate(new Exception("private"), false, "Xbox").Message.StartsWith("Xbox"), "GENERIC_LOGIN_ERROR_IDENTIFIES_FAILED_PHASE");
+
 service.Forget();
 Check(service.ReadSavedAccount() == null, "SIGNOUT_CLEARS_SAVED_ACCOUNT");
 Console.WriteLine("ALL_AUTH_CHECKS_PASSED");

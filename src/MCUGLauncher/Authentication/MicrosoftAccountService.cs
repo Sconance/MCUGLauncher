@@ -6,6 +6,7 @@ using CmlLib.Core.Auth;
 using CmlLib.Core.Auth.Microsoft;
 using CmlLib.Core.Auth.Microsoft.Sessions;
 using XboxAuthNet.Game.Accounts;
+using XboxAuthNet.Game.OAuth;
 using XboxAuthNet.Game;
 using XboxAuthNet.Game.Authenticators;
 
@@ -22,16 +23,19 @@ public record SavedMicrosoftAccount(string Username, string Uuid, string SkinUrl
 public sealed class MicrosoftAccountService
 {
     readonly ProtectedAccountStorage storage;
+    readonly SemaphoreSlim authenticationGate = new(1, 1);
+    readonly Action<string>? diagnostic;
     readonly HttpClient http;
     readonly string directory;
     readonly XboxAuthNet.OAuth.CodeFlow.IWebUI? browser;
 
-    public MicrosoftAccountService(string directory, HttpClient client, XboxAuthNet.OAuth.CodeFlow.IWebUI? browser = null)
+    public MicrosoftAccountService(string directory, HttpClient client, XboxAuthNet.OAuth.CodeFlow.IWebUI? browser = null, Action<string>? diagnostic = null)
     {
         this.directory = directory;
         Directory.CreateDirectory(directory);
         http = client;
         this.browser = browser;
+        this.diagnostic = diagnostic;
         storage = new(Path.Combine(directory, "microsoft-account.dat"));
     }
 
@@ -70,10 +74,20 @@ public sealed class MicrosoftAccountService
     /// <summary>
     /// 执行 Authenticate。
     /// </summary>
-    /// <param name="interactive">true 时打开系统浏览器授权，false 时静默刷新</param>
+    /// <param name="interactive">true 时使用注入的登录窗口授权，false 时静默刷新</param>
     /// <param name="token">取消令牌</param>
     /// <returns>已通过校验的微软会话</returns>
     public async Task<MSession> Authenticate(bool interactive, CancellationToken token)
+    {
+        await authenticationGate.WaitAsync(token);
+        try
+        {
+            return await AuthenticateCore(interactive, token);
+        }
+        finally { authenticationGate.Release(); }
+    }
+
+    async Task<MSession> AuthenticateCore(bool interactive, CancellationToken token)
     {
         using var lease = LockAccount();
         token.ThrowIfCancellationRequested();
@@ -87,24 +101,40 @@ public sealed class MicrosoftAccountService
         if (interactive && browser == null)
             throw new AccountLoginException("尚未配置登录窗口，请重新打开启动器。", true);
 
+        var stage = "OAuth";
+        void Stage(string value)
+        {
+            stage = value;
+            diagnostic?.Invoke("MicrosoftAuth phase=" + value);
+        }
         try
         {
             var handler = new JELoginHandlerBuilder().WithHttpClient(http).WithAccountManager(manager).Build();
             var account = interactive ? manager.NewAccount() : manager.GetDefaultAccount();
+            if (!interactive && MicrosoftOAuthSessionSource.Default.Get(account.SessionStorage) == null)
+                throw new AccountLoginException("保存的账号缺少微软授权，请重新登录。", true);
             var authenticator = handler.CreateAuthenticator(account, token);
+            Stage("OAuth");
             if (interactive)
                 authenticator.AddForceMicrosoftOAuthForJE(oauth => oauth.Interactive(flow => flow.WithWebUI(browser!)));
             else
                 authenticator.AddMicrosoftOAuthForJE(oauth => oauth.Silent());
+            authenticator.AddAuthenticatorWithoutValidator(new AuthenticationCheckpoint(() => Stage("Xbox")));
             // Full Xbox flow supports the account/family checks omitted by the old basic-only path.
             authenticator.AddXboxAuthForJE(xbox => xbox.Full());
-            authenticator.AddForceJEAuthenticator(je => je.Build());
+            authenticator.AddAuthenticatorWithoutValidator(new AuthenticationCheckpoint(() => Stage("Minecraft")));
+            if (interactive)
+                authenticator.AddForceJEAuthenticator(je => je.Build());
+            else
+                authenticator.AddJEAuthenticator();
+            authenticator.AddAuthenticatorWithoutValidator(new AuthenticationCheckpoint(() => Stage("Ownership")));
             authenticator.AddAuthenticatorWithoutValidator(new MinecraftOwnershipGuard());
             var session = await authenticator.ExecuteForLauncherAsync();
             token.ThrowIfCancellationRequested();
             ValidateSession(session);
             if (interactive)
                 storage.Write(pending.Value ?? throw new AccountStorageException("登录信息未能生成，原登录已保留。"), null);
+            Stage("Completed");
             return session;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -115,14 +145,16 @@ public sealed class MicrosoftAccountService
         {
             throw;
         }
-        catch (AccountLoginException)
+        catch (AccountLoginException error)
         {
+            diagnostic?.Invoke("MicrosoftAuth phase=" + stage + " failure=AccountLoginException requiresLogin=" + error.RequiresInteractive);
             throw;
         }
         catch (Exception ex)
         {
             token.ThrowIfCancellationRequested();
-            throw Translate(ex, !interactive);
+            diagnostic?.Invoke("MicrosoftAuth phase=" + stage + " failure=" + string.Join(",", Flatten(ex).Select(e => e.GetType().Name).Distinct()));
+            throw Translate(ex, !interactive, stage);
         }
     }
 
@@ -152,11 +184,12 @@ public sealed class MicrosoftAccountService
     /// <summary>
     /// 执行 Translate。
     /// </summary>
-    public static AccountLoginException Translate(Exception error, bool refreshing)
+    public static AccountLoginException Translate(Exception error, bool refreshing, string? stage = null)
     {
-        var errors = new List<Exception>();
-        for (var ex = error; ex != null && errors.Count < 12; ex = ex.InnerException)
-            errors.Add(ex);
+        var errors = Flatten(error);
+        var known = errors.OfType<AccountLoginException>().FirstOrDefault();
+        if (known != null)
+            return known;
         // Inspect only for classification. Never show or log raw authentication payloads, URLs or exception bodies.
         var text = string.Join(" ", errors.Select(e => e.GetType().Name + " " + e.Message));
         if (text.Contains("2148916233"))
@@ -175,6 +208,34 @@ public sealed class MicrosoftAccountService
             return new("登录窗口已关闭或授权被取消，未完成新的登录。");
         if (errors.Any(e => e is IOException or UnauthorizedAccessException or System.Security.Cryptography.CryptographicException))
             return new("账号缓存无法保存或读取，请检查本地目录权限后重试。");
-        return refreshing ? new("保存的授权已失效或无法刷新，请重新进行微软登录。", true) : new("微软 / Xbox / Minecraft 授权未完成。请确认账号授权、网络及 Java 版购买状态后重试。");
+        var phase = stage switch
+        {
+            "OAuth" => "微软",
+            "Xbox" => "Xbox",
+            "Minecraft" => "Minecraft",
+            "Ownership" => "正版资格",
+            _ => "登录服务"
+        };
+        return new(phase + (refreshing ? "授权恢复" : "登录") + "暂未完成，请稍后重试。已保存授权仍然保留；此提示不代表账号没有购买游戏。");
     }
+    static List<Exception> Flatten(Exception error)
+    {
+        var pending = new Queue<Exception>();
+        var errors = new List<Exception>();
+        pending.Enqueue(error);
+        while (pending.Count > 0 && errors.Count < 32)
+        {
+            var item = pending.Dequeue();
+            if (errors.Contains(item))
+                continue;
+            errors.Add(item);
+            if (item.InnerException != null)
+                pending.Enqueue(item.InnerException);
+            if (item is AggregateException aggregate)
+                foreach (var child in aggregate.InnerExceptions)
+                    pending.Enqueue(child);
+        }
+        return errors;
+    }
+
 }

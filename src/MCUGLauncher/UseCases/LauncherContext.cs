@@ -88,7 +88,7 @@ internal sealed class LauncherContext : IDisposable
         var authDirectory = Path.Combine(Store.DataDirectory, "auth");
         try
         {
-            Microsoft = new MicrosoftAccountService(authDirectory, Http, microsoftBrowser?.Invoke(authDirectory));
+            Microsoft = new MicrosoftAccountService(authDirectory, Http, microsoftBrowser?.Invoke(authDirectory), Log);
             Mua = new MuaAccountService(authDirectory, Http);
 
         }
