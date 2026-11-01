@@ -13,12 +13,23 @@
         WindowStartupLocation="CenterScreen">
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="0"
-                            ResizeBorderThickness="6"
+                            ResizeBorderThickness="8"
                             GlassFrameThickness="0"
                             CornerRadius="12"
                             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
     <Grid>
+        <Grid.Style>
+            <Style TargetType="Grid">
+                <!-- WebView2 owns a child HWND. Keep native resize borders outside that HWND. -->
+                <Setter Property="Margin" Value="8" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}" Value="Maximized">
+                        <Setter Property="Margin" Value="0" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Style>
         <wv2:WebView2 x:Name="Browser" />
         <Border x:Name="LoadingLayer" Background="#F3F7F9">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
