@@ -383,6 +383,20 @@ const assert = require('node:assert/strict');
   );
   assert.equal(await page.locator('[data-mua-submit]').isVisible(), true);
   console.log('PASS account tabs restore modes and only expired authorization opens login');
+  await page.evaluate(() => window.mcugGo('?screen=home&panel=versions'));
+  await page.locator('.version-search input').fill('Beta');
+  await page.evaluate(() =>
+    window.deliver({
+      type: 'accountState',
+      accountType: 'microsoft',
+      player: 'FastName',
+      accountLabel: '正版账号',
+    })
+  );
+  assert.equal(await page.locator('.acc-name').textContent(), 'FastName');
+  assert.equal(await page.locator('.version-search input').inputValue(), 'Beta');
+  console.log('PASS account-only updates preserve the page and search input');
+
   const standalone = await browser.newPage();
   standalone.on('pageerror', (error) => errors.push(error.message));
   await standalone.goto(base + '?screen=mods');

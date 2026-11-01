@@ -631,6 +631,12 @@
       const message = event.data;
       if (!message) return;
       switch (message.type) {
+        case 'accountState':
+          state = Object.assign({}, state, message);
+          Object.assign(window.state, message);
+          applyAccount();
+          if (Q.screen === 'options') render();
+          break;
         case 'state':
           applyState(message);
           break;

@@ -18,12 +18,13 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
             Apply(context, mode, null);
             return;
         }
-        context.Send(new
+        var cached = context.AccountSessions.Find(mode);
+        if (cached != null)
         {
-            type = "authResult",
-            pending = true,
-            message = "正在恢复已保存的账号…"
-        });
+            Apply(context, mode, cached, false);
+            return;
+        }
+
         try
         {
             var session = restore != null ? await restore(mode) : await RestoreAsync(mode);
@@ -52,6 +53,30 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         }
     }
 
+    public async Task<MSession> EnsureFreshAsync(string mode)
+    {
+        var revision = context.AccountRevision;
+        var fresh = context.AccountSessions.Fresh(mode);
+        if (fresh != null)
+            return fresh;
+        try
+        {
+            var session = restore != null ? await restore(mode) : await RestoreAsync(mode);
+            if (revision == context.AccountRevision)
+                context.AccountSessions.Remember(mode, session);
+            return session;
+        }
+        catch (AccountLoginException error) when (error.RequiresInteractive)
+        {
+            if (revision != context.AccountRevision)
+                throw;
+            context.AccountSessions.Forget(mode);
+            if (context.Config.AccountType == mode)
+                context.OnlineSession = null;
+            throw;
+        }
+    }
+
     async Task<MSession> RestoreAsync(string mode)
     {
         if (mode == "microsoft")
@@ -65,23 +90,26 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         return MuaAccountService.Session(await mua.Ensure(false, context.Token));
     }
 
-    public static void Apply(LauncherContext context, string mode, MSession? session)
+    public static void Apply(LauncherContext context, string mode, MSession? session, bool verified = true)
     {
         var player = mode == "offline" ? context.Config.OfflinePlayer : session?.Username;
         if (string.IsNullOrWhiteSpace(player))
             throw new AccountLoginException("账号没有有效的玩家名，请重新登录。", true);
         if (context.Config.AccountType == "offline")
             context.Config.OfflinePlayer = context.Config.Player;
+        if (session != null && verified)
+            context.AccountSessions.Remember(mode, session);
         context.OnlineSession = session;
         context.Config.AccountType = mode;
         context.Config.Player = player;
         context.Store.Save(context.Config);
-        context.RefreshState();
+        context.SendAccountState();
     }
 
     public async Task ForgetAsync(string mode)
     {
         var revision = Interlocked.Increment(ref context.AccountRevision);
+        context.AccountSessions.Forget(mode);
         if (mode == "microsoft")
             context.Microsoft?.Forget();
         else if (mode == "mua" && context.Mua != null)

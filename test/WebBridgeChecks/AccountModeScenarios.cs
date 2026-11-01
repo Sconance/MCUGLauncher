@@ -16,7 +16,12 @@ internal static class AccountModeScenarios
         store.Save(new AppConfig { Player = "OfflineName", OfflinePlayer = "OfflineName", Root = fixture });
         var messages = new List<JsonElement>();
         using var context = new LauncherContext(value => messages.Add(JsonSerializer.SerializeToElement(value)), store);
-        var modes = new AccountModeCommands(context, kind => Task.FromResult(new MSession { Username = kind == "mua" ? "MuaName" : "MicrosoftName" }));
+        var restores = 0;
+        var modes = new AccountModeCommands(context, kind =>
+        {
+            restores++;
+            return Task.FromResult(new MSession { Username = kind == "mua" ? "MuaName" : "MicrosoftName" });
+        });
         foreach (var kind in new[] { "microsoft", "mua" })
         {
             await modes.SwitchAsync(kind);
@@ -27,6 +32,14 @@ internal static class AccountModeScenarios
             Check(context.Config.Player != "OfflineName", "switch back restores " + kind + " identity");
             await modes.SwitchAsync("offline");
         }
+        Check(restores == 2, "repeat switches reuse verified sessions without network calls");
+        Check(!messages.Any(m => m.GetProperty("type").GetString() == "state"), "switch sends only account state without rescanning instances");
+        var now = DateTimeOffset.UtcNow;
+        var cache = new AccountSessionCache(() => now);
+        cache.Remember("mua", new MSession { Username = "CachedName" });
+        now = now.AddMinutes(6);
+        Check(cache.Find("mua") != null && cache.Fresh("mua") == null, "stale session remains selectable but requires verification before launch");
+        context.AccountSessions.Forget("mua");
         var pending = new TaskCompletionSource<MSession>();
         var delayed = new AccountModeCommands(context, _ => pending.Task);
         var switchTask = delayed.SwitchAsync("mua");
@@ -35,6 +48,7 @@ internal static class AccountModeScenarios
         await switchTask;
         Check(context.Config.AccountType == "offline" && context.Config.Player == "OfflineName", "late restoration cannot overwrite a newer selection");
         messages.Clear();
+        context.AccountSessions.Forget("microsoft");
         await new AccountModeCommands(context, _ => throw new HttpRequestException("private payload")).SwitchAsync("microsoft");
         Check(!messages.Last().GetProperty("needsLogin").GetBoolean(), "network failure does not request reauthentication");
         messages.Clear();

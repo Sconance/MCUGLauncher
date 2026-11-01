@@ -50,6 +50,12 @@ internal sealed class GameCommands(LauncherContext context,
                 var jar = await AuthlibLaunch.Prepare(Path.Combine(context.Store.DataDirectory, "authlib-injector"), context.Http, context.Token);
                 external = new AuthlibLaunch(jar, metadata.Json);
             }
+            if (mode != "offline")
+            {
+                session = await new AccountModeCommands(context).EnsureFreshAsync(mode);
+                if (!string.Equals(session.Username, player, StringComparison.Ordinal))
+                    throw new IOException("账号身份已改变，请重新选择账号后启动。");
+            }
             var settings = instance.Settings;
             settings.VersionInfo = "MCUGLauncher";
             var request = new LaunchRequest(instance.Root, instance.Directory, key, settings.Java, settings.RamMb,

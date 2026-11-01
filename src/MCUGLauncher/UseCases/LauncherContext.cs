@@ -10,6 +10,7 @@ internal sealed class LauncherContext : IDisposable
 {
     readonly CancellationTokenSource lifetime = new();
     public long AccountRevision;
+    public AccountSessionCache AccountSessions { get; } = new();
     readonly ConcurrentDictionary<string, string> preparing = new(StringComparer.OrdinalIgnoreCase);
     static string Full(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
     public void MarkPreparing(string root, string directory) => preparing[Full(directory)] = Full(root);
@@ -58,6 +59,19 @@ internal sealed class LauncherContext : IDisposable
     }
 
     public void SendTasks() => Send(new { type = "tasks", items = Tasks.History().Take(200).Select(r => new { r.Id, r.Name, state = r.State.ToString(), r.Percent, r.Message, r.Committing }) });
+
+    public void SendAccountState() => Send(new
+    {
+        type = "accountState",
+        player = Config.Player,
+        accountType = Config.AccountType,
+        accountLabel = Config.AccountType switch
+        {
+            "microsoft" => "正版账号 · 在线验证",
+            "mua" => "MUA 账号 · 外置登录",
+            _ => "离线账号 · 本地启动"
+        }
+    });
 
     public Action RefreshState { get; set; } = () => { };
 
