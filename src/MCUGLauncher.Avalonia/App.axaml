@@ -3,5 +3,6 @@
              x:Class="MCUGLauncher.Avalonia.App">
   <Application.Styles>
     <FluentTheme />
+    <StyleInclude Source="avares://MCUGLauncher/Styles/Theme.axaml" />
   </Application.Styles>
 </Application>

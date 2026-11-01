@@ -1,0 +1,52 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <SolidColorBrush x:Key="AppBg" Color="#F3F7F9" />
+    <SolidColorBrush x:Key="AppSide" Color="#F8FAFC" />
+    <SolidColorBrush x:Key="AppCard" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AppInk" Color="#1D2B35" />
+    <SolidColorBrush x:Key="AppLine" Color="#E3EAF0" />
+    <SolidColorBrush x:Key="AppAccent" Color="#006DB8" />
+    <SolidColorBrush x:Key="AppSidebar" Color="#0B4F7A" />
+    <SolidColorBrush x:Key="AppSidebarText" Color="#D7EAF6" />
+  </Styles.Resources>
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{StaticResource AppBg}" />
+    <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI" />
+  </Style>
+
+  <Style Selector="TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource AppInk}" />
+  </Style>
+
+  <Style Selector="Button.nav">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource AppSidebarText}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Button.nav:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#1A4F7A" />
+    <Setter Property="TextElement.Foreground" Value="White" />
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{StaticResource AppCard}" />
+    <Setter Property="BorderBrush" Value="{StaticResource AppLine}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,8" />
+    <Setter Property="MinHeight" Value="36" />
+  </Style>
+
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{StaticResource AppCard}" />
+    <Setter Property="BorderBrush" Value="{StaticResource AppLine}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="MinHeight" Value="36" />
+  </Style>
+</Styles>
