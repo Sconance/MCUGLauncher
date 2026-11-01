@@ -499,15 +499,59 @@ const assert = require('node:assert/strict');
   );
   await page.evaluate(() => window.deliver({ type: 'launchOptionsSaved' }));
   await page.evaluate(() => window.mcugGo('?screen=datasource'));
-  assert.equal(await page.locator('.ds-result').filter({ hasText: '尚未测试' }).count(), 4);
-  const source = await page.locator('.ds-row input').first().inputValue();
+  assert.equal(
+    await page.locator('[data-source-tab="default"]').getAttribute('aria-selected'),
+    'true'
+  );
+  assert.equal(await page.locator('.ds-row input[readonly]').count(), 4);
+  assert.equal(await page.locator('.ds-result').filter({ hasText: '测试中' }).count(), 4);
+  const latestTest = () =>
+    page.evaluate(() =>
+      window.messages.filter((m) => m.type === 'testSource' && m.name === 'announcements').at(-1)
+    );
+  const defaultRequest = await latestTest();
+  await page.locator('.ds-test').first().click();
+  const manualRequest = await latestTest();
+  assert.notEqual(defaultRequest.requestId, manualRequest.requestId);
   await page.evaluate(
-    (url) => window.deliver({ type: 'testResult', name: 'announcements', url, ok: true, ms: 42 }),
-    source
+    (m) => window.deliver({ ...m, type: 'testResult', ok: true, ms: 25 }),
+    manualRequest
+  );
+  assert.equal(await page.locator('.ds-result').first().textContent(), '连接正常 · 25 ms');
+  await page.locator('[data-source-tab="custom"]').click();
+  assert.equal(await page.locator('.ds-row input[readonly]').count(), 0);
+  await page.locator('.ds-row input').first().fill('https://example.org/custom.json');
+  await page.locator('.ds-test').first().click();
+  const customRequest = await latestTest();
+  await page.evaluate(
+    (m) => window.deliver({ ...m, type: 'testResult', ok: true, ms: 42 }),
+    customRequest
   );
   assert.equal(await page.locator('.ds-result').first().textContent(), '连接正常 · 42 ms');
   await page.locator('.ds-row input').first().fill('https://example.org/new.json');
   assert.equal(await page.locator('.ds-result').first().textContent(), '地址已修改，尚未测试');
+  await page.evaluate(
+    (m) => window.deliver({ ...m, type: 'testResult', ok: true, ms: 99 }),
+    defaultRequest
+  );
+  assert.equal(await page.locator('.ds-result').first().textContent(), '地址已修改，尚未测试');
+  await page.locator('[data-source-tab="default"]').click();
+  assert.equal(await page.locator('.ds-row input').first().inputValue(), defaultRequest.url);
+  await page.screenshot({ path: path.join(output, 'sources-default.png') });
+  await page.locator('[data-source-tab="custom"]').click();
+  assert.equal(
+    await page.locator('.ds-row input').first().inputValue(),
+    'https://example.org/new.json'
+  );
+  await page.locator('[data-source-save]').click();
+  assert.equal(
+    await page.evaluate(() => window.messages.at(-1).dataSources.announcements),
+    'https://example.org/new.json'
+  );
+  await page.screenshot({ path: path.join(output, 'sources-custom.png') });
+  console.log(
+    'PASS default/custom tabs, automatic and manual tests, draft preservation and stale response rejection'
+  );
   console.log(
     'PASS explicit resource version/destination, pack confirmation, MUA role choice, launch overrides and actual source test status'
   );

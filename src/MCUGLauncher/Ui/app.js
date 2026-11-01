@@ -123,6 +123,7 @@ function render() {
   window.McugCommunityActions?.mount();
   window.McugLaunchOptions?.mount();
   window.McugAvatars?.mount();
+  window.McugSources?.mount();
 }
 
 function bind() {

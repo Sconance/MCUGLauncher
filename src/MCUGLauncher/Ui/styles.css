@@ -1397,3 +1397,5 @@ button:disabled { cursor: not-allowed; }
 .custom-overlay .install-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .catalog-custom-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 240px)); gap: 12px; margin: 12px 0; }
 .catalog-custom-filters .input, .catalog-custom-filters .select { width: 100%; min-height: 34px; border: 1px solid #cbdce8; border-radius: 8px; padding: 7px 10px; background: #fff; }
+
+.ds-tabs { display:flex; gap:8px; margin:16px 0; }

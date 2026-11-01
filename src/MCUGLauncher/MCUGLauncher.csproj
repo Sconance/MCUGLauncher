@@ -52,6 +52,7 @@
     <EmbeddedResource Include="Ui/pack-import.js" LogicalName="MCUGLauncher.Ui.pack-import.js" />
     <EmbeddedResource Include="Ui/mua-profiles.js" LogicalName="MCUGLauncher.Ui.mua-profiles.js" />
     <EmbeddedResource Include="Ui/launch-options.js" LogicalName="MCUGLauncher.Ui.launch-options.js" />
+    <EmbeddedResource Include="Ui/data-sources.js" LogicalName="MCUGLauncher.Ui.data-sources.js" />
     <EmbeddedResource Include="Ui/avatars.js" LogicalName="MCUGLauncher.Ui.avatars.js" />
     <EmbeddedResource Include="Ui/host.js" LogicalName="MCUGLauncher.Ui.host.js" />
     <EmbeddedResource Include="Ui/settings-actions.js" LogicalName="MCUGLauncher.Ui.settings-actions.js" />

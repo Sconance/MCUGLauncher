@@ -68,6 +68,7 @@ internal static class LauncherStateBuilder
                 recommendations = config.DataSources.Recommendations,
                 quotes = config.DataSources.Quotes
             },
+            defaultDataSources = new DataSourceConfig(),
             writeEndpoint = config.WriteEndpoint
         };
         return state;

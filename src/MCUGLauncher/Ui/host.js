@@ -124,20 +124,7 @@
   }
 
   function applySources(next) {
-    if (!document.querySelector('.ds-rows')) return;
-    const sources = next.dataSources || {};
-    const values = [
-      sources.announcements,
-      sources.servers,
-      sources.recommendations,
-      sources.quotes,
-    ];
-    const inputs = document.querySelectorAll('.ds-rows .ds-row input');
-    inputs.forEach((input, index) => {
-      if (typeof values[index] === 'string') input.value = values[index];
-    });
-    const write = document.querySelector('.ds-write input');
-    if (write && next.writeEndpoint) write.value = next.writeEndpoint;
+    window.McugSources?.update(next);
   }
 
   function applyAccount() {
@@ -535,47 +522,7 @@
   }
 
   function decorateDataSources() {
-    const rows = document.querySelectorAll('.ds-rows .ds-row');
-    if (!rows.length) return;
-    document.querySelectorAll('.ds-test').forEach((button, index) => {
-      button.addEventListener('click', (event) => {
-        event.preventDefault();
-        const input = rows[index]?.querySelector('input');
-        const result = rows[index]?.querySelector('.ds-result');
-        if (result) {
-          result.className = 'ds-result';
-          result.textContent = '测试中…';
-        }
-        post({ type: 'testSource', name: DS[index]?.key || '', url: input?.value || '' });
-      });
-    });
-    document
-      .querySelector('[data-reset-sources]')
-      ?.addEventListener('click', () => post({ type: 'resetDataSources' }));
-    document.querySelectorAll('.ds-rows .ds-row input').forEach((input) =>
-      input.addEventListener('input', () => {
-        const result = input.closest('.ds-row').querySelector('.ds-result');
-        result.className = 'ds-result';
-        result.textContent = '地址已修改，尚未测试';
-      })
-    );
-    const save = [...document.querySelectorAll('.ds-footer .btn-primary')].find((button) =>
-      button.textContent.includes('保存')
-    );
-    save?.addEventListener('click', (event) => {
-      event.preventDefault();
-      const inputs = [...document.querySelectorAll('.ds-rows .ds-row input')];
-      post({
-        type: 'saveSettings',
-        dataSources: {
-          announcements: inputs[0]?.value || '',
-          servers: inputs[1]?.value || '',
-          recommendations: inputs[2]?.value || '',
-          quotes: inputs[3]?.value || '',
-        },
-        writeEndpoint: document.querySelector('.ds-write input')?.value || '',
-      });
-    });
+    window.McugSources?.mount();
   }
 
   function decorateKeys() {
@@ -772,26 +719,9 @@
           });
           if (message.ok) post({ type: 'requestState' });
           break;
-        case 'testResult': {
-          state.sourceTests ||= {};
-          state.sourceTests[message.name] = message;
-          window.state.sourceTests = state.sourceTests;
-          const index = DS.findIndex((item) => item.key === message.name);
-          const result = document
-            .querySelectorAll('.ds-rows .ds-row')
-            [index]?.querySelector('.ds-result');
-          const input = document
-            .querySelectorAll('.ds-rows .ds-row')
-            [index]?.querySelector('input');
-          if (message.url && input?.value !== message.url) break;
-          if (result) {
-            result.className = `ds-result ${message.ok ? 'ok' : 'bad'}`;
-            result.textContent = message.ok
-              ? `连接正常 · ${message.ms} ms`
-              : message.message || '连接失败';
-          }
+        case 'testResult':
+          window.McugSources?.result(message);
           break;
-        }
         case 'settingsSaved':
           toast('设置已保存。');
           break;

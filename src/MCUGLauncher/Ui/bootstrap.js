@@ -12,6 +12,7 @@
     if (!window.chrome?.webview) await load('preview-data.js');
     for (const file of [
       'dialogs.js',
+      'data-sources.js',
       'app.js',
       'tasks.js',
       'install.js',

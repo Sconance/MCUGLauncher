@@ -279,7 +279,7 @@ internal sealed class LauncherApplication : IDisposable
                     await accountModes.ForgetAsync(ReadString(root, "account"));
                     break;
                 case "testSource":
-                    await communityCommands.TestSourceAsync(ReadString(root, "name"), ReadString(root, "url"));
+                    await communityCommands.TestSourceAsync(ReadString(root, "name"), ReadString(root, "url"), ReadString(root, "requestId"));
                     break;
                 case "verifyKey":
                     communityCommands.VerifyKey(ReadString(root, "role"), ReadString(root, "key"));

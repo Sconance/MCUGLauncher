@@ -102,12 +102,13 @@ internal sealed class CommunityCommands(LauncherContext context)
         context.RefreshState();
     }
 
-    public async Task TestSourceAsync(string name, string url)
+    public async Task TestSourceAsync(string name, string url, string requestId = "")
     {
         var result = await context.Community.TestAsync(url, context.Token);
         context.Send(new
         {
             type = "testResult",
+            requestId,
             name,
             url,
             ok = result.Ok,
