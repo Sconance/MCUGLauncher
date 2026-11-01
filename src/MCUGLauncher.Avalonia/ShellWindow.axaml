@@ -12,6 +12,7 @@
         <TextBlock Text="MCUG Launcher" Foreground="White" FontSize="20" FontWeight="Bold" />
         <TextBlock Text="原生 Avalonia 界面" Foreground="#9FC4D8" FontSize="12" />
         <Button x:Name="HomeButton" Content="启动" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+        <Button x:Name="TasksButton" Content="任务" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
         <Button x:Name="SettingsButton" Content="设置" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
         <Button x:Name="ClassicButton" Content="经典界面（WebView）" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
       </StackPanel>

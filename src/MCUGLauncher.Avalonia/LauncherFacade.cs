@@ -42,6 +42,16 @@ internal sealed class LauncherFacade : IDisposable
             ram
         }, Options));
 
+    public Task RequestTasksAsync() => application.HandleAsync("""{"type":"requestTasks"}""");
+
+    public Task TaskActionAsync(string id, string action) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "taskAction",
+            id,
+            action
+        }, Options));
+
     void Send(object payload)
     {
         var json = JsonSerializer.Serialize(payload, Options);

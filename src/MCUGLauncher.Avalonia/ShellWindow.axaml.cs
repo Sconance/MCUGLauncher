@@ -12,6 +12,7 @@ public partial class ShellWindow : Window
 {
     readonly LauncherFacade facade;
     JsonElement state;
+    JsonElement tasks;
     string page = "home";
 
     public ShellWindow()
@@ -22,6 +23,7 @@ public partial class ShellWindow : Window
         facade = new LauncherFacade(new ShellDesktopHost());
         facade.MessageReceived += OnMessage;
         HomeButton.Click += (_, _) => Show("home");
+        TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
         SettingsButton.Click += (_, _) => Show("settings");
         ClassicButton.Click += (_, _) => new MainWindow().Show();
         Opened += async (_, _) => await facade.StartAsync();
@@ -43,6 +45,13 @@ public partial class ShellWindow : Window
             state = message;
             Render();
         }
+        else if (type.GetString() == "tasks")
+        {
+            if (message.TryGetProperty("items", out var items))
+                tasks = items.Clone();
+            if (page == "tasks")
+                Render();
+        }
         else if (type.GetString() == "launchResult")
         {
             var ok = message.TryGetProperty("ok", out var value) && value.ValueKind == JsonValueKind.True;
@@ -55,6 +64,8 @@ public partial class ShellWindow : Window
         Content.Children.Clear();
         if (page == "settings")
             RenderSettings();
+        else if (page == "tasks")
+            RenderTasks();
         else
             RenderHome();
     }
@@ -125,6 +136,47 @@ public partial class ShellWindow : Window
         };
         Content.Children.Add(save);
         Add("提示：目录与 Java 的浏览对话框将在下一阶段接入。");
+    }
+
+    void RenderTasks()
+    {
+        AddHeading("下载任务");
+        if (tasks.ValueKind != JsonValueKind.Array || tasks.GetArrayLength() == 0)
+        {
+            Add("当前没有排队或运行中的任务。");
+            return;
+        }
+        foreach (var task in tasks.EnumerateArray())
+        {
+            var id = ReadString(task, "id");
+            var name = ReadString(task, "name");
+            var stateText = ReadString(task, "state");
+            var percent = task.TryGetProperty("percent", out var p) && p.TryGetDouble(out var value) ? value : 0;
+            var message = ReadString(task, "message");
+            Add($"{name} · {stateText} · {percent:0}%");
+            if (message.Length > 0)
+                Add("  " + message);
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            foreach (var (label, action) in new[]
+                     {
+                         ("暂停", "pause"), ("继续", "resume"), ("取消", "cancel"), ("删除", "delete")
+                     })
+            {
+                var button = new Button { Content = label };
+                var taskId = id;
+                var taskAction = action;
+                button.Click += async (_, _) =>
+                {
+                    await facade.TaskActionAsync(taskId, taskAction);
+                    await facade.RequestTasksAsync();
+                };
+                row.Children.Add(button);
+            }
+            Content.Children.Add(row);
+        }
+        var refresh = new Button { Content = "刷新任务", HorizontalAlignment = HorizontalAlignment.Left };
+        refresh.Click += async (_, _) => await facade.RequestTasksAsync();
+        Content.Children.Add(refresh);
     }
 
     void AddHeading(string text) =>
