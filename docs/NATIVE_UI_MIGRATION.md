@@ -65,6 +65,12 @@ Core / App 库：保持不变
 - 原生 UI 需要重新实现主题、滚动、响应式布局；
 - 登录窗口仍依赖 WebView2，属于合理例外。
 
-## 第一步
+## 进展
 
-先落地 `LauncherFacade` + `ShellView` + `HomeView`，保持旧 WebView 界面可用，按页面切换；验证通过后再逐页替换。
+阶段 1 已落地：
+
+- `LauncherFacade`：类型化消息入口，包装 `LauncherApplication` 并转发 `state/launchResult`；
+- `ShellWindow`：原生侧栏 + 启动/设置两页，可列出实例并直接启动；
+- 旧 `MainWindow`（WebView）保留为“经典界面”回退入口。
+
+下一步：设置页原生编辑、下载/任务/账号页面。
