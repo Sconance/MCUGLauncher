@@ -12,6 +12,7 @@ public partial class ShellWindow : Window
 {
     LauncherFacade facade = null!;
     JsonElement state;
+    LauncherState? typed;
     JsonElement tasks;
     JsonElement contentItems;
     JsonElement uninstallPreview;
@@ -30,6 +31,12 @@ public partial class ShellWindow : Window
             ResetWindow);
         facade = new LauncherFacade(host);
         facade.MessageReceived += OnMessage;
+        facade.StateChanged += snapshot =>
+        {
+            typed = snapshot;
+            if (page == "home")
+                Render();
+        };
         HomeButton.Click += (_, _) => Show("home");
         DownloadButton.Click += (_, _) => Show("download");
         MaintenanceButton.Click += (_, _) => Show("maintenance");
@@ -106,32 +113,27 @@ public partial class ShellWindow : Window
 
     void RenderHome()
     {
-        Add("账号：" + (ReadString(state, "accountLabel") is { Length: > 0 } label ? label : "离线账号"));
-        Add("玩家：" + ReadString(state, "player"));
-        Add("当前版本：" + ReadString(state, "selectedVersion"));
+        var snapshot = typed;
+        Add("账号：" + (snapshot?.AccountLabel is { Length: > 0 } label ? label : "离线账号"));
+        Add("玩家：" + (snapshot?.Player ?? ""));
+        Add("当前版本：" + (snapshot?.SelectedVersion ?? ""));
 
         AddHeading("实例");
-        if (state.TryGetProperty("instances", out var instances) && instances.ValueKind == JsonValueKind.Array)
+        if (snapshot is { Instances.Count: > 0 })
         {
-            var any = false;
-            foreach (var item in instances.EnumerateArray())
+            foreach (var instance in snapshot.Instances)
             {
-                any = true;
-                var name = ReadString(item, "name");
-                if (name.Length == 0)
+                if (instance.Name.Length == 0)
                     continue;
-                var loader = ReadString(item, "loader");
                 var row = new Button
                 {
-                    Content = "启动  " + name + (loader.Length > 0 ? "  ·  " + loader : ""),
+                    Content = "启动  " + instance.Name + (instance.Loader.Length > 0 ? "  ·  " + instance.Loader : ""),
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     HorizontalContentAlignment = HorizontalAlignment.Left
                 };
-                row.Click += async (_, _) => await facade.LaunchAsync(name);
+                row.Click += async (_, _) => await facade.LaunchAsync(instance.Name);
                 Content.Children.Add(row);
             }
-            if (!any)
-                Add("尚未找到已安装实例。");
         }
         else
         {
