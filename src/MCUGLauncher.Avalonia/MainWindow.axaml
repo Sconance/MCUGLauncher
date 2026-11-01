@@ -10,7 +10,7 @@
         ExtendClientAreaToDecorationsHint="True"
         WindowStartupLocation="CenterScreen">
   <Grid>
-    <wv2:WebView2 x:Name="Browser" />
+    <wv2:WebView2 x:Name="Browser" Source="about:blank" />
     <Border x:Name="LoadingLayer" Background="#F3F7F9">
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
         <TextBlock Text="MCUG Launcher" FontSize="24" FontWeight="Bold" Foreground="#1D2B35" HorizontalAlignment="Center" />

@@ -42,6 +42,18 @@ public partial class MainWindow : Window, IDesktopHost
             application.Dispose();
         };
         Browser.DOMContentLoaded += OnDomContentLoaded;
+        Opened += OnOpened;
+    }
+
+    async void OnOpened(object? sender, EventArgs e)
+    {
+        var preference = 2; // DWMWCP_ROUND
+        DwmSetWindowAttribute(Handle, 33, ref preference, sizeof(int));
+        var page = Path.Combine(AppContext.BaseDirectory, "Ui", "index.html");
+        for (var i = 0; i < 200 && Browser.CoreWebView2 is null; i++)
+            await Task.Delay(50);
+        if (Browser.CoreWebView2 is { } core)
+            core.Navigate(new Uri(page).AbsoluteUri);
     }
 
     IntPtr Handle => TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
@@ -163,6 +175,9 @@ public partial class MainWindow : Window, IDesktopHost
             message = "窗口已恢复为 1200 × 780。"
         });
     }
+
+    [DllImport("dwmapi.dll")]
+    static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
     [DllImport("user32.dll")]
     static extern bool ReleaseCapture();
