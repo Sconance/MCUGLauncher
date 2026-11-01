@@ -20,3 +20,5 @@
 - 提交前运行 `python scripts/check-layout.py`、`dotnet run --project tools/SourceFormatter`，并按改动范围运行 `test/*Checks`。旧 WPF 时期的检查项目已退役，相关历史见 [WPF 归档](docs/archive/legacy-wpf/)。
 
 `0.22.3-codex` 在 WebView2 迁移上继续整理：业务放入 `UseCases`，窗口仅保留原生职责。新增命令须补 `WebBridgeChecks`，并运行 `python scripts/check-web-boundaries.py`；详见 [开发说明](docs/WEBVIEW_UI.md)。
+
+后端新增/修改组件按 [后端开发规范](docs/BACKEND_DEVELOPMENT.md) 执行：优先完全独立组件；依赖现有组件的必须声明到“类.成员（含参数）”；修改现有组件不新增组件，共用逻辑膨胀时下沉 Core。
