@@ -20,7 +20,7 @@ public partial class MainWindow : Window, IDesktopHost
         {
             if (!_closed)
                 Dispatcher.UIThread.Post(action);
-        });
+        }, microsoftBrowser: _ => new MicrosoftLoginWebUi(), avatarEncoder: AvaloniaAvatarImage.Encode);
         Width = Math.Clamp(application.Config.WindowWidth, 960, 7680);
         Height = Math.Clamp(application.Config.WindowHeight, 640, 4320);
         if (application.Config.WindowMaximized)

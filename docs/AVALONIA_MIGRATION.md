@@ -31,7 +31,8 @@
 - Avalonia `MainWindow` 接入 `LauncherApplication`：`ready` 后转发全部消息，`Send` 走 `CoreWebView2.PostWebMessageAsJson`；
 - 实现 Avalonia 版 `IDesktopHost`：Win32 同步确认框、打开/保存/文件夹对话框，窗口命令与拖动；
 - 窗口尺寸/最大化状态读写 `AppConfig`；
-- 尚未完成：Avalonia 头像编码（当前注入空编码）、微软登录窗口（`microsoftBrowser` 仍为空）、完整 WebUi/真实账号验收。
+- 实现 Avalonia 头像编码（`AvaloniaAvatarImage`，PNG 皮肤裁剪 + 史蒂夫默认头像）与微软登录窗口（`MicrosoftLoginWindow`/`MicrosoftLoginWebUi`，WebView2 导航拦截）；
+- 尚未完成：窗口圆角/DWM、真实账号与 WebView2 人工验收。
 
 ### 阶段 3：Avalonia 主窗口功能对齐
 
