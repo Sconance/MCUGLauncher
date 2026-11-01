@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "scripts": {
     "test": "node check.cjs",
-    "format:check": "prettier --check \"../../src/MCUGLauncher/Ui/*.js\" check.cjs",
-    "format:write": "prettier --write \"../../src/MCUGLauncher/Ui/*.js\" check.cjs"
+    "format:check": "prettier --check \"../../src/MCUGLauncher.Avalonia/Ui/*.js\" check.cjs",
+    "format:write": "prettier --write \"../../src/MCUGLauncher.Avalonia/Ui/*.js\" check.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1",

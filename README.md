@@ -83,7 +83,7 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-codex 是 WebView2 �
 ## 技术架构
 
 ```
-WPF .NET 8 宿主 (MainWindow / WebView2)
+Avalonia .NET 8 宿主 (MainWindow / WebView2)
         │  虚拟域名 app.local
         ▼
 内嵌 HTML/CSS/JS (src/MCUGLauncher/Ui)

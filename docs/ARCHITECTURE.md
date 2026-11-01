@@ -1,6 +1,6 @@
 # 当前架构（0.22.3-codex）
 
-界面使用 WPF + WebView2 + HTML/CSS/JS。MainWindow 只组装适配器、管理原生对话框和窗口生命周期；不注册另一套业务命令。
+界面使用 Avalonia + WebView2 + HTML/CSS/JS。MainWindow 只组装适配器、管理原生对话框和窗口生命周期；不注册另一套业务命令。
 
 | 层 | 主要模块 | 职责 |
 | --- | --- | --- |

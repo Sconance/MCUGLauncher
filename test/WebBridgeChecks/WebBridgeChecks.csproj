@@ -8,7 +8,7 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/MCUGLauncher/MCUGLauncher.csproj" />
+    <ProjectReference Include="../../src/MCUGLauncher.App/MCUGLauncher.App.csproj" />
   </ItemGroup>
 </Project>
 

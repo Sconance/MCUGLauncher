@@ -4,10 +4,18 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>MCUGLauncher.Avalonia</AssemblyName>
+    <AssemblyName>MCUGLauncher</AssemblyName>
     <RootNamespace>MCUGLauncher.Avalonia</RootNamespace>
-    <ApplicationIcon>../MCUGLauncher/Assets/MCUGLauncher.ico</ApplicationIcon>
+    <ApplicationIcon>Assets/MCUGLauncher.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../MCUGLauncher.App/MCUGLauncher.App.csproj" />
@@ -19,6 +27,6 @@
     <PackageReference Include="WebView2.Avalonia" Version="1.0.3240.44-preview.250526.1" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="../MCUGLauncher/Ui/**/*" Link="Ui/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Ui/**/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

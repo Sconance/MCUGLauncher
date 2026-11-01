@@ -22,7 +22,7 @@ def main():
         for tag in ('ProjectReference', 'Compile', 'Content', 'Resource', 'EmbeddedResource', 'None'):
             for element in document.iter(tag):
                 include = element.get('Include') or element.get('Update')
-                if include and not (project.parent / include).is_file():
+                if include and '*' not in include and not (project.parent / include).is_file():
                     errors.append(f'{project.relative_to(root)}: missing {tag} {include}')
         for element in document.iter('ApplicationIcon'):
             if element.text and not (project.parent / element.text).is_file():

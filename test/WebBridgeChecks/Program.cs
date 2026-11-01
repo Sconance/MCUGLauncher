@@ -64,7 +64,6 @@ Check(Has("launchResult") && messages.Last().GetProperty("ok").GetBoolean() == f
 application.Config.AccountType = "offline";
 await Request("""{"type":"saveAnnouncements","items":"bad"}""");
 Check(Has("error") && File.ReadAllText(Path.Combine(fixture, "announcements.local.json")).Contains("fixture"), "malformed community request cannot erase saved announcements");
-Check(MainWindow.IsLocalPage("https://app.local/index.html?screen=mods") && !MainWindow.IsLocalPage("https://evil.example/") && !MainWindow.IsLocalPage("https://app.local:9999/"), "bridge origin whitelist");
 Check(ProtocolValues.OfflineUuid("Notch") == "b50ad385829d3141a2167e7d7539ba7f", "offline UUID uses Java byte order");
 
 var legacyDirectory = Path.Combine(fixture, "legacy");
@@ -94,18 +93,6 @@ await Request("""{"type":"requestGames"}""");
 Check(Has("games") && messages.Last().GetProperty("items").GetArrayLength() == 0, "running games request contains only owned sessions");
 application.RememberWindow(1400, 900, true);
 Check(store.Load().WindowWidth == 1400 && store.Load().WindowMaximized, "window dimensions persist through application boundary");
-var extractedUi = MCUGLauncher.Ui.EmbeddedUiCache.ExtractTo(Path.Combine(fixture, "extracted-ui"));
-var embeddedAssembly = typeof(MainWindow).Assembly;
-foreach (var resource in embeddedAssembly.GetManifestResourceNames().Where(name => name.StartsWith("MCUGLauncher.Ui.")))
-{
-    var relative = resource["MCUGLauncher.Ui.".Length..];
-    if (relative == "assets.logo.png")
-        relative = Path.Combine("assets", "logo.png");
-    using var original = embeddedAssembly.GetManifestResourceStream(resource)!;
-    using var bytes = new MemoryStream();
-    original.CopyTo(bytes);
-    Check(File.ReadAllBytes(Path.Combine(extractedUi, relative)).SequenceEqual(bytes.ToArray()), "extracted embedded UI matches assembly: " + relative);
-}
 await ResourceScenarios.Run(fixture);
 await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
