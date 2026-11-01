@@ -26,6 +26,13 @@
 - 新增 `SkinAssets`（地址校验 + 有界下载），归属 App 库，避免 AvatarCommands 依赖 WPF 渲染类。
 - WPF、Avalonia 项目均引用 `MCUGLauncher.App`；`AuthChecks` 改为引用 App 库并保留 UI 文件链接。
 
+### 阶段 2b：Avalonia 接入业务层（已完成基础）
+
+- Avalonia `MainWindow` 接入 `LauncherApplication`：`ready` 后转发全部消息，`Send` 走 `CoreWebView2.PostWebMessageAsJson`；
+- 实现 Avalonia 版 `IDesktopHost`：Win32 同步确认框、打开/保存/文件夹对话框，窗口命令与拖动；
+- 窗口尺寸/最大化状态读写 `AppConfig`；
+- 尚未完成：Avalonia 头像编码（当前注入空编码）、微软登录窗口（`microsoftBrowser` 仍为空）、完整 WebUi/真实账号验收。
+
 ### 阶段 3：Avalonia 主窗口功能对齐
 
 - 接入 `LauncherApplication`/`LauncherContext`，恢复 68 条消息；

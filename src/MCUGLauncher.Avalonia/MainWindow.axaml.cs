@@ -1,35 +1,52 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Avalonia.Controls;
+using Avalonia.Threading;
+using MCUGLauncher.UseCases;
 using Microsoft.Web.WebView2.Core;
 
 namespace MCUGLauncher.Avalonia;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window, IDesktopHost
 {
-    static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
+    readonly LauncherApplication application;
     bool _ready;
     bool _closed;
 
     public MainWindow()
     {
         InitializeComponent();
-        Opened += OnOpened;
-        Closed += (_, _) => { _closed = true; };
+        application = new LauncherApplication(Send, this, dispatch: action =>
+        {
+            if (!_closed)
+                Dispatcher.UIThread.Post(action);
+        });
+        Width = Math.Clamp(application.Config.WindowWidth, 960, 7680);
+        Height = Math.Clamp(application.Config.WindowHeight, 640, 4320);
+        if (application.Config.WindowMaximized)
+            WindowState = WindowState.Maximized;
+        Closing += (_, _) =>
+        {
+            try
+            {
+                application.RememberWindow(Bounds.Width, Bounds.Height, WindowState == WindowState.Maximized);
+            }
+            catch
+            {
+                // A locked settings file must not prevent closing.
+            }
+        };
+        Closed += (_, _) =>
+        {
+            _closed = true;
+            application.Dispose();
+        };
         Browser.DOMContentLoaded += OnDomContentLoaded;
     }
 
-    void OnOpened(object? sender, EventArgs e)
-    {
-        var page = Path.Combine(AppContext.BaseDirectory, "Ui", "index.html");
-        Browser.Source = new Uri(page);
-    }
+    IntPtr Handle => TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
 
-    void OnDomContentLoaded(object? sender, CoreWebView2DOMContentLoadedEventArgs e)
+    async void OnDomContentLoaded(object? sender, CoreWebView2DOMContentLoadedEventArgs e)
     {
         var core = Browser.CoreWebView2;
         if (core is null)
@@ -41,76 +58,62 @@ public partial class MainWindow : Window
         core.NewWindowRequested += (_, args) => args.Handled = true;
         LoadingLayer.IsVisible = false;
         _ready = true;
-        SendState();
+        await application.HandleAsync("""{"type":"ready"}""");
     }
 
     async void OnWebMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
-        try
-        {
-            using var document = JsonDocument.Parse(e.WebMessageAsJson);
-            var type = document.RootElement.TryGetProperty("type", out var typeValue)
-                ? typeValue.GetString() ?? ""
-                : "";
-            switch (type)
-            {
-                case "ready":
-                case "requestState":
-                    SendState();
-                    break;
-                case "drag":
-                    DragWindow();
-                    break;
-                case "window":
-                    HandleWindow(document.RootElement.TryGetProperty("action", out var action)
-                        ? action.GetString() ?? ""
-                        : "");
-                    break;
-            }
-        }
-        catch (JsonException)
-        {
-            // Ignore malformed messages from the page.
-        }
-        await Task.CompletedTask;
+        if (!_ready)
+            return;
+        await application.HandleAsync(e.WebMessageAsJson);
     }
-
-    void SendState() => Send(new
-    {
-        type = "state",
-        appVersion = "0.22.3-avalonia",
-        player = "Steve",
-        accountType = "offline",
-        accountLabel = "离线账号 · 本地启动",
-        root = "",
-        java = "",
-        width = 1200,
-        height = 780,
-        selectedVersion = "",
-        selectedInstance = "",
-        ram = 4096,
-        anonymous = false,
-        communityKey = false,
-        adminKey = false,
-        skinStation = "",
-        cape = "",
-        versionGroups = Array.Empty<object>(),
-        instances = Array.Empty<object>(),
-        mods = Array.Empty<object>(),
-        servers = Array.Empty<object>(),
-        dataSources = new { announcements = "", servers = "", recommendations = "", quotes = "" },
-        defaultDataSources = new { announcements = "", servers = "", recommendations = "", quotes = "" },
-        writeEndpoint = ""
-    });
 
     void Send(object payload)
     {
         if (_closed)
             return;
-        Browser.CoreWebView2?.PostWebMessageAsJson(JsonSerializer.Serialize(payload, JsonOptions));
+        Browser.CoreWebView2?.PostWebMessageAsJson(
+            JsonSerializer.Serialize(payload, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            }));
     }
 
-    void HandleWindow(string action)
+    public bool ConfirmStopGame() =>
+        NativeDialogs.Confirm(Handle, "确认关闭这个游戏？未保存的内容可能丢失。", "关闭游戏");
+
+    public bool ConfirmUninstall(string name) =>
+        NativeDialogs.Confirm(Handle, "确认执行「" + name + "」的卸载计划？列出的文件将永久删除，请先确认备份。", "确认卸载");
+
+    public void PickFolder(string target)
+    {
+        var path = NativeDialogs.PickFolder(Handle, "选择文件夹");
+        if (path is not null)
+            Send(new { type = "pickedPath", target, path });
+    }
+
+    public void PickFile(string target)
+    {
+        var filter = target switch
+        {
+            "java" => "Java|java.exe;javaw.exe|所有文件|*.*",
+            "offlineSkin" => "PNG 皮肤|*.png",
+            "pack" => "整合包|*.mrpack;*.zip",
+            _ => "所有文件|*.*"
+        };
+        var path = NativeDialogs.OpenFile(Handle, filter, application.Config.Root);
+        if (path is not null)
+            Send(new { type = "pickedPath", target, path });
+    }
+
+    public void PickSaveFile(string target)
+    {
+        var path = NativeDialogs.SaveFile(Handle, "整合包 ZIP|*.zip", "instance-export.zip", null);
+        if (path is not null)
+            Send(new { type = "pickedPath", target, path });
+    }
+
+    public void Window(string action)
     {
         switch (action)
         {
@@ -126,13 +129,20 @@ public partial class MainWindow : Window
         }
     }
 
-    void DragWindow()
+    public void Drag()
     {
-        var handle = TryGetPlatformHandle();
-        if (handle is null)
+        if (Handle == IntPtr.Zero)
             return;
         ReleaseCapture();
-        SendMessage(handle.Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
+        SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
+    }
+
+    public void ResetWindow()
+    {
+        Width = 1200;
+        Height = 780;
+        WindowState = WindowState.Normal;
+        Send(new { type = "toast", message = "窗口已恢复为 1200 × 780。" });
     }
 
     [DllImport("user32.dll")]
