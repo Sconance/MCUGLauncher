@@ -511,6 +511,67 @@ const assert = require('node:assert/strict');
   console.log(
     'PASS explicit resource version/destination, pack confirmation, MUA role choice, launch overrides and actual source test status'
   );
+  await page.evaluate(() => window.mcugGo('?screen=home'));
+  const skinImage =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aP1sAAAAASUVORK5CYII=';
+  await page.evaluate(() =>
+    window.deliver({ type: 'accountState', accountType: 'microsoft', player: 'AvatarA' })
+  );
+  await page.waitForTimeout(30);
+  assert.equal(await page.locator('.acc-avatar svg[aria-label="史蒂夫默认头像"]').count(), 1);
+  await page.screenshot({ path: path.join(output, 'steve-placeholder.png') });
+  await page.evaluate(
+    (image) =>
+      window.deliver({
+        type: 'avatar',
+        account: 'microsoft',
+        player: 'AvatarA',
+        image,
+        label: '正版皮肤',
+        fallback: false,
+      }),
+    skinImage
+  );
+  await page.evaluate(() =>
+    window.deliver({ type: 'accountState', accountType: 'mua', player: 'AvatarB' })
+  );
+  await page.waitForTimeout(30);
+  assert.equal(await page.locator('.acc-avatar img').count(), 0);
+  await page.evaluate(
+    (image) =>
+      window.deliver({
+        type: 'avatar',
+        account: 'microsoft',
+        player: 'AvatarA',
+        image,
+        label: '过期头像',
+        fallback: false,
+      }),
+    skinImage
+  );
+  assert.equal(await page.locator('.acc-avatar img').count(), 0);
+  await page.evaluate(() =>
+    window.deliver({ type: 'accountState', accountType: 'microsoft', player: 'AvatarA' })
+  );
+  await page.waitForTimeout(30);
+  assert.equal(await page.locator('.acc-avatar img').getAttribute('src'), skinImage);
+  await page.evaluate(
+    (image) =>
+      window.deliver({
+        type: 'avatar',
+        account: 'microsoft',
+        player: 'AvatarA',
+        image,
+        label: '读取失败',
+        fallback: true,
+      }),
+    skinImage
+  );
+  assert.equal(await page.evaluate(() => window.state.avatarLabel), '正版皮肤');
+  await page.screenshot({ path: path.join(output, 'steve-avatar-cache.png') });
+  console.log(
+    'PASS Steve placeholder, per-account cache and stale/failed avatar response protection'
+  );
   const standalone = await browser.newPage();
   standalone.on('pageerror', (error) => errors.push(error.message));
   await standalone.goto(base + '?screen=mods');

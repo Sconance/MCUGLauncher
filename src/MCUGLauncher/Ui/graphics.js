@@ -1,21 +1,17 @@
 // Page rendering only; native operations are handled by feature modules.
-const DefaultAvatar = () => `
-<svg class="avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
-  <rect width="16" height="16" fill="#BFDCC9"/>
-  <rect x="3" y="2" width="10" height="3" fill="#4B3126"/>
-  <rect x="2" y="4" width="3" height="7" fill="#4B3126"/>
-  <rect x="11" y="4" width="3" height="7" fill="#4B3126"/>
-  <rect x="4" y="4" width="8" height="2" fill="#4B3126"/>
-  <rect x="4" y="5" width="8" height="6" fill="#DDAA84"/>
-  <rect x="4" y="5" width="2" height="2" fill="#4B3126"/>
-  <rect x="10" y="5" width="2" height="2" fill="#4B3126"/>
-  <rect x="6" y="7" width="1" height="2" fill="#2D2421"/>
-  <rect x="9" y="7" width="1" height="2" fill="#2D2421"/>
-  <rect x="7" y="9" width="2" height="1" fill="#B97C63"/>
-  <rect x="3" y="11" width="10" height="2" fill="#CE966F"/>
-  <rect x="2" y="13" width="12" height="3" fill="#235B3A"/>
-  <rect x="7" y="13" width="2" height="3" fill="#17452A"/>
-</svg>`;
+// Same eight-pixel Steve face as the native fallback; no network is needed.
+const DefaultAvatar = () => {
+  let pixels = '';
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      let color = y < 2 || (y === 2 && (x === 0 || x === 7)) ? '#472f22' : '#bb8761';
+      if (y === 4 && [1, 2, 5, 6].includes(x)) color = [2, 5].includes(x) ? '#385b9f' : '#ffffff';
+      if (y === 6 && x >= 2 && x <= 5) color = '#67402e';
+      pixels += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}"/>`;
+    }
+  }
+  return `<svg class="avatar-svg" viewBox="0 0 8 8" shape-rendering="crispEdges" role="img" aria-label="史蒂夫默认头像">${pixels}</svg>`;
+};
 
 const SkinFigure = () => `
 <svg class="avatar-svg" viewBox="0 0 16 24" shape-rendering="crispEdges" aria-hidden="true">

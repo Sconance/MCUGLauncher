@@ -53,7 +53,7 @@ public static class AvatarRenderer
     /// </summary>
     public static BitmapSource Default()
     {
-        // Original pixel artwork used when no skin is selected or the network is unavailable.
+        // Steve-style face also used by the frontend while skin loading is pending.
         var pixels = new byte[8 * 8 * 4];
         for (var y = 0; y < 8; y++)
             for (var x = 0; x < 8; x++)

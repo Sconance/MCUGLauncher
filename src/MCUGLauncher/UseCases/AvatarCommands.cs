@@ -12,7 +12,8 @@ internal sealed class AvatarCommands(LauncherContext context)
     {
         var revision = context.AccountRevision;
         var mode = context.Config.AccountType;
-        var label = "默认头像";
+        var label = "史蒂夫默认头像";
+        var fallback = true;
         var image = AvatarImage.Encode(null);
         try
         {
@@ -40,9 +41,12 @@ internal sealed class AvatarCommands(LauncherContext context)
                 label = bytes == null ? label : "MUA 皮肤";
             }
             if (bytes != null)
+            {
                 image = AvatarImage.Encode(bytes);
+                fallback = false;
+            }
         }
-        catch { label = "皮肤读取失败，使用默认头像"; }
+        catch { label = "皮肤读取失败，使用史蒂夫头像"; }
         if (revision != context.AccountRevision)
             return;
         context.Send(new
@@ -50,6 +54,7 @@ internal sealed class AvatarCommands(LauncherContext context)
             type = "avatar",
             image,
             label,
+            fallback,
             account = mode,
             player = context.Config.Player
         });

@@ -3,6 +3,8 @@
   const bridge = window.chrome?.webview;
   const post = (message) => bridge?.postMessage(message);
   let key = '';
+  const cache = new Map();
+  const identity = (account, player) => JSON.stringify([account || '', player || '']);
   function draw() {
     document
       .querySelectorAll('.acc-avatar,[data-avatar-preview]')
@@ -13,10 +15,12 @@
   }
   function mount() {
     const state = window.state || {};
-    const current = (state.accountType || '') + ':' + (state.player || '');
+    const current = identity(state.accountType, state.player);
     if (bridge && state.player && key !== current) {
       key = current;
-      delete state.avatar;
+      const saved = cache.get(current);
+      state.avatar = saved?.image || '';
+      state.avatarLabel = saved?.label || '史蒂夫默认头像';
       post({ type: 'readAvatar' });
     }
     draw();
@@ -40,6 +44,12 @@
       data.player === window.state?.player &&
       /^data:image\/png;base64,/.test(data.image)
     ) {
+      const current = identity(data.account, data.player);
+      // A failed refresh must not replace an already loaded online skin.
+      if (data.fallback && data.account !== 'offline' && cache.has(current)) return;
+      cache.delete(current);
+      cache.set(current, { image: data.image, label: data.label });
+      if (cache.size > 24) cache.delete(cache.keys().next().value);
       window.state.avatar = data.image;
       window.state.avatarLabel = data.label;
       draw();
