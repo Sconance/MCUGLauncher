@@ -27,6 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Ui/index.html" LogicalName="MCUGLauncher.Ui.index.html" />
+    <EmbeddedResource Include="Ui/bridge.js" LogicalName="MCUGLauncher.Ui.bridge.js" />
     <EmbeddedResource Include="Ui/styles.css" LogicalName="MCUGLauncher.Ui.styles.css" />
     <EmbeddedResource Include="Ui/install.js" LogicalName="MCUGLauncher.Ui.install.js" />
     <EmbeddedResource Include="Ui/instance-tools.js" LogicalName="MCUGLauncher.Ui.instance-tools.js" />
