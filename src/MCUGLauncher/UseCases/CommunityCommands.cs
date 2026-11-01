@@ -9,7 +9,7 @@ namespace MCUGLauncher.UseCases;
 // Handles community use cases; no WPF controls or browser access.
 internal sealed class CommunityCommands(LauncherContext context)
 {
-    public async Task SendCommunityAsync()
+    public async Task SendCommunityAsync(bool notify = false)
     {
         var items = new Dictionary<string, string>();
         var localAnn = Path.Combine(context.Store.DataDirectory, "announcements.local.json");
@@ -37,6 +37,12 @@ internal sealed class CommunityCommands(LauncherContext context)
             {
                 type = "community",
                 payload = items
+            });
+        if (notify)
+            context.Send(new
+            {
+                type = "communityRefreshDone",
+                ok = items.Count == jobs.Length
             });
     }
 

@@ -11,6 +11,7 @@ public sealed class AppConfig
         get; set;
     }
     public string Root { get; set; } = "";
+    public List<string> GameRoots { get; set; } = [];
     public string Player { get; set; } = "Steve";
     public string AccountType { get; set; } = "offline";
     public string Java { get; set; } = "";

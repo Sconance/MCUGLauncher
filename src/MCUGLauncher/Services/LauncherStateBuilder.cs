@@ -27,6 +27,7 @@ internal static class LauncherStateBuilder
                 _ => "离线账号 · 本地启动"
             },
             root = config.Root,
+            gameRoots = config.GameRoots.Append(config.Root).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
             java = config.Java,
             width = config.Width,
             height = config.Height,

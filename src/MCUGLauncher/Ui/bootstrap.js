@@ -18,6 +18,9 @@
       'bookmarks.js',
       'saves.js',
       'instance-tools.js',
+      'settings-actions.js',
+      'directory.js',
+      'community-actions.js',
       'host.js',
     ])
       await load(file);

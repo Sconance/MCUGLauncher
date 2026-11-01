@@ -256,6 +256,104 @@ const assert = require('node:assert/strict');
     false
   );
   console.log('PASS updates require file preview; native mode does not load preview fixtures');
+  await page.evaluate(() => window.mcugGo('?screen=settings&panel=java'));
+  await page.locator('[data-setting-java]').fill('fixture-java');
+  await page.locator('[data-save-launch]').click();
+  assert.deepEqual(
+    await page.evaluate(() => window.messages.filter((m) => m.type === 'saveSettings').at(-1)),
+    { type: 'saveSettings', java: 'fixture-java' }
+  );
+  await page.evaluate(() => {
+    window.deliver({
+      type: 'state',
+      root: 'fixture',
+      gameRoots: ['fixture', 'second'],
+      mods: Array.from({ length: 12 }, (_, i) => ({
+        id: 'm' + i,
+        name: 'Mod ' + i,
+        file: 'm' + i + '.jar',
+        enabled: true,
+      })),
+      instances: [{ name: '1.21.1', loader: 'Fabric', mods: 12, updates: 0 }],
+      versionGroups: [
+        {
+          label: '原版游戏',
+          count: 2,
+          versions: [
+            ['Alpha', '1.21.1 · vanilla'],
+            ['Beta', '1.20.1 · vanilla'],
+          ],
+        },
+      ],
+    });
+    window.mcugGo('?screen=home&panel=versions');
+  });
+  assert.equal(await page.locator('[data-game-root]').inputValue(), 'fixture');
+  await page.locator('[data-game-root]').selectOption('second');
+  assert.equal(await page.evaluate(() => window.messages.at(-1).root), 'second');
+  await page.locator('[data-add-root]').click();
+  assert.equal(await page.evaluate(() => window.messages.at(-1).target), 'gameRoot');
+  await page.evaluate(() =>
+    window.deliver({ type: 'pickedPath', target: 'gameRoot', path: 'third' })
+  );
+  assert.equal(await page.evaluate(() => window.messages.at(-1).root), 'third');
+  await page.locator('[data-home-import]').click();
+  assert.equal(await page.evaluate(() => window.messages.at(-1).target), 'pack');
+  await page.locator('[data-refresh-instances]').click();
+  assert.equal(await page.evaluate(() => window.messages.at(-1).type), 'requestState');
+  await page.locator('.version-group-head').click();
+  assert.equal(await page.locator('.version-list').isVisible(), false);
+  await page.locator('.version-group-head').click();
+  await page.locator('.version-search input').fill('Beta');
+  assert.equal(await page.locator('.version-row:visible').count(), 1);
+  await page.evaluate(() => window.render());
+  assert.equal(await page.locator('.version-search input').inputValue(), 'Beta');
+  await page.screenshot({ path: path.join(output, 'directory-audit.png') });
+  await page.evaluate(() => window.mcugGo('?screen=manage&inst=1.21.1'));
+  assert.equal(await page.locator('.mtable-row').count(), 12);
+  await page.locator('[data-mod-action=disable]').first().click();
+  assert.deepEqual(await page.evaluate(() => window.messages.at(-1)), {
+    type: 'toggleMod',
+    file: 'm0.jar',
+    enabled: false,
+  });
+  await page.evaluate(() => window.mcugGo('?screen=download&type=shader'));
+  await page.locator('[data-community-refresh]').first().click();
+  assert.equal(await page.evaluate(() => window.messages.at(-1).type), 'refreshCommunity');
+  await page.evaluate(() => window.deliver({ type: 'communityRefreshDone', ok: false }));
+  assert.equal(await page.locator('[data-community-refresh]').first().isEnabled(), true);
+  console.log(
+    'PASS scoped settings, directory actions, persistent filtering, full mod list and community refresh'
+  );
+  await page.evaluate(() => {
+    window.deliver({
+      type: 'state',
+      mods: [{ id: 'pinned', name: 'Pinned', file: 'pinned.jar', enabled: true, update: '2.0' }],
+    });
+    window.mcugGo('?screen=manage&inst=1.21.1');
+  });
+  assert.equal(await page.locator('[data-mod-action=pin]').isDisabled(), true);
+  await page.evaluate(() => {
+    window.deliver({
+      type: 'community',
+      payload: {
+        recommendations: JSON.stringify([
+          { name: 'Example', type: 'server', address: 'example.org:25565', tags: [] },
+        ]),
+      },
+    });
+    window.mcugGo('?screen=download&type=server');
+  });
+  await page.locator('[data-rec-server]').click();
+  assert.equal(await page.locator('.modal-body input').nth(1).inputValue(), 'example.org:25565');
+  await page.evaluate(() => window.mcugGo('?screen=options'));
+  assert.equal(
+    await page.getByText('此处只保存和检查格式，不验证远端社区身份。', { exact: false }).count(),
+    1
+  );
+  console.log(
+    'PASS unsupported pin cannot install content; server recommendations open populated dialog; account page has no fake verification'
+  );
   const standalone = await browser.newPage();
   standalone.on('pageerror', (error) => errors.push(error.message));
   await standalone.goto(base + '?screen=mods');

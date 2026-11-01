@@ -119,6 +119,8 @@ function render() {
   window.McugBookmarks?.mount();
   window.McugSaves?.mount();
   window.McugInstances?.mount();
+  window.McugDirectory?.mount();
+  window.McugCommunityActions?.mount();
 }
 
 function bind() {
@@ -126,6 +128,10 @@ function bind() {
   if (anon)
     anon.addEventListener('click', () => {
       const next = !anon.classList.contains('on');
+      if (window.chrome?.webview) {
+        window.chrome.webview.postMessage({ type: 'saveSettings', anonymous: next });
+        return;
+      }
       const u = new URL(location.href);
       u.searchParams.set('screen', 'options');
       if (next) u.searchParams.set('anon', '1');
@@ -136,6 +142,7 @@ function bind() {
   const verify = document.querySelector('[data-verify]');
   if (verify)
     verify.addEventListener('click', () => {
+      if (window.chrome?.webview) return;
       const u = new URL(location.href);
       u.searchParams.set('screen', 'options');
       u.searchParams.set('state', 'verified');

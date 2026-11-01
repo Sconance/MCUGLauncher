@@ -26,6 +26,16 @@ await Request("""{"type":"requestState"}""");
 Check(Has("state") && messages[0].GetProperty("selectedVersion").GetString() == "custom-fabric", "state reflects fixture instance");
 await Request("""{"type":"saveSettings","player":"Changed","ram":1,"width":99999,"height":1}""");
 Check(Has("settingsSaved") && store.Load().Player == "Changed" && store.Load().Ram == 512 && store.Load().Width == 7680, "settings persist and clamp values");
+await Request("""{"type":"saveSettings","java":"fixture-java"}""");
+Check(store.Load().Ram == 512 && store.Load().Width == 7680 && store.Load().Java == "fixture-java", "Java-only save preserves unrelated settings");
+var secondRoot = Path.Combine(fixture, "second-root");
+Directory.CreateDirectory(secondRoot);
+await Request(JsonSerializer.Serialize(new { type = "saveSettings", root = secondRoot }));
+Check(store.Load().GameRoots.Contains(gameRoot) && store.Load().GameRoots.Contains(secondRoot), "directory selection preserves both configured roots");
+await Request(JsonSerializer.Serialize(new { type = "saveSettings", root = gameRoot }));
+Check(store.Load().GameRoots.Count == 2, "directory selection deduplicates history");
+await Request(JsonSerializer.Serialize(new { type = "saveSettings", root = Path.Combine(fixture, "missing"), player = "MustNotPersist" }));
+Check(Has("error") && store.Load().Player == "Changed" && application.Config.Player == "Changed", "invalid directory rejected before any settings mutate");
 await Request("""{"type":"saveSettings","player":"MustNotPersist","anonymous":"bad"}""");
 Check(Has("error") && application.Config.Player == "Changed", "malformed settings rejected before mutation");
 foreach (var bad in new[] { "[]", "{", "{}", "{\"type\":\"unknown\"}" })

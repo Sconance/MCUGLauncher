@@ -36,6 +36,8 @@
     toasting = setTimeout(() => node.classList.remove('show'), 3200);
   }
 
+  window.mcugToast = toast;
+
   function applyState(next) {
     state = Object.assign({}, state, next || {});
     if (Array.isArray(next.versionGroups)) {
@@ -188,7 +190,7 @@
       title: item.title || '未命名公告',
       text: item.body || item.text || '',
       time: valid ? date.toLocaleString('zh-CN', { hour12: false }) : '',
-      date: valid ? `${String(date.getDate()).padStart(2, '0')} / ${date.getMonth() + 1}月` : '—',
+      date: valid ? `${date.getMonth() + 1}/${String(date.getDate()).padStart(2, '0')}` : '—/—',
       image: item.imageUrl || '',
     };
   }
@@ -214,6 +216,8 @@
 
   function applyCommunity(payload) {
     if (!payload) return;
+    state.communityUpdated = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    window.state.communityUpdated = state.communityUpdated;
     if (payload.announcements) {
       const items = parsePayload(payload.announcements).map(normalizeAnnouncement);
       if (Array.isArray(items)) announcements.splice(0, announcements.length, ...items);
@@ -231,7 +235,7 @@
         meta: item.source || '',
         image: item.imageUrl || '',
       }));
-      if (items.length) quotes.splice(0, quotes.length, ...items);
+      quotes.splice(0, quotes.length, ...items);
     }
     render();
     applyAccount();
@@ -266,17 +270,19 @@
       const item = findModByName(name);
       if (!item) return;
       row.querySelectorAll('.mact').forEach((button) => {
-        const text = button.textContent.trim();
         button.addEventListener('click', (event) => {
           event.preventDefault();
-          if (text.includes('更新')) {
-            post({ type: 'installMod', id: item.id, mode: 'instance', path: '' });
-          } else if (text.includes('启动')) {
+          if (button.dataset.modAction === 'update') {
+            window.mcugGo?.(
+              '?screen=settings&panel=instances&v=' +
+                encodeURIComponent(Q.inst || state?.selectedInstance || '')
+            );
+          } else if (button.dataset.modAction === 'enable') {
             post({ type: 'toggleMod', file: item.file, enabled: true });
-          } else if (text.includes('禁用')) {
+          } else if (button.dataset.modAction === 'disable') {
             post({ type: 'toggleMod', file: item.file, enabled: false });
-          } else if (text.includes('禁止更新')) {
-            toast('已固定当前版本，不再检查更新。');
+          } else if (button.dataset.modAction === 'pin') {
+            toast('固定更新尚未接入，请使用实例维护查看更新预览。');
           }
         });
       });
@@ -440,14 +446,15 @@
     });
 
     document.querySelectorAll('.skin-modal .btn').forEach((button) => {
-      button.addEventListener('click', () => toast('皮肤站绑定与上传尚未接入当前版本。'));
+      button.disabled = true;
+      button.title = '皮肤站绑定与上传尚未接入当前版本';
     });
 
     decorateAddServer();
     decorateDataSources();
     decorateKeys();
     decoratePublish();
-    bindSettings();
+    window.McugSettings?.mount();
     bindCatalog();
     loadCatalog();
   }
@@ -518,90 +525,14 @@
     });
   }
 
-  function bindSettings() {
-    const scope = document.querySelector('.settings-content');
-    if (!scope) return;
-    const val = (selector) => scope.querySelector(selector)?.value?.trim() || '';
-    scope.querySelector('[data-save-launch]')?.addEventListener('click', () => {
-      post({
-        type: 'saveSettings',
-        root: val('[data-setting-root]'),
-        java: val('[data-setting-java]'),
-        ram: Number(val('[data-setting-ram]')) || 4096,
-        width: Number(val('[data-setting-width]')) || 1280,
-        height: Number(val('[data-setting-height]')) || 720,
-      });
-    });
-    scope.querySelectorAll('[data-pick]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const target = button.dataset.pick;
-        post({ type: target === 'java' ? 'pickFile' : 'pickFolder', target });
-      });
-    });
-    scope.querySelector('[data-scan-java]')?.addEventListener('click', (event) => {
-      event.preventDefault();
-      toast('正在扫描本机 Java…');
-      post({ type: 'scanJava' });
-    });
-    scope.querySelectorAll('[data-use-java]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const input = scope.querySelector('[data-setting-java]');
-        if (input) input.value = button.dataset.useJava || '';
-        toast('已填入 Java 路径，保存后生效。');
-      });
-    });
-    scope
-      .querySelector('[data-backup-saves]')
-      ?.addEventListener('click', () => post({ type: 'backupSaves' }));
-    scope
-      .querySelector('[data-read-log]')
-      ?.addEventListener('click', () => post({ type: 'readLog' }));
-    scope
-      .querySelector('[data-system-info]')
-      ?.addEventListener('click', () => post({ type: 'systemInfo' }));
-    scope.querySelector('[data-copy-diag]')?.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(
-          state.diagText || document.querySelector('#diag-box')?.textContent || ''
-        );
-        toast('诊断信息已复制。');
-      } catch {
-        toast('复制失败，请手动选择文本。', true);
-      }
-    });
-    scope
-      .querySelector('[data-reset-window]')
-      ?.addEventListener('click', () => post({ type: 'resetWindow' }));
-    scope.querySelector('[data-reset-ui]')?.addEventListener('click', () => location.reload());
-    document.querySelector('[data-delete-version]')?.addEventListener('click', (event) => {
-      const version =
-        event.currentTarget.dataset.deleteVersion || Q.v || state?.selectedVersion || '';
-      if (!version) return;
-      if (confirm(`把版本“${version}”移到回收目录？存档与截图不会删除。`))
-        post({ type: 'deleteVersion', version });
-    });
-    scope.querySelectorAll('[data-open-folder]').forEach((button) => {
-      button.addEventListener('click', () =>
-        post({ type: 'openFolder', kind: button.dataset.openFolder })
-      );
-    });
-    scope.querySelectorAll('[data-ping-server]').forEach((button) => {
-      button.addEventListener('click', () =>
-        post({ type: 'pingServer', id: button.dataset.pingServer })
-      );
-    });
-    scope.querySelector('[data-test-all]')?.addEventListener('click', () => {
-      window.mcugGo?.('?screen=datasource');
-      toast('在数据源页逐项测试，结果会显示在地址下方。');
-    });
-  }
-
   function decorateAddServer() {
     const title = document.querySelector('.modal-title')?.textContent || '';
     if (!title.includes('添加服务器') && !title.includes('编辑服务器')) return;
     const inputs = document.querySelectorAll('.modal-body input');
     const primary = document.querySelector('.modal-foot .btn-primary');
     if (!inputs.length || !primary) return;
+    const address = new URLSearchParams(location.search).get('address');
+    if (address && inputs[1]) inputs[1].value = address;
     primary.addEventListener('click', (event) => {
       event.preventDefault();
       const address = inputs[1]?.value?.trim() || '';
@@ -760,6 +691,13 @@
           toast(message.message || '读取失败', true);
           if (Q.screen === 'catalog') render();
           break;
+        case 'communityRefreshDone':
+          toast(
+            message.ok ? '社区数据已刷新。' : '部分社区数据读取失败，请检查数据源。',
+            !message.ok
+          );
+          render();
+          break;
         case 'community':
           applyCommunity(message.payload);
           break;
@@ -850,7 +788,7 @@
           toast('设置已保存。');
           break;
         case 'pickedPath': {
-          if (['pack', 'exportInstance'].includes(message.target)) break;
+          if (['pack', 'exportInstance', 'gameRoot'].includes(message.target)) break;
           const selector =
             message.target === 'java' ? '[data-setting-java]' : '[data-setting-root]';
           const input = document.querySelector(selector);

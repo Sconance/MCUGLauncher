@@ -4,7 +4,7 @@ function versionManagePage() {
   const updateFor = (id) => mods.find((item) => item.id === id)?.update || '';
   const current = instances.find((i) => i.name === Q.inst) ||
     instances[0] || { name: '未选择实例', loader: '', mods: 0, updates: 0 };
-  const visible = managed.slice(0, Math.min(8, current.mods));
+  const visible = managed;
   const rows = visible
     .map((m) => {
       const disabled = m.enabled === false;
@@ -13,8 +13,8 @@ function versionManagePage() {
         ? '<span class="mstat off">已禁用</span>'
         : '<span class="mstat on"><i></i>已启动</span>';
       const actions = disabled
-        ? `<button class="mact start">${icon('play')} 启动</button><button class="micon danger" title="删除模组">${icon('trash')}</button>`
-        : `${update ? `<button class="mact update">${icon('refresh')} 更新</button><button class="mact quiet" title="固定当前版本，不再检查更新">禁止更新</button>` : ''}<button class="mact quiet">禁用</button><button class="micon danger" title="删除模组">${icon('trash')}</button>`;
+        ? `<button class="mact start" data-mod-action="enable">${icon('play')} 启动</button><button class="micon danger" title="删除模组">${icon('trash')}</button>`
+        : `${update ? `<button class="mact update" data-mod-action="update">${icon('refresh')} 更新</button><button class="mact quiet" data-mod-action="pin" disabled title="固定更新尚未接入">禁止更新</button>` : ''}<button class="mact quiet" data-mod-action="disable">禁用</button><button class="micon danger" title="删除模组">${icon('trash')}</button>`;
       return `<div class="mtable-row">
       <div class="mfile"><span class="mod-icon ${m.color}">${icon(m.ic)}</span><div><b>${m.name}</b><span>${m.file || `${m.id}-fabric-${m.v}.jar`} · ${m.size}</span></div></div>
       <div class="mver">${m.v}</div>

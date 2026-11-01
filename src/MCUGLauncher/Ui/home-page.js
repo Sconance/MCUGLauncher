@@ -37,7 +37,7 @@ function instancePanel() {
   const groups = versionGroups
     .map(
       (g, gi) => `<section class="version-group">
-    <div class="version-group-head"><span class="version-caret">${icon('chevron-down')}</span><b>${g.label}</b><span class="version-count">(${g.count})</span></div>
+    <button type="button" class="version-group-head" aria-expanded="true"><span class="version-caret">${icon('chevron-down')}</span><b>${g.label}</b><span class="version-count">(${g.count})</span></button>
     <div class="version-list">${g.versions
       .map(
         (v, i) => `<div class="version-row ${v[0] === Q.inst ? 'selected' : ''}">
@@ -53,9 +53,9 @@ function instancePanel() {
   return `<section class="card version-panel">
     <div class="version-head">
       <div><div class="version-title">游戏目录</div><div class="version-sub">选择实例后可直接启动，或进入版本设置。</div></div>
-      <div class="version-head-actions"><button class="btn btn-ghost btn-sm">${icon('download')} 导入整合包</button><button class="btn btn-ghost btn-sm">${icon('refresh')} 刷新版本</button><a class="version-close" href="?screen=home" aria-label="收起游戏目录">${icon('chevron-left')} 收起</a></div>
+      <div class="version-head-actions"><button class="btn btn-ghost btn-sm" data-home-import>${icon('download')} 导入整合包</button><button class="btn btn-ghost btn-sm" data-refresh-instances>${icon('refresh')} 刷新版本</button><a class="version-close" href="?screen=home" aria-label="收起游戏目录">${icon('chevron-left')} 收起</a></div>
     </div>
-    <div class="version-path-row"><div class="version-path">${icon('folder')} C:\\Users\\TianXuanL\\Desktop\\神奇小玩意\\MCCCC\\.minecraft <span class="version-path-caret">${icon('chevron-down')}</span></div><button class="version-add" aria-label="添加游戏目录">${icon('plus')}</button></div>
+    <div class="version-path-row"><select class="input version-path" data-game-root aria-label="游戏目录">${[...new Set([state.root, ...(state.gameRoots || [])].filter(Boolean))].map((root) => `<option value="${escapeHtml(root)}" ${root === state.root ? 'selected' : ''}>${escapeHtml(root)}</option>`).join('') || '<option value="">请添加游戏目录</option>'}</select><button class="version-add" data-add-root aria-label="添加游戏目录">${icon('plus')}</button></div>
     <div class="version-search">${icon('search')}<input placeholder="点此处搜索实例"><span class="search-hint">按名称、版本或加载器筛选</span></div>
     <div class="version-groups">${groups}</div>
   </section>`;
@@ -127,7 +127,7 @@ function serverPanel(mode = 'normal') {
     return `<section class="card server-panel">${head}<div class="mini-error">
       ${icon('alert')}
       <div><b>服务器状态加载失败</b><span>请检查网络，或稍后重试。</span></div>
-      <button class="btn btn-ghost btn-xs">${icon('refresh')} 重试</button>
+      <button class="btn btn-ghost btn-xs" data-community-refresh>${icon('refresh')} 重试</button>
     </div></section>`;
   }
   if (servers.length === 0) {
@@ -156,7 +156,7 @@ function annPanel(mode = 'normal') {
     return `<section class="card ann-panel">${head}<div class="ann-body"><div class="ann-empty">${icon('bell')}<span>暂无公告，新的消息会出现在这里。</span></div></div></section>`;
   }
   if (mode === 'error') {
-    return `<section class="card ann-panel">${head}<div class="ann-body"><div class="mini-error compact">${icon('alert')}<div><b>公告加载失败</b><span>数据源可能暂时不可用。</span></div><button class="btn-link">重试</button></div></div></section>`;
+    return `<section class="card ann-panel">${head}<div class="ann-body"><div class="mini-error compact">${icon('alert')}<div><b>公告加载失败</b><span>数据源可能暂时不可用。</span></div><button class="btn-link" data-community-refresh>重试</button></div></div></section>`;
   }
   if (!announcements.length) return annPanel('empty');
   const a = announcements[Q.ann % announcements.length];
@@ -166,7 +166,7 @@ function annPanel(mode = 'normal') {
     <div class="ann-date"><b>${day}</b><span>${month} 月</span></div>
     ${a.image ? `<div class="ann-thumb">${annImage(a)}</div>` : ''}
     <div class="ann-copy"><div class="ann-title"><span class="tag green">${a.tag}</span>${a.title}</div><div class="ann-text">${a.text}</div></div>
-    <div class="ann-pager"><button class="ann-arrow" data-ann-prev aria-label="上一条">${icon('chevron-left')}</button><span class="pager-count">${Q.ann + 1} / 3</span><button class="ann-arrow" data-ann-next aria-label="下一条">${icon('chevron-right')}</button></div>
+    <div class="ann-pager"><button class="ann-arrow" data-ann-prev aria-label="上一条">${icon('chevron-left')}</button><span class="pager-count">${(Q.ann % announcements.length) + 1} / ${announcements.length}</span><button class="ann-arrow" data-ann-next aria-label="下一条">${icon('chevron-right')}</button></div>
   </div></section>`;
 }
 
@@ -187,7 +187,7 @@ function recPanel(mode = 'normal') {
     return `<section class="card rec-panel">${head}<div class="rec-empty">${icon('sparkles')}<div><b>暂无群友推荐</b><span>等群友整理好，第一时间放上来。</span></div></div></section>`;
   }
   if (mode === 'error') {
-    return `<section class="card rec-panel">${head}<div class="mini-error compact">${icon('alert')}<div><b>推荐加载失败</b><span>请检查推荐数据源。</span></div><button class="btn-link">重试</button></div></section>`;
+    return `<section class="card rec-panel">${head}<div class="mini-error compact">${icon('alert')}<div><b>推荐加载失败</b><span>请检查推荐数据源。</span></div><button class="btn-link" data-community-refresh>重试</button></div></section>`;
   }
   return `<section class="card rec-panel">${head}<div class="rec-list">${recs.slice(0, 3).map(recRow).join('')}</div></section>`;
 }
@@ -200,7 +200,7 @@ function quoteStrip(mode = 'normal') {
     return `<section class="card quote-strip"><div class="quote-label"><div class="qmark">“</div><b>群友语录</b></div><div class="quote-main"><div class="quote-fallback">${icon('message')}<span>还没有语录。等第一条来自群友的话。</span></div></div></section>`;
   }
   if (mode === 'error') {
-    return `<section class="card quote-strip"><div class="quote-label"><div class="qmark">“</div><b>群友语录</b></div><div class="quote-main"><div class="quote-fallback">${icon('alert')}<span>语录加载失败。</span></div></div><div class="quote-side"><button class="btn-link">${icon('refresh')} 重试</button></div></section>`;
+    return `<section class="card quote-strip"><div class="quote-label"><div class="qmark">“</div><b>群友语录</b></div><div class="quote-main"><div class="quote-fallback">${icon('alert')}<span>语录加载失败。</span></div></div><div class="quote-side"><button class="btn-link" data-community-refresh>${icon('refresh')} 重试</button></div></section>`;
   }
   const q = quotes[Q.qi % Math.max(1, quotes.length)] || {
     type: 'text',

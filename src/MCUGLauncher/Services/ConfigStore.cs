@@ -45,6 +45,7 @@ public sealed class ConfigStore
 
         if (string.IsNullOrWhiteSpace(config.Root) || !Directory.Exists(config.Root))
             config.Root = FindDefaultRoot();
+        config.GameRoots ??= [];
         if (string.IsNullOrWhiteSpace(config.Player))
             config.Player = "Steve";
         if (string.IsNullOrWhiteSpace(config.LastVersion))

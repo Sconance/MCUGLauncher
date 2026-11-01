@@ -47,6 +47,9 @@
     <EmbeddedResource Include="Ui/account-modals.js" LogicalName="MCUGLauncher.Ui.account-modals.js" />
     <EmbeddedResource Include="Ui/app.js" LogicalName="MCUGLauncher.Ui.app.js" />
     <EmbeddedResource Include="Ui/host.js" LogicalName="MCUGLauncher.Ui.host.js" />
+    <EmbeddedResource Include="Ui/settings-actions.js" LogicalName="MCUGLauncher.Ui.settings-actions.js" />
+    <EmbeddedResource Include="Ui/directory.js" LogicalName="MCUGLauncher.Ui.directory.js" />
+    <EmbeddedResource Include="Ui/community-actions.js" LogicalName="MCUGLauncher.Ui.community-actions.js" />
     <EmbeddedResource Include="Ui/assets/logo.png" LogicalName="MCUGLauncher.Ui.assets.logo.png" />
     <EmbeddedResource Include="Assets/MCUGLogo.png" LogicalName="Assets.MCUGLogo.png" />
   </ItemGroup>

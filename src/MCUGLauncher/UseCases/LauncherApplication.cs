@@ -141,6 +141,9 @@ internal sealed class LauncherApplication : IDisposable
                 case "requestState":
                     context.RefreshState();
                     break;
+                case "refreshCommunity":
+                    await communityCommands.SendCommunityAsync(notify: true);
+                    break;
                 case "launch":
                     await gameCommands.LaunchAsync(ReadString(root, "version"));
                     break;

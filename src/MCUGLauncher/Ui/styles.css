@@ -1377,3 +1377,11 @@ button:focus-visible,a:focus-visible { outline:2px solid var(--accent); outline-
 .update-row { display:flex; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid var(--line); }
 [data-uninstall-review] li,[data-update-preview] p { overflow-wrap:anywhere; white-space:pre-wrap; }
 [data-instance-tools] > .select { min-height:36px; width:100%; padding:6px 10px; border:1px solid var(--line); border-radius:8px; }
+
+/* Native instance controls preserve their hidden state despite grid/flex display rules. */
+.version-panel [hidden] { display: none !important; }
+.version-group-head { width: 100%; border: 0; text-align: left; cursor: pointer; font: inherit; }
+.version-group-head:hover { background: #e3eff7; }
+.version-group-head[aria-expanded="false"] .version-caret { transform: rotate(-90deg); }
+select.version-path { min-width: 0; flex: 1; cursor: pointer; }
+button:disabled { cursor: not-allowed; }

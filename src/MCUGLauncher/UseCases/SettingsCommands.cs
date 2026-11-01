@@ -9,6 +9,14 @@ internal sealed class SettingsCommands(LauncherContext context)
 {
     public void SaveSettings(JsonElement root)
     {
+        // Validate the directory before changing any setting in this message.
+        var requestedRoot = ReadString(root, "root").Trim();
+        if (requestedRoot.Length > 0)
+        {
+            requestedRoot = Path.GetFullPath(requestedRoot);
+            if (!Directory.Exists(requestedRoot))
+                throw new ArgumentException("游戏目录不存在，请选择已有文件夹。");
+        }
         if (root.TryGetProperty("player", out var player))
             context.Config.Player = player.GetString() ?? context.Config.Player;
         if (root.TryGetProperty("anonymous", out var anonymous))
@@ -24,11 +32,13 @@ internal sealed class SettingsCommands(LauncherContext context)
         }
         if (root.TryGetProperty("ram", out var ram) && ram.TryGetInt32(out var ramValue))
             context.Config.Ram = Math.Clamp(ramValue, 512, 65536);
-        if (root.TryGetProperty("root", out var gameRoot))
+        if (requestedRoot.Length > 0)
         {
-            var value = gameRoot.GetString()?.Trim() ?? "";
-            if (value.Length > 0)
-                context.Config.Root = value;
+            if (!string.IsNullOrWhiteSpace(context.Config.Root))
+                context.Config.GameRoots.Add(context.Config.Root);
+            context.Config.GameRoots.Add(requestedRoot);
+            context.Config.GameRoots = context.Config.GameRoots.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            context.Config.Root = requestedRoot;
         }
         if (root.TryGetProperty("java", out var java))
             context.Config.Java = java.GetString()?.Trim() ?? "";

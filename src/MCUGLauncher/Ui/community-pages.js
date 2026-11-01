@@ -3,20 +3,20 @@ function recCard(r) {
   const isServer = r.type === 'server';
   const meta = isServer
     ? `<span>${icon('users')} ${r.online === false ? '离线' : `${r.players} / ${r.max}`}</span><span class="sep"></span><span class="${r.online === false ? 'muted' : 'green-text'}">${r.online === false ? '—' : `${r.ping} ms`}</span>`
-    : `<span>${r.size}</span><span class="sep"></span><span>${r.extra}</span><span class="sep"></span><span>1.20.1</span>`;
+    : `<span>${escapeHtml(r.size || '—')}</span><span class="sep"></span><span>${escapeHtml(r.extra || r.version || '—')}</span><span class="sep"></span><span>${escapeHtml(r.version || '—')}</span>`;
   const foot = isServer
-    ? `<span class="addr">${r.addr}</span><button class="btn btn-soft ${r.online === false ? 'off' : ''}">${icon('arrow-up-right')} 查看</button>`
-    : `<span class="inline muted" style="font-size:9px">${icon('shield')} 已校验</span><button class="btn btn-soft">${icon('download')} 前往下载</button>`;
+    ? `<span class="addr">${escapeHtml(r.address || r.addr || '未提供地址')}</span><button class="btn btn-soft" data-rec-server="${escapeHtml(r.address || r.addr || '')}" ${r.address || r.addr ? '' : 'disabled title="未提供服务器地址"'}>${icon('arrow-up-right')} 查看</button>`
+    : `<a class="btn btn-soft" href="?screen=catalog&type=${r.type === 'shader' ? 'shader' : 'resourcepack'}&q=${encodeURIComponent(r.name)}">${icon('download')} 搜索资源</a>${/^https?:\/\//i.test(r.url || '') ? `<a class="btn btn-ghost" href="${escapeHtml(r.url)}" target="_blank" rel="noreferrer">资源链接</a>` : ''}`;
   return `<article class="card rec-card">
     <div class="r-card-top">
       <div class="r-card-icon ${tileClass(r.color)}">${icon(r.icon)}</div>
       <div class="r-card-heading">
-        <div class="r-card-title">${r.name}</div>
-        <div class="r-card-by">由 <b>${r.author}</b> 推荐 · ${typeMeta[r.type].label}</div>
+        <div class="r-card-title">${escapeHtml(r.name)}</div>
+        <div class="r-card-by">由 <b>${escapeHtml(r.author)}</b> 推荐 · ${typeMeta[r.type].label}</div>
       </div>
     </div>
-    <div class="r-card-tags">${r.tags.map((t, i) => `<span class="tag ${i === 0 ? 'green' : ''}">${t}</span>`).join('')}</div>
-    <div class="r-card-desc">${r.intro}</div>
+    <div class="r-card-tags">${(r.tags || []).map((t, i) => `<span class="tag ${i === 0 ? 'green' : ''}">${escapeHtml(t)}</span>`).join('')}</div>
+    <div class="r-card-desc">${escapeHtml(r.intro || r.desc || '暂无介绍')}</div>
     <div class="r-card-meta">${meta}</div>
     <div class="r-card-foot">${foot}</div>
   </article>`;
@@ -36,7 +36,7 @@ function downloadPage() {
       <div class="dl-big-icon">${icon('users')}</div>
       <div><div class="page-title">群友推荐</div><div class="page-sub">群友亲自挑过的服务器、材质包与光影。</div></div>
     </div>
-    <div class="dl-head-side"><span class="dl-count">由社区维护 · 5 分钟前更新</span><button class="btn btn-ghost btn-sm">${icon('refresh')} 刷新</button></div>
+    <div class="dl-head-side"><span class="dl-count">${state.communityUpdated ? '本次读取：' + escapeHtml(state.communityUpdated) : '尚未读取社区数据'}</span><button class="btn btn-ghost btn-sm" data-community-refresh>${icon('refresh')} 刷新</button></div>
   </div>`;
   const seg = `<div class="segbar">
     <div class="segmented" role="tablist" aria-label="推荐类型">
@@ -52,14 +52,14 @@ function downloadPage() {
       <div class="state-icon">${icon('sparkles')}</div>
       <div class="state-title">暂无群友推荐</div>
       <div class="state-copy">这一分类还没有内容。群友正在整理，稍后再来看看，或者去其他分类逛逛。</div>
-      <div class="state-actions"><button class="btn btn-soft">${icon('refresh')} 刷新</button><a class="btn btn-ghost" href="?screen=download&type=server">看看服务器</a></div>
+      <div class="state-actions"><button class="btn btn-soft" data-community-refresh>${icon('refresh')} 刷新</button><a class="btn btn-ghost" href="?screen=download&type=server">看看服务器</a></div>
     </div></div>`;
   } else if (Q.state === 'error') {
     body = `<div class="state-page" style="height:588px"><div class="state-box">
       <div class="state-icon error">${icon('alert')}</div>
       <div class="state-title">推荐加载失败</div>
       <div class="state-copy">无法读取推荐数据源（超时或返回格式不正确）。你的游戏与下载不受影响，可以重试或切换数据源。</div>
-      <div class="state-actions"><button class="btn btn-primary">${icon('refresh')} 重试</button><a class="btn btn-ghost" href="?screen=datasource">${icon('database')} 打开数据源设置</a></div>
+      <div class="state-actions"><button class="btn btn-primary" data-community-refresh>${icon('refresh')} 重试</button><a class="btn btn-ghost" href="?screen=datasource">${icon('database')} 打开数据源设置</a></div>
     </div></div>`;
   } else {
     body = `<div class="dl-grid">${list.map(recCard).join('')}</div>
@@ -69,6 +69,21 @@ function downloadPage() {
 }
 
 function optionsPage() {
+  if (window.chrome?.webview)
+    return shell(
+      'settings',
+      settingsSidebar('launch'),
+      `<div class="settings-content">
+    ${pageHead('账号与社区设置', '本地账号状态与社区密钥；保存密钥不等于服务器身份认证。')}
+    <section class="card settings-card"><h3>当前账号</h3><p>${escapeHtml(state.player || '未登录')} · ${escapeHtml(state.accountLabel || '离线账号')}</p>
+    <a class="btn btn-ghost" href="?screen=home">返回主页切换账号</a></section>
+    <section class="card settings-card"><h3>社区请求</h3><p>匿名模式：${state.anonymous ? '已开启' : '已关闭'}</p>
+    <button class="btn btn-ghost ${state.anonymous ? 'on' : ''}" data-anon>切换匿名模式</button></section>
+    <section class="card settings-card"><h3>社区密钥</h3><p>${state.communityKey ? '已保存在本机' : '尚未保存'}；此处只保存和检查格式，不验证远端社区身份。</p>
+    <input class="input" type="password" data-key-input placeholder="粘贴群管理发给你的密钥" autocomplete="off"><button class="btn btn-primary" data-verify>保存密钥</button></section>
+  </div>`
+    );
+
   const st = ['default', 'verifying', 'error', 'verified'].includes(Q.state) ? Q.state : 'default';
   const anon = Q.anon || st === 'verified';
   const publicName = st === 'verified' ? '阿澈' : 'waibibabu1998';
@@ -356,7 +371,7 @@ function recManageModal() {
   return `<div class="overlay"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="rec-manage-title">
     <div class="modal-head"><div class="modal-icon">${icon('sparkles')}</div><div><div class="modal-title" id="rec-manage-title">管理群友推荐</div><div class="modal-sub">删除只影响这台电脑的显示；管理员可在数据源中同步修改。</div></div><a class="modal-close" href="?screen=home" aria-label="关闭">${icon('x')}</a></div>
     <div class="modal-body rec-manage-list">
-      ${recs.map((r) => `<div class="rec-manage-row"><span class="rec-icon ${tileClass(r.color)}">${icon(r.icon)}</span><div class="rec-manage-copy"><b>${r.name}</b><span>${typeMeta[r.type].label} · 由 ${r.author} 推荐</span></div><button class="micon danger" data-delete-rec="${r.id}" title="删除推荐" aria-label="删除推荐">${icon('trash')}</button></div>`).join('')}
+      ${recs.map((r) => `<div class="rec-manage-row"><span class="rec-icon ${tileClass(r.color)}">${icon(r.icon)}</span><div class="rec-manage-copy"><b>${escapeHtml(r.name)}</b><span>${typeMeta[r.type].label} · 由 ${escapeHtml(r.author)} 推荐</span></div><button class="micon danger" data-delete-rec="${r.id}" title="删除推荐" aria-label="删除推荐">${icon('trash')}</button></div>`).join('')}
     </div>
     <div class="modal-foot"><span class="modal-note">共 ${recs.length} 条推荐。</span><span class="spacer"></span><a class="btn btn-primary" href="?screen=home">完成</a></div>
   </section></div>`;
