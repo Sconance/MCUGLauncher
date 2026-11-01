@@ -132,6 +132,9 @@ const assert = require('node:assert/strict');
     })
   );
   assert.equal(await page.locator('[data-task-list] img').count(), 0);
+  assert.equal(await page.locator('[data-task-summary] progress').getAttribute('value'), '35');
+  assert.equal(await page.locator('[data-task-list] progress').getAttribute('value'), '35');
+
   await page.getByRole('button', { name: '取消', exact: true }).click();
   assert.equal(
     await page.evaluate(() =>

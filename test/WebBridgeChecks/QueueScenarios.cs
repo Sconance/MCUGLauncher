@@ -6,6 +6,25 @@ internal static class QueueScenarios
 {
     public static async Task Run(string fixture)
     {
+        var coordinator = new OperationCoordinator(Path.Combine(fixture, "overall-progress"));
+        var finishedProgress = await coordinator.Run("install", fixture, fixture, task =>
+        {
+            var progress = new InstallationProgress(task);
+            progress.Advance(35);
+            progress.Message("next file");
+            if (task.Record.Percent != 35)
+                throw new Exception("file message reset overall progress");
+            progress.Advance(2);
+            if (task.Record.Percent != 35)
+                throw new Exception("new phase moved progress backwards");
+            progress.Advance(100);
+            if (task.Record.Percent != 99)
+                throw new Exception("installation reached 100 before success");
+            return Task.CompletedTask;
+        });
+        if (finishedProgress.Percent != 100)
+            throw new Exception("successful installation did not reach 100");
+        Console.WriteLine("PASS installation progress survives file changes, never regresses and completes only on success");
         var directory = Path.Combine(fixture, "queue");
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var order = new List<string>();

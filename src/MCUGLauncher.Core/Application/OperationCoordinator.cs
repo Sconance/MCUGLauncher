@@ -160,6 +160,7 @@ public sealed class OperationCoordinator
             await action(context);
             lock (Gate)
             {
+                context.Record.Percent = 100;
                 context.Record.State = OperationState.Completed;
                 context.Record.Message = "完成";
             }

@@ -120,7 +120,7 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
         File.Copy(cached, target, true);
     }
 
-    public async Task<InstalledPack> Import(string archivePath, string root, Func<PackRequirements, Task<string>> installGame, bool optional, Action<string>? progress = null, string? instanceId = null)
+    public async Task<InstalledPack> Import(string archivePath, string root, Func<PackRequirements, Task<string>> installGame, bool optional, Action<string>? progress = null, string? instanceId = null, Action<double>? overallProgress = null)
     {
         var alias = instanceId ?? "pack-" + Guid.NewGuid().ToString("N")[..12];
         if (!Regex.IsMatch(alias, "^pack-[a-f0-9]{12}$"))
@@ -211,7 +211,9 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
 
                         if (!success)
                             throw new IOException("无法下载或校验：" + item.Relative, last);
-                        progress?.Invoke($"整合包文件 {Interlocked.Increment(ref completed)}/{downloads.Count} · {Path.GetFileName(item.Relative)}");
+                        var count = Interlocked.Increment(ref completed);
+                        overallProgress?.Invoke(40.0 * count / downloads.Count);
+                        progress?.Invoke($"整合包文件 {count}/{downloads.Count} · {Path.GetFileName(item.Relative)}");
                     }
                 });
                 await ExtractLayer(archive, prefix + "overrides/", instanceStage, token);
@@ -238,7 +240,9 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
                 throw new IOException("整合包包含保留的启动器配置文件。");
             AtomicFile.WriteJson(Path.Combine(instanceStage, ".blocklaunch-pack-files.json"), await PackUpgrade.Snapshot(instanceStage, token));
             progress?.Invoke($"安装 Minecraft {requirements.Minecraft} / {requirements.Loader} {requirements.LoaderVersion}");
+            overallProgress?.Invoke(40);
             var launchVersion = await installGame(requirements);
+            overallProgress?.Invoke(99);
             ContentService.SafeFile(launchVersion);
             token.ThrowIfCancellationRequested();
             var record = new InstalledPack(name, requirements.Minecraft, requirements.Loader, requirements.LoaderVersion, launchVersion, alias);

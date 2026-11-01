@@ -315,7 +315,7 @@ public sealed class ContentService : IResourceProvider
         return Convert.ToHexString(await SHA512.HashDataAsync(stream, cancellation)).ToLowerInvariant();
     }
 
-    public async Task<int> Install(InstallPlan plan, string instance, Action<string>? progress = null, string? expectedFingerprint = null)
+    public async Task<int> Install(InstallPlan plan, string instance, Action<string>? progress = null, string? expectedFingerprint = null, Action<double>? overallProgress = null)
     {
         token.ThrowIfCancellationRequested();
         if (plan.Versions.Count == 0 || plan.Versions.Count > 128 || plan.Versions.Any(v => string.IsNullOrWhiteSpace(v.ProjectId) || string.IsNullOrWhiteSpace(v.Id)) || plan.Versions.Select(v => v.ProjectId).Distinct(StringComparer.OrdinalIgnoreCase).Count() != plan.Versions.Count)
@@ -395,6 +395,7 @@ public sealed class ContentService : IResourceProvider
         var stage = transaction.Stage;
         try
         {
+            var completedFiles = 0;
             foreach (var x in files)
             {
                 var record = added.Single(a => a.ProjectId == x.Version.ProjectId);
@@ -410,9 +411,11 @@ public sealed class ContentService : IResourceProvider
                 var cache = Path.Combine(instance, ".blocklaunch", "downloads", record.Sha512.ToLowerInvariant());
                 await ReliableDownloader.Download(http, uri, cache, record.Sha512, size: x.File.Size, progress: progress, token: token);
                 File.Copy(cache, temp, true);
+                overallProgress?.Invoke(95.0 * ++completedFiles / files.Count);
             }
 
             token.ThrowIfCancellationRequested();
+            overallProgress?.Invoke(99);
             using var commit = OperationExecution.BeginCommit();
             if (expectedFingerprint != null && expectedFingerprint != await ContentUpdates.Fingerprint(instance, token))
                 throw new IOException("下载期间内容已改变，请重新生成更新预览。");
