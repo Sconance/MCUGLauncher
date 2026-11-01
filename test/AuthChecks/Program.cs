@@ -143,6 +143,20 @@ manager.SaveAccounts();
 using var unusedHttp = new HttpClient(new Handler(HttpStatusCode.OK, "{}"));
 var service = new MicrosoftAccountService(root, unusedHttp);
 Check(service.ReadSavedAccount()?.Username == "AuthTester", "LIBRARY_ACCOUNT_METADATA_RELOADS_FROM_ENCRYPTED_CACHE");
+try
+{
+    await service.Authenticate(true, CancellationToken.None);
+    throw new Exception("Interactive login without an injected browser was accepted");
+}
+catch (AccountLoginException error)
+{
+    Check(error.RequiresInteractive && error.Message.Contains("登录窗口"), "AUTH_SERVICE_REQUIRES_INJECTED_BROWSER_WITHOUT_CREATING_UI");
+}
+Check(MicrosoftLoginWindow.DescribeFailure(new TimeoutException("secret-url")).Message.Contains("超时"), "LOGIN_WINDOW_CLASSIFIES_TIMEOUT");
+Check(MicrosoftLoginWindow.DescribeFailure(new UnauthorizedAccessException("secret-path")).Message.Contains("权限"), "LOGIN_WINDOW_CLASSIFIES_PERMISSIONS");
+Check(MicrosoftLoginWindow.DescribeFailure(new IOException("secret-path")).Message.Contains("磁盘"), "LOGIN_WINDOW_CLASSIFIES_STORAGE");
+Check(!MicrosoftLoginWindow.DescribeFailure(new InvalidOperationException("secret-token")).Message.Contains("secret"), "LOGIN_WINDOW_NEVER_EXPOSES_RAW_ERROR_PAYLOAD");
+
 var before = File.ReadAllBytes(path);
 try
 {

@@ -27,11 +27,11 @@ internal sealed class LauncherApplication : IDisposable
     readonly CommunityCommands communityCommands;
 
     public AppConfig Config => context.Config;
-    public LauncherApplication(Action<object> send, IDesktopHost desktop, ConfigStore? store = null, Action<Action>? dispatch = null)
+    public LauncherApplication(Action<object> send, IDesktopHost desktop, ConfigStore? store = null, Action<Action>? dispatch = null, Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null)
     {
         this.desktop = desktop;
         this.dispatch = dispatch ?? (action => action());
-        context = new LauncherContext(send, store);
+        context = new LauncherContext(send, store, microsoftBrowser);
         context.RefreshState = SendState;
         maintenanceCommands = new InstanceMaintenanceCommands(context);
         uninstallCommands = new UninstallCommands(context);

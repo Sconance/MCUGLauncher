@@ -212,7 +212,7 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
                         if (!success)
                             throw new IOException("无法下载或校验：" + item.Relative, last);
                         var count = Interlocked.Increment(ref completed);
-                        overallProgress?.Invoke(40.0 * count / downloads.Count);
+                        overallProgress?.Invoke(InstallationStages.PackFiles * count / downloads.Count);
                         progress?.Invoke($"整合包文件 {count}/{downloads.Count} · {Path.GetFileName(item.Relative)}");
                     }
                 });
@@ -240,9 +240,9 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
                 throw new IOException("整合包包含保留的启动器配置文件。");
             AtomicFile.WriteJson(Path.Combine(instanceStage, ".blocklaunch-pack-files.json"), await PackUpgrade.Snapshot(instanceStage, token));
             progress?.Invoke($"安装 Minecraft {requirements.Minecraft} / {requirements.Loader} {requirements.LoaderVersion}");
-            overallProgress?.Invoke(40);
+            overallProgress?.Invoke(InstallationStages.PackFiles);
             var launchVersion = await installGame(requirements);
-            overallProgress?.Invoke(99);
+            overallProgress?.Invoke(InstallationStages.BeforeCommit);
             ContentService.SafeFile(launchVersion);
             token.ThrowIfCancellationRequested();
             var record = new InstalledPack(name, requirements.Minecraft, requirements.Loader, requirements.LoaderVersion, launchVersion, alias);

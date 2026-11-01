@@ -24,7 +24,7 @@ public partial class MainWindow : Window, IDesktopHost
         {
             if (!closed)
                 Dispatcher.BeginInvoke(action);
-        });
+        }, microsoftBrowser: directory => new MicrosoftLoginWebUi(directory));
         Width = Math.Clamp(application.Config.WindowWidth, 960, 7680);
         Height = Math.Clamp(application.Config.WindowHeight, 640, 4320);
         if (application.Config.WindowMaximized)

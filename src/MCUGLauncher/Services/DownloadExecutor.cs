@@ -39,7 +39,7 @@ internal sealed class DownloadExecutor(HttpClient http, Func<string, bool>? inUs
             await using (var input = File.OpenRead(request.File))
                 if (!Convert.ToHexString(await SHA256.HashDataAsync(input, task.Token)).Equals(request.SourceHash, StringComparison.OrdinalIgnoreCase))
                     throw new IOException("整合包文件在排队后发生变化，请重新导入。");
-            var installer = new GameInstaller(http, record.Root, request.Java, progress.Message, task.Token, overallProgress: value => progress.Advance(40 + value * .59));
+            var installer = new GameInstaller(http, record.Root, request.Java, progress.Message, task.Token, overallProgress: value => progress.Advance(InstallationStages.PackFiles + value * (InstallationStages.BeforeCommit - InstallationStages.PackFiles) / 100));
             await new PackService(http, task.Token).Import(request.File, record.Root, installer.Install, false,
                 progress.Message, request.PackInstance, progress.Advance);
             return;

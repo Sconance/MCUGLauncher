@@ -36,7 +36,7 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
             return new MinecraftLauncher(parameters);
         }
 
-        var baseWeight = request.Loader == "vanilla" ? 99.0 : 65.0;
+        var baseWeight = request.Loader == "vanilla" ? InstallationStages.BeforeCommit : InstallationStages.BaseGameFiles;
         void Track(MinecraftLauncher current, double start, double weight)
         {
             current.FileProgressChanged += (_, e) =>
@@ -64,10 +64,10 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
                 ct.ThrowIfCancellationRequested();
                 AtomicFile.WriteJson(Path.Combine(root, "versions", id, id + ".json"), json.RootElement);
                 var loaded = CreateLauncher(id);
-                Track(loaded, 65, 34);
+                Track(loaded, InstallationStages.BaseGameFiles, InstallationStages.BeforeCommit - InstallationStages.BaseGameFiles);
                 await loaded.InstallAsync(id, ct);
             }, token);
-            overallProgress?.Invoke(99);
+            overallProgress?.Invoke(InstallationStages.BeforeCommit);
             return id;
         }
 
@@ -85,7 +85,7 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
         if (expected.Length != 40 || expected.Any(c => !Uri.IsHexDigit(c)))
             throw new IOException("官方安装器校验信息无效。");
         await ReliableDownloader.Download(http, new Uri(url), jar, expected, sha1: true, progress: progress, token: token);
-        overallProgress?.Invoke(70);
+        overallProgress?.Invoke(InstallationStages.LoaderDownloaded);
         using var zip = ZipFile.OpenRead(jar);
         var profileEntry = zip.GetEntry("version.json") ?? throw new IOException("此旧版 Forge 安装器暂不支持自动安装。");
         using var profileJson = await JsonDocument.ParseAsync(profileEntry.Open());
@@ -143,7 +143,7 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
                 return log.ToString();
             }
 
-            overallProgress?.Invoke(75);
+            overallProgress?.Invoke(InstallationStages.OfficialInstallerStarted);
             progress?.Invoke("官方安装器运行中，请稍候…");
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
             timeout.CancelAfter(TimeSpan.FromMinutes(15));
@@ -164,11 +164,11 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
                 throw new IOException("官方加载器安装失败，详细日志位于 " + cache);
             // Recreate to refresh the version metadata cache after the external installer.
             var loaded = CreateLauncher(launchId);
-            Track(loaded, 90, 9);
-            overallProgress?.Invoke(90);
+            Track(loaded, InstallationStages.LoaderFinalFiles, InstallationStages.BeforeCommit - InstallationStages.LoaderFinalFiles);
+            overallProgress?.Invoke(InstallationStages.LoaderFinalFiles);
             await loaded.InstallAsync(launchId, ct);
         }, token);
-        overallProgress?.Invoke(99);
+        overallProgress?.Invoke(InstallationStages.BeforeCommit);
         return launchId;
     }
 

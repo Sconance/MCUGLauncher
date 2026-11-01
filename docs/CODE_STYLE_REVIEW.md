@@ -27,3 +27,11 @@ host.js 的旧事件绑定还可按功能继续迁移；LauncherContext 仍是�
 - 设置按当前控件发送字段，Java 保存不携带内存和窗口默认值。目录验证在修改配置之前完成，目录历史随配置保存。
 - 模组操作使用 data-mod-action，不通过中文按钮文字匹配；未接通的固定更新、皮肤操作明确禁用。
 - 浏览器检查增加目录选择/添加/导入/刷新、折叠/搜索状态、12 项模组、设置字段和社区刷新；仍不等同于真实游戏验收。
+
+## 登录与进度依赖整理
+
+- MicrosoftAccountService 不创建登录窗口，不探测 WebView2；MainWindow 组装入口提供 IWebUI 工厂，UseCases 仅传递接口。静默认证不需要原生窗口。
+- MicrosoftLoginWebUi 只做线程调度；MicrosoftLoginWindow 按布局、初始化、导航、重载和释放组织方法，关闭窗口会取消初始化等待。
+- 缓存权限、磁盘、运行库、超时与组件异常分别转换成安全提示，不输出原始 OAuth URL 或响应。
+- InstallationStages 集中命名安装阶段权重，保留原来的阶段比例和提交后 100% 语义。
+- 架构检查增加认证服务不得创建具体 UI 或探测 WebView2 的规则。

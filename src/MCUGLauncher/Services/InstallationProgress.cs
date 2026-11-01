@@ -25,7 +25,7 @@ internal sealed class InstallationProgress(OperationContext task)
         {
             if (!double.IsFinite(value))
                 return;
-            percent = Math.Max(percent, Math.Clamp(value, 0, 99));
+            percent = Math.Max(percent, Math.Clamp(value, 0, InstallationStages.BeforeCommit));
             task.Report(message, percent);
         }
     }

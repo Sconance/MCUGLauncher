@@ -47,6 +47,10 @@ for folder in ('UseCases', 'Services'):
                     errors.append(f'Put System imports before project imports: {source.name}')
             else:
                 non_system_seen = True
+auth_service = (root / 'src/MCUGLauncher/Authentication/MicrosoftAccountService.cs').read_text(encoding='utf-8-sig')
+for dependency in ('new MicrosoftLoginWebUi', 'new MicrosoftLoginWindow', 'CoreWebView2', 'using System.Windows'):
+    if dependency in auth_service:
+        errors.append(f'Authentication must receive its UI adapter, not construct or probe it: {dependency}')
 if errors:
     print('\n'.join(errors), file=sys.stderr)
     sys.exit(1)

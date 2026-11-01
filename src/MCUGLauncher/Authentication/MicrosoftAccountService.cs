@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using CmlLib.Core.Auth;
 using CmlLib.Core.Auth.Microsoft;
 using CmlLib.Core.Auth.Microsoft.Sessions;
-using Microsoft.Web.WebView2.Core;
 using XboxAuthNet.Game.Accounts;
 using XboxAuthNet.Game;
 using XboxAuthNet.Game.Authenticators;
@@ -19,14 +18,14 @@ public sealed class MicrosoftAccountService
     readonly ProtectedAccountStorage storage;
     readonly HttpClient http;
     readonly string directory;
-    readonly XboxAuthNet.OAuth.CodeFlow.IWebUI browser;
+    readonly XboxAuthNet.OAuth.CodeFlow.IWebUI? browser;
 
     public MicrosoftAccountService(string directory, HttpClient client, XboxAuthNet.OAuth.CodeFlow.IWebUI? browser = null)
     {
         this.directory = directory;
         Directory.CreateDirectory(directory);
         http = client;
-        this.browser = browser ?? new MicrosoftLoginWebUi(directory);
+        this.browser = browser;
         storage = new(Path.Combine(directory, "microsoft-account.dat"));
     }
 
@@ -70,17 +69,8 @@ public sealed class MicrosoftAccountService
         // Initialize lazy storage before NewAccount; otherwise its first save discards the new entry.
         if (!interactive && !cached.Any())
             throw new AccountLoginException("尚未登录微软账号，请先完成正版登录。", true);
-        if (interactive)
-        {
-            try
-            {
-                _ = CoreWebView2Environment.GetAvailableBrowserVersionString();
-            }
-            catch (WebView2RuntimeNotFoundException)
-            {
-                throw new AccountLoginException("未检测到 Microsoft Edge WebView2 Runtime。请安装该运行库后重新登录。", true);
-            }
-        }
+        if (interactive && browser == null)
+            throw new AccountLoginException("尚未配置登录窗口，请重新打开启动器。", true);
 
         try
         {
@@ -88,7 +78,7 @@ public sealed class MicrosoftAccountService
             var account = interactive ? manager.NewAccount() : manager.GetDefaultAccount();
             var authenticator = handler.CreateAuthenticator(account, token);
             if (interactive)
-                authenticator.AddForceMicrosoftOAuthForJE(oauth => oauth.Interactive(flow => flow.WithWebUI(browser)));
+                authenticator.AddForceMicrosoftOAuthForJE(oauth => oauth.Interactive(flow => flow.WithWebUI(browser!)));
             else
                 authenticator.AddMicrosoftOAuthForJE(oauth => oauth.Silent());
             // Full Xbox flow supports the account/family checks omitted by the old basic-only path.

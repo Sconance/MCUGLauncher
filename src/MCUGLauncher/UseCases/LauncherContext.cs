@@ -60,7 +60,7 @@ internal sealed class LauncherContext : IDisposable
 
     public Action RefreshState { get; set; } = () => { };
 
-    public LauncherContext(Action<object> send, ConfigStore? store = null)
+    public LauncherContext(Action<object> send, ConfigStore? store = null, Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null)
     {
         Send = send;
         Store = store ?? new ConfigStore();
@@ -73,7 +73,7 @@ internal sealed class LauncherContext : IDisposable
         var authDirectory = Path.Combine(Store.DataDirectory, "auth");
         try
         {
-            Microsoft = new MicrosoftAccountService(authDirectory, Http);
+            Microsoft = new MicrosoftAccountService(authDirectory, Http, microsoftBrowser?.Invoke(authDirectory));
             Mua = new MuaAccountService(authDirectory, Http);
             if (Config.AccountType == "mua")
             {

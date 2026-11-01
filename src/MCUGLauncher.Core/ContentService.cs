@@ -411,11 +411,11 @@ public sealed class ContentService : IResourceProvider
                 var cache = Path.Combine(instance, ".blocklaunch", "downloads", record.Sha512.ToLowerInvariant());
                 await ReliableDownloader.Download(http, uri, cache, record.Sha512, size: x.File.Size, progress: progress, token: token);
                 File.Copy(cache, temp, true);
-                overallProgress?.Invoke(95.0 * ++completedFiles / files.Count);
+                overallProgress?.Invoke(InstallationStages.ContentFiles * ++completedFiles / files.Count);
             }
 
             token.ThrowIfCancellationRequested();
-            overallProgress?.Invoke(99);
+            overallProgress?.Invoke(InstallationStages.BeforeCommit);
             using var commit = OperationExecution.BeginCommit();
             if (expectedFingerprint != null && expectedFingerprint != await ContentUpdates.Fingerprint(instance, token))
                 throw new IOException("下载期间内容已改变，请重新生成更新预览。");
