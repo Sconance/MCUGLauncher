@@ -10,10 +10,11 @@ namespace MCUGLauncher.Avalonia;
 /// <summary>原生 Avalonia 外壳：阶段 1 提供启动/设置两页，旧 WebView 作为回退入口保留。</summary>
 public partial class ShellWindow : Window
 {
-    readonly LauncherFacade facade;
+    LauncherFacade facade = null!;
     JsonElement state;
     JsonElement tasks;
     JsonElement contentItems;
+    JsonElement uninstallPreview;
     string page = "home";
 
     public ShellWindow()
@@ -21,10 +22,17 @@ public partial class ShellWindow : Window
         InitializeComponent();
         using (var empty = JsonDocument.Parse("{}"))
             state = empty.RootElement.Clone();
-        facade = new LauncherFacade(new ShellDesktopHost());
+        var host = new ShellDesktopHost(
+            () => Handle,
+            message => facade?.SendMessage(message),
+            HandleWindow,
+            DragWindow,
+            ResetWindow);
+        facade = new LauncherFacade(host);
         facade.MessageReceived += OnMessage;
         HomeButton.Click += (_, _) => Show("home");
         DownloadButton.Click += (_, _) => Show("download");
+        MaintenanceButton.Click += (_, _) => Show("maintenance");
         AccountButton.Click += (_, _) => Show("account");
         TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
         SettingsButton.Click += (_, _) => Show("settings");
@@ -47,6 +55,12 @@ public partial class ShellWindow : Window
         {
             state = message;
             Render();
+        }
+        else if (type.GetString() == "uninstallPreview")
+        {
+            uninstallPreview = message.Clone();
+            if (page == "maintenance")
+                Render();
         }
         else if (type.GetString() == "contentList")
         {
@@ -78,6 +92,8 @@ public partial class ShellWindow : Window
         Content.Children.Clear();
         if (page == "settings")
             RenderSettings();
+        else if (page == "maintenance")
+            RenderMaintenance();
         else if (page == "download")
             RenderDownload();
         else if (page == "account")
@@ -154,6 +170,56 @@ public partial class ShellWindow : Window
         };
         Content.Children.Add(save);
         Add("提示：目录与 Java 的浏览对话框将在下一阶段接入。");
+    }
+
+    void RenderMaintenance()
+    {
+        AddHeading("实例维护");
+        if (state.TryGetProperty("instances", out var instances) && instances.ValueKind == JsonValueKind.Array)
+        {
+            var cloneName = new TextBox { Watermark = "新实例名称", Width = 260, HorizontalAlignment = HorizontalAlignment.Left };
+            Content.Children.Add(cloneName);
+            foreach (var item in instances.EnumerateArray())
+            {
+                var version = ReadString(item, "name");
+                if (version.Length == 0)
+                    continue;
+                Add(version);
+                var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+                var clone = new Button { Content = "克隆" };
+                var source = version;
+                clone.Click += async (_, _) =>
+                {
+                    var name = cloneName.Text?.Trim() ?? "";
+                    if (name.Length == 0)
+                        return;
+                    await facade.CloneInstanceAsync(source, name);
+                    await facade.RequestStateAsync();
+                };
+                var uninstall = new Button { Content = "卸载预览" };
+                uninstall.Click += async (_, _) => await facade.PreviewUninstallAsync(source);
+                row.Children.Add(clone);
+                row.Children.Add(uninstall);
+                Content.Children.Add(row);
+            }
+        }
+        if (uninstallPreview.ValueKind == JsonValueKind.Object
+            && uninstallPreview.TryGetProperty("token", out var tokenValue)
+            && tokenValue.GetString() is { Length: > 0 } token)
+        {
+            AddHeading("卸载预览");
+            Add(ReadString(uninstallPreview, "notice"));
+            if (uninstallPreview.TryGetProperty("paths", out var paths) && paths.ValueKind == JsonValueKind.Array)
+                foreach (var path in paths.EnumerateArray())
+                    Add("· " + (path.GetString() ?? ""));
+            var apply = new Button { Content = "确认卸载", HorizontalAlignment = HorizontalAlignment.Left };
+            apply.Click += async (_, _) => { await facade.ApplyUninstallAsync(token); await facade.RequestStateAsync(); };
+            Content.Children.Add(apply);
+        }
+        else
+        {
+            Add("选择实例后可克隆或预览卸载。卸载预览必须先查看路径。");
+        }
     }
 
     void RenderDownload()
@@ -274,6 +340,45 @@ public partial class ShellWindow : Window
         refresh.Click += async (_, _) => await facade.RequestTasksAsync();
         Content.Children.Add(refresh);
     }
+
+    IntPtr Handle => TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+
+    void HandleWindow(string action)
+    {
+        switch (action)
+        {
+            case "minimize":
+                WindowState = WindowState.Minimized;
+                break;
+            case "maximize":
+                WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+                break;
+            case "close":
+                Close();
+                break;
+        }
+    }
+
+    void DragWindow()
+    {
+        if (Handle == IntPtr.Zero)
+            return;
+        ReleaseCapture();
+        SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
+    }
+
+    void ResetWindow()
+    {
+        Width = 1100;
+        Height = 720;
+        WindowState = WindowState.Normal;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    static extern bool ReleaseCapture();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    static extern IntPtr SendMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
 
     void AddHeading(string text) =>
         Content.Children.Add(new TextBlock { Text = text, FontSize = 18, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 12, 0, 0) });

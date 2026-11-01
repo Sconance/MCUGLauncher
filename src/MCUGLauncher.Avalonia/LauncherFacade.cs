@@ -92,6 +92,30 @@ internal sealed class LauncherFacade : IDisposable
             category
         }, Options));
 
+    public void SendMessage(object payload) => Send(payload);
+
+    public Task CloneInstanceAsync(string version, string name) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "cloneInstance",
+            version,
+            name
+        }, Options));
+
+    public Task PreviewUninstallAsync(string version) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "previewUninstall",
+            version
+        }, Options));
+
+    public Task ApplyUninstallAsync(string token) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "applyUninstall",
+            token
+        }, Options));
+
     void Send(object payload)
     {
         var json = JsonSerializer.Serialize(payload, Options);
