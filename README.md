@@ -94,6 +94,8 @@ C# 服务：版本扫描 / 启动 / 服务器 ping / Modrinth / 社区 JSON / �
 
 选择 WebView2 的原因：0.22.3 的设计稿是一套完整的前端视觉系统，直接复用 HTML/CSS 能保证 1:1 还原，同时把 C# 服务与 UI 分离，后续换界面不需要动启动核心。
 
+后端组件的分级、依赖声明与 Core 下沉规则见 [BACKEND_DEVELOPMENT.md](BACKEND_DEVELOPMENT.md)。
+
 开发说明与检查范围见 [WebView2 UI 开发说明](docs/WEBVIEW_UI.md)，本分支整理记录见 [0.22.3-codex](docs/REVIEW_0.22.3-codex.md)。
 
 ### 目录

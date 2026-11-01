@@ -160,35 +160,87 @@ LauncherApplication / LauncherContext
 - 不允许“每个功能一个 Service + 一个 Manager + 一个 Helper”；
 - 不允许 Core 反向依赖 App。
 
-## 8. 当前 B 组件登记表
+## 8. 当前组件类别划分
 
-> 维护规则：新增 B 组件、修改依赖面、删除组件时，必须在同一提交更新本表。
-> 成员名为 `LauncherContext` 的公开成员；方法与属性均按实际使用列出。
+统计范围：`src/MCUGLauncher` 的后端组件（UseCases、Services、Authentication、Models），不含 `MainWindow` 与 Core。共 **45 个**：A 类 13 个、B 类 28 个、C 类 4 个。
 
-| 组件 | 依赖的现有成员 |
-| --- | --- |
-| `AccountCommands` | `LauncherContext.AccountRevision`、`.Microsoft`、`.Mua`、`.Send`、`.Token`；`AccountModeCommands.Apply` |
-| `AccountModeCommands` | `LauncherContext.AccountRevision`、`.AccountSessions`、`.Config`、`.Microsoft`、`.Mua`、`.OnlineSession`、`.Send`、`.SendAccountState`、`.Store`、`.Token` |
-| `AvatarCommands` | `LauncherContext.AccountRevision`、`.Config`、`.Http`、`.Microsoft`、`.Mua`、`.Send`、`.Store`、`.Token` |
-| `BookmarkCommands` | `LauncherContext.RefreshState`、`.Store` |
-| `CommunityCommands` | `LauncherContext.Community`、`.Config`、`.Http`、`.RefreshState`、`.Send`、`.Store`、`.Token` |
-| `ContentUpdateCommands` | `LauncherContext.Config`、`.Http`、`.Send`、`.Tasks`、`.Token` |
-| `DiagnosticCommands` | `LauncherContext.Config`、`.Send`、`.Store` |
-| `GameCommands` | `LauncherContext.Config`、`.Games`、`.Http`、`.Log`、`.MarkPreparing`、`.Mua`、`.OnlineSession`、`.ReleasePreparing`、`.Send`、`.SendGames`、`.Store`、`.Tasks`、`.Token` |
-| `InstallationCommands` | `LauncherContext.Config`、`.Http`、`.Send`、`.Tasks`、`.Token` |
-| `InstanceCommands` | `LauncherContext.Config`、`.RefreshState` |
-| `InstanceMaintenanceCommands` | `LauncherContext.Config`、`.Tasks` |
-| `LaunchOptionsCommands` | `LauncherContext.Config`、`.RefreshState`、`.Send`、`.Store` |
-| `ResourceChoiceCommands` | `LauncherContext.Config`、`.Http`、`.Send`、`.Tasks`、`.Token` |
-| `ResourceCommands` | `LauncherContext.Config`、`.Http`、`.Send`、`.Store`、`.Tasks`、`.Token` |
-| `SaveCommands` | `LauncherContext.Config`、`.Games`、`.Send`、`.Store`、`.Token` |
-| `SettingsCommands` | `LauncherContext.Config`、`.RefreshState`、`.Send`、`.Store`、`.Token` |
-| `UninstallCommands` | `LauncherContext.Config`、`.Games`、`.Send`、`.Tasks`、`.Token` |
-| `LauncherContext`（B 类） | `ConfigStore.Load/Save`、`NetworkPolicyHandler.Create`、`CommunityService`、`DownloadExecutor`、`LauncherTaskQueue`、`RunningGameRegistry`、`AccountSessionCache`、`MicrosoftAccountService`、`MuaAccountService` |
+### 8.1 C 类（集成层，4 个）
 
-### 8.1 `LauncherContext` 依赖成员签名
+| 组件 | 位置 | 说明 |
+| --- | --- | --- |
+| `LauncherApplication` | `UseCases/LauncherApplication.cs` | 协议入口、命令注册、启动恢复与状态回推；只装配，不写业务 |
+| `IDesktopHost` | `UseCases/IDesktopHost.cs` | 原生窗口/对话框契约，由 `MainWindow` 实现 |
+| `MicrosoftLoginWebUi` | `Authentication/MicrosoftLoginWebUi.cs` | `IWebUI` 适配器，桥接 WPF 登录窗口 |
+| `MicrosoftLoginWindow` | `Authentication/MicrosoftLoginWindow.cs` | WPF + WebView2 授权窗口，属于 UI 边界 |
 
-B 组件在声明中引用以下成员时，按此签名书写：
+> `MainWindow` 是宿主壳，不计入后端组件；它只依赖 `LauncherApplication` 与 `IDesktopHost`。
+
+### 8.2 B 类（28 个）
+
+#### 8.2.1 UseCases（19 个）
+
+| 组件 | 说明 | 依赖面 |
+| --- | --- | --- |
+| `AccountCommands` | 微软/MUA 登录、MUA 角色选择 | `LauncherContext.AccountRevision/Microsoft/Mua/Send/Token`；`AccountModeCommands.Apply` |
+| `AccountModeCommands` | 账号模式恢复、切换、忘记 | `LauncherContext.AccountRevision/AccountSessions/Config/Microsoft/Mua/OnlineSession/Send/SendAccountState/Store/Token` |
+| `AvatarCommands` | 头像读取与离线皮肤 | `LauncherContext.AccountRevision/Config/Http/Microsoft/Mua/Send/Store/Token` |
+| `BookmarkCommands` | 资源收藏切换 | `LauncherContext.RefreshState/Store` |
+| `CommunityCommands` | 公告/推荐/服务器收藏/发布 | `LauncherContext.Community/Config/Http/RefreshState/Send/Store/Token` |
+| `ContentUpdateCommands` | 内容更新检查、预览、应用 | `LauncherContext.Config/Http/Send/Tasks/Token` |
+| `DiagnosticCommands` | 日志读取与系统信息 | `LauncherContext.Config/Send/Store` |
+| `GameCommands` | 启动/停止游戏、进程观察 | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |
+| `InstallationCommands` | 加载器列表/安装、整合包预览/导入 | `LauncherContext.Config/Http/Send/Tasks/Token` |
+| `InstanceCommands` | 目录打开、模组启停/删除 | `LauncherContext.Config/RefreshState` |
+| `InstanceMaintenanceCommands` | 实例克隆与导出 | `LauncherContext.Config/Tasks` |
+| `LaunchOptionsCommands` | 启动选项读写 | `LauncherContext.Config/RefreshState/Send/Store` |
+| `LauncherContext` | 共享运行时（配置、HTTP、队列、会话、状态回推） | `ConfigStore`、`NetworkPolicyHandler`、`CommunityService`、`DownloadExecutor`、`LauncherTaskQueue`、`RunningGameRegistry`、`AccountSessionCache`、`MicrosoftAccountService`、`MuaAccountService` |
+| `MuaProfileSelection` | MUA 多角色选择的短期状态 | `LauncherContext.Send/Token` |
+| `ResourceChoiceCommands` | 资源版本列表与排队 | `LauncherContext.Config/Http/Send/Tasks/Token` |
+| `ResourceCommands` | 原版/Modrinth 搜索与安装 | `LauncherContext.Config/Http/Send/Store/Tasks/Token` |
+| `SaveCommands` | 存档备份与恢复 | `LauncherContext.Config/Games/Send/Store/Token` |
+| `SettingsCommands` | 设置、Java 扫描、数据源保存/启用 | `LauncherContext.Config/RefreshState/Send/Store/Token` |
+| `UninstallCommands` | 卸载预览与应用 | `LauncherContext.Config/Games/Send/Tasks/Token` |
+
+#### 8.2.2 Services（6 个）
+
+| 组件 | 说明 | 依赖面 |
+| --- | --- | --- |
+| `AvatarImage` | 把皮肤字节编码为 PNG Data URI | `AvatarRenderer`（WPF 渲染）、`PngBitmapEncoder` |
+| `ConfigStore` | `config.json` 读取、迁移、保存 | `AppConfig`（Models） |
+| `DownloadExecutor` | 按任务类型执行下载/安装/维护 | `InstanceOperationExecutor` 与 Core 的 `OperationRecord`/`OperationContext` |
+| `InstanceSnapshot` | 捕获实例根目录、名称、要求与启动设置 | `AppConfig`、Core 实例/包类型 |
+| `LauncherStateBuilder` | 组装前端 `state` 快照 | `AppConfig`、`VersionCatalog`、收藏快照参数（由调用方传入） |
+| `VersionCatalog` | 版本目录扫描、实例与模组读取 | `AppConfig`、`ModInfo`/`VersionDetails` 等 Models |
+
+#### 8.2.3 Authentication（3 个）
+
+| 组件 | 说明 | 依赖面 |
+| --- | --- | --- |
+| `AvatarRenderer` | 皮肤/默认头像渲染 | WPF `BitmapSource`/`PngBitmapEncoder` |
+| `MicrosoftAccountService` | 微软登录、会话刷新、令牌存储 | `ProtectedAccountStorage`、`MinecraftOwnershipGuard`、`AuthenticationCheckpoint`、`IWebUI`、`HttpClient` |
+| `MuaAccountService` | MUA 登录、角色、元数据 | `ProtectedAccountStorage`、`HttpClient` |
+
+### 8.3 A 类（13 个）
+
+| 组件 | 位置 | 说明 |
+| --- | --- | --- |
+| `ProtocolValues` | `UseCases/ProtocolValues.cs` | 协议字段类型、实例路径、离线 UUID 校验；只依赖 BCL |
+| `AccountSessionCache` | `Services/AccountSessionCache.cs` | 进程内已验证会话缓存；依赖 CmlLib 会话类型与可注入时钟 |
+| `CommunityService` | `Services/CommunityService.cs` | 社区 URL 连通性测试与读取；只依赖 `HttpClient` |
+| `InstallationProgress` | `Services/InstallationProgress.cs` | 安装阶段的进度计算；只依赖 Core `OperationContext` |
+| `InstanceOperationExecutor` | `Services/InstanceOperationExecutor.cs` | 实例级维护执行器；只依赖 Core 队列记录与回调 |
+| `InstanceRequirements` | `Services/InstanceRequirements.cs` | 读取实例安装元数据；只依赖 Core 的类型与 JSON |
+| `LauncherTaskQueue` | `Services/LauncherTaskQueue.cs` | 持久任务队列；只依赖 Core `OperationCoordinator` 与注入的执行委托 |
+| `PreviewCache<T>` | `Services/PreviewCache.cs` | 通用、带过期的预览缓存 |
+| `ServerPingService` | `Services/ServerPingService.cs` | Minecraft SLP 查询；只依赖 BCL 网络/JSON |
+| `AuthenticationCheckpoint` | `Authentication/AuthenticationCheckpoint.cs` | 认证阶段日志钩子；只依赖 XboxAuthNet 接口 |
+| `MinecraftOwnershipGuard` | `Authentication/MinecraftOwnershipGuard.cs` | 正版资格校验；依赖 CmlLib 认证上下文 |
+| `ProtectedAccountStorage` | `Authentication/ProtectedAccountStorage.cs` | DPAPI 账号存储；依赖 `IJsonStorage` 与 BCL 加密 |
+| `AppConfig` | `Models/AppConfig.cs` | 配置数据模型（叶子类型），只依赖 BCL/集合 |
+
+### 8.4 `LauncherContext` 依赖成员签名
+
+B 组件声明依赖时，按以下签名书写：
 
 ```text
 AppConfig Config { get; }
@@ -215,7 +267,7 @@ void SendTasks()
 void SendAccountState()
 ```
 
-### 8.2 常用被依赖成员签名
+### 8.5 常用被依赖成员签名
 
 新增依赖时，按以下签名写到 `<remarks>`；未列出的成员以源文件为准，不得只写类型名。
 

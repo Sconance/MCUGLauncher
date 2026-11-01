@@ -10,7 +10,7 @@
 | 核心 | MCUGLauncher.Core | 校验下载、依赖解析、事务安装、实例和游戏会话 |
 | 页面 | Ui/*.js、styles.css | 展示与明确的交互命令；后台任务独立于页面 |
 
-后端组件的分级、依赖声明与 Core 下沉标准见 [后端开发规范](BACKEND_DEVELOPMENT.md)。
+后端组件的分级、依赖声明与 Core 下沉标准见 [后端开发规范](../BACKEND_DEVELOPMENT.md)。
 
 ## fix 合并对应关系
 
