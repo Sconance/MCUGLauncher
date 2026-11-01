@@ -50,7 +50,9 @@ const assert = require('node:assert/strict');
       },
     };
   });
-  const base = pathToFileURL(path.resolve(__dirname, '../../src/MCUGLauncher.Avalonia/Ui/index.html')).href;
+  const base = pathToFileURL(
+    path.resolve(__dirname, '../../src/MCUGLauncher.Avalonia/Ui/index.html')
+  ).href;
   const output = path.resolve(__dirname, '../../work/verify/report-ui');
   fs.mkdirSync(output, { recursive: true });
   for (const [width, height] of [
