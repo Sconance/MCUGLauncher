@@ -101,10 +101,30 @@ public partial class ShellWindow : Window
     void RenderSettings()
     {
         AddHeading("设置");
-        Add("游戏目录：" + ReadString(state, "root"));
-        Add("Java：" + (ReadString(state, "java") is { Length: > 0 } java ? java : "自动"));
-        Add("内存：" + (state.TryGetProperty("ram", out var ram) && ram.TryGetInt32(out var value) ? value + " MB" : "默认"));
-        Add("说明：设置页的原生编辑将在阶段 2 接入，当前可通过“经典界面”修改。");
+        var root = new TextBox { Text = ReadString(state, "root"), Watermark = "游戏根目录" };
+        var java = new TextBox { Text = ReadString(state, "java"), Watermark = "Java 路径（留空自动）" };
+        var ram = new TextBox
+        {
+            Text = state.TryGetProperty("ram", out var ramValue) && ramValue.TryGetInt32(out var value) ? value.ToString() : "4096",
+            Watermark = "内存 MB"
+        };
+        Add("游戏目录");
+        Content.Children.Add(root);
+        Add("Java");
+        Content.Children.Add(java);
+        Add("内存（MB）");
+        Content.Children.Add(ram);
+
+        var save = new Button { Content = "保存设置", HorizontalAlignment = HorizontalAlignment.Left };
+        save.Click += async (_, _) =>
+        {
+            var memory = int.TryParse(ram.Text, out var parsed) ? Math.Clamp(parsed, 512, 65536) : 4096;
+            await facade.SaveSettingsAsync(root.Text?.Trim() ?? "", java.Text?.Trim() ?? "", memory);
+            await facade.RequestStateAsync();
+            Add("设置已保存。");
+        };
+        Content.Children.Add(save);
+        Add("提示：目录与 Java 的浏览对话框将在下一阶段接入。");
     }
 
     void AddHeading(string text) =>
