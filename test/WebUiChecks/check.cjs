@@ -504,6 +504,8 @@ const assert = require('node:assert/strict');
     'true'
   );
   assert.equal(await page.locator('.ds-row input[readonly]').count(), 4);
+  assert.equal(await page.locator('[data-source-use]').textContent(), '已使用默认源');
+  assert.equal(await page.locator('.ds-write').count(), 0);
   assert.equal(await page.locator('.ds-result').filter({ hasText: '测试中' }).count(), 4);
   const latestTest = () =>
     page.evaluate(() =>
@@ -520,6 +522,8 @@ const assert = require('node:assert/strict');
   assert.equal(await page.locator('.ds-result').first().textContent(), '连接正常 · 25 ms');
   await page.locator('[data-source-tab="custom"]').click();
   assert.equal(await page.locator('.ds-row input[readonly]').count(), 0);
+  assert.equal(await page.locator('.ds-write').count(), 0);
+  assert.equal(await page.locator('[data-source-use]').textContent(), '使用自定义源');
   await page.locator('.ds-row input').first().fill('https://example.org/custom.json');
   await page.locator('.ds-test').first().click();
   const customRequest = await latestTest();
@@ -548,6 +552,16 @@ const assert = require('node:assert/strict');
     await page.evaluate(() => window.messages.at(-1).dataSources.announcements),
     'https://example.org/new.json'
   );
+  assert.equal(await page.evaluate(() => window.messages.at(-1).type), 'saveCustomSources');
+  await page.locator('[data-source-use]').click();
+  assert.equal(await page.evaluate(() => window.messages.at(-1).type), 'useDataSources');
+  assert.equal(await page.evaluate(() => window.messages.at(-1).mode), 'custom');
+  await page.evaluate(() => {
+    window.state.dataSourceMode = 'custom';
+    window.state.customDataSources = { ...window.state.dataSources };
+    window.McugSources.update();
+  });
+  assert.equal(await page.locator('[data-source-use]').textContent(), '已使用自定义源');
   await page.screenshot({ path: path.join(output, 'sources-custom.png') });
   console.log(
     'PASS default/custom tabs, automatic and manual tests, draft preservation and stale response rejection'

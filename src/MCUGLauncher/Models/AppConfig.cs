@@ -75,6 +75,14 @@ public sealed class AppConfig
     /// 获取或设置 数据Sources。
     /// </summary>
     public DataSourceConfig DataSources { get; set; } = new();
+    // Saved custom addresses are independent of the addresses currently in use.
+    public DataSourceConfig? CustomDataSources
+    {
+        get; set;
+    }
+    public string DataSourceMode { get; set; } = "";
+    public string EffectiveDataSourceMode => DataSourceMode is "default" or "custom" ? DataSourceMode
+        : System.Text.Json.JsonSerializer.Serialize(DataSources) == System.Text.Json.JsonSerializer.Serialize(new DataSourceConfig()) ? "default" : "custom";
     /// <summary>
     /// 获取或设置 Servers。
     /// </summary>

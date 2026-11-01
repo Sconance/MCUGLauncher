@@ -30,6 +30,34 @@ internal static class CustomizationScenarios
         store.Save(new AppConfig { Root = root, LastInstance = "1.21.1", LastVersion = "1.21.1" });
         var messages = new List<JsonElement>();
         using var context = new LauncherContext(value => messages.Add(Message(value)), store);
+        var sourceSettings = new SettingsCommands(context);
+        var originalSource = context.Config.DataSources.Announcements;
+        sourceSettings.SaveCustomSources(Message(new
+        {
+            dataSources = new
+            {
+                announcements = "https://example.org/custom.json",
+                servers = "",
+                recommendations = "",
+                quotes = ""
+            }
+        }));
+        Check(context.Config.DataSources.Announcements == originalSource && context.Config.EffectiveDataSourceMode == "default", "saving custom sources does not activate them");
+        sourceSettings.UseDataSources("custom");
+        Check(context.Config.DataSources.Announcements == "https://example.org/custom.json", "using custom sources activates the saved preset");
+        sourceSettings.SaveCustomSources(Message(new
+        {
+            dataSources = new
+            {
+                announcements = "https://example.org/edited.json",
+                servers = "",
+                recommendations = "",
+                quotes = ""
+            }
+        }));
+        Check(context.Config.DataSources.Announcements == "https://example.org/custom.json", "saving an active custom preset does not change live sources");
+        sourceSettings.UseDataSources("default");
+        Check(context.Config.DataSources.Announcements == originalSource && context.Config.CustomDataSources?.Announcements == "https://example.org/edited.json", "default selection preserves custom addresses");
         var settings = new LaunchOptionsCommands(context);
         object Options(bool auto, int ram) => new
         {

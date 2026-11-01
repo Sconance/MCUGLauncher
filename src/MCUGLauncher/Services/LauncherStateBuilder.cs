@@ -69,6 +69,8 @@ internal static class LauncherStateBuilder
                 quotes = config.DataSources.Quotes
             },
             defaultDataSources = new DataSourceConfig(),
+            customDataSources = config.CustomDataSources ?? config.DataSources,
+            dataSourceMode = config.EffectiveDataSourceMode,
             writeEndpoint = config.WriteEndpoint
         };
         return state;

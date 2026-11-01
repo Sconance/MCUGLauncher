@@ -63,7 +63,44 @@ internal sealed class SettingsCommands(LauncherContext context)
 
     public void ResetDataSources()
     {
-        context.Config.DataSources = new MCUGLauncher.Models.DataSourceConfig();
+        UseDataSources("default");
+    }
+
+    static MCUGLauncher.Models.DataSourceConfig CopySources(MCUGLauncher.Models.DataSourceConfig sources) => new()
+    {
+        Announcements = sources.Announcements,
+        Servers = sources.Servers,
+        Recommendations = sources.Recommendations,
+        Quotes = sources.Quotes
+    };
+
+    public void SaveCustomSources(JsonElement message)
+    {
+        var sources = message.GetProperty("dataSources");
+        // Retain the active mode before saving a separate editable preset.
+        context.Config.DataSourceMode = context.Config.EffectiveDataSourceMode;
+        context.Config.CustomDataSources = new()
+        {
+            Announcements = ReadString(sources, "announcements").Trim(),
+            Servers = ReadString(sources, "servers").Trim(),
+            Recommendations = ReadString(sources, "recommendations").Trim(),
+            Quotes = ReadString(sources, "quotes").Trim()
+        };
+        context.Store.Save(context.Config);
+        context.Send(new
+        {
+            type = "settingsSaved"
+        });
+        context.RefreshState();
+    }
+
+    public void UseDataSources(string mode)
+    {
+        if (mode is not ("default" or "custom"))
+            throw new ArgumentException("未知数据源类型。");
+        context.Config.CustomDataSources ??= CopySources(context.Config.DataSources);
+        context.Config.DataSources = mode == "default" ? new() : CopySources(context.Config.CustomDataSources);
+        context.Config.DataSourceMode = mode;
         context.Store.Save(context.Config);
         context.RefreshState();
     }

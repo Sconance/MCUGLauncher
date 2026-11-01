@@ -2,7 +2,6 @@
 (() => {
   let tab = 'default';
   let draft;
-  let writeDraft;
   let visit = '';
   let sequence = 0;
   const tests = new Map();
@@ -11,7 +10,9 @@
   const defaults = () =>
     window.state?.defaultDataSources || Object.fromEntries(DS.map((d) => [d.key, d.url]));
   const values = () =>
-    tab === 'default' ? defaults() : (draft ||= { ...window.state?.dataSources });
+    tab === 'default'
+      ? defaults()
+      : (draft ||= { ...(window.state?.customDataSources || window.state?.dataSources) });
   function page() {
     const sources = values();
     const rows = DS.map(
@@ -23,7 +24,7 @@
       settingsSidebar('datasource'),
       `${pageHead('数据源设置', '打开页面自动测试，也可逐项手动测试；测试不会切换正在使用的数据源。')}
       <div class="ds-tabs" role="tablist" aria-label="数据源类型"><button class="btn ${tab === 'default' ? 'btn-primary' : 'btn-ghost'}" role="tab" aria-selected="${tab === 'default'}" data-source-tab="default">默认源</button><button class="btn ${tab === 'custom' ? 'btn-primary' : 'btn-ghost'}" role="tab" aria-selected="${tab === 'custom'}" data-source-tab="custom">自定义源</button></div>
-      <section class="card settings-card" data-source-page="${tab}"><div class="ds-rows">${rows}</div>${tab === 'custom' ? `<div class="ds-write"><div class="ds-label">写入接口（可选）</div><input class="input" value="${escapeHtml(writeDraft ?? window.state?.writeEndpoint ?? '')}" placeholder="留空只保存本地内容"></div>` : ''}<div class="ds-footer"><button class="btn btn-primary" data-source-save>${tab === 'default' ? '使用默认源' : '保存自定义源'}</button></div></section>`
+      <section class="card settings-card" data-source-page="${tab}"><div class="ds-rows">${rows}</div><p class="hint">${tab === 'custom' ? '保存仅保留地址；使用自定义源会应用已保存的地址，未保存的修改不会生效。' : '默认地址只读，测试不会改变当前使用的数据源。'}</p><div class="ds-footer">${tab === 'custom' ? '<button class="btn btn-ghost" data-source-save>保存自定义源</button>' : ''}<button class="btn btn-primary" data-source-use></button></div></section>`
     );
   }
   function paint(row, test) {
@@ -71,19 +72,29 @@
       });
       if (automatic) test(row);
     });
-    root
-      .querySelector('.ds-write input')
-      ?.addEventListener('input', (event) => (writeDraft = event.target.value));
-    root.querySelector('[data-source-save]').addEventListener('click', () => {
-      if (tab === 'default') post({ type: 'resetDataSources' });
-      else
-        post({
-          type: 'saveSettings',
-          dataSources: { ...draft },
-          writeEndpoint: writeDraft ?? window.state?.writeEndpoint ?? '',
-        });
+    root.querySelector('[data-source-save]')?.addEventListener('click', () => {
+      post({ type: 'saveCustomSources', dataSources: { ...draft } });
     });
+    root
+      .querySelector('[data-source-use]')
+      .addEventListener('click', () => post({ type: 'useDataSources', mode: tab }));
+    status();
   }
+  function status() {
+    const button = document.querySelector('[data-source-use]');
+    if (!button) return;
+    const state = window.state || {};
+    const active = state.dataSourceMode || 'default';
+    const saved = state.customDataSources || state.dataSources || {};
+    const current = state.dataSources || {};
+    const applied =
+      active === tab &&
+      (tab === 'default' || DS.every((d) => (saved[d.key] || '') === (current[d.key] || '')));
+    button.textContent =
+      (applied ? '已使用' : '使用') + (tab === 'default' ? '默认源' : '自定义源');
+    button.disabled = applied;
+  }
+
   function result(message) {
     const request = pending.get(message.name);
     if (!request || request.url !== message.url || message.requestId !== request.requestId) return;
@@ -95,6 +106,7 @@
   }
   // Saved state does not overwrite an in-progress custom draft or the read-only defaults.
   function update() {
+    status();
     mount();
   }
   window.McugSources = { page, mount, result, update };

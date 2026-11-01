@@ -132,6 +132,12 @@ internal sealed class LauncherApplication : IDisposable
                 case "installLoader":
                     installationCommands.InstallLoader(root);
                     break;
+                case "saveCustomSources":
+                    settingsCommands.SaveCustomSources(root);
+                    break;
+                case "useDataSources":
+                    settingsCommands.UseDataSources(ReadString(root, "mode"));
+                    break;
                 case "resetDataSources":
                     settingsCommands.ResetDataSources();
                     break;
