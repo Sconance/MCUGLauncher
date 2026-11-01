@@ -23,6 +23,7 @@ public partial class ShellWindow : Window
         facade = new LauncherFacade(new ShellDesktopHost());
         facade.MessageReceived += OnMessage;
         HomeButton.Click += (_, _) => Show("home");
+        AccountButton.Click += (_, _) => Show("account");
         TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
         SettingsButton.Click += (_, _) => Show("settings");
         ClassicButton.Click += (_, _) => new MainWindow().Show();
@@ -64,6 +65,8 @@ public partial class ShellWindow : Window
         Content.Children.Clear();
         if (page == "settings")
             RenderSettings();
+        else if (page == "account")
+            RenderAccount();
         else if (page == "tasks")
             RenderTasks();
         else
@@ -136,6 +139,42 @@ public partial class ShellWindow : Window
         };
         Content.Children.Add(save);
         Add("提示：目录与 Java 的浏览对话框将在下一阶段接入。");
+    }
+
+    void RenderAccount()
+    {
+        AddHeading("账号");
+        Add("当前：" + (ReadString(state, "accountLabel") is { Length: > 0 } label ? label : "离线账号"));
+        Add("玩家：" + ReadString(state, "player"));
+
+        var microsoft = new Button { Content = "登录微软账号", HorizontalAlignment = HorizontalAlignment.Left };
+        microsoft.Click += async (_, _) => { await facade.LoginMicrosoftAsync(); await facade.RequestStateAsync(); };
+        Content.Children.Add(microsoft);
+
+        AddHeading("MUA 账号");
+        var account = new TextBox { Watermark = "MUA 账号" };
+        var password = new TextBox { Watermark = "密码", PasswordChar = '●' };
+        Content.Children.Add(account);
+        Content.Children.Add(password);
+        var muaLogin = new Button { Content = "登录 MUA", HorizontalAlignment = HorizontalAlignment.Left };
+        muaLogin.Click += async (_, _) =>
+        {
+            await facade.LoginMuaAsync(account.Text?.Trim() ?? "", password.Text ?? "");
+            await facade.RequestStateAsync();
+        };
+        Content.Children.Add(muaLogin);
+
+        var offline = new Button { Content = "切换到离线账号", HorizontalAlignment = HorizontalAlignment.Left };
+        offline.Click += async (_, _) => { await facade.SwitchAccountModeAsync("offline"); await facade.RequestStateAsync(); };
+        Content.Children.Add(offline);
+
+        var forget = new Button { Content = "忘记已保存账号", HorizontalAlignment = HorizontalAlignment.Left };
+        forget.Click += async (_, _) =>
+        {
+            await facade.ForgetAccountAsync(ReadString(state, "accountType") is { Length: > 0 } mode ? mode : "offline");
+            await facade.RequestStateAsync();
+        };
+        Content.Children.Add(forget);
     }
 
     void RenderTasks()

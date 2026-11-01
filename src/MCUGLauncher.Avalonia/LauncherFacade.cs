@@ -52,6 +52,30 @@ internal sealed class LauncherFacade : IDisposable
             action
         }, Options));
 
+    public Task LoginMicrosoftAsync() => application.HandleAsync("""{"type":"loginMicrosoft"}""");
+
+    public Task LoginMuaAsync(string account, string password) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "loginMua",
+            account,
+            password
+        }, Options));
+
+    public Task SwitchAccountModeAsync(string mode) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "switchAccountMode",
+            account = mode
+        }, Options));
+
+    public Task ForgetAccountAsync(string mode) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "forgetAccount",
+            account = mode
+        }, Options));
+
     void Send(object payload)
     {
         var json = JsonSerializer.Serialize(payload, Options);
