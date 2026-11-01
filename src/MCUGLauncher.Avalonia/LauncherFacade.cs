@@ -11,6 +11,11 @@ internal sealed class LauncherFacade : IDisposable
     readonly LauncherApplication application;
 
     public event Action<JsonElement>? MessageReceived;
+    public event Action<LauncherState>? StateChanged;
+    public LauncherState? State
+    {
+        get; private set;
+    }
 
     public LauncherFacade(IDesktopHost desktop)
     {
@@ -120,7 +125,13 @@ internal sealed class LauncherFacade : IDisposable
     {
         var json = JsonSerializer.Serialize(payload, Options);
         using var document = JsonDocument.Parse(json);
-        MessageReceived?.Invoke(document.RootElement.Clone());
+        var root = document.RootElement.Clone();
+        if (root.TryGetProperty("type", out var type) && type.GetString() == "state")
+        {
+            State = LauncherState.From(root);
+            StateChanged?.Invoke(State);
+        }
+        MessageReceived?.Invoke(root);
     }
 
     public void Dispose() => application.Dispose();
