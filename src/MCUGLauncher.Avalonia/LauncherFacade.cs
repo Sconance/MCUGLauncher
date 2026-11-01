@@ -76,6 +76,22 @@ internal sealed class LauncherFacade : IDisposable
             account = mode
         }, Options));
 
+    public Task SearchContentAsync(string category, string query) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "searchContent",
+            category,
+            query
+        }, Options));
+
+    public Task InstallContentAsync(string id, string category) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "installContent",
+            id,
+            category
+        }, Options));
+
     void Send(object payload)
     {
         var json = JsonSerializer.Serialize(payload, Options);

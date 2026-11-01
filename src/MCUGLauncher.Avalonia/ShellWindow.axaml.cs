@@ -13,6 +13,7 @@ public partial class ShellWindow : Window
     readonly LauncherFacade facade;
     JsonElement state;
     JsonElement tasks;
+    JsonElement contentItems;
     string page = "home";
 
     public ShellWindow()
@@ -23,6 +24,7 @@ public partial class ShellWindow : Window
         facade = new LauncherFacade(new ShellDesktopHost());
         facade.MessageReceived += OnMessage;
         HomeButton.Click += (_, _) => Show("home");
+        DownloadButton.Click += (_, _) => Show("download");
         AccountButton.Click += (_, _) => Show("account");
         TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
         SettingsButton.Click += (_, _) => Show("settings");
@@ -46,6 +48,17 @@ public partial class ShellWindow : Window
             state = message;
             Render();
         }
+        else if (type.GetString() == "contentList")
+        {
+            if (message.TryGetProperty("items", out var items))
+                contentItems = items.Clone();
+            if (page == "download")
+                Render();
+        }
+        else if (type.GetString() == "contentError")
+        {
+            Add("下载失败：" + ReadString(message, "message"));
+        }
         else if (type.GetString() == "tasks")
         {
             if (message.TryGetProperty("items", out var items))
@@ -65,6 +78,8 @@ public partial class ShellWindow : Window
         Content.Children.Clear();
         if (page == "settings")
             RenderSettings();
+        else if (page == "download")
+            RenderDownload();
         else if (page == "account")
             RenderAccount();
         else if (page == "tasks")
@@ -139,6 +154,48 @@ public partial class ShellWindow : Window
         };
         Content.Children.Add(save);
         Add("提示：目录与 Java 的浏览对话框将在下一阶段接入。");
+    }
+
+    void RenderDownload()
+    {
+        AddHeading("下载");
+        var category = new ComboBox
+        {
+            ItemsSource = new[] { "mod", "modpack", "resourcepack", "shader", "datapack" },
+            SelectedIndex = 0,
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
+        var query = new TextBox { Watermark = "搜索关键词", Width = 320, HorizontalAlignment = HorizontalAlignment.Left };
+        Content.Children.Add(category);
+        Content.Children.Add(query);
+        var search = new Button { Content = "搜索", HorizontalAlignment = HorizontalAlignment.Left };
+        search.Click += async (_, _) =>
+            await facade.SearchContentAsync(category.SelectedItem as string ?? "mod", query.Text?.Trim() ?? "");
+        Content.Children.Add(search);
+
+        if (contentItems.ValueKind == JsonValueKind.Array && contentItems.GetArrayLength() > 0)
+        {
+            foreach (var item in contentItems.EnumerateArray())
+            {
+                var id = ReadString(item, "id");
+                var name = ReadString(item, "name");
+                var desc = ReadString(item, "description");
+                Add(name + (desc.Length > 0 ? "  ·  " + desc : ""));
+                var install = new Button { Content = "安装 " + name, HorizontalAlignment = HorizontalAlignment.Left };
+                var projectId = id;
+                var type = category.SelectedItem as string ?? "mod";
+                install.Click += async (_, _) =>
+                {
+                    await facade.InstallContentAsync(projectId, type);
+                    await facade.RequestStateAsync();
+                };
+                Content.Children.Add(install);
+            }
+        }
+        else
+        {
+            Add("输入关键词后搜索 Modrinth。");
+        }
     }
 
     void RenderAccount()
