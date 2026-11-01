@@ -19,14 +19,14 @@ public sealed class MicrosoftAccountService
     readonly ProtectedAccountStorage storage;
     readonly HttpClient http;
     readonly string directory;
-    readonly XboxAuthNet.OAuth.CodeFlow.IWebUI? browser;
+    readonly XboxAuthNet.OAuth.CodeFlow.IWebUI browser;
 
     public MicrosoftAccountService(string directory, HttpClient client, XboxAuthNet.OAuth.CodeFlow.IWebUI? browser = null)
     {
         this.directory = directory;
         Directory.CreateDirectory(directory);
         http = client;
-        this.browser = browser;
+        this.browser = browser ?? new MicrosoftLoginWebUi(directory);
         storage = new(Path.Combine(directory, "microsoft-account.dat"));
     }
 
@@ -88,7 +88,7 @@ public sealed class MicrosoftAccountService
             var account = interactive ? manager.NewAccount() : manager.GetDefaultAccount();
             var authenticator = handler.CreateAuthenticator(account, token);
             if (interactive)
-                authenticator.AddForceMicrosoftOAuthForJE(oauth => browser == null ? oauth.Interactive() : oauth.Interactive(flow => flow.WithWebUI(browser)));
+                authenticator.AddForceMicrosoftOAuthForJE(oauth => oauth.Interactive(flow => flow.WithWebUI(browser)));
             else
                 authenticator.AddMicrosoftOAuthForJE(oauth => oauth.Silent());
             // Full Xbox flow supports the account/family checks omitted by the old basic-only path.

@@ -42,13 +42,13 @@ internal sealed class AccountCommands(LauncherContext context)
             });
             context.RefreshState();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             context.Send(new
             {
                 type = "authResult",
                 ok = false,
-                message = "微软登录未完成。请检查网络后重试；已保存的账号不会被覆盖。"
+                message = ex is AccountLoginException ? ex.Message : MicrosoftAccountService.Translate(ex, false).Message
             });
         }
     }

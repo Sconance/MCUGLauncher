@@ -3,10 +3,10 @@ function microsoftLoginModal() {
   return `<div class="overlay"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="ms-title">
     <div class="modal-head"><div class="modal-icon">${icon('users')}</div><div><div class="modal-title" id="ms-title">正版账号登录</div><div class="modal-sub">使用 Microsoft 账号完成正版验证，登录后可启动正版实例。</div></div><a class="modal-close" href="?screen=home" aria-label="关闭">${icon('x')}</a></div>
     <div class="modal-body">
-      <div class="inline-note">${icon('info')} 点击下方按钮后，会打开系统默认浏览器完成 Microsoft 授权；授权完成后回到启动器即可。</div>
+      <div class="inline-note">${icon('info')} 点击下方按钮后，会打开独立的 Microsoft 登录窗口；完成授权后会自动返回启动器。</div>
       <div class="modal-status green" style="margin-top:14px">${icon('check')}<div><b>启动器不会保存你的密码</b><br>只保存用于启动游戏的授权令牌，可在「切换本地账号」中退出。</div></div>
     </div>
-    <div class="modal-foot"><a class="btn btn-ghost" href="?screen=home">取消</a><span class="spacer"></span><button class="btn btn-primary" type="button" data-ms-login>${icon('external')} 打开浏览器登录</button></div>
+    <div class="modal-foot"><a class="btn btn-ghost" href="?screen=home">取消</a><span class="spacer"></span><button class="btn btn-primary" type="button" data-ms-login>${icon('external')} 打开登录窗口</button></div>
   </section></div>`;
 }
 

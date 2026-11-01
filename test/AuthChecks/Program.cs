@@ -12,6 +12,19 @@ using XboxAuthNet.Game.Accounts;
 using XboxAuthNet.Game.Authenticators;
 using XboxAuthNet.Game.SessionStorages;
 
+// An already-cancelled login must not create a native window or require an Application.
+using (var cancelledLogin = new CancellationTokenSource())
+{
+    cancelledLogin.Cancel();
+    try
+    {
+        await new MicrosoftLoginWebUi(Path.GetTempPath()).DisplayDialogAndInterceptUri(
+            new Uri("https://login.live.com/"), null!, cancelledLogin.Token);
+        throw new Exception("Cancelled login opened a UI");
+    }
+    catch (OperationCanceledException) { Console.WriteLine("PASS cancelled login does not open a browser window"); }
+}
+
 if (args.Contains("--avatar") || args.Contains("--avatar-live"))
 {
     AvatarChecks.Run(args.Contains("--avatar-live"));

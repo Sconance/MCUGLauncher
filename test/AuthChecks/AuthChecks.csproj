@@ -10,6 +10,7 @@
     <ProjectReference Include="../../src/MCUGLauncher.Core/MCUGLauncher.Core.csproj" />
     <PackageReference Include="CmlLib.Core.Auth.Microsoft" Version="3.3.0" />
     <Compile Include="../../src/MCUGLauncher/Authentication/ProtectedAccountStorage.cs" Link="ProtectedAccountStorage.cs" />
+    <Compile Include="../../src/MCUGLauncher/Authentication/MicrosoftLoginWebUi.cs" Link="MicrosoftLoginWebUi.cs" />
     <Compile Include="../../src/MCUGLauncher/Authentication/MicrosoftAccountService.cs" Link="MicrosoftAccountService.cs" />
     <Compile Include="../../src/MCUGLauncher/Authentication/MinecraftOwnershipGuard.cs" Link="MinecraftOwnershipGuard.cs" />
     <Compile Include="../../src/MCUGLauncher/Authentication/AvatarRenderer.cs" Link="AvatarRenderer.cs" />
