@@ -171,7 +171,7 @@ dotnet publish src\MCUGLauncher\MCUGLauncher.csproj -c Release -r win-x64 `
 
 ## 变更记录
 
-见 [CHANGELOG.md](CHANGELOG.md) 与 [docs/release-notes-0.22.3.md](docs/release-notes-0.22.3.md)。
+见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 许可
 

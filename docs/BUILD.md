@@ -6,9 +6,9 @@
 | --- | --- |
 | `src/MCUGLauncher/` | WPF 界面、认证、图标与功能交互 |
 | `src/MCUGLauncher.Core/` | 下载、Java、实例、整合包等服务 |
-| `test/` | 22 个独立检查程序 |
+| `test/` | 27 个检查项目（含 WebBridgeChecks 与 WebUiChecks） |
 | `tools/` | 4 个界面预览程序与源码格式工具 |
-| `scripts/` | 构建、发布、指定检查与静态布局校验 |
+| `scripts/` | 构建、发布、指定检查、布局与 Web 边界校验 |
 | `docs/` | 使用指南、构建说明、依赖清单、历史测试记录与截图 |
 
 命名空间与兼容存储路径保留内部旧名 BlockLaunch，不影响产品名称。
@@ -44,6 +44,16 @@ PowerShell 脚本支持从任意工作目录调用，执行时会切换到仓库
 .\scripts\run-checks.ps1 -Name CompatibilityChecks
 .\scripts\run-checks.ps1 -Name DownloadChecks,DependencyChecks
 .\scripts\run-checks.ps1 -Name AuthChecks -CheckArguments '--avatar'
+.\scripts\run-checks.ps1 -Name WebBridgeChecks
+python scripts/check-web-boundaries.py
+```
+
+Web 界面检查使用 Node + Playwright：
+
+```powershell
+npm ci --ignore-scripts --prefix test/WebUiChecks
+npm run format:check --prefix test/WebUiChecks
+npm test --prefix test/WebUiChecks
 ```
 
 直接运行的等价示例：

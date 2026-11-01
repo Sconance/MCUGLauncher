@@ -1,6 +1,6 @@
 # 路线图（0.22.3 及之后）
 
-0.22.3 把界面迁移到 **WebView2 + HTML/CSS/JS**，C# 只保留服务与消息桥接。`0.22.3-fix` 分支修复了原分支的编译失败、SDK 固定、CI 覆盖与 VS Code 配置问题，审查说明见 [0.22.3-fix 审查指南](docs/REVIEW_0.22.3-fix.md)。
+0.22.3 把界面迁移到 **WebView2 + HTML/CSS/JS**，C# 只保留服务与消息桥接。`0.22.3-fix` 修复了原分支的编译失败、SDK 固定、CI 覆盖与 VS Code 配置问题；当前 `0.22.3-codex` 的分层、验收范围与剩余缺口见 [整理记录](docs/REVIEW_0.22.3-codex.md)。
 
 ## 已完成（0.22.3-fix）
 
@@ -33,7 +33,7 @@
 ### 3. 发布
 - [ ] 版本号 0.22.3 的 CHANGELOG/README 一致性（`python scripts/check-version.py`）。
 - [ ] 合并到 `main` 后打 `v0.22.3` 标签，从标签构建完整版与 Lite 版并记录哈希。
-- [ ] 在 GitHub Releases 上传附件与发布说明（参考 [docs/releases](docs/releases/README.md)）。
+- [ ] 在 GitHub Releases 上传附件与发布说明（发布说明以 CHANGELOG 对应小节为准）。
 
 ## 审查约定
 

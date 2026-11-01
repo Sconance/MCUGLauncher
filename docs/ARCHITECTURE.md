@@ -22,4 +22,4 @@
 
 不能把 fix 的旧命令栈与以上模块并排注册，否则会出现两套账号、下载或配置流程。共享 Core、认证、服务及测试的注释已合入。
 
-原 fix 架构记录保留在 [历史快照](archive/0.22.3-fix-architecture.md)，合并选择与验证见 [合并记录](MERGE_0.22.3-fix.md)。
+原 fix 架构记录保留在 [历史快照](archive/0.22.3-fix-architecture.md)。
