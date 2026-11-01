@@ -31,7 +31,7 @@ internal sealed class LauncherApplication : IDisposable
     readonly CommunityCommands communityCommands;
 
     public AppConfig Config => context.Config;
-    public LauncherApplication(Action<object> send, IDesktopHost desktop, ConfigStore? store = null, Action<Action>? dispatch = null, Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null)
+    public LauncherApplication(Action<object> send, IDesktopHost desktop, ConfigStore? store = null, Action<Action>? dispatch = null, Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null, Func<byte[]?, string>? avatarEncoder = null)
     {
         this.desktop = desktop;
         this.dispatch = dispatch ?? (action => action());
@@ -50,7 +50,7 @@ internal sealed class LauncherApplication : IDisposable
         resourceCommands = new ResourceCommands(context);
         resourceChoices = new ResourceChoiceCommands(context);
         launchOptions = new LaunchOptionsCommands(context);
-        avatars = new AvatarCommands(context);
+        avatars = new AvatarCommands(context, avatarEncoder ?? (_ => ""));
         settingsCommands = new SettingsCommands(context);
         diagnosticCommands = new DiagnosticCommands(context);
         communityCommands = new CommunityCommands(context);

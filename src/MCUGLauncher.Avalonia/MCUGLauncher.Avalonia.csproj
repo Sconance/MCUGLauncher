@@ -10,6 +10,7 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../MCUGLauncher.App/MCUGLauncher.App.csproj" />
     <ProjectReference Include="../MCUGLauncher.Core/MCUGLauncher.Core.csproj" />
     <PackageReference Include="Avalonia" Version="11.3.22" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />

@@ -6,7 +6,7 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 namespace MCUGLauncher.UseCases;
 
 // Reuses bounded skin download and PNG validation. Skin selection changes launcher appearance only.
-internal sealed class AvatarCommands(LauncherContext context)
+internal sealed class AvatarCommands(LauncherContext context, Func<byte[]?, string> encode)
 {
     public async Task ReadAsync()
     {
@@ -14,7 +14,7 @@ internal sealed class AvatarCommands(LauncherContext context)
         var mode = context.Config.AccountType;
         var label = "史蒂夫默认头像";
         var fallback = true;
-        var image = AvatarImage.Encode(null);
+        var image = encode(null);
         try
         {
             byte[]? bytes = null;
@@ -28,7 +28,7 @@ internal sealed class AvatarCommands(LauncherContext context)
                 var saved = context.Microsoft?.ReadSavedAccount();
                 if (!string.IsNullOrWhiteSpace(saved?.SkinUrl))
                 {
-                    bytes = await AvatarRenderer.Download(context.Http, AvatarRenderer.SkinUri(saved.SkinUrl), context.Token);
+                    bytes = await SkinAssets.Download(context.Http, SkinAssets.SkinUri(saved.SkinUrl), context.Token);
                     label = "正版皮肤";
                 }
             }
@@ -37,12 +37,12 @@ internal sealed class AvatarCommands(LauncherContext context)
                 var metadata = await context.Mua.Metadata(context.Token);
                 var uri = await context.Mua.Skin(saved, metadata, context.Token);
                 if (uri != null)
-                    bytes = await AvatarRenderer.Download(context.Http, uri, context.Token);
+                    bytes = await SkinAssets.Download(context.Http, uri, context.Token);
                 label = bytes == null ? label : "MUA 皮肤";
             }
             if (bytes != null)
             {
-                image = AvatarImage.Encode(bytes);
+                image = encode(bytes);
                 fallback = false;
             }
         }
@@ -70,7 +70,7 @@ internal sealed class AvatarCommands(LauncherContext context)
         else
         {
             var bytes = await ReadLocalAsync(path);
-            AvatarImage.Encode(bytes);
+            encode(bytes);
             var destination = Path.Combine(context.Store.DataDirectory, "offline-skin.png");
             await File.WriteAllBytesAsync(destination, bytes, context.Token);
             context.Config.SkinFile = destination;

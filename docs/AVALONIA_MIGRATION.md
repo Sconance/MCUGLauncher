@@ -17,13 +17,14 @@
 
 阶段 1 不替换 WPF 主程序，保证现有 `MCUGLauncher` 仍可构建、发布。
 
-### 阶段 2：业务层去 WPF
+### 阶段 2：业务层去 WPF（进行中）
 
-- 把 `UseCases`、`Services`、`Authentication`、`Models` 中仅依赖 WPF 的部分拆出：
-  - `AvatarRenderer`/`AvatarImage` 改为 Avalonia `WriteableBitmap`；
-  - `MicrosoftLoginWindow` 改为 Avalonia `Window` + WebView2；
-  - `IDesktopHost` 的对话框改为 Avalonia `StorageProvider`（异步）。
-- 保持 Core 不依赖 UI 的边界。
+- 新建 `src/MCUGLauncher.App`（`net8.0-windows`，无 WPF）：
+  - 迁入 `UseCases/`（22 文件）、`Services/`（13 个非 UI 服务）、`Models/AppConfig`、非 UI 的 `Authentication/`（微软/MUA 服务、DPAPI 存储、认证检查点）；
+  - WPF 项目保留 `AvatarRenderer`、`AvatarImage`、`MicrosoftLoginWindow`、`MicrosoftLoginWebUi` 等 UI 适配。
+- `AvatarCommands` 改为注入 `Func<byte[]?, string>` 头像编码；WPF 注入 `AvatarImage.Encode`，Avalonia 后续注入自己的实现。
+- 新增 `SkinAssets`（地址校验 + 有界下载），归属 App 库，避免 AvatarCommands 依赖 WPF 渲染类。
+- WPF、Avalonia 项目均引用 `MCUGLauncher.App`；`AuthChecks` 改为引用 App 库并保留 UI 文件链接。
 
 ### 阶段 3：Avalonia 主窗口功能对齐
 

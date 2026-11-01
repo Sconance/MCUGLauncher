@@ -21,6 +21,7 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../MCUGLauncher.App/MCUGLauncher.App.csproj" />
     <ProjectReference Include="../MCUGLauncher.Core/MCUGLauncher.Core.csproj" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.1823.32" />
     <PackageReference Include="CmlLib.Core.Auth.Microsoft" Version="3.3.0" />
