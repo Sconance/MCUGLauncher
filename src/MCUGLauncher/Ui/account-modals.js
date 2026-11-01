@@ -11,6 +11,9 @@ function microsoftLoginModal() {
 }
 
 function skinModal() {
+  if (window.chrome?.webview)
+    return `<div class="overlay"><section class="modal" role="dialog" aria-modal="true"><div class="modal-head"><h2>头像与皮肤</h2><a class="modal-close" href="?screen=home" aria-label="关闭">×</a></div><div class="modal-body"><div style="width:96px;height:96px" data-avatar-preview>${Avatar()}</div><h3>${escapeHtml(window.state?.player || '未登录')}</h3><p data-avatar-label>${escapeHtml(window.state?.avatarLabel || '默认头像')}</p><p>在线账号读取正版或 MUA 皮肤；离线可选择 PNG 作为启动器头像，不会上传或修改游戏内皮肤。</p>${window.state?.accountType === 'offline' ? '<button class="btn btn-primary" data-pick-offline-skin>选择本地 PNG 皮肤</button><button class="btn btn-ghost" data-default-skin>恢复默认头像</button>' : ''}<button class="btn btn-ghost" data-refresh-avatar>重新读取皮肤</button><p>披风上传与替换暂未接入。</p></div></section></div>`;
+
   const verified = Q.skin === 'verified';
   return `<div class="overlay"><section class="modal skin-modal" role="dialog" aria-modal="true" aria-labelledby="skin-title">
     <div class="modal-head"><div class="modal-icon">${icon('shirt')}</div><div><div class="modal-title" id="skin-title">皮肤与披风</div><div class="modal-sub">只改变角色外观，不影响账号安全与游戏启动。</div></div><a class="modal-close" href="?screen=home" aria-label="关闭">${icon('x')}</a></div>

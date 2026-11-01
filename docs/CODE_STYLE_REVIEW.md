@@ -43,3 +43,10 @@ AccountModeCommands 负责恢复/选择/移除流程，AccountCommands 负责交
 账号切换响应：AccountSessionCache 只持有进程内会话与校验时间，模式选择不会延长校验时间；过期校验在启动用例执行。账号通知不触发全量实例扫描或页面重建。已有请求序号继续保护切换与移除操作，避免晚到结果覆盖新选择。
 
 fix 合并详情见 [合并记录](MERGE_0.22.3-fix.md)。保留原生移动循环、异步桥接和已实现的账号/下载/维护流程；共享文件的注释合并不替换函数体。
+
+
+## 自定义配置补全
+
+ResourceChoiceCommands、LaunchOptionsCommands、MuaProfileSelection、AvatarCommands 分别管理选择流程；选择令牌固定目标目录，异步结果带请求标识避免覆盖新选择。复用 Core ContentService、InstanceCatalog、MemoryPolicy 与认证服务，不在用例构建 WPF 控件。AvatarImage 作为原生图像编码适配器，文件选择留在窗口入口。前端拆成资源选择、导入确认、启动参数、MUA 角色和头像模块，共用 dialogs.js，不继续堆入主窗口。
+
+管理员页面和公告编辑未变更。回归使用临时目录与模拟网络，不代表真实账号登录或游戏联机已经验收。

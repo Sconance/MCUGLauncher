@@ -134,7 +134,7 @@
     ];
     const inputs = document.querySelectorAll('.ds-rows .ds-row input');
     inputs.forEach((input, index) => {
-      if (values[index]) input.value = values[index];
+      if (typeof values[index] === 'string') input.value = values[index];
     });
     const write = document.querySelector('.ds-write input');
     if (write && next.writeEndpoint) write.value = next.writeEndpoint;
@@ -157,7 +157,9 @@
     const subtitle = document.querySelector('.launch-text small');
     if (subtitle) {
       const version = state?.selectedVersion || state?.selectedInstance;
-      subtitle.textContent = version ? `${version} · ${state?.ram || 4096} MB` : '选择实例后启动';
+      subtitle.textContent = version
+        ? `${version} · ${state?.autoMemory ? '自动内存' : (state?.ram || 4096) + ' MB'}`
+        : '选择实例后启动';
     }
     const versionTitle = document.querySelector('.vs-name');
     if (versionTitle && state?.selectedVersion) versionTitle.textContent = state.selectedVersion;
@@ -252,7 +254,8 @@
     });
 
     document.querySelectorAll('.version-row').forEach((row) => {
-      const name = row.querySelector('.version-copy b')?.textContent?.trim();
+      const name =
+        row.dataset.instanceKey || row.querySelector('.version-copy b')?.textContent?.trim();
       if (!name) return;
       row.querySelector('button.version-icon')?.addEventListener('click', () => {
         post({ type: 'selectVersion', version: name });
@@ -415,10 +418,14 @@
       toast('在搜索框中输入模组名称，或从列表中选择。');
     });
 
-    document.querySelectorAll('.skin-modal .btn').forEach((button) => {
-      button.disabled = true;
-      button.title = '皮肤站绑定与上传尚未接入当前版本';
-    });
+    document
+      .querySelectorAll(
+        '.skin-modal .btn:not([data-pick-offline-skin]):not([data-default-skin]):not([data-refresh-avatar])'
+      )
+      .forEach((button) => {
+        button.disabled = true;
+        button.title = '皮肤站绑定与上传尚未接入当前版本';
+      });
 
     decorateAddServer();
     decorateDataSources();
@@ -437,7 +444,14 @@
     post(
       type === 'vanilla'
         ? { type: 'vanillaVersions' }
-        : { type: 'searchContent', category: type, query: query || '', requestId }
+        : {
+            type: 'searchContent',
+            category: type,
+            query: query || '',
+            requestId,
+            game: state.catalogFilters?.[type]?.game || '',
+            loader: state.catalogFilters?.[type]?.loader || '',
+          }
     );
   }
 
@@ -459,6 +473,11 @@
     const runSearch = () => {
       const type =
         document.querySelector('[data-content-search]')?.dataset.contentSearch || Q.type || 'mod';
+      state.catalogFilters ||= {};
+      state.catalogFilters[type] = {
+        game: document.querySelector('[data-catalog-game]')?.value.trim() || '',
+        loader: document.querySelector('[data-catalog-loader]')?.value || '',
+      };
       state.catalog[type] = undefined;
       state.catalogLoading[type] = true;
       render();
@@ -482,15 +501,11 @@
     document.querySelectorAll('[data-content-install]').forEach((button) => {
       button.addEventListener('click', () => {
         const card = button.closest('.content-card');
-        const name = card?.querySelector('.content-id b')?.textContent || '该内容';
-        if (!confirm(`将「${name}」下载到当前实例？`)) return;
-        button.disabled = true;
-        button.textContent = '下载中…';
-        post({
-          type: 'installContent',
-          id: button.dataset.contentInstall,
-          category: button.dataset.contentCategory,
-        });
+        window.McugResourcePicker?.open(
+          button.dataset.contentInstall,
+          button.dataset.contentCategory,
+          card?.querySelector('.content-id b')?.textContent || '资源'
+        );
       });
     });
   }
@@ -534,6 +549,16 @@
         post({ type: 'testSource', name: DS[index]?.key || '', url: input?.value || '' });
       });
     });
+    document
+      .querySelector('[data-reset-sources]')
+      ?.addEventListener('click', () => post({ type: 'resetDataSources' }));
+    document.querySelectorAll('.ds-rows .ds-row input').forEach((input) =>
+      input.addEventListener('input', () => {
+        const result = input.closest('.ds-row').querySelector('.ds-result');
+        result.className = 'ds-result';
+        result.textContent = '地址已修改，尚未测试';
+      })
+    );
     const save = [...document.querySelectorAll('.ds-footer .btn-primary')].find((button) =>
       button.textContent.includes('保存')
     );
@@ -748,10 +773,17 @@
           if (message.ok) post({ type: 'requestState' });
           break;
         case 'testResult': {
+          state.sourceTests ||= {};
+          state.sourceTests[message.name] = message;
+          window.state.sourceTests = state.sourceTests;
           const index = DS.findIndex((item) => item.key === message.name);
           const result = document
             .querySelectorAll('.ds-rows .ds-row')
             [index]?.querySelector('.ds-result');
+          const input = document
+            .querySelectorAll('.ds-rows .ds-row')
+            [index]?.querySelector('input');
+          if (message.url && input?.value !== message.url) break;
           if (result) {
             result.className = `ds-result ${message.ok ? 'ok' : 'bad'}`;
             result.textContent = message.ok
@@ -764,7 +796,17 @@
           toast('设置已保存。');
           break;
         case 'pickedPath': {
-          if (['pack', 'exportInstance', 'gameRoot'].includes(message.target)) break;
+          if (
+            [
+              'pack',
+              'exportInstance',
+              'gameRoot',
+              'packDirectory',
+              'resourceDestination',
+              'offlineSkin',
+            ].includes(message.target)
+          )
+            break;
           const selector =
             message.target === 'java' ? '[data-setting-java]' : '[data-setting-root]';
           const input = document.querySelector(selector);

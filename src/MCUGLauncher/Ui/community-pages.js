@@ -243,6 +243,21 @@ function adminPage() {
 /* ---------------- settings: datasource ---------------- */
 
 function datasourcePage() {
+  if (window.chrome?.webview) {
+    const sources = state.dataSources || {};
+    const rows = DS.map((d) => {
+      const url = sources[d.key] ?? d.url;
+      const test = state.sourceTests?.[d.key];
+      const current = test?.url === url ? test : null;
+      return `<div class="ds-row"><div class="ds-label"><b>${escapeHtml(d.label)}</b><span>${escapeHtml(d.hint)}</span></div><div class="ds-input-wrap"><input class="input" value="${escapeHtml(url)}"></div><button class="btn btn-ghost ds-test">测试</button><div class="ds-result ${current ? (current.ok ? 'ok' : 'bad') : ''}">${current ? escapeHtml(current.ok ? '连接正常 · ' + current.ms + ' ms' : current.message) : '尚未测试'}</div></div>`;
+    }).join('');
+    return shell(
+      'settings',
+      settingsSidebar('datasource'),
+      `${pageHead('数据源设置', '四项独立保存，连接结果来自实际测试。')}<section class="card settings-card"><div class="ds-rows">${rows}</div><div class="ds-write"><div class="ds-label">写入接口（可选）</div><input class="input" value="${escapeHtml(state.writeEndpoint || '')}" placeholder="留空只保存本地内容"></div><div class="ds-footer"><button class="btn btn-primary">保存数据源</button><button class="btn btn-ghost" data-reset-sources>恢复默认</button></div></section>`
+    );
+  }
+
   const err = Q.state === 'error';
   const urls = {
     announcements: err

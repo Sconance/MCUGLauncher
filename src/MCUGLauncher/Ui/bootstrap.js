@@ -11,6 +11,7 @@
   try {
     if (!window.chrome?.webview) await load('preview-data.js');
     for (const file of [
+      'dialogs.js',
       'app.js',
       'tasks.js',
       'install.js',
@@ -22,6 +23,11 @@
       'settings-actions.js',
       'directory.js',
       'community-actions.js',
+      'resource-picker.js',
+      'pack-import.js',
+      'mua-profiles.js',
+      'launch-options.js',
+      'avatars.js',
       'host.js',
     ])
       await load(file);

@@ -30,7 +30,7 @@ function parseQuery(search) {
     panel: params.get('panel') || '',
     mode: params.get('mode') || 'instance',
     switchMenu: params.get('switch') === '1',
-    inst: params.get('inst') || '1.20.1-OptiFine_I6',
+    inst: params.get('inst') || '',
     skin: params.get('skin') || '',
     img: params.get('img') === '1',
   };
@@ -121,6 +121,8 @@ function render() {
   window.McugInstances?.mount();
   window.McugDirectory?.mount();
   window.McugCommunityActions?.mount();
+  window.McugLaunchOptions?.mount();
+  window.McugAvatars?.mount();
 }
 
 function bind() {

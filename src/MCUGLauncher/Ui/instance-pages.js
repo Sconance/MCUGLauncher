@@ -57,7 +57,7 @@ function versionSettingsPage() {
       `<a class="back-link" href="?screen=home">返回启动页</a><section class="card" style="padding:24px;margin-top:16px">
       <h2>${escapeHtml(instance?.displayName || key || '未选择实例')}</h2>
       <p>${escapeHtml(instance?.minecraft || '')} · ${escapeHtml(instance?.loader || '请先选择已安装实例')}</p>
-      <p>克隆、导出、卸载范围和内容更新在实例维护中操作。</p>
+      <button class="btn btn-primary" data-open-launch-options data-version="${escapeHtml(key)}">编辑此实例启动设置</button><p>可继承全局设置，或独立设置 Java、内存、窗口与 JVM 参数。</p>
       <a class="btn btn-primary" href="?screen=settings&panel=instances&v=${encodeURIComponent(key)}">维护此实例</a>
       <a class="btn btn-ghost" href="?screen=manage&inst=${encodeURIComponent(key)}">管理本地模组</a></section>`
     );

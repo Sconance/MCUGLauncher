@@ -168,11 +168,12 @@ function settingsPage(panel = 'launch') {
       ${field('游戏根目录', `<div class="path-row"><input class="input" data-setting-root value="${state.root || ''}"><button class="btn btn-ghost" data-pick="root">选择</button></div>`)}
       ${field('Java 路径（可留空）', `<div class="path-row"><input class="input" data-setting-java value="${state.java || ''}" placeholder="留空自动选择"><button class="btn btn-ghost" data-pick="java">选择</button></div>`)}
       <div class="three-grid">
+        <label><input type="checkbox" data-setting-auto ${state.autoMemory ? 'checked' : ''}> 自动分配内存</label>
         ${field('最大内存 / MB', `<input class="input" type="number" min="512" step="512" data-setting-ram value="${state.ram || 4096}">`)}
         ${field('游戏窗口宽', `<input class="input" type="number" min="640" data-setting-width value="${state.width || 1280}">`)}
         ${field('游戏窗口高', `<input class="input" type="number" min="480" data-setting-height value="${state.height || 720}">`)}
       </div>
-      <div class="settings-actions"><button class="btn btn-primary" data-save-launch>保存设置</button><a class="btn btn-ghost" href="?screen=settings&panel=java">Java 管理</a></div>`
+      <div class="settings-actions"><button class="btn btn-primary" data-save-launch>保存设置</button><button class="btn btn-ghost" data-open-launch-options>高级启动设置</button><a class="btn btn-ghost" href="?screen=settings&panel=java">Java 管理</a></div>`
     );
   }
 

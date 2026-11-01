@@ -1,5 +1,5 @@
 // Page rendering only; native operations are handled by feature modules.
-const Avatar = () => `
+const DefaultAvatar = () => `
 <svg class="avatar-svg" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
   <rect width="16" height="16" fill="#BFDCC9"/>
   <rect x="3" y="2" width="10" height="3" fill="#4B3126"/>
@@ -54,3 +54,8 @@ const QuotePhoto = () => `
   <rect x="18" y="118" width="6" height="6" fill="#E8D39B"/>
   <rect x="182" y="116" width="6" height="6" fill="#E8D39B"/>
 </svg>`;
+
+const Avatar = () =>
+  /^data:image\/png;base64,/.test(window.state?.avatar || '')
+    ? `<img class="avatar-svg" style="image-rendering:pixelated" src="${window.state.avatar}" alt="当前账号头像">`
+    : DefaultAvatar();

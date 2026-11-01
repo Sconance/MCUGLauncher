@@ -1,18 +1,19 @@
 // Page rendering only; native operations are handled by feature modules.
 function accountCard() {
+  const mode = window.state?.accountType || 'offline';
   return `<section class="card account-card">
     <div class="acc-tabs" role="tablist" aria-label="账号类型">
-      <button class="acc-tab active" data-account="microsoft">正版</button>
-      <button class="acc-tab" data-account="offline">离线</button>
-      <button class="acc-tab" data-account="mua">MUA 登录</button>
+      <button class="acc-tab ${mode === 'microsoft' ? 'active' : ''}" data-account="microsoft">正版</button>
+      <button class="acc-tab ${mode === 'offline' ? 'active' : ''}" data-account="offline">离线</button>
+      <button class="acc-tab ${mode === 'mua' ? 'active' : ''}" data-account="mua">MUA 登录</button>
     </div>
     <a class="acc-avatar-wrap" href="?screen=home&modal=skin" title="皮肤与披风" aria-label="打开皮肤与披风">
       <div class="acc-avatar">${Avatar()}</div>
       <span class="avatar-overlay">${icon('shirt')} 皮肤与披风</span>
     </a>
-    <div class="acc-name">waibibabu1998</div>
-    <div class="acc-meta">${icon('shield')} 正版账号 · 启动时验证</div>
-    <button class="btn btn-soft acc-btn">切换微软账号</button>
+    <div class="acc-name">${escapeHtml(window.state?.player || '未登录')}</div>
+    <div class="acc-meta">${escapeHtml(window.state?.accountLabel || '离线账号 · 本地启动')}</div>
+    <button class="btn btn-soft acc-btn">${mode === 'offline' ? '切换本地账号' : '切换账号'}</button>
     <a class="acc-link" href="?screen=options">账号设置</a>
     <div class="acc-foot"><span>账号保存在本机</span><strong>已保存</strong></div>
   </section>`;
@@ -21,9 +22,9 @@ function accountCard() {
 function launchPanel(expanded = false) {
   return `<div class="launch-wrap">
     <div class="launch-row">
-      <button class="launch-btn" aria-label="启动 1.20.1-OptiFine_I6">
+      <button class="launch-btn" aria-label="${escapeHtml(window.state?.selectedVersion ? '启动 ' + window.state.selectedVersion : '选择实例后启动')}">
         <span class="launch-glyph">${icon('play')}</span>
-        <span class="launch-text"><b>启动游戏</b><small>1.20.1-OptiFine_I6 · 4096 MB</small></span>
+        <span class="launch-text"><b>启动游戏</b><small>${escapeHtml(window.state?.selectedVersion || '未选择实例')} · ${window.state?.autoMemory ? '自动内存' : (window.state?.ram || 4096) + ' MB'}</small></span>
       </button>
       <div class="launch-side">
         <a class="launch-mini ${expanded ? 'open' : ''}" href="${expanded ? '?screen=home' : '?screen=home&panel=versions'}" aria-label="${expanded ? '收起实例列表' : '选择实例'}" title="${expanded ? '收起实例列表' : '选择实例'}">${icon(expanded ? 'chevron-left' : 'chevron-right')}</a>
@@ -40,8 +41,11 @@ function instancePanel() {
     <button type="button" class="version-group-head" aria-expanded="true"><span class="version-caret">${icon('chevron-down')}</span><b>${g.label}</b><span class="version-count">(${g.count})</span></button>
     <div class="version-list">${g.versions
       .map(
-        (v, i) => `<div class="version-row ${v[0] === Q.inst ? 'selected' : ''}">
-      <div class="version-copy"><b>${v[0]}</b><span>${v[1]}</span></div>
+        (
+          v,
+          i
+        ) => `<div data-instance-key="${escapeHtml(v[0])}" class="version-row ${v[0] === Q.inst ? 'selected' : ''}">
+      <div class="version-copy"><b>${escapeHtml(instances.find((item) => item.name === v[0])?.displayName || v[0])}</b><span>${escapeHtml(v[1])}</span></div>
       <button class="version-icon" aria-label="启动 ${v[0]}">${icon('play')}</button>
       <a class="version-icon" href="?screen=version&v=${encodeURIComponent(v[0])}" aria-label="版本设置 ${v[0]}">${icon('settings')}</a>
     </div>`

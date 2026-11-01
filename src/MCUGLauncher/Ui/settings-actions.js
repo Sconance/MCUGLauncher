@@ -19,6 +19,8 @@
           message[key] = Number(input.value);
         } else message[key] = input.value.trim();
       }
+      const auto = scope.querySelector('[data-setting-auto]');
+      if (auto) message.autoMemory = auto.checked;
       post(message);
     });
     scope.querySelectorAll('[data-pick]').forEach((button) => {

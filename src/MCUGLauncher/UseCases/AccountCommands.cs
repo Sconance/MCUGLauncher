@@ -5,6 +5,9 @@ namespace MCUGLauncher.UseCases;
 // Handles account use cases; no WPF controls or browser access.
 internal sealed class AccountCommands(LauncherContext context)
 {
+    readonly MuaProfileSelection profiles = new(context);
+    public void SelectMuaProfile(System.Text.Json.JsonElement message) => profiles.Select(message);
+
     public async Task LoginMicrosoftAsync()
     {
         if (context.Microsoft == null)
@@ -80,7 +83,7 @@ internal sealed class AccountCommands(LauncherContext context)
         {
             var revision = Interlocked.Increment(ref context.AccountRevision);
             var credential = await context.Mua.Login(account.Trim(), password,
-                profiles => Task.FromResult<MuaProfile?>(profiles.FirstOrDefault()), context.Token);
+                profiles.ChooseAsync, context.Token);
             if (revision != context.AccountRevision)
                 return;
             AccountModeCommands.Apply(context, "mua", MuaAccountService.Session(credential));

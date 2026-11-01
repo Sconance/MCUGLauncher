@@ -35,6 +35,8 @@ internal sealed class SettingsCommands(LauncherContext context)
             context.Config.DataSources.Recommendations = ReadString(sources, "recommendations");
             context.Config.DataSources.Quotes = ReadString(sources, "quotes");
         }
+        if (root.TryGetProperty("autoMemory", out var autoMemory))
+            context.Config.AutoMemory = autoMemory.GetBoolean();
         if (root.TryGetProperty("ram", out var ram) && ram.TryGetInt32(out var ramValue))
             context.Config.Ram = Math.Clamp(ramValue, 512, 65536);
         if (requestedRoot.Length > 0)
@@ -56,6 +58,13 @@ internal sealed class SettingsCommands(LauncherContext context)
         {
             type = "settingsSaved"
         });
+        context.RefreshState();
+    }
+
+    public void ResetDataSources()
+    {
+        context.Config.DataSources = new MCUGLauncher.Models.DataSourceConfig();
+        context.Store.Save(context.Config);
         context.RefreshState();
     }
 

@@ -57,12 +57,13 @@ internal sealed class ResourceCommands(LauncherContext context)
             throw new ArgumentException("未知资源分类。");
         try
         {
-            var catalog = VersionCatalog.Load(context.Config.Root, context.Config.LastInstance);
-            var details = VersionCatalog.ReadDetails(context.Config.Root, catalog.Selected);
-            var loader = details.Loader == "原版" ? "vanilla" : details.Loader.ToLowerInvariant();
+            var game = ReadString(root, "game");
+            var loader = ReadString(root, "loader");
+            if (loader.Length > 0 && loader is not ("vanilla" or "fabric" or "forge" or "neoforge" or "quilt"))
+                throw new ArgumentException("未知加载器。");
             using var browse = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
             browse.CancelAfter(TimeSpan.FromSeconds(15));
-            var page = await new ContentService(context.Http, browse.Token).Search(ReadString(root, "query"), details.Minecraft, loader, category);
+            var page = await new ContentService(context.Http, browse.Token).Search(ReadString(root, "query"), game, loader, category);
             context.Send(new
             {
                 type = "contentList",
@@ -107,7 +108,8 @@ internal sealed class ResourceCommands(LauncherContext context)
         browse.CancelAfter(TimeSpan.FromSeconds(15));
         var service = new ContentService(context.Http, browse.Token);
         var versions = await service.Versions(id, details.Minecraft, loader, category);
-        var version = versions.FirstOrDefault() ?? throw new IOException("没有与目标实例兼容的资源版本。");
+        var versionId = ReadString(root, "versionId");
+        var version = versions.SingleOrDefault(v => v.Id == versionId) ?? throw new IOException("请通过下载选项选择一个兼容的资源版本。");
         var local = ReadString(root, "mode") == "local" || category is "modpack" or "datapack";
         var target = local ? ReadString(root, "path") : VersionCatalog.InstanceDirectory(context.Config.Root, catalog.Selected);
         if (local && string.IsNullOrWhiteSpace(target))
@@ -130,6 +132,7 @@ internal sealed class ResourceCommands(LauncherContext context)
         {
             id = ReadString(root, "id"),
             category = "mod",
+            versionId = ReadString(root, "versionId"),
             mode = ReadString(root, "mode"),
             path = ReadString(root, "path")
         });

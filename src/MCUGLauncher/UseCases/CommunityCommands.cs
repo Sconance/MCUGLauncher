@@ -109,6 +109,7 @@ internal sealed class CommunityCommands(LauncherContext context)
         {
             type = "testResult",
             name,
+            url,
             ok = result.Ok,
             message = result.Text,
             ms = result.Ms

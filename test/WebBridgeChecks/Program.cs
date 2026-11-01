@@ -109,6 +109,7 @@ foreach (var resource in embeddedAssembly.GetManifestResourceNames().Where(name 
 await ResourceScenarios.Run(fixture);
 await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
+await CustomizationScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);
 Console.WriteLine("ALL_WEB_BRIDGE_CHECKS_PASSED (isolated fixtures; no live account or gameplay)");
 

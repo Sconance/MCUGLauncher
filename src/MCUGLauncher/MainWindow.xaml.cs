@@ -154,7 +154,13 @@ public partial class MainWindow : Window, IDesktopHost
         var dialog = new OpenFileDialog
         {
             Title = "选择文件",
-            Filter = target == "java" ? "Java|java.exe;javaw.exe|所有文件|*.*" : "所有文件|*.*",
+            Filter = target switch
+            {
+                "java" => "Java|java.exe;javaw.exe|所有文件|*.*",
+                "offlineSkin" => "PNG 皮肤|*.png",
+                "pack" => "整合包|*.mrpack;*.zip",
+                _ => "所有文件|*.*"
+            },
             CheckFileExists = true
         };
         if (dialog.ShowDialog(this) == true)

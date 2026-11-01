@@ -397,6 +397,120 @@ const assert = require('node:assert/strict');
   assert.equal(await page.locator('.version-search input').inputValue(), 'Beta');
   console.log('PASS account-only updates preserve the page and search input');
 
+  await page.evaluate(() => window.McugResourcePicker.open('fixture', 'mod', 'Fixture'));
+  const resourceRequest = await page.evaluate(() => window.messages.at(-1));
+  await page.evaluate(
+    (requestId) =>
+      window.deliver({
+        type: 'resourceVersions',
+        requestId,
+        token: 'resource-token',
+        game: '1.21.1',
+        loader: 'fabric',
+        items: [
+          { id: 'v1', name: 'One', files: ['one.jar'] },
+          { id: 'v2', name: 'Two', files: ['two.jar'] },
+        ],
+      }),
+    resourceRequest.requestId
+  );
+  await page.locator('[data-resource-version]').selectOption('v2');
+  await page.locator('[data-resource-mode]').selectOption('local');
+  await page.locator('[data-resource-path]').fill('fixture-downloads');
+  await page.setViewportSize({ width: 960, height: 640 });
+  await page.screenshot({ path: path.join(output, 'custom-resource-960.png') });
+  await page.locator('[data-resource-confirm]').click();
+  assert.deepEqual(await page.evaluate(() => window.messages.at(-1)), {
+    type: 'queueContentVersion',
+    token: 'resource-token',
+    versionId: 'v2',
+    mode: 'local',
+    path: 'fixture-downloads',
+  });
+  await page.evaluate(() => window.deliver({ type: 'resourceQueued', token: 'resource-token' }));
+  await page.evaluate(() =>
+    window.deliver({
+      type: 'packPreview',
+      token: 'pack-token',
+      name: 'Original',
+      root: 'fixture',
+      game: '1.21.1',
+      loader: 'fabric',
+    })
+  );
+  await page.locator('[data-pack-name]').fill('Custom Pack');
+  await page.locator('[data-pack-directory]').fill('another-root');
+  await page.locator('[data-pack-confirm]').click();
+  assert.deepEqual(await page.evaluate(() => window.messages.at(-1)), {
+    type: 'confirmPack',
+    token: 'pack-token',
+    name: 'Custom Pack',
+    directory: 'another-root',
+  });
+  await page.evaluate(() => window.deliver({ type: 'packQueued', token: 'pack-token' }));
+  await page.evaluate(() =>
+    window.deliver({
+      type: 'muaProfiles',
+      token: 'roles',
+      items: [
+        { id: 'one', name: 'First' },
+        { id: 'two', name: 'Second' },
+      ],
+    })
+  );
+  await page.locator('[data-mua-profile]').selectOption('two');
+  await page.locator('[data-mua-profile-confirm]').click();
+  assert.equal(await page.evaluate(() => window.messages.at(-1).profileId), 'two');
+  await page.evaluate(() => window.McugLaunchOptions.open('1.21.1'));
+  const optionRequest = await page.evaluate(() => window.messages.at(-1).requestId);
+  await page.evaluate(
+    (requestId) =>
+      window.deliver({
+        type: 'launchOptions',
+        requestId,
+        token: 'settings-token',
+        version: '1.21.1',
+        name: 'My instance',
+        inherited: false,
+        settings: {
+          autoMemory: true,
+          fullScreen: false,
+          ramMb: 2048,
+          width: 1200,
+          height: 720,
+          java: '',
+          jvmArguments: '',
+          windowTitle: '',
+          server: '',
+        },
+      }),
+    optionRequest
+  );
+  assert.equal(await page.locator('[data-launch-field=ramMb]').isDisabled(), true);
+  await page.locator('[data-launch-auto]').uncheck();
+  await page.locator('[data-launch-field=ramMb]').fill('3072');
+  await page.locator('[data-launch-field=jvmArguments]').fill('-Dcustom=true');
+  await page.screenshot({ path: path.join(output, 'custom-launch-960.png') });
+  await page.locator('[data-launch-save]').click();
+  assert.equal(await page.evaluate(() => window.messages.at(-1).settings.ramMb), 3072);
+  assert.equal(
+    await page.evaluate(() => window.messages.at(-1).settings.jvmArguments),
+    '-Dcustom=true'
+  );
+  await page.evaluate(() => window.deliver({ type: 'launchOptionsSaved' }));
+  await page.evaluate(() => window.mcugGo('?screen=datasource'));
+  assert.equal(await page.locator('.ds-result').filter({ hasText: '尚未测试' }).count(), 4);
+  const source = await page.locator('.ds-row input').first().inputValue();
+  await page.evaluate(
+    (url) => window.deliver({ type: 'testResult', name: 'announcements', url, ok: true, ms: 42 }),
+    source
+  );
+  assert.equal(await page.locator('.ds-result').first().textContent(), '连接正常 · 42 ms');
+  await page.locator('.ds-row input').first().fill('https://example.org/new.json');
+  assert.equal(await page.locator('.ds-result').first().textContent(), '地址已修改，尚未测试');
+  console.log(
+    'PASS explicit resource version/destination, pack confirmation, MUA role choice, launch overrides and actual source test status'
+  );
   const standalone = await browser.newPage();
   standalone.on('pageerror', (error) => errors.push(error.message));
   await standalone.goto(base + '?screen=mods');

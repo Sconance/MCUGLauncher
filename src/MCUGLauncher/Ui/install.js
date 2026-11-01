@@ -40,7 +40,7 @@
   bridge?.addEventListener('message', (event) => {
     const m = event.data;
     if (m?.type === 'pickedPath' && m.target === 'pack') {
-      post({ type: 'importPack', path: m.path });
+      post({ type: 'previewPack', path: m.path });
       return;
     }
     const panel = document.querySelector('[data-install-tools]');

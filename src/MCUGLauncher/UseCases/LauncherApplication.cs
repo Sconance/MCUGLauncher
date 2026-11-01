@@ -23,6 +23,9 @@ internal sealed class LauncherApplication : IDisposable
     readonly GameCommands gameCommands;
     readonly InstanceCommands instanceCommands;
     readonly ResourceCommands resourceCommands;
+    readonly ResourceChoiceCommands resourceChoices;
+    readonly LaunchOptionsCommands launchOptions;
+    readonly AvatarCommands avatars;
     readonly SettingsCommands settingsCommands;
     readonly DiagnosticCommands diagnosticCommands;
     readonly CommunityCommands communityCommands;
@@ -45,6 +48,9 @@ internal sealed class LauncherApplication : IDisposable
         gameCommands = new GameCommands(context);
         instanceCommands = new InstanceCommands(context);
         resourceCommands = new ResourceCommands(context);
+        resourceChoices = new ResourceChoiceCommands(context);
+        launchOptions = new LaunchOptionsCommands(context);
+        avatars = new AvatarCommands(context);
         settingsCommands = new SettingsCommands(context);
         diagnosticCommands = new DiagnosticCommands(context);
         communityCommands = new CommunityCommands(context);
@@ -125,6 +131,36 @@ internal sealed class LauncherApplication : IDisposable
                     break;
                 case "installLoader":
                     installationCommands.InstallLoader(root);
+                    break;
+                case "resetDataSources":
+                    settingsCommands.ResetDataSources();
+                    break;
+                case "readAvatar":
+                    await avatars.ReadAsync();
+                    break;
+                case "setOfflineSkin":
+                    await avatars.SetAsync(root);
+                    break;
+                case "readLaunchOptions":
+                    launchOptions.Read(root);
+                    break;
+                case "saveLaunchOptions":
+                    launchOptions.Save(root);
+                    break;
+                case "selectMuaProfile":
+                    accountCommands.SelectMuaProfile(root);
+                    break;
+                case "listContentVersions":
+                    await resourceChoices.ListAsync(root);
+                    break;
+                case "queueContentVersion":
+                    resourceChoices.Queue(root);
+                    break;
+                case "previewPack":
+                    await installationCommands.PreviewPackAsync(root);
+                    break;
+                case "confirmPack":
+                    installationCommands.ConfirmPack(root);
                     break;
                 case "importPack":
                     await installationCommands.ImportPackAsync(root);

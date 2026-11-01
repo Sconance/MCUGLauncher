@@ -26,7 +26,7 @@ internal sealed record InstanceSnapshot(string Root, string Key, string Director
             descriptor.Launch ?? config.LegacyPreferences.Launch))!;
         if (descriptor.Launch == null)
         {
-            settings.AutoMemory = false;
+            settings.AutoMemory = config.AutoMemory;
             settings.RamMb = config.Ram;
             settings.Java = config.Java;
             settings.Width = config.Width;

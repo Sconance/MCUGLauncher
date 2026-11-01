@@ -34,6 +34,7 @@ internal static class LauncherStateBuilder
             selectedVersion,
             selectedInstance = catalog.Selected,
             ram = config.Ram,
+            autoMemory = config.AutoMemory,
             anonymous = config.Anonymous,
             communityKey = !string.IsNullOrWhiteSpace(config.CommunityKey),
             adminKey = !string.IsNullOrWhiteSpace(config.AdminKey),

@@ -24,7 +24,7 @@ internal static class MaintenanceScenarios
         File.WriteAllText(Path.Combine(source, "options.txt"), "original-options");
         var config = new AppConfig { Root = root, LastInstance = "fabric-fixture", LastVersion = "fabric-fixture" };
         var descriptor = new InstanceCatalog(root).GetOrCreate("fabric-fixture");
-        descriptor.Launch = new LaunchSettings { RamMb = 1536, JvmArguments = "-Dfixture=true" };
+        descriptor.Launch = new LaunchSettings { AutoMemory = false, RamMb = 1536, JvmArguments = "-Dfixture=true" };
         new InstanceCatalog(root).Save(descriptor);
         var snapshot = InstanceSnapshot.Capture(config, "fabric-fixture");
         Check(snapshot.Requirements == new PackRequirements("1.21.1", "fabric", "0.16.0"), "installed metadata resolves inherited game and exact loader version");

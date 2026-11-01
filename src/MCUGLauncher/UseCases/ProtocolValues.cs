@@ -15,9 +15,9 @@ internal static class ProtocolValues
         {
             var expected = field.Name switch
             {
-                "enabled" or "anonymous" or "saves" or "servers" => JsonValueKind.True,
+                "enabled" or "anonymous" or "saves" or "servers" or "inherit" or "autoMemory" => JsonValueKind.True,
                 "ram" or "width" or "height" => JsonValueKind.Number,
-                "dataSources" => JsonValueKind.Object,
+                "dataSources" or "settings" => JsonValueKind.Object,
                 "items" or "projects" => JsonValueKind.Array,
                 _ => JsonValueKind.Undefined
             };

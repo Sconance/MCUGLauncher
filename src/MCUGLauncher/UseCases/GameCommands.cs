@@ -58,6 +58,12 @@ internal sealed class GameCommands(LauncherContext context,
             }
             var settings = instance.Settings;
             settings.VersionInfo = "MCUGLauncher";
+            if (settings.AutoMemory)
+            {
+                settings.RamMb = MemoryPolicy.Recommend();
+                if (File.Exists(settings.Java) && JavaDiscovery.Architecture(settings.Java) == "x86")
+                    settings.RamMb = Math.Min(settings.RamMb, 1400);
+            }
             var request = new LaunchRequest(instance.Root, instance.Directory, key, settings.Java, settings.RamMb,
                 settings.Width, settings.Height, session, settings, external);
             var process = buildProcess == null ? await LaunchService.Build(request, context.Token, context.Http)

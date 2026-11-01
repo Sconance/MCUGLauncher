@@ -47,6 +47,12 @@
     <EmbeddedResource Include="Ui/account-modals.js" LogicalName="MCUGLauncher.Ui.account-modals.js" />
     <EmbeddedResource Include="Ui/app.js" LogicalName="MCUGLauncher.Ui.app.js" />
     <EmbeddedResource Include="Ui/accounts.js" LogicalName="MCUGLauncher.Ui.accounts.js" />
+    <EmbeddedResource Include="Ui/dialogs.js" LogicalName="MCUGLauncher.Ui.dialogs.js" />
+    <EmbeddedResource Include="Ui/resource-picker.js" LogicalName="MCUGLauncher.Ui.resource-picker.js" />
+    <EmbeddedResource Include="Ui/pack-import.js" LogicalName="MCUGLauncher.Ui.pack-import.js" />
+    <EmbeddedResource Include="Ui/mua-profiles.js" LogicalName="MCUGLauncher.Ui.mua-profiles.js" />
+    <EmbeddedResource Include="Ui/launch-options.js" LogicalName="MCUGLauncher.Ui.launch-options.js" />
+    <EmbeddedResource Include="Ui/avatars.js" LogicalName="MCUGLauncher.Ui.avatars.js" />
     <EmbeddedResource Include="Ui/host.js" LogicalName="MCUGLauncher.Ui.host.js" />
     <EmbeddedResource Include="Ui/settings-actions.js" LogicalName="MCUGLauncher.Ui.settings-actions.js" />
     <EmbeddedResource Include="Ui/directory.js" LogicalName="MCUGLauncher.Ui.directory.js" />

@@ -11,7 +11,7 @@ function modCard(m) {
 function modListPage() {
   const head = `<div class="dl-head">
     <div class="dl-title-wrap"><div class="dl-big-icon mod">${icon('box')}</div><div><div class="page-title">模组</div><div class="page-sub">安装、更新和管理这个实例的模组。</div></div></div>
-    <div class="dl-head-side"><span class="inline">实例 1.20.1-OptiFine_I6</span><button class="btn btn-primary btn-sm">${icon('plus')} 添加模组</button></div>
+    <div class="dl-head-side"><span class="inline">实例 ${escapeHtml(window.state?.selectedInstance || '未选择')}</span><a class="btn btn-primary btn-sm" href="?screen=catalog&type=mod">${icon('plus')} 添加模组</a></div>
   </div>`;
   const search = `<div class="mod-search-row">
     <div class="mod-filters"><span class="filter-chip active">全部</span><span class="filter-chip">已安装</span><span class="filter-chip">可更新</span><span class="filter-chip">客户端</span><span class="filter-chip">服务端</span></div>
@@ -22,7 +22,7 @@ function modListPage() {
     downloadSidebar('mod'),
     `${head}${search}
     <div class="mod-grid">${mods.map(modCard).join('')}</div>
-    <div class="dl-footnote"><span class="inline">${icon('info')} 点击卡片查看详情；下载前会检查加载器与游戏版本。</span><span>共 6 个结果 · 按相关度排序</span></div>`
+    <div class="dl-footnote"><span class="inline">${icon('info')} 点击卡片查看详情；下载前会检查加载器与游戏版本。</span><span>共 ${mods.length} 个结果 · 按相关度排序</span></div>`
   );
 }
 
@@ -107,6 +107,7 @@ function catalogPage(type = 'mod', query = '') {
     <div class="catalog-page">
       <div class="dl-head"><div class="dl-title-wrap"><div class="dl-big-icon mod">${icon(meta.icon)}</div><div><div class="page-title">${meta.title}</div><div class="page-sub">${meta.sub}</div></div></div><span class="inline">${state.selectedInstance || '当前实例'} · ${state.selectedVersion || ''}</span></div>
       <div class="catalog-search-row"><div class="catalog-search">${icon('search')}<input id="catalog-query" placeholder="搜索${meta.title}名称、作者或描述" value="${query}"><button class="btn btn-primary btn-sm" data-content-search="${type}">搜索</button></div></div>
+      <div class="catalog-custom-filters"><label>游戏版本<input class="input" data-catalog-game placeholder="留空不限版本" value="${escapeHtml(state.catalogFilters?.[type]?.game || '')}"></label><label>加载器<select class="select" data-catalog-loader>${['', 'vanilla', 'fabric', 'forge', 'neoforge', 'quilt'].map((value) => `<option value="${value}" ${value === (state.catalogFilters?.[type]?.loader || '') ? 'selected' : ''}>${value || '不限'}</option>`).join('')}</select></label></div>
       ${body}
       <div class="dl-footnote">${icon('info')} 内容来自 Modrinth；下载前会检查当前实例的游戏版本与加载器。整合包仅下载 .mrpack 文件。</div>
     </div>`
