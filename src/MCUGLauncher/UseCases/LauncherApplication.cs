@@ -19,6 +19,7 @@ internal sealed class LauncherApplication : IDisposable
     readonly BookmarkCommands bookmarkCommands;
     readonly InstallationCommands installationCommands;
     readonly AccountCommands accountCommands;
+    readonly AccountModeCommands accountModes;
     readonly GameCommands gameCommands;
     readonly InstanceCommands instanceCommands;
     readonly ResourceCommands resourceCommands;
@@ -40,6 +41,7 @@ internal sealed class LauncherApplication : IDisposable
         bookmarkCommands = new BookmarkCommands(context);
         installationCommands = new InstallationCommands(context);
         accountCommands = new AccountCommands(context);
+        accountModes = new AccountModeCommands(context);
         gameCommands = new GameCommands(context);
         instanceCommands = new InstanceCommands(context);
         resourceCommands = new ResourceCommands(context);
@@ -74,7 +76,7 @@ internal sealed class LauncherApplication : IDisposable
                     context.SendTasks();
                     context.SendGames();
                     context.Tasks.Start();
-                    await (startup ??= Task.WhenAll(communityCommands.SendCommunityAsync(), accountCommands.RestoreMicrosoftAsync()));
+                    await (startup ??= Task.WhenAll(communityCommands.SendCommunityAsync(), accountModes.RestoreSelectedAsync()));
                     break;
                 case "cloneInstance":
                     maintenanceCommands.Clone(root);
@@ -232,10 +234,13 @@ internal sealed class LauncherApplication : IDisposable
                     await accountCommands.LoginMuaAsync(ReadString(root, "account"), ReadString(root, "password"));
                     break;
                 case "logoutAccount":
-                    context.OnlineSession = null;
-                    context.Config.AccountType = "offline";
-                    context.Store.Save(context.Config);
-                    context.RefreshState();
+                    await accountModes.SwitchAsync("offline");
+                    break;
+                case "switchAccountMode":
+                    await accountModes.SwitchAsync(ReadString(root, "account"));
+                    break;
+                case "forgetAccount":
+                    await accountModes.ForgetAsync(ReadString(root, "account"));
                     break;
                 case "testSource":
                     await communityCommands.TestSourceAsync(ReadString(root, "name"), ReadString(root, "url"));

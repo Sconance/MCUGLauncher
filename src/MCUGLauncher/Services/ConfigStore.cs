@@ -48,6 +48,8 @@ public sealed class ConfigStore
         config.GameRoots ??= [];
         if (string.IsNullOrWhiteSpace(config.Player))
             config.Player = "Steve";
+        if (string.IsNullOrWhiteSpace(config.OfflinePlayer))
+            config.OfflinePlayer = config.AccountType == "offline" ? config.Player : "Steve";
         if (string.IsNullOrWhiteSpace(config.LastVersion))
             config.LastVersion = FindFirstVersion(config.Root);
         if (string.IsNullOrWhiteSpace(config.LastInstance))

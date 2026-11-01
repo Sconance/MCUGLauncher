@@ -18,7 +18,12 @@ internal sealed class SettingsCommands(LauncherContext context)
                 throw new ArgumentException("游戏目录不存在，请选择已有文件夹。");
         }
         if (root.TryGetProperty("player", out var player))
+        {
+            if (context.Config.AccountType != "offline")
+                throw new ArgumentException("请先切换到离线模式再修改离线玩家名。");
             context.Config.Player = player.GetString() ?? context.Config.Player;
+            context.Config.OfflinePlayer = context.Config.Player;
+        }
         if (root.TryGetProperty("anonymous", out var anonymous))
             context.Config.Anonymous = anonymous.GetBoolean();
         if (root.TryGetProperty("writeEndpoint", out var endpoint))

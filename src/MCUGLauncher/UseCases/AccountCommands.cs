@@ -1,8 +1,4 @@
-using System.Text.Json;
 using BlockLaunch;
-using CmlLib.Core.Auth;
-using MCUGLauncher.Services;
-using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
 
@@ -29,18 +25,17 @@ internal sealed class AccountCommands(LauncherContext context)
         });
         try
         {
+            var revision = Interlocked.Increment(ref context.AccountRevision);
             var session = await context.Microsoft.Authenticate(true, context.Token);
-            context.OnlineSession = session;
-            context.Config.AccountType = "microsoft";
-            context.Config.Player = session.Username ?? context.Config.Player;
-            context.Store.Save(context.Config);
+            if (revision != context.AccountRevision)
+                return;
+            AccountModeCommands.Apply(context, "microsoft", session);
             context.Send(new
             {
                 type = "authResult",
                 ok = true,
                 message = $"已登录正版账号 {session.Username}"
             });
-            context.RefreshState();
         }
         catch (Exception ex)
         {
@@ -50,27 +45,6 @@ internal sealed class AccountCommands(LauncherContext context)
                 ok = false,
                 message = ex is AccountLoginException ? ex.Message : MicrosoftAccountService.Translate(ex, false).Message
             });
-        }
-    }
-
-    public async Task RestoreMicrosoftAsync()
-    {
-        if (context.Config.AccountType != "microsoft" || context.Microsoft == null)
-            return;
-        try
-        {
-            var session = await context.Microsoft.Authenticate(false, context.Token);
-            context.OnlineSession = session;
-            context.Config.Player = session.Username ?? context.Config.Player;
-            context.Store.Save(context.Config);
-            context.RefreshState();
-        }
-        catch
-        {
-            context.OnlineSession = null;
-            context.Config.AccountType = "offline";
-            context.Store.Save(context.Config);
-            context.RefreshState();
         }
     }
 
@@ -104,19 +78,18 @@ internal sealed class AccountCommands(LauncherContext context)
         });
         try
         {
+            var revision = Interlocked.Increment(ref context.AccountRevision);
             var credential = await context.Mua.Login(account.Trim(), password,
                 profiles => Task.FromResult<MuaProfile?>(profiles.FirstOrDefault()), context.Token);
-            context.OnlineSession = MuaAccountService.Session(credential);
-            context.Config.AccountType = "mua";
-            context.Config.Player = credential.Profile.Name;
-            context.Store.Save(context.Config);
+            if (revision != context.AccountRevision)
+                return;
+            AccountModeCommands.Apply(context, "mua", MuaAccountService.Session(credential));
             context.Send(new
             {
                 type = "authResult",
                 ok = true,
                 message = $"已登录 MUA 账号 {credential.Profile.Name}"
             });
-            context.RefreshState();
         }
         catch (Exception)
         {

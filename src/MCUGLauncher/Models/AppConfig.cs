@@ -13,6 +13,7 @@ public sealed class AppConfig
     public string Root { get; set; } = "";
     public List<string> GameRoots { get; set; } = [];
     public string Player { get; set; } = "Steve";
+    public string OfflinePlayer { get; set; } = "";
     public string AccountType { get; set; } = "offline";
     public string Java { get; set; } = "";
     public int Ram { get; set; } = 4096;

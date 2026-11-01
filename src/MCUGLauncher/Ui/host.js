@@ -330,21 +330,7 @@
       });
     });
 
-    document.querySelectorAll('.acc-tab[data-account]').forEach((tab) => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.acc-tab').forEach((item) => item.classList.remove('active'));
-        tab.classList.add('active');
-        const kind = tab.dataset.account;
-        if (kind === 'microsoft') {
-          window.mcugGo?.('?screen=home&modal=ms');
-        } else if (kind === 'mua') {
-          window.mcugGo?.('?screen=home&modal=mua');
-        } else {
-          post({ type: 'logoutAccount' });
-          toast('已切换到离线账号。');
-        }
-      });
-    });
+    window.McugAccounts?.mount();
 
     document.querySelector('[data-mua-submit]')?.addEventListener('click', () => {
       const account = document.querySelector('#mua-account')?.value?.trim() || '';
@@ -362,22 +348,6 @@
       event.preventDefault();
       toast('正在打开微软登录页…');
       post({ type: 'loginMicrosoft' });
-    });
-
-    document.querySelector('.acc-btn')?.addEventListener('click', () => {
-      if (state?.accountType && state.accountType !== 'offline') {
-        post({ type: 'logoutAccount' });
-        toast('已退出在线账号，切换为离线。');
-        return;
-      }
-      const name = prompt('离线玩家名（3–16 位字母、数字或下划线）', state?.player || '');
-      if (!name) return;
-      if (!/^[A-Za-z0-9_]{3,16}$/.test(name.trim())) {
-        toast('玩家名格式不正确。', true);
-        return;
-      }
-      post({ type: 'saveSettings', player: name.trim() });
-      toast('离线账号已更新。');
     });
 
     const versionLaunch =

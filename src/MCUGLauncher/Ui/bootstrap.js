@@ -18,6 +18,7 @@
       'bookmarks.js',
       'saves.js',
       'instance-tools.js',
+      'accounts.js',
       'settings-actions.js',
       'directory.js',
       'community-actions.js',

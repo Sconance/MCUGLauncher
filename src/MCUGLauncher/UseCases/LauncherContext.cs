@@ -9,6 +9,7 @@ namespace MCUGLauncher.UseCases;
 internal sealed class LauncherContext : IDisposable
 {
     readonly CancellationTokenSource lifetime = new();
+    public long AccountRevision;
     readonly ConcurrentDictionary<string, string> preparing = new(StringComparer.OrdinalIgnoreCase);
     static string Full(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
     public void MarkPreparing(string root, string directory) => preparing[Full(directory)] = Full(root);
@@ -75,15 +76,7 @@ internal sealed class LauncherContext : IDisposable
         {
             Microsoft = new MicrosoftAccountService(authDirectory, Http, microsoftBrowser?.Invoke(authDirectory));
             Mua = new MuaAccountService(authDirectory, Http);
-            if (Config.AccountType == "mua")
-            {
-                var saved = Mua.Read();
-                if (saved != null)
-                {
-                    OnlineSession = MuaAccountService.Session(saved);
-                    Config.Player = saved.Profile.Name;
-                }
-            }
+
         }
         catch
         {

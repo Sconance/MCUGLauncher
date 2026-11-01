@@ -357,6 +357,32 @@ const assert = require('node:assert/strict');
   console.log(
     'PASS unsupported pin cannot install content; server recommendations open populated dialog; account page has no fake verification'
   );
+  await page.evaluate(() => {
+    window.deliver({ type: 'state', accountType: 'offline', player: 'OfflineName' });
+    window.mcugGo('?screen=home');
+  });
+  await page.locator('[data-account=microsoft]').click();
+  assert.deepEqual(await page.evaluate(() => window.messages.at(-1)), {
+    type: 'switchAccountMode',
+    account: 'microsoft',
+  });
+  assert.equal(await page.locator('[data-ms-login]').count(), 0);
+  await page.locator('[data-account=mua]').click();
+  assert.deepEqual(await page.evaluate(() => window.messages.at(-1)), {
+    type: 'switchAccountMode',
+    account: 'mua',
+  });
+  assert.equal(await page.locator('[data-mua-submit]').count(), 0);
+  await page.evaluate(() =>
+    window.deliver({
+      type: 'accountSwitchResult',
+      account: 'mua',
+      needsLogin: true,
+      message: 'expired',
+    })
+  );
+  assert.equal(await page.locator('[data-mua-submit]').isVisible(), true);
+  console.log('PASS account tabs restore modes and only expired authorization opens login');
   const standalone = await browser.newPage();
   standalone.on('pageerror', (error) => errors.push(error.message));
   await standalone.goto(base + '?screen=mods');

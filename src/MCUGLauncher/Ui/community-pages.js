@@ -76,7 +76,7 @@ function optionsPage() {
       `<div class="settings-content">
     ${pageHead('账号与社区设置', '本地账号状态与社区密钥；保存密钥不等于服务器身份认证。')}
     <section class="card settings-card"><h3>当前账号</h3><p>${escapeHtml(state.player || '未登录')} · ${escapeHtml(state.accountLabel || '离线账号')}</p>
-    <a class="btn btn-ghost" href="?screen=home">返回主页切换账号</a></section>
+    <a class="btn btn-ghost" href="?screen=home">返回主页切换账号</a><p>切换到离线不会删除在线账号。只有下方移除操作会清理本机授权。</p><button class="btn btn-ghost" data-forget-account="microsoft">移除保存的正版账号</button><button class="btn btn-ghost" data-forget-account="mua">移除保存的 MUA 账号</button></section>
     <section class="card settings-card"><h3>社区请求</h3><p>匿名模式：${state.anonymous ? '已开启' : '已关闭'}</p>
     <button class="btn btn-ghost ${state.anonymous ? 'on' : ''}" data-anon>切换匿名模式</button></section>
     <section class="card settings-card"><h3>社区密钥</h3><p>${state.communityKey ? '已保存在本机' : '尚未保存'}；此处只保存和检查格式，不验证远端社区身份。</p>

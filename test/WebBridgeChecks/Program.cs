@@ -96,6 +96,7 @@ application.RememberWindow(1400, 900, true);
 Check(store.Load().WindowWidth == 1400 && store.Load().WindowMaximized, "window dimensions persist through application boundary");
 await ResourceScenarios.Run(fixture);
 await QueueScenarios.Run(fixture);
+await AccountModeScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);
 Console.WriteLine("ALL_WEB_BRIDGE_CHECKS_PASSED (isolated fixtures; no live account or gameplay)");
 
