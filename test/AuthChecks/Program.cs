@@ -247,6 +247,9 @@ sealed class Handler(HttpStatusCode status, string body) : HttpMessageHandler
         private set;
     }
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
         AuthChecked = request.RequestUri?.Host == "api.minecraftservices.com" && request.Headers.Authorization?.Scheme == "Bearer" && request.Headers.Authorization.Parameter == "fake-game-token";
@@ -256,6 +259,9 @@ sealed class Handler(HttpStatusCode status, string body) : HttpMessageHandler
 
 sealed class WaitingHandler : HttpMessageHandler
 {
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
         await Task.Delay(Timeout.Infinite, token);

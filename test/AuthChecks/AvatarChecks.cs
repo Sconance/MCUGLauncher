@@ -4,8 +4,14 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using BlockLaunch;
 
+/// <summary>
+/// 提供 头像Checks 相关功能。
+/// </summary>
 public static class AvatarChecks
 {
+    /// <summary>
+    /// 执行 Run。
+    /// </summary>
     public static void Run(bool live)
     {
         Exception? failure = null;

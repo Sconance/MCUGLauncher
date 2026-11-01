@@ -1,9 +1,18 @@
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 JavaSearchProgress 数据。
+/// </summary>
 public sealed record JavaSearchProgress(int Directories, int Candidates, string CurrentDirectory);
 
+/// <summary>
+/// 表示 JavaSearch结果 数据。
+/// </summary>
 public sealed record JavaSearchResult(IReadOnlyList<string> Paths, int Directories, bool LimitReached);
 
+/// <summary>
+/// 提供 JavaDiscovery 相关功能。
+/// </summary>
 public static partial class JavaDiscovery
 {
     /// <summary>Opt-in, read-only discovery. Never follows junctions or executes files during traversal.</summary>
@@ -63,5 +72,8 @@ public static partial class JavaDiscovery
         return new(found.Order(StringComparer.OrdinalIgnoreCase).ToList(), visited, partial);
     }
 
+    /// <summary>
+    /// 执行 FixedDriveRoots。
+    /// </summary>
     public static IEnumerable<string> FixedDriveRoots() => DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed && d.IsReady).Select(d => d.RootDirectory.FullName);
 }

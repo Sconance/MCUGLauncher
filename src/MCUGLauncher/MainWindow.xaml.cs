@@ -1,8 +1,5 @@
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text.Json;
 using System.Windows;
-using System.Windows.Interop;
+using MCUGLauncher.Ui;
 using MCUGLauncher.UseCases;
 using BlockLaunch;
 using Microsoft.Web.WebView2.Core;
@@ -10,9 +7,13 @@ using Microsoft.Win32;
 
 namespace MCUGLauncher;
 
+/// <summary>WebView2 窗口宿主，组装应用用例与原生窗口适配器。</summary>
+/// <remarks>只处理窗口、对话框和浏览器生命周期；账号、下载和启动由 UseCases 编排。</remarks>
 public partial class MainWindow : Window, IDesktopHost
 {
     readonly LauncherApplication application;
+    readonly WindowChromeController chrome;
+    readonly UiBridge bridge;
     bool _ready;
     bool closed;
     string _uiDirectory = "";
@@ -20,6 +21,8 @@ public partial class MainWindow : Window, IDesktopHost
     public MainWindow()
     {
         InitializeComponent();
+        chrome = new WindowChromeController(this);
+        bridge = new UiBridge(Browser, Dispatcher, () => closed);
         application = new LauncherApplication(Send, this, dispatch: action =>
         {
             if (!closed)
@@ -42,27 +45,10 @@ public partial class MainWindow : Window, IDesktopHost
         Closed += (_, _) => { closed = true; application.Dispose(); Browser.Dispose(); };
     }
 
-    [DllImport("user32.dll")]
-    static extern bool ReleaseCapture();
-
-    [DllImport("user32.dll")]
-    static extern IntPtr SendMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("dwmapi.dll")]
-    static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
-
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-        var preference = 2;
-        DwmSetWindowAttribute(new WindowInteropHelper(this).Handle, 33, ref preference, sizeof(int));
-    }
-
-    void BeginWindowDrag()
-    {
-        // Delegate moving, snapping and monitor boundaries to the Windows move loop.
-        ReleaseCapture();
-        SendMessage(new WindowInteropHelper(this).Handle, 0x00A1, new IntPtr(2), IntPtr.Zero);
+        chrome.Initialize();
     }
 
     void FitUiToWindow()
@@ -75,7 +61,7 @@ public partial class MainWindow : Window, IDesktopHost
     {
         try
         {
-            _uiDirectory = PrepareUi();
+            _uiDirectory = EmbeddedUiCache.Extract();
             var dataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MCUGLauncher", "WebView2");
             var environment = await CoreWebView2Environment.CreateAsync(null, dataFolder);
             await Browser.EnsureCoreWebView2Async(environment);
@@ -100,32 +86,6 @@ public partial class MainWindow : Window, IDesktopHost
             MessageBox.Show("界面初始化失败。\n\n" + ex.Message, "MCUG Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
             Close();
         }
-    }
-
-    static string PrepareUi()
-    {
-        var target = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "MCUGLauncher",
-            "ui-" + ProductInfo.Version);
-        Directory.CreateDirectory(target);
-        var assembly = Assembly.GetExecutingAssembly();
-        foreach (var name in assembly.GetManifestResourceNames().Where(name => name.StartsWith("MCUGLauncher.Ui.")))
-        {
-            var file = Path.Combine(target, name["MCUGLauncher.Ui.".Length..]);
-            // Embedded resource names flatten folder separators to dots.
-            if (file.EndsWith("assets.logo.png", StringComparison.OrdinalIgnoreCase))
-                file = Path.Combine(target, "assets", "logo.png");
-            var folder = Path.GetDirectoryName(file);
-            if (!string.IsNullOrEmpty(folder))
-                Directory.CreateDirectory(folder);
-            using var source = assembly.GetManifestResourceStream(name);
-            if (source == null)
-                continue;
-            using var destination = File.Create(file);
-            source.CopyTo(destination);
-        }
-        return target;
     }
 
     void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
@@ -157,21 +117,7 @@ public partial class MainWindow : Window, IDesktopHost
     public bool ConfirmStopGame() => MessageBox.Show(this, "确认关闭这个游戏？未保存的内容可能丢失。", "关闭游戏",
         MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
 
-    public void Window(string action)
-    {
-        switch (action)
-        {
-            case "minimize":
-                WindowState = WindowState.Minimized;
-                break;
-            case "close":
-                Close();
-                break;
-            case "maximize":
-                WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-                break;
-        }
-    }
+    public void Window(string action) => chrome.Handle(action);
 
     public void PickFolder(string target)
     {
@@ -222,9 +168,7 @@ public partial class MainWindow : Window, IDesktopHost
 
     public void ResetWindow()
     {
-        Width = 1200;
-        Height = 780;
-        WindowState = WindowState.Normal;
+        chrome.Reset();
         Send(new
         {
             type = "toast",
@@ -232,20 +176,7 @@ public partial class MainWindow : Window, IDesktopHost
         });
     }
 
-    void Send(object payload)
-    {
-        if (closed)
-            return;
-        if (!Dispatcher.CheckAccess())
-        {
-            Dispatcher.BeginInvoke(() => Send(payload));
-            return;
-        }
-        Browser.CoreWebView2?.PostWebMessageAsJson(JsonSerializer.Serialize(payload, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        }));
-    }
+    void Send(object message) => bridge.Send(message);
 
-    void IDesktopHost.Drag() => BeginWindowDrag();
+    void IDesktopHost.Drag() => chrome.BeginDrag();
 }

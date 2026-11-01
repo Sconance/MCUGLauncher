@@ -2,13 +2,25 @@ using System.IO.Compression;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 WorldEntry 数据。
+/// </summary>
 public record WorldEntry(string Name, string Directory, DateTime Modified)
 {
+    /// <summary>
+    /// 执行 ToString。
+    /// </summary>
     public override string ToString() => $"{Name}   ·   {Modified:yyyy-MM-dd HH:mm}";
 }
 
+/// <summary>
+/// 表示 ScreenshotEntry 数据。
+/// </summary>
 public record ScreenshotEntry(string Name, string File, DateTime Modified, long Bytes)
 {
+    /// <summary>
+    /// 执行 ToString。
+    /// </summary>
     public override string ToString() => $"{Name}   ·   {Bytes / 1024:N0} KB";
 }
 
@@ -35,6 +47,9 @@ public static class WorldArchives
         return world;
     }
 
+    /// <summary>
+    /// 执行 列表。
+    /// </summary>
     public static List<WorldEntry> List(string instance)
     {
         var saves = Path.Combine(instance, "saves");
@@ -54,6 +69,9 @@ public static class WorldArchives
         return result.OrderByDescending(w => w.Modified).ToList();
     }
 
+    /// <summary>
+    /// 执行 Screenshots。
+    /// </summary>
     public static List<ScreenshotEntry> Screenshots(string instance)
     {
         var directory = Path.Combine(instance, "screenshots");
@@ -94,6 +112,9 @@ public static class WorldArchives
         }
     }
 
+    /// <summary>
+    /// 备份。
+    /// </summary>
     public static async Task Backup(string world, string target, Action<string>? progress = null, CancellationToken token = default)
     {
         world = World(world);
@@ -138,6 +159,9 @@ public static class WorldArchives
         }
     }
 
+    /// <summary>
+    /// 导入。
+    /// </summary>
     public static async Task<string> Import(string instance, string archive, string? name = null, Action<string>? progress = null, CancellationToken token = default)
     {
         instance = Path.GetFullPath(instance);

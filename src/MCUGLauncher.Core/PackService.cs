@@ -7,14 +7,29 @@ using System.Text.RegularExpressions;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 PackRequirements 数据。
+/// </summary>
 public record PackRequirements(string Minecraft, string Loader, string LoaderVersion);
 
+/// <summary>
+/// 表示 InstalledPack 数据。
+/// </summary>
 public record InstalledPack(string Name, string Minecraft, string Loader, string LoaderVersion, string LaunchVersion, string InstanceId);
 
+/// <summary>
+/// 表示 PackOverview 数据。
+/// </summary>
 public record PackOverview(string Name, string Format, PackRequirements Requirements, int Entries);
 
+/// <summary>
+/// 提供 PackService 相关功能。
+/// </summary>
 public sealed class PackService(HttpClient http, CancellationToken token = default)
 {
+    /// <summary>
+    /// 执行 Safe路径。
+    /// </summary>
     public static string SafePath(string root, string relative)
     {
         relative = relative.Replace('\\', '/');
@@ -61,6 +76,9 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
         return ParseRequirements(document.RootElement);
     }
 
+    /// <summary>
+    /// 读取Overview。
+    /// </summary>
     public static PackOverview ReadOverview(string archivePath)
     {
         using var archive = ZipFile.OpenRead(archivePath);
@@ -85,6 +103,9 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
         return new(name, "MultiMC / Prism", Components(json), archive.Entries.Count);
     }
 
+    /// <summary>
+    /// 解析Requirements。
+    /// </summary>
     public static PackRequirements ParseRequirements(JsonElement dependencies)
     {
         var mc = Get(dependencies, "minecraft");
@@ -108,6 +129,9 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
         return new(mc, loader, version);
     }
 
+    /// <summary>
+    /// 执行 下载。
+    /// </summary>
     public async Task Download(string url, string target, string sha512, Action<string>? progress = null)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https" || uri.Host is not ("cdn.modrinth.com" or "github.com" or "raw.githubusercontent.com" or "gitlab.com"))
@@ -120,6 +144,9 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
         File.Copy(cached, target, true);
     }
 
+    /// <summary>
+    /// 导入。
+    /// </summary>
     public async Task<InstalledPack> Import(string archivePath, string root, Func<PackRequirements, Task<string>> installGame, bool optional, Action<string>? progress = null, string? instanceId = null, Action<double>? overallProgress = null)
     {
         var alias = instanceId ?? "pack-" + Guid.NewGuid().ToString("N")[..12];

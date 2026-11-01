@@ -1,22 +1,73 @@
 namespace BlockLaunch;
 
+/// <summary>
+/// 提供 Preferences 相关功能。
+/// </summary>
 public class Preferences
 {
+    /// <summary>
+    /// 获取或设置 Schema版本。
+    /// </summary>
     public int SchemaVersion { get; set; } = 1;
+    /// <summary>
+    /// 获取或设置 根目录。
+    /// </summary>
     public string Root { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BlockLaunch", "minecraft");
+    /// <summary>
+    /// 获取或设置 Java。
+    /// </summary>
     public string Java { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Player。
+    /// </summary>
     public string Player { get; set; } = "Player";
+    /// <summary>
+    /// 获取或设置 Ram。
+    /// </summary>
     public int Ram { get; set; } = 4096;
+    /// <summary>
+    /// 获取或设置 Width。
+    /// </summary>
     public int Width { get; set; } = 1280;
+    /// <summary>
+    /// 获取或设置 Height。
+    /// </summary>
     public int Height { get; set; } = 720;
+    /// <summary>
+    /// 获取或设置 Last版本。
+    /// </summary>
     public string LastVersion { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 GameRoots。
+    /// </summary>
     public List<string> GameRoots { get; set; } = [];
+    /// <summary>
+    /// 获取或设置 启动。
+    /// </summary>
     public LaunchSettings Launch { get; set; } = new();
+    /// <summary>
+    /// 获取或设置 Accent。
+    /// </summary>
     public string Accent { get; set; } = "蓝色";
+    /// <summary>
+    /// 获取或设置 Background路径。
+    /// </summary>
     public string BackgroundPath { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 BackgroundOpacity。
+    /// </summary>
     public double BackgroundOpacity { get; set; } = 0.22;
+    /// <summary>
+    /// 获取或设置 BackgroundFit。
+    /// </summary>
     public string BackgroundFit { get; set; } = "裁剪填充";
+    /// <summary>
+    /// 获取或设置 BackgroundImages。
+    /// </summary>
     public List<string> BackgroundImages { get; set; } = [];
+    /// <summary>
+    /// 获取或设置 Offline皮肤。
+    /// </summary>
     public string OfflineSkin { get; set; } = "";
     public bool PreferMicrosoft
     {
@@ -28,25 +79,49 @@ public class Preferences
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 Network。
+    /// </summary>
     public NetworkSettings Network { get; set; } = new();
+    /// <summary>
+    /// 获取或设置 Resource下载Directory。
+    /// </summary>
     public string ResourceDownloadDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "BlockLaunch");
     public bool DownloadsPaused
     {
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 Paused下载ID。
+    /// </summary>
     public string PausedDownloadId { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 ProtectSaves。
+    /// </summary>
     public bool ProtectSaves { get; set; } = true;
+    /// <summary>
+    /// 获取或设置 Save备份Count。
+    /// </summary>
     public int SaveBackupCount { get; set; } = 5;
     public bool DarkMode
     {
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 ExtraJavaPaths。
+    /// </summary>
     public List<string> ExtraJavaPaths { get; set; } = [];
+    /// <summary>
+    /// 获取或设置 Servers。
+    /// </summary>
     public List<ServerFavorite> Servers { get; set; } = [];
 }
 
+/// <summary>
+/// 提供 设置Store 相关功能。
+/// </summary>
 public sealed class SettingsStore(string directory)
 {
     public string? Notice
@@ -55,6 +130,9 @@ public sealed class SettingsStore(string directory)
         private set;
     }
 
+    /// <summary>
+    /// 加载。
+    /// </summary>
     public Preferences Load()
     {
         var file = Path.Combine(directory, "settings.json");
@@ -107,6 +185,9 @@ public sealed class SettingsStore(string directory)
         }
     }
 
+    /// <summary>
+    /// 保存。
+    /// </summary>
     public void Save(Preferences prefs)
     {
         var file = Path.Combine(directory, "settings.json");

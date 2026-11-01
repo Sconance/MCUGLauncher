@@ -3,10 +3,19 @@ using System.Text;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 Save备份项目 数据。
+/// </summary>
 public record SaveBackupItem(string World, string Archive, string Version);
 
+/// <summary>
+/// 表示 Save备份 数据。
+/// </summary>
 public record SaveBackup(string Id, string Instance, string Reason, DateTimeOffset Created, List<SaveBackupItem> Worlds);
 
+/// <summary>
+/// 提供 SaveProtection 相关功能。
+/// </summary>
 public static class SaveProtection
 {
     static void Safe(string path)
@@ -16,8 +25,14 @@ public static class SaveProtection
                 throw new IOException("备份路径不可包含链接。");
     }
 
+    /// <summary>
+    /// 执行 DirectoryFor。
+    /// </summary>
     public static string DirectoryFor(string root, string instance) => Path.Combine(Path.GetFullPath(root), Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(instance).ToUpperInvariant())))[..24]);
 
+    /// <summary>
+    /// 执行 列表。
+    /// </summary>
     public static List<SaveBackup> List(string root, string instance)
     {
         var directory = DirectoryFor(root, instance);
@@ -54,6 +69,9 @@ public static class SaveProtection
         return backup;
     }
 
+    /// <summary>
+    /// 创建。
+    /// </summary>
     public static async Task<SaveBackup?> Create(string instance, string root, string reason, int keep, CancellationToken token = default)
     {
         if (keep is < 1 or > 100)
@@ -125,6 +143,9 @@ public static class SaveProtection
         return backup;
     }
 
+    /// <summary>
+    /// 执行 Archive路径。
+    /// </summary>
     public static string ArchivePath(string root, string instance, SaveBackup backup, SaveBackupItem item)
     {
         if (!Guid.TryParseExact(backup.Id, "N", out _))

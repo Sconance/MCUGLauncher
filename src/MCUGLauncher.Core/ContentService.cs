@@ -7,15 +7,27 @@ using System.Text.Json.Serialization;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 内容Project 数据。
+/// </summary>
 public record ContentProject(string Id, string Slug, string Title, string Description, string Author, long Downloads)
 {
+    /// <summary>
+    /// 获取或设置 IconUrl。
+    /// </summary>
     public string IconUrl { get; init; } = "";
+    /// <summary>
+    /// 获取或设置 标签。
+    /// </summary>
     public string Tags { get; init; } = "";
     public bool IsFavorite
     {
         get;
         init;
     }
+    /// <summary>
+    /// 获取或设置 Custom标签。
+    /// </summary>
     public string CustomTags { get; init; } = "";
 
     public string DisplayTitle => (IsFavorite ? "★ " : "") + Title;
@@ -25,11 +37,23 @@ public record ContentProject(string Id, string Slug, string Title, string Descri
     public string Meta => $"{Author}  ·  {Downloads:N0} 次下载 · Modrinth" + (Tags.Length > 0 ? "\n" + Tags : "") + (CustomTags.Length > 0 ? "\n收藏标签：" + CustomTags : "");
 }
 
+/// <summary>
+/// 表示 Search页面 数据。
+/// </summary>
 public record SearchPage(List<ContentProject> Items, int Total);
 
+/// <summary>
+/// 提供 内容文件 相关功能。
+/// </summary>
 public class ContentFile
 {
+    /// <summary>
+    /// 获取或设置 Filename。
+    /// </summary>
     public string Filename { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Url。
+    /// </summary>
     public string Url { get; set; } = "";
     public long Size
     {
@@ -41,9 +65,15 @@ public class ContentFile
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 Hashes。
+    /// </summary>
     public Dictionary<string, string> Hashes { get; set; } = new();
 }
 
+/// <summary>
+/// 提供 内容Dependency 相关功能。
+/// </summary>
 public class ContentDependency
 {
     public string? ProjectId
@@ -56,43 +86,88 @@ public class ContentDependency
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 Dependency类型。
+    /// </summary>
     public string DependencyType { get; set; } = "";
 }
 
+/// <summary>
+/// 提供 内容版本 相关功能。
+/// </summary>
 public class ContentVersion
 {
+    /// <summary>
+    /// 获取或设置 ID。
+    /// </summary>
     public string Id { get; set; } = "";
     public string ProjectId { get; set; } = "";
     public string Name { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 版本Number。
+    /// </summary>
     public string VersionNumber { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 版本类型。
+    /// </summary>
     public string VersionType { get; set; } = "";
     public DateTimeOffset DatePublished
     {
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 GameVersions。
+    /// </summary>
     public string[] GameVersions { get; set; } = [];
+    /// <summary>
+    /// 获取或设置 Loaders。
+    /// </summary>
     public string[] Loaders { get; set; } = [];
+    /// <summary>
+    /// 获取或设置 Files。
+    /// </summary>
     public List<ContentFile> Files { get; set; } = [];
     public List<ContentDependency> Dependencies { get; set; } = [];
 
     public string Label => $"{VersionNumber} · {VersionType} · {DatePublished:yyyy-MM-dd}";
 }
 
+/// <summary>
+/// 提供 Managed内容 相关功能。
+/// </summary>
 public class ManagedContent
 {
     public string ProjectId { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 版本ID。
+    /// </summary>
     public string VersionId { get; set; } = "";
     public string Name { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Relative路径。
+    /// </summary>
     public string RelativePath { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Sha512。
+    /// </summary>
     public string Sha512 { get; set; } = "";
     public List<ContentDependency> Dependencies { get; set; } = [];
 }
 
+/// <summary>
+/// 表示 Local内容 数据。
+/// </summary>
 public record LocalContent(string Path, string Name, string Detail, string State, ManagedContent? Managed);
 
+/// <summary>
+/// 表示 InstallPlan 数据。
+/// </summary>
 public record InstallPlan(List<ContentVersion> Versions, Dictionary<string, string> Types);
 
+/// <summary>
+/// 定义 IResourceProvider 的契约。
+/// </summary>
 public interface IResourceProvider
 {
     Task<SearchPage> Search(string query, string game, string loader, string type, int offset = 0);
@@ -100,6 +175,9 @@ public interface IResourceProvider
     Task<InstallPlan> Resolve(ContentVersion version, string game, string loader);
 }
 
+/// <summary>
+/// 提供 内容Service 相关功能。
+/// </summary>
 public sealed class ContentService : IResourceProvider
 {
     readonly HttpClient http;
@@ -120,8 +198,14 @@ public sealed class ContentService : IResourceProvider
     static string Esc(string s) => Uri.EscapeDataString(s);
     async Task<T> Get<T>(string route) => await http.GetFromJsonAsync<T>("https://api.modrinth.com/v2/" + route, Json, token) ?? throw new IOException("Modrinth 返回了空响应。");
 
+    /// <summary>
+    /// 搜索。
+    /// </summary>
     public Task<SearchPage> Search(string query, string game, string loader, string type, int offset = 0) => Search(query, game, loader, type, offset, "relevance");
 
+    /// <summary>
+    /// 搜索。
+    /// </summary>
     public async Task<SearchPage> Search(string query, string game, string loader, string type, int offset, string sort)
     {
         if (sort is not ("relevance" or "downloads" or "updated"))
@@ -143,6 +227,9 @@ public sealed class ContentService : IResourceProvider
         return new(hits, doc.RootElement.GetProperty("total_hits").GetInt32());
     }
 
+    /// <summary>
+    /// 执行 Versions。
+    /// </summary>
     public async Task<List<ContentVersion>> Versions(string project, string game, string loader, string type)
     {
         var loaderQuery = type == "datapack" || type == "mod" && loader.Length > 0 ? "&loaders=" + Esc(JsonSerializer.Serialize(new[] { type == "datapack" ? "datapack" : loader })) : "";
@@ -153,6 +240,9 @@ public sealed class ContentService : IResourceProvider
 
     static bool Compatible(ContentVersion v, string game, string loader, string type) => (game.Length == 0 || v.GameVersions.Contains(game)) && (type is not ("mod" or "datapack") || loader.Length == 0 || v.Loaders.Contains(type == "datapack" ? "datapack" : loader));
 
+    /// <summary>
+    /// 解析。
+    /// </summary>
     public async Task<InstallPlan> Resolve(ContentVersion root, string game, string loader)
     {
         var versions = new Dictionary<string, ContentVersion>();
@@ -246,6 +336,9 @@ public sealed class ContentService : IResourceProvider
         CheckDependencies(active);
     }
 
+    /// <summary>
+    /// 执行 Validate更新Dependencies。
+    /// </summary>
     public static void ValidateUpdateDependencies(string instance, InstallPlan plan)
     {
         var current = ReadManaged(instance);
@@ -266,6 +359,9 @@ public sealed class ContentService : IResourceProvider
         CheckActiveDependencies(instance, current.Where(m => !projects.Contains(m.ProjectId)).Concat(additions).ToList(), states);
     }
 
+    /// <summary>
+    /// 执行 Safe文件。
+    /// </summary>
     public static string SafeFile(string file)
     {
         if (string.IsNullOrWhiteSpace(file) || file != System.IO.Path.GetFileName(file) || file.IndexOfAny(System.IO.Path.GetInvalidFileNameChars()) >= 0 || file.EndsWith('.') || file.EndsWith(' ') || file.Contains(':'))
@@ -275,6 +371,9 @@ public sealed class ContentService : IResourceProvider
 
     static string Manifest(string instance) => System.IO.Path.Combine(instance, ".blocklaunch-content.json");
 
+    /// <summary>
+    /// 执行 Lock实例。
+    /// </summary>
     public static FileStream LockInstance(string instance)
     {
         var folder = System.IO.Path.Combine(instance, ".blocklaunch");
@@ -289,6 +388,9 @@ public sealed class ContentService : IResourceProvider
         }
     }
 
+    /// <summary>
+    /// 读取Managed。
+    /// </summary>
     public static List<ManagedContent> ReadManaged(string instance) => File.Exists(Manifest(instance)) ? JsonSerializer.Deserialize<List<ManagedContent>>(File.ReadAllText(Manifest(instance)), Json) ?? [] : [];
 
     static string ContentPath(string instance, string relative)
@@ -315,6 +417,9 @@ public sealed class ContentService : IResourceProvider
         return Convert.ToHexString(await SHA512.HashDataAsync(stream, cancellation)).ToLowerInvariant();
     }
 
+    /// <summary>
+    /// 安装。
+    /// </summary>
     public async Task<int> Install(InstallPlan plan, string instance, Action<string>? progress = null, string? expectedFingerprint = null, Action<double>? overallProgress = null)
     {
         token.ThrowIfCancellationRequested();
@@ -458,6 +563,9 @@ public sealed class ContentService : IResourceProvider
         }
     }
 
+    /// <summary>
+    /// 执行 列表Local。
+    /// </summary>
     public static List<LocalContent> ListLocal(string instance)
     {
         var managed = ReadManaged(instance);
@@ -493,6 +601,9 @@ public sealed class ContentService : IResourceProvider
         return result.OrderBy(x => x.Name).ToList();
     }
 
+    /// <summary>
+    /// 导入Files。
+    /// </summary>
     public async Task<int> ImportFiles(string instance, string child, IEnumerable<string> sources)
     {
         token.ThrowIfCancellationRequested();
@@ -537,6 +648,9 @@ public sealed class ContentService : IResourceProvider
         }
     }
 
+    /// <summary>
+    /// 切换。
+    /// </summary>
     public static void Toggle(LocalContent content)
     {
         var instance = Directory.GetParent(System.IO.Path.GetDirectoryName(content.Path)!)!.FullName;
@@ -551,6 +665,9 @@ public sealed class ContentService : IResourceProvider
         File.Move(content.Path, target);
     }
 
+    /// <summary>
+    /// 移动To备份。
+    /// </summary>
     public static void MoveToBackup(string instance, LocalContent content)
     {
         using var instanceLock = LockInstance(instance);

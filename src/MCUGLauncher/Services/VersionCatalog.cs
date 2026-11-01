@@ -5,13 +5,40 @@ using MCUGLauncher.Models;
 
 namespace MCUGLauncher.Services;
 
+/// <summary>
+/// 本地版本目录扫描。
+/// </summary>
+/// <remarks>
+/// 只读 versions 目录与实例 JSON，不访问网络；供界面状态、启动与内容安装共用。
+/// </remarks>
 public sealed class VersionCatalog
 {
+    /// <summary>
+    /// 获取或设置 分组。
+    /// </summary>
     public IReadOnlyList<VersionGroup> Groups { get; init; } = [];
+    /// <summary>
+    /// 获取或设置 Instances。
+    /// </summary>
     public IReadOnlyList<InstanceInfo> Instances { get; init; } = [];
+    /// <summary>
+    /// 获取或设置 Selected。
+    /// </summary>
     public string Selected { get; init; } = "";
+    /// <summary>
+    /// 获取或设置 根目录。
+    /// </summary>
     public string Root { get; init; } = "";
 
+    /// <summary>
+    /// 扫描版本并返回目录快照。
+    /// </summary>
+    /// <param name="root">游戏根目录</param>
+    /// <param name="selected">上次选中的实例名</param>
+    /// <returns>版本分组、实例列表与最终选中项</returns>
+    /// <remarks>
+    /// 选中实例不存在时回退到扫描到的第一个实例。
+    /// </remarks>
     public static VersionCatalog Load(string root, string selected)
     {
         var groups = new List<VersionGroup>();
@@ -74,6 +101,12 @@ public sealed class VersionCatalog
         catch (Exception ex) when (ex is IOException or JsonException) { return key; }
     }
 
+    /// <summary>
+    /// 读取实例的版本详情。
+    /// </summary>
+    /// <remarks>
+    /// 包含 Minecraft 版本、加载器与加载器版本。
+    /// </remarks>
     public static VersionDetails ReadDetails(string root, string name)
     {
         var file = Path.Combine(root, "versions", name, name + ".json");
@@ -120,6 +153,12 @@ public sealed class VersionCatalog
         }
     }
 
+    /// <summary>
+    /// 读取实例 mods 目录。
+    /// </summary>
+    /// <remarks>
+    /// 返回文件名、大小、启用状态与版本信息。
+    /// </remarks>
     public static IReadOnlyList<ModInfo> ReadMods(string root, string instance)
     {
         var dir = Path.Combine(InstanceDirectory(root, instance), "mods");
@@ -148,6 +187,9 @@ public sealed class VersionCatalog
         return result;
     }
 
+    /// <summary>
+    /// 设置Enabled。
+    /// </summary>
     public static void SetEnabled(ModInfo mod, bool enabled)
     {
         var target = enabled
@@ -161,8 +203,14 @@ public sealed class VersionCatalog
             File.Move(mod.Path, target);
     }
 
+    /// <summary>
+    /// 删除。
+    /// </summary>
     public static void Delete(ModInfo mod) => File.Delete(mod.Path);
 
+    /// <summary>
+    /// 执行 实例Directory。
+    /// </summary>
     public static string InstanceDirectory(string root, string instance)
     {
         ContentService.SafeFile(instance);
@@ -204,4 +252,7 @@ public sealed class VersionCatalog
     }
 }
 
+/// <summary>
+/// 表示 版本Details 数据。
+/// </summary>
 public sealed record VersionDetails(string Name, string Minecraft, string Loader, string Java, bool Complete);

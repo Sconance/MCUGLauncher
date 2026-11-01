@@ -94,6 +94,18 @@ await Request("""{"type":"requestGames"}""");
 Check(Has("games") && messages.Last().GetProperty("items").GetArrayLength() == 0, "running games request contains only owned sessions");
 application.RememberWindow(1400, 900, true);
 Check(store.Load().WindowWidth == 1400 && store.Load().WindowMaximized, "window dimensions persist through application boundary");
+var extractedUi = MCUGLauncher.Ui.EmbeddedUiCache.ExtractTo(Path.Combine(fixture, "extracted-ui"));
+var embeddedAssembly = typeof(MainWindow).Assembly;
+foreach (var resource in embeddedAssembly.GetManifestResourceNames().Where(name => name.StartsWith("MCUGLauncher.Ui.")))
+{
+    var relative = resource["MCUGLauncher.Ui.".Length..];
+    if (relative == "assets.logo.png")
+        relative = Path.Combine("assets", "logo.png");
+    using var original = embeddedAssembly.GetManifestResourceStream(resource)!;
+    using var bytes = new MemoryStream();
+    original.CopyTo(bytes);
+    Check(File.ReadAllBytes(Path.Combine(extractedUi, relative)).SequenceEqual(bytes.ToArray()), "extracted embedded UI matches assembly: " + relative);
+}
 await ResourceScenarios.Run(fixture);
 await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);

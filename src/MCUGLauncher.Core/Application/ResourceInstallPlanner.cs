@@ -3,6 +3,9 @@ namespace BlockLaunch;
 /// <summary>Freezes the chosen version and target into the existing persistent content queue format.</summary>
 public static class ResourceInstallPlanner
 {
+    /// <summary>
+    /// 创建。
+    /// </summary>
     public static DownloadRequest Create(ContentVersion version, PackRequirements target, string kind, string directory)
     {
         if (kind is not ("mod" or "resourcepack" or "shader" or "datapack"))

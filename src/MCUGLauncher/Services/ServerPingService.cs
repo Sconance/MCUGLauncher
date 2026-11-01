@@ -7,12 +7,30 @@ using System.Text;
 
 namespace MCUGLauncher.Services;
 
+/// <summary>
+/// 表示 服务器状态结果 数据。
+/// </summary>
 public sealed record PingResult(bool Online, int OnlinePlayers, int MaxPlayers, int Ping, string Motd, string Version, string Error);
 
+/// <summary>
+/// Minecraft 服务器 SLP 查询。
+/// </summary>
+/// <remarks>
+/// 直接使用 TCP/HTTP 读取服务器状态，不依赖游戏客户端。
+/// </remarks>
 public static class ServerPingService
 {
     const int Protocol = 763;
 
+    /// <summary>
+    /// 查询服务器状态。
+    /// </summary>
+    /// <param name="address">服务器地址，可带端口</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>服务器状态查询结果</returns>
+    /// <remarks>
+    /// 返回在线人数、最大人数、延迟、MOTD 与版本；失败时 Online=false 并带 Error。
+    /// </remarks>
     public static async Task<PingResult> PingAsync(string address, CancellationToken token)
     {
         var (host, port) = Split(address);

@@ -7,8 +7,14 @@ using XboxAuthNet.Game.Authenticators;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 提供 MinecraftOwnershipGuard 相关功能。
+/// </summary>
 public sealed class MinecraftOwnershipGuard : IAuthenticator
 {
+    /// <summary>
+    /// 执行 Execute。
+    /// </summary>
     public async ValueTask ExecuteAsync(AuthenticateContext context)
     {
         var access = JETokenSource.Default.Get(context.SessionStorage)?.AccessToken;

@@ -8,8 +8,14 @@ using System.Windows.Media.Imaging;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 提供 头像Renderer 相关功能。
+/// </summary>
 public static class AvatarRenderer
 {
+    /// <summary>
+    /// 执行 From皮肤。
+    /// </summary>
     public static BitmapSource FromSkin(byte[] bytes)
     {
         if (bytes.Length < 33 || !bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }) || !bytes.AsSpan(12, 4).SequenceEqual("IHDR"u8))
@@ -42,6 +48,9 @@ public static class AvatarRenderer
         return result;
     }
 
+    /// <summary>
+    /// 执行 Default。
+    /// </summary>
     public static BitmapSource Default()
     {
         // Original pixel artwork used when no skin is selected or the network is unavailable.
@@ -66,6 +75,9 @@ public static class AvatarRenderer
         return image;
     }
 
+    /// <summary>
+    /// 执行 皮肤Uri。
+    /// </summary>
     public static Uri SkinUri(string value)
     {
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Host != "textures.minecraft.net" || uri.Scheme is not ("https" or "http") || !uri.AbsolutePath.StartsWith("/texture/", StringComparison.Ordinal) || uri.UserInfo.Length > 0)
@@ -76,8 +88,14 @@ public static class AvatarRenderer
         }.Uri;
     }
 
+    /// <summary>
+    /// 执行 缓存路径。
+    /// </summary>
     public static string CachePath(string directory, Uri uri) => Path.Combine(directory, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(uri.AbsoluteUri))) + ".png");
 
+    /// <summary>
+    /// 执行 下载。
+    /// </summary>
     public static async Task<byte[]> Download(HttpClient http, Uri uri, CancellationToken token)
     {
         using var response = await http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, token);

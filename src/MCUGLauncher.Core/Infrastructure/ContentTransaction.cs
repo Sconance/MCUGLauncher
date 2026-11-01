@@ -2,9 +2,18 @@ using System.Security.Cryptography;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 提供 TransactionMove 相关功能。
+/// </summary>
 public class TransactionMove
 {
+    /// <summary>
+    /// 获取或设置 Relative。
+    /// </summary>
     public string Relative { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Hash。
+    /// </summary>
     public string Hash { get; set; } = "";
     public bool Backup
     {
@@ -13,13 +22,25 @@ public class TransactionMove
     }
 }
 
+/// <summary>
+/// 提供 TransactionJournal 相关功能。
+/// </summary>
 public class TransactionJournal
 {
+    /// <summary>
+    /// 获取或设置 状态。
+    /// </summary>
     public string State { get; set; } = "Preparing";
+    /// <summary>
+    /// 获取或设置 Moves。
+    /// </summary>
     public List<TransactionMove> Moves { get; set; } = [];
 }
 
 // The per-instance operation.lock must be held by the caller.
+/// <summary>
+/// 提供 内容Transaction 相关功能。
+/// </summary>
 public sealed class ContentTransaction
 {
     readonly string instance, directory, journalPath;
@@ -59,12 +80,18 @@ public sealed class ContentTransaction
 
     void Save() => AtomicFile.WriteJson(journalPath, journal);
 
+    /// <summary>
+    /// 判断是否包含。
+    /// </summary>
     public static string Hash(string file)
     {
         using var input = File.OpenRead(file);
         return Convert.ToHexString(SHA512.HashData(input));
     }
 
+    /// <summary>
+    /// 备份。
+    /// </summary>
     public void Backup(string relative)
     {
         var file = Destination(relative);
@@ -82,6 +109,9 @@ public sealed class ContentTransaction
         File.Move(file, backup);
     }
 
+    /// <summary>
+    /// 写入。
+    /// </summary>
     public void Write(string source, string relative)
     {
         var target = Destination(relative);
@@ -97,6 +127,9 @@ public sealed class ContentTransaction
         File.Move(source, target);
     }
 
+    /// <summary>
+    /// 执行 Commit。
+    /// </summary>
     public void Commit()
     {
         journal.State = "Committed";
@@ -116,6 +149,9 @@ public sealed class ContentTransaction
             Directory.Delete(Stage, true);
     }
 
+    /// <summary>
+    /// 执行 Rollback。
+    /// </summary>
     public void Rollback()
     {
         foreach (var move in journal.Moves.AsEnumerable().Reverse())
@@ -148,6 +184,9 @@ public sealed class ContentTransaction
         CleanupStage();
     }
 
+    /// <summary>
+    /// 执行 LatestCommitted。
+    /// </summary>
     public static string? LatestCommitted(string instance)
     {
         var directory = Path.Combine(instance, ".blocklaunch", "backups");
@@ -160,6 +199,9 @@ public sealed class ContentTransaction
         });
     }
 
+    /// <summary>
+    /// 恢复Latest。
+    /// </summary>
     public static void RestoreLatest(string instance, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
@@ -193,6 +235,9 @@ public sealed class ContentTransaction
         transaction.Rollback();
     }
 
+    /// <summary>
+    /// 执行 Recover。
+    /// </summary>
     public static List<string> Recover(string instance)
     {
         var messages = new List<string>();

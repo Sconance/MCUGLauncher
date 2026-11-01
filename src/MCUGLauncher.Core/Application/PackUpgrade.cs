@@ -2,19 +2,46 @@ using System.Security.Cryptography;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 PackUpgrade文件 数据。
+/// </summary>
 public record PackUpgradeFile(string Relative, string Reason, bool Conflict, bool KeepOld)
 {
     public string Label => Relative + " · " + Reason;
 }
 
+/// <summary>
+/// 提供 PackUpgradePreview 相关功能。
+/// </summary>
 public sealed class PackUpgradePreview : IDisposable
 {
+    /// <summary>
+    /// 获取或设置 根目录。
+    /// </summary>
     public string Root { get; init; } = "";
+    /// <summary>
+    /// 获取或设置 Workspace。
+    /// </summary>
     public string Workspace { get; init; } = "";
+    /// <summary>
+    /// 获取或设置 Source。
+    /// </summary>
     public string Source { get; init; } = "";
+    /// <summary>
+    /// 获取或设置 OriginalKey。
+    /// </summary>
     public string OriginalKey { get; init; } = "";
+    /// <summary>
+    /// 获取或设置 Pack。
+    /// </summary>
     public InstalledPack Pack { get; init; } = null!;
+    /// <summary>
+    /// 获取或设置 OriginalFiles。
+    /// </summary>
     public Dictionary<string, string> OriginalFiles { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>
+    /// 获取或设置 Files。
+    /// </summary>
     public List<PackUpgradeFile> Files { get; init; } = [];
     public bool HasBaseline
     {
@@ -22,6 +49,9 @@ public sealed class PackUpgradePreview : IDisposable
         init;
     }
 
+    /// <summary>
+    /// 执行 Dispose。
+    /// </summary>
     public void Dispose()
     {
         var parent = Path.GetFullPath(Path.Combine(Root, ".blocklaunch-upgrade-staging")) + Path.DirectorySeparatorChar;
@@ -33,6 +63,9 @@ public sealed class PackUpgradePreview : IDisposable
     }
 }
 
+/// <summary>
+/// 提供 PackUpgrade 相关功能。
+/// </summary>
 public static class PackUpgrade
 {
     static readonly string[] Folders = ["mods", "config", "defaultconfigs", "resourcepacks", "shaderpacks", "kubejs", "scripts", "saves", "screenshots", "datapacks"];
@@ -74,6 +107,9 @@ public static class PackUpgrade
             }
         }
 
+        /// <summary>
+        /// 执行 Dispose。
+        /// </summary>
         public void Dispose()
         {
             foreach (var file in locks)
@@ -98,6 +134,9 @@ public static class PackUpgrade
         }
     }
 
+    /// <summary>
+    /// 执行 Snapshot。
+    /// </summary>
     public static async Task<Dictionary<string, string>> Snapshot(string directory, CancellationToken token)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -120,6 +159,9 @@ public static class PackUpgrade
         return result;
     }
 
+    /// <summary>
+    /// 准备。
+    /// </summary>
     public static async Task<PackUpgradePreview> Prepare(HttpClient http, string root, string originalKey, string source, string archive, Func<PackRequirements, Task<string>> installGame, bool optional, Action<string>? progress, CancellationToken token)
     {
         var catalog = new InstanceCatalog(root);
@@ -186,6 +228,9 @@ public static class PackUpgrade
 
     static bool Same(Dictionary<string, string> a, Dictionary<string, string> b) => a.Count == b.Count && a.All(p => b.TryGetValue(p.Key, out var hash) && hash == p.Value);
 
+    /// <summary>
+    /// 执行 Commit。
+    /// </summary>
     public static async Task<string> Commit(PackUpgradePreview preview, IEnumerable<string> keepOld, LaunchSettings settings, Action<string>? progress, CancellationToken token)
     {
         using var lease = ContentService.LockInstance(preview.Source);

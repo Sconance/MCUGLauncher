@@ -7,10 +7,16 @@ using XboxAuthNet.Game.Accounts.JsonStorage;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 提供 Protected账号Storage 相关功能。
+/// </summary>
 public sealed class ProtectedAccountStorage(string file) : IJsonStorage
 {
     static readonly byte[] Entropy = Encoding.UTF8.GetBytes("BlockLaunch.Accounts.v1");
 
+    /// <summary>
+    /// 读取AsJsonNode。
+    /// </summary>
     public JsonNode? ReadAsJsonNode()
     {
         if (!File.Exists(file))
@@ -32,6 +38,9 @@ public sealed class ProtectedAccountStorage(string file) : IJsonStorage
         }
     }
 
+    /// <summary>
+    /// 写入。
+    /// </summary>
     public void Write(JsonNode node, JsonSerializerOptions? serializerOptions)
     {
         var plain = Encoding.UTF8.GetBytes(node.ToJsonString(serializerOptions));
@@ -65,19 +74,34 @@ public sealed class ProtectedAccountStorage(string file) : IJsonStorage
         }
     }
 
+    /// <summary>
+    /// 执行 Forget。
+    /// </summary>
     public void Forget()
     {
         Write(new JsonObject(), null);
     }
 }
 
+/// <summary>
+/// 提供 账号StorageException 相关功能。
+/// </summary>
 public class AccountStorageException(string message, Exception? inner = null) : Exception(message, inner);
 
+/// <summary>
+/// 提供 账号LoginException 相关功能。
+/// </summary>
 public class AccountLoginException(string message, bool requiresInteractive = false) : Exception(message)
 {
+    /// <summary>
+    /// 获取或设置 RequiresInteractive。
+    /// </summary>
     public bool RequiresInteractive { get; } = requiresInteractive;
 }
 
+/// <summary>
+/// 提供 Memory账号Storage 相关功能。
+/// </summary>
 internal sealed class MemoryAccountStorage : IJsonStorage
 {
     public JsonNode? Value
@@ -86,6 +110,12 @@ internal sealed class MemoryAccountStorage : IJsonStorage
         private set;
     }
 
+    /// <summary>
+    /// 读取AsJsonNode。
+    /// </summary>
     public JsonNode? ReadAsJsonNode() => Value?.DeepClone();
+    /// <summary>
+    /// 写入。
+    /// </summary>
     public void Write(JsonNode node, JsonSerializerOptions? serializerOptions) => Value = node.DeepClone();
 }

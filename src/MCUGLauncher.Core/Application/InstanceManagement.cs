@@ -3,10 +3,28 @@ using System.Text.Json;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 ExportOptions 数据。
+/// </summary>
 public record ExportOptions(bool Mods, bool Servers, bool Shaders, bool Resources, bool Saves);
 
+/// <summary>
+/// 实例导出与删除。
+/// </summary>
+/// <remarks>
+/// 依赖 PackRequirements 与 ExportOptions；导出会打包实例的 mods/服务器/光影/资源/存档，删除会清理实例目录并返回被删除的路径。
+/// </remarks>
 public static class InstanceManagement
 {
+    /// <summary>
+    /// 导出。
+    /// </summary>
+    /// <param name="directory">实例目录</param>
+    /// <param name="target">导出目标目录</param>
+    /// <param name="name">导出实例名</param>
+    /// <param name="requirements">版本与加载器要求</param>
+    /// <param name="options">要包含的内容</param>
+    /// <param name="token">取消令牌</param>
     public static async Task Export(string directory, string target, string name, PackRequirements requirements, ExportOptions options, CancellationToken token, bool overwrite = true)
     {
         var source = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
@@ -95,6 +113,12 @@ public static class InstanceManagement
         }
     }
 
+    /// <summary>
+    /// 移除。
+    /// </summary>
+    /// <param name="root">游戏根目录</param>
+    /// <param name="key">实例名</param>
+    /// <returns>被删除的实例目录</returns>
     public static string Remove(string root, string key)
     {
         ContentService.SafeFile(key);

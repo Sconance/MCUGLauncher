@@ -5,6 +5,9 @@ namespace BlockLaunch;
 /// <summary>Reads installed metadata, not display names, so renamed profiles retain their loader identity.</summary>
 public static class ProfileInspector
 {
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public static PackRequirements Read(string root, string profile)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

@@ -11,8 +11,14 @@ using XboxAuthNet.Game.Authenticators;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 SavedMicrosoft账号 数据。
+/// </summary>
 public record SavedMicrosoftAccount(string Username, string Uuid, string SkinUrl = "");
 
+/// <summary>
+/// 提供 Microsoft账号Service 相关功能。
+/// </summary>
 public sealed class MicrosoftAccountService
 {
     readonly ProtectedAccountStorage storage;
@@ -31,6 +37,9 @@ public sealed class MicrosoftAccountService
 
     JsonXboxGameAccountManager Manager(XboxAuthNet.Game.Accounts.JsonStorage.IJsonStorage store) => new(store, JEGameAccount.FromSessionStorage, JsonXboxGameAccountManager.DefaultSerializerOption);
 
+    /// <summary>
+    /// 读取Saved账号。
+    /// </summary>
     public SavedMicrosoftAccount? ReadSavedAccount()
     {
         var account = Manager(storage).GetAccounts().OfType<JEGameAccount>().FirstOrDefault(a => a.Profile != null);
@@ -58,6 +67,12 @@ public sealed class MicrosoftAccountService
         }
     }
 
+    /// <summary>
+    /// 执行 Authenticate。
+    /// </summary>
+    /// <param name="interactive">true 时打开系统浏览器授权，false 时静默刷新</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>已通过校验的微软会话</returns>
     public async Task<MSession> Authenticate(bool interactive, CancellationToken token)
     {
         using var lease = LockAccount();
@@ -111,12 +126,18 @@ public sealed class MicrosoftAccountService
         }
     }
 
+    /// <summary>
+    /// 执行 Forget。
+    /// </summary>
     public void Forget()
     {
         using var lease = LockAccount();
         storage.Forget();
     }
 
+    /// <summary>
+    /// 执行 Validate会话。
+    /// </summary>
     public static void ValidateSession(MSession session)
     {
         var token = new JEToken
@@ -128,6 +149,9 @@ public sealed class MicrosoftAccountService
             throw new AccountLoginException("微软授权未返回有效的 Java 版玩家档案，无法用于正版启动。");
     }
 
+    /// <summary>
+    /// 执行 Translate。
+    /// </summary>
     public static AccountLoginException Translate(Exception error, bool refreshing)
     {
         var errors = new List<Exception>();

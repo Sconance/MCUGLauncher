@@ -123,6 +123,9 @@ sealed class Handler(byte[] bytes) : HttpMessageHandler
 {
     public int Calls;
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
         Calls++;

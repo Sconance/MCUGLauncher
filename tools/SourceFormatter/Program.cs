@@ -1,3 +1,6 @@
+// SourceFormatter：使用 SDK 自带的 Roslyn 检查并修复仓库内 C# 源码的格式。
+// 用法：dotnet run --project tools/SourceFormatter [-- --write]
+// 必须从仓库根目录运行；只处理 src、test、tools 下的人工编写文件。
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;

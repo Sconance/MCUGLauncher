@@ -1,7 +1,13 @@
 namespace BlockLaunch;
 
+/// <summary>
+/// 提供 GameDefaults 相关功能。
+/// </summary>
 public static class GameDefaults
 {
+    /// <summary>
+    /// 解析根目录。
+    /// </summary>
     public static string ResolveRoot(string input, bool requireExisting = false)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -19,6 +25,9 @@ public static class GameDefaults
     }
 
     // Only seed a missing language; a player's later language choice survives launches and repairs.
+    /// <summary>
+    /// 确保Chinese。
+    /// </summary>
     public static void EnsureChinese(string directory, string minecraft, bool overwrite = false)
     {
         Directory.CreateDirectory(directory);

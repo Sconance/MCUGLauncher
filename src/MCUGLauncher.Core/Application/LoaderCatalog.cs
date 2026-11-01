@@ -3,13 +3,25 @@ using System.Xml.Linq;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 LoaderRelease 数据。
+/// </summary>
 public record LoaderRelease(string Version, string Label)
 {
+    /// <summary>
+    /// 执行 ToString。
+    /// </summary>
     public override string ToString() => Label;
 }
 
+/// <summary>
+/// 提供 LoaderCatalog 相关功能。
+/// </summary>
 public static class LoaderCatalog
 {
+    /// <summary>
+    /// 获取。
+    /// </summary>
     public static async Task<List<LoaderRelease>> Get(HttpClient http, string minecraft, string loader, CancellationToken token)
     {
         if (loader is not ("forge" or "neoforge"))
@@ -19,6 +31,9 @@ public static class LoaderCatalog
         return Parse(xml, minecraft, loader);
     }
 
+    /// <summary>
+    /// 解析。
+    /// </summary>
     public static List<LoaderRelease> Parse(XDocument xml, string minecraft, string loader)
     {
         var mc = minecraft.Split('.');

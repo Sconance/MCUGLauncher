@@ -2,6 +2,9 @@ using System.Diagnostics;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 RunningGame 数据。
+/// </summary>
 public sealed record RunningGame(Guid Id, string Root, string Directory, string Version, string LogFile, GameSession Session, DateTime StartedUtc, string PlayerName = "", bool Offline = false);
 
 /// <summary>Owns independent process lifetimes, not UI selection or account state.</summary>
@@ -19,9 +22,18 @@ public sealed class RunningGameRegistry
         }
     }
 
+    /// <summary>
+    /// 执行 UsesDirectory。
+    /// </summary>
     public bool UsesDirectory(string directory) => Active.Any(g => SamePath(g.Directory, directory));
+    /// <summary>
+    /// 执行 Uses根目录。
+    /// </summary>
     public bool UsesRoot(string root) => Active.Any(g => SamePath(g.Root, root));
 
+    /// <summary>
+    /// 执行 RequireAvailable。
+    /// </summary>
     public void RequireAvailable(string directory, string playerName = "", bool offline = false)
     {
         var conflicts = Active.Where(game => SamePath(game.Directory, directory));
@@ -30,6 +42,9 @@ public sealed class RunningGameRegistry
             throw new IOException("该实例已有相同身份或在线会话运行。离线多开请更换角色 ID，或选择另一个实例。");
     }
 
+    /// <summary>
+    /// 启动。
+    /// </summary>
     public RunningGame Start(string root, string directory, string version, string logDirectory,
         Process process, Action<string> output, IEnumerable<string> secrets, string playerName = "", bool offline = false)
     {
@@ -47,6 +62,9 @@ public sealed class RunningGameRegistry
         }
     }
 
+    /// <summary>
+    /// 执行 Release。
+    /// </summary>
     public void Release(Guid id)
     {
         lock (gate)

@@ -2,13 +2,22 @@ using System.Text.RegularExpressions;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 JavaInstallation 数据。
+/// </summary>
 public record JavaInstallation(string Path, int Major, string Architecture, string Vendor, string Error)
 {
     public string Label => $"Java {(Major == 0 ? "?" : Major)} · {Architecture} · {Vendor}\n{Path}" + (Error.Length > 0 ? "\n" + Error : "");
 }
 
+/// <summary>
+/// 提供 JavaDiscovery 相关功能。
+/// </summary>
 public static partial class JavaDiscovery
 {
+    /// <summary>
+    /// 执行 Architecture。
+    /// </summary>
     public static string Architecture(string file)
     {
         try
@@ -38,6 +47,9 @@ public static partial class JavaDiscovery
         }
     }
 
+    /// <summary>
+    /// 扫描。
+    /// </summary>
     public static async Task<List<JavaInstallation>> Scan(string gameRoot, IEnumerable<string> extras, CancellationToken token = default)
     {
         var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -119,6 +131,9 @@ public static partial class JavaDiscovery
         return await InspectCandidates(paths, token);
     }
 
+    /// <summary>
+    /// 执行 InspectCandidates。
+    /// </summary>
     public static async Task<List<JavaInstallation>> InspectCandidates(IEnumerable<string> candidates, CancellationToken token = default)
     {
         var result = new List<JavaInstallation>();

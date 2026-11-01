@@ -5,6 +5,9 @@ namespace BlockLaunch;
 
 // Persisted task models. Keep property names and enum values compatible with existing queues.
 [JsonConverter(typeof(JsonStringEnumConverter))]
+/// <summary>
+/// 定义 Operation状态 的取值。
+/// </summary>
 public enum OperationState
 {
     Running,
@@ -34,22 +37,58 @@ public sealed class InstanceOperationRequest
     }
 }
 
+/// <summary>
+/// 提供 下载Request 相关功能。
+/// </summary>
 public sealed class DownloadRequest
 {
     public InstanceOperationRequest? Instance
     {
         get; set;
     }
+    /// <summary>
+    /// 获取或设置 Kind。
+    /// </summary>
     public string Kind { get; set; } = "game";
+    /// <summary>
+    /// 获取或设置 版本。
+    /// </summary>
     public string Version { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Loader。
+    /// </summary>
     public string Loader { get; set; } = "vanilla";
+    /// <summary>
+    /// 获取或设置 Loader版本。
+    /// </summary>
     public string LoaderVersion { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Java。
+    /// </summary>
     public string Java { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Destination。
+    /// </summary>
     public string Destination { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 文件。
+    /// </summary>
     public string File { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 SourceHash。
+    /// </summary>
     public string SourceHash { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Pack实例。
+    /// </summary>
     public string PackInstance { get; set; } = "pack-" + Guid.NewGuid().ToString("N")[..12];
+    /// <summary>
+    /// 获取或设置 PackDisplay名称。
+    /// </summary>
     public string PackDisplayName { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Game版本。
+    /// </summary>
     public string GameVersion { get; set; } = "";
     public bool Optional
     {
@@ -71,30 +110,63 @@ public sealed class DownloadRequest
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 ResourceKind。
+    /// </summary>
     public string ResourceKind { get; set; } = "mod";
+    /// <summary>
+    /// 获取或设置 备份实例Directory。
+    /// </summary>
     public string BackupInstanceDirectory { get; set; } = "";
 }
 
+/// <summary>
+/// 提供 OperationRecord 相关功能。
+/// </summary>
 public class OperationRecord
 {
+    /// <summary>
+    /// 获取或设置 ID。
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string Name { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 根目录。
+    /// </summary>
     public string Root { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Target。
+    /// </summary>
     public string Target { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 消息。
+    /// </summary>
     public string Message { get; set; } = "";
     public OperationState State
     {
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 Started。
+    /// </summary>
     public DateTimeOffset Started { get; set; } = DateTimeOffset.UtcNow;
+    /// <summary>
+    /// 获取或设置 Updated。
+    /// </summary>
     public DateTimeOffset Updated { get; set; } = DateTimeOffset.UtcNow;
     public double? Percent
     {
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 ProcessID。
+    /// </summary>
     public int ProcessId { get; set; } = Environment.ProcessId;
+    /// <summary>
+    /// 获取或设置 ProcessStartTicks。
+    /// </summary>
     public long ProcessStartTicks { get; set; } = Process.GetCurrentProcess().StartTime.ToUniversalTime().Ticks;
     public bool Committing
     {

@@ -3,6 +3,9 @@ using System.Diagnostics;
 namespace BlockLaunch;
 
 // Serializes task state changes and persists recoverable queue history.
+/// <summary>
+/// 提供 Operation协调器 相关功能。
+/// </summary>
 public sealed class OperationCoordinator
 {
     readonly string directory;
@@ -26,6 +29,9 @@ public sealed class OperationCoordinator
 
     string FileFor(OperationRecord record) => Path.Combine(directory, record.Id + ".json");
 
+    /// <summary>
+    /// 执行 Persist。
+    /// </summary>
     internal void Persist(OperationContext context)
     {
         context.Record.Updated = DateTimeOffset.UtcNow;
@@ -35,6 +41,9 @@ public sealed class OperationCoordinator
 
     static OperationRecord Snapshot(OperationRecord record) => System.Text.Json.JsonSerializer.Deserialize<OperationRecord>(System.Text.Json.JsonSerializer.Serialize(record))!;
 
+    /// <summary>
+    /// 执行 Report。
+    /// </summary>
     internal void Report(OperationContext context, string message, double? percent)
     {
         lock (Gate)
@@ -60,6 +69,9 @@ public sealed class OperationCoordinator
         }
     }
 
+    /// <summary>
+    /// 判断能否。
+    /// </summary>
     public bool Cancel(bool pause = false, bool requeueOnStop = false)
     {
         lock (Gate)
@@ -76,6 +88,9 @@ public sealed class OperationCoordinator
         }
     }
 
+    /// <summary>
+    /// 执行 Enqueue。
+    /// </summary>
     public OperationRecord Enqueue(string name, string root, string target, DownloadRequest request)
     {
         lock (Gate)
@@ -96,6 +111,9 @@ public sealed class OperationCoordinator
         }
     }
 
+    /// <summary>
+    /// 执行 ChangePending。
+    /// </summary>
     public bool ChangePending(string id, OperationState state)
     {
         lock (Gate)
@@ -121,6 +139,9 @@ public sealed class OperationCoordinator
         }
     }
 
+    /// <summary>
+    /// 执行 Run。
+    /// </summary>
     public async Task<OperationRecord> Run(string name, string root, string target, Func<OperationContext, Task> action, OperationRecord? queued = null)
     {
         OperationContext context;
@@ -205,6 +226,9 @@ public sealed class OperationCoordinator
         return context.Record;
     }
 
+    /// <summary>
+    /// 移动Pending。
+    /// </summary>
     public bool MovePending(string id, int direction)
     {
         lock (Gate)
@@ -227,9 +251,15 @@ public sealed class OperationCoordinator
         }
     }
 
+    /// <summary>
+    /// 判断能否DeleteHistory。
+    /// </summary>
     public static bool CanDeleteHistory(OperationRecord record) => !record.Committing &&
         record.State is OperationState.Completed or OperationState.Cancelled or OperationState.Failed or OperationState.Interrupted;
 
+    /// <summary>
+    /// 删除History。
+    /// </summary>
     public bool DeleteHistory(string id)
     {
         lock (Gate)
@@ -244,6 +274,9 @@ public sealed class OperationCoordinator
         }
     }
 
+    /// <summary>
+    /// 执行 ClearFinishedDownloads。
+    /// </summary>
     public int ClearFinishedDownloads()
     {
         lock (Gate)
@@ -251,6 +284,9 @@ public sealed class OperationCoordinator
                 .Count(record => DeleteHistory(record.Id));
     }
 
+    /// <summary>
+    /// 执行 History。
+    /// </summary>
     public List<OperationRecord> History()
     {
         lock (Gate)

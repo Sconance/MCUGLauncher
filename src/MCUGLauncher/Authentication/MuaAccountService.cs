@@ -10,25 +10,58 @@ using CmlLib.Core.Auth;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 Mua档案 数据。
+/// </summary>
 public record MuaProfile(string Id, string Name);
 
+/// <summary>
+/// 提供 Mua凭据 相关功能。
+/// </summary>
 public sealed class MuaCredential
 {
+    /// <summary>
+    /// 获取或设置 服务器。
+    /// </summary>
     public string Server { get; set; } = MuaAccountService.Api;
+    /// <summary>
+    /// 获取或设置 账号。
+    /// </summary>
     public string Account { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Access令牌。
+    /// </summary>
     public string AccessToken { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Client令牌。
+    /// </summary>
     public string ClientToken { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 档案。
+    /// </summary>
     public MuaProfile Profile { get; set; } = new("", "");
 
+    /// <summary>
+    /// 执行 ToString。
+    /// </summary>
     public override string ToString() => "MUA credential (protected)";
 }
 
+/// <summary>
+/// 表示 MuaMetadata 数据。
+/// </summary>
 public sealed record MuaMetadata(string Json, IReadOnlyList<string> SkinDomains);
 
+/// <summary>
+/// 提供 Mua账号Service 相关功能。
+/// </summary>
 public sealed class MuaAccountService : IDisposable
 {
     public const string Api = "https://skin.mualliance.ltd/api/yggdrasil/";
 
+    /// <summary>
+    /// 判断是否为MuaConfiguration。
+    /// </summary>
     public static bool IsMuaConfiguration(string text)
     {
         if (text.Length > 2048)
@@ -63,6 +96,9 @@ public sealed class MuaAccountService : IDisposable
             http.DefaultRequestHeaders.UserAgent.ParseAdd($"MCUGLauncher/{ProductInfo.Version}");
     }
 
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public MuaCredential? Read()
     {
         try
@@ -166,6 +202,14 @@ public sealed class MuaAccountService : IDisposable
         }
     }
 
+    /// <summary>
+    /// 登录。
+    /// </summary>
+    /// <param name="account">MUA 账号</param>
+    /// <param name="password">密码</param>
+    /// <param name="select">多角色时选择具体档案的回调</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>已保存的 MUA 凭据</returns>
     public async Task<MuaCredential> Login(string account, string password, Func<IReadOnlyList<MuaProfile>, Task<MuaProfile?>> select, CancellationToken token)
     {
         if (string.IsNullOrWhiteSpace(account) || account.Length > 320 || password.Length == 0 || password.Length > 4096)
@@ -264,6 +308,9 @@ public sealed class MuaAccountService : IDisposable
         };
     }
 
+    /// <summary>
+    /// 确保。
+    /// </summary>
     public async Task<MuaCredential> Ensure(bool forceRefresh, CancellationToken token)
     {
         await gate.WaitAsync(token);
@@ -298,6 +345,9 @@ public sealed class MuaAccountService : IDisposable
         }
     }
 
+    /// <summary>
+    /// 执行 Forget。
+    /// </summary>
     public async Task<bool> Forget(CancellationToken token)
     {
         await gate.WaitAsync(token);
@@ -331,6 +381,9 @@ public sealed class MuaAccountService : IDisposable
         }
     }
 
+    /// <summary>
+    /// 执行 Metadata。
+    /// </summary>
     public async Task<MuaMetadata> Metadata(CancellationToken token)
     {
         using var response = await Send("", null, token);
@@ -343,6 +396,9 @@ public sealed class MuaAccountService : IDisposable
         return new(text, domains);
     }
 
+    /// <summary>
+    /// 执行 皮肤。
+    /// </summary>
     public async Task<Uri?> Skin(MuaCredential saved, MuaMetadata metadata, CancellationToken token)
     {
         Validate(saved);
@@ -368,6 +424,9 @@ public sealed class MuaAccountService : IDisposable
         return null;
     }
 
+    /// <summary>
+    /// 执行 会话。
+    /// </summary>
     public static MSession Session(MuaCredential c)
     {
         Validate(c);
@@ -381,6 +440,9 @@ public sealed class MuaAccountService : IDisposable
         };
     }
 
+    /// <summary>
+    /// 执行 Dispose。
+    /// </summary>
     public void Dispose()
     {
         if (ownsHttp)

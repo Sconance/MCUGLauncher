@@ -3,6 +3,15 @@ using System.Net.Http;
 
 namespace MCUGLauncher.Services;
 
+/// <summary>
+/// 社区数据源访问。
+/// </summary>
+/// <param name="url">数据源地址</param>
+/// <param name="token">取消令牌</param>
+/// <returns>是否成功、响应文本与耗时（毫秒）</returns>
+/// <remarks>
+/// 依赖 <see cref="System.Net.Http.HttpClient"/>；用于测试数据源连通性与读取公告/推荐 JSON。
+/// </remarks>
 public sealed class CommunityService
 {
     readonly HttpClient _http;
@@ -36,6 +45,15 @@ public sealed class CommunityService
         }
     }
 
+    /// <summary>
+    /// 读取数据源文本。
+    /// </summary>
+    /// <param name="url">数据源地址</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>响应文本；失败时为 null</returns>
+    /// <remarks>
+    /// 成功返回响应体，失败返回 null，不抛出网络异常。
+    /// </remarks>
     public async Task<string?> ReadAsync(string url, CancellationToken token)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);

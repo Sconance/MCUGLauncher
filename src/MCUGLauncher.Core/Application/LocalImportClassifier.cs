@@ -2,6 +2,9 @@ using System.IO.Compression;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 定义 LocalImportKind 的取值。
+/// </summary>
 public enum LocalImportKind
 {
     Unknown,
@@ -13,8 +16,14 @@ public enum LocalImportKind
     DataPack
 }
 
+/// <summary>
+/// 提供 LocalImportClassifier 相关功能。
+/// </summary>
 public static class LocalImportClassifier
 {
+    /// <summary>
+    /// 执行 Identify。
+    /// </summary>
     public static LocalImportKind Identify(string file)
     {
         var extension = Path.GetExtension(file).ToLowerInvariant();

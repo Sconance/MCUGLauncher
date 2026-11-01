@@ -10,8 +10,19 @@ using CmlLib.Core.ProcessBuilder;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 游戏与加载器安装器。
+/// </summary>
+/// <remarks>
+/// 依赖 HttpClient、游戏根目录、Java 路径与 NetworkSettings；通过 progress 回调报告下载/解压进度，失败时抛出异常并保留可恢复状态。
+/// </remarks>
 public sealed class GameInstaller(HttpClient http, string root, string java, Action<string>? progress = null, CancellationToken token = default, NetworkSettings? network = null, Action<double>? overallProgress = null)
 {
+    /// <summary>
+    /// 安装。
+    /// </summary>
+    /// <param name="request">要安装的版本与加载器要求</param>
+    /// <returns>安装完成后的版本目录</returns>
     public async Task<string> Install(PackRequirements request)
     {
         token.ThrowIfCancellationRequested();
