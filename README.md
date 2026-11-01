@@ -139,6 +139,14 @@ dotnet build MCUGLauncher.sln -c Release
 
 脚本发布 `artifacts/full`（自包含）与 `artifacts/lite`（依赖 .NET 8 Desktop Runtime），再打包为两个 zip 放到 `artifacts/release`。
 
+单文件版本（可选）：
+
+```powershell
+.\scriptsuild.ps1 -Publish -SingleFile
+```
+
+产物为 `artifacts/release/MCUGLauncher-0.22.3-Windows-x64.exe` 与 `-Lite.exe`。单文件启动时会把原生库解压到 `%TEMP%\.net`，该目录不可写会以 `error 160` 退出；清理 `%TEMP%\.net` 或改用默认的 zip 发布。
+
 > 发布不再使用单文件 EXE：单文件 apphost 需要把原生库解压到 `%TEMP%\.net`，该缓存不可写时 EXE 会以 `error 160` 退出。若仍遇到旧包，删除 `%TEMP%\.net` 后重试。
 
 ## 本地数据

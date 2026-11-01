@@ -32,7 +32,7 @@ dotnet build src/MCUGLauncher.Avalonia/MCUGLauncher.Avalonia.csproj -c Release
 dotnet publish src/MCUGLauncher.Avalonia/MCUGLauncher.Avalonia.csproj -c Release -o artifacts/publish
 ```
 
-发布使用文件夹 + zip：`artifacts/full`、`artifacts/lite`，由 `scripts/build.ps1 -Publish` 打包到 `artifacts/release`。单文件 apphost 依赖 `%TEMP%\.net`，缓存不可写时会以 error 160 退出，因此不再作为默认发布格式。
+单文件：`scripts/build.ps1 -Publish -SingleFile` 输出两个 EXE（需要可写的 `%TEMP%\.net`）。文件夹发布：`artifacts/full`、`artifacts/lite`，由 `scripts/build.ps1 -Publish` 打包到 `artifacts/release`。单文件 apphost 依赖 `%TEMP%\.net`，缓存不可写时会以 error 160 退出，因此不再作为默认发布格式。
 游戏仍需 Java，微软内嵌授权需要 WebView2。Linux 不能直接运行 WPF 界面。
 
 ## 运行检查
