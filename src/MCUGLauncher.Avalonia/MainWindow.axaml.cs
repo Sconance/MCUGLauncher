@@ -89,7 +89,12 @@ public partial class MainWindow : Window, IDesktopHost
     {
         var path = NativeDialogs.PickFolder(Handle, "选择文件夹");
         if (path is not null)
-            Send(new { type = "pickedPath", target, path });
+            Send(new
+            {
+                type = "pickedPath",
+                target,
+                path
+            });
     }
 
     public void PickFile(string target)
@@ -103,14 +108,24 @@ public partial class MainWindow : Window, IDesktopHost
         };
         var path = NativeDialogs.OpenFile(Handle, filter, application.Config.Root);
         if (path is not null)
-            Send(new { type = "pickedPath", target, path });
+            Send(new
+            {
+                type = "pickedPath",
+                target,
+                path
+            });
     }
 
     public void PickSaveFile(string target)
     {
         var path = NativeDialogs.SaveFile(Handle, "整合包 ZIP|*.zip", "instance-export.zip", null);
         if (path is not null)
-            Send(new { type = "pickedPath", target, path });
+            Send(new
+            {
+                type = "pickedPath",
+                target,
+                path
+            });
     }
 
     public void Window(string action)
@@ -142,7 +157,11 @@ public partial class MainWindow : Window, IDesktopHost
         Width = 1200;
         Height = 780;
         WindowState = WindowState.Normal;
-        Send(new { type = "toast", message = "窗口已恢复为 1200 × 780。" });
+        Send(new
+        {
+            type = "toast",
+            message = "窗口已恢复为 1200 × 780。"
+        });
     }
 
     [DllImport("user32.dll")]

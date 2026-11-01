@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Formatting;
 // Reuse the SDK's Roslyn tooling; this project is never referenced by the launcher.
 var write = args.Contains("--write");
 var repository = Directory.GetCurrentDirectory();
-var launcherProject = Path.Combine(repository, "src", "MCUGLauncher", "MCUGLauncher.csproj");
+var launcherProject = Path.Combine(repository, "src", "MCUGLauncher.Avalonia", "MCUGLauncher.Avalonia.csproj");
 if (!File.Exists(launcherProject))
 {
     Console.Error.WriteLine("Run SourceFormatter from the repository root.");
