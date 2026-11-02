@@ -13,6 +13,8 @@ public partial class ShellWindow : Window
     LauncherFacade facade = null!;
     ShellDesktopHost host = null!;
     string exportVersion = "";
+    TextBox? rootBox;
+    TextBox? javaBox;
     JsonElement state;
     LauncherState? typed;
     IReadOnlyList<TaskInfo> tasks = Array.Empty<TaskInfo>();
@@ -74,6 +76,15 @@ public partial class ShellWindow : Window
     {
         if (!message.TryGetProperty("type", out var type))
             return;
+        if (type.GetString() == "pickedPath" && ReadString(message, "target") is "root" or "java")
+        {
+            var path = ReadString(message, "path");
+            if (ReadString(message, "target") == "root" && rootBox is not null)
+                rootBox.Text = path;
+            else if (javaBox is not null)
+                javaBox.Text = path;
+            return;
+        }
         if (type.GetString() == "pickedPath"
             && ReadString(message, "target") == "export"
             && exportVersion.Length > 0)
@@ -161,11 +172,19 @@ public partial class ShellWindow : Window
         var snapshot = typed;
         var root = new TextBox { Text = snapshot?.Root ?? "", Watermark = "游戏根目录" };
         var java = new TextBox { Text = snapshot?.Java ?? "", Watermark = "Java 路径（留空自动）" };
+        rootBox = root;
+        javaBox = java;
         var ram = new TextBox { Text = (snapshot?.Ram ?? 4096).ToString(), Watermark = "内存 MB" };
         Add("游戏目录");
         Content.Children.Add(root);
+        var browseRoot = new Button { Content = "选择目录", HorizontalAlignment = HorizontalAlignment.Left };
+        browseRoot.Click += (_, _) => host.PickFolder("root");
+        Content.Children.Add(browseRoot);
         Add("Java");
         Content.Children.Add(java);
+        var browseJava = new Button { Content = "选择 java.exe", HorizontalAlignment = HorizontalAlignment.Left };
+        browseJava.Click += (_, _) => host.PickFile("java");
+        Content.Children.Add(browseJava);
         Add("内存（MB）");
         Content.Children.Add(ram);
         var save = new Button { Content = "保存设置", HorizontalAlignment = HorizontalAlignment.Left };
@@ -177,7 +196,7 @@ public partial class ShellWindow : Window
             Add("设置已保存。");
         };
         Content.Children.Add(save);
-        Add("提示：目录与 Java 的浏览对话框将在下一阶段接入。");
+        Add("提示：目录与 Java 可直接浏览选择，保存后生效。");
     }
 
     void RenderMaintenance()
