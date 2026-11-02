@@ -34,6 +34,18 @@
     <Setter Property="TextElement.Foreground" Value="White" />
   </Style>
 
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{StaticResource AppAccent}" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="14,9" />
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#005A99" />
+    <Setter Property="TextElement.Foreground" Value="White" />
+  </Style>
+
   <Style Selector="TextBox">
     <Setter Property="Background" Value="{StaticResource AppCard}" />
     <Setter Property="BorderBrush" Value="{StaticResource AppLine}" />

@@ -157,6 +157,7 @@ public partial class ShellWindow : Window
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     HorizontalContentAlignment = HorizontalAlignment.Left
                 };
+                row.Classes.Add("primary");
                 row.Click += async (_, _) => await facade.LaunchAsync(instance.Name);
                 Content.Children.Add(row);
             }
@@ -217,6 +218,7 @@ public partial class ShellWindow : Window
         Add("内存（MB）");
         Content.Children.Add(ram);
         var save = new Button { Content = "保存设置", HorizontalAlignment = HorizontalAlignment.Left };
+        save.Classes.Add("primary");
         save.Click += async (_, _) =>
         {
             var memory = int.TryParse(ram.Text, out var parsed) ? Math.Clamp(parsed, 512, 65536) : 4096;
@@ -333,6 +335,7 @@ public partial class ShellWindow : Window
         Content.Children.Add(category);
         Content.Children.Add(query);
         var search = new Button { Content = "搜索", HorizontalAlignment = HorizontalAlignment.Left };
+        search.Classes.Add("primary");
         search.Click += async (_, _) =>
             await facade.SearchContentAsync(category.SelectedItem as string ?? "mod", query.Text?.Trim() ?? "");
         Content.Children.Add(search);
