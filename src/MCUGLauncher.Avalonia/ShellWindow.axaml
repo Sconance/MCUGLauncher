@@ -16,7 +16,7 @@
             DoubleTapped="OnTitleBarDoubleTapped">
       <Grid ColumnDefinitions="220,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="10" Margin="18,0,0,0" VerticalAlignment="Center">
-          <Image RenderOptions.BitmapInterpolationMode="None" Source="avares://MCUGLauncher/Assets/MCUGLogo.png" Width="30" Height="30" />
+
           <TextBlock Text="MCUG Launcher" FontSize="16" FontWeight="Bold" Foreground="#1B3044"
                      VerticalAlignment="Center" />
           <TextBlock x:Name="BrandVersion" Text="0.22.3" FontSize="9.5" Foreground="#646D75"
@@ -26,24 +26,28 @@
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
           <Button x:Name="HomeButton" Classes="topnav" AutomationProperties.Name="启动">
             <StackPanel Orientation="Horizontal" Spacing="7">
-              <TextBlock Text="▶" FontSize="9" />
+                <Svg Path="/Assets/LaunchIcon.svg" Height="16" Width="16"/>
               <TextBlock Text="启动" />
             </StackPanel>
           </Button>
           <Button x:Name="DownloadButton" Classes="topnav" AutomationProperties.Name="下载">
             <StackPanel Orientation="Horizontal" Spacing="7">
-              <TextBlock Text="↓" FontSize="13" />
+                <Svg Path="/Assets/DownloadIcon.svg" Height="16" Width="16"/>
               <TextBlock Text="下载" />
             </StackPanel>
           </Button>
           <Button x:Name="SettingsButton" Classes="topnav" AutomationProperties.Name="设置">
             <StackPanel Orientation="Horizontal" Spacing="7">
-              <TextBlock Text="⚙" FontSize="12" />
+                <Svg Path="/Assets/SettingsIcon.svg" Height="16" Width="16"/>
               <TextBlock Text="设置" />
             </StackPanel>
           </Button>
-          <Button x:Name="MoreButton" Classes="topnav" Content="更多">
-            <Button.Flyout>
+          <Button x:Name="MoreButton" Classes="topnav">
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                  <Svg Path="/Assets/ExtraIcon.svg" Height="16" Width="16"/>
+                  <TextBlock Text="更多" />
+              </StackPanel>
+              <Button.Flyout>
               <MenuFlyout>
                 <MenuItem Header="实例" Click="OnInstancesMenu" />
                 <MenuItem Header="账号与皮肤" Click="OnAccountMenu" />
@@ -57,12 +61,18 @@
         </StackPanel>
 
         <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-          <Button x:Name="MinimizeButton" Classes="titlebarbtn" Content="—" Click="OnMinimizeWindow"
-                  AutomationProperties.Name="最小化" />
-          <Button x:Name="MaximizeButton" Classes="titlebarbtn" Content="□" Click="OnMaximizeWindow"
-                  AutomationProperties.Name="最大化" />
-          <Button x:Name="CloseButton" Classes="titlebarbtn close" Content="✕" Click="OnCloseWindow"
-                  AutomationProperties.Name="关闭" />
+          <Button x:Name="MinimizeButton" Classes="titlebarbtn" Click="OnMinimizeWindow"
+                  AutomationProperties.Name="最小化">
+              <Svg Path="/Assets/MinimizeIcon.svg" Height="24" Width="24"/>
+          </Button>
+          <Button x:Name="MaximizeButton" Classes="titlebarbtn" Click="OnMaximizeWindow"
+                  AutomationProperties.Name="最大化">
+              <Svg Path="/Assets/MaximizeIcon.svg" Height="24" Width="24"/>
+          </Button>
+          <Button x:Name="CloseButton" Classes="titlebarbtn close" Click="OnCloseWindow"
+                  AutomationProperties.Name="关闭">
+              <Svg Path="/Assets/CloseIcon.svg" Height="24" Width="24"/>
+          </Button>
         </StackPanel>
       </Grid>
     </Border>
