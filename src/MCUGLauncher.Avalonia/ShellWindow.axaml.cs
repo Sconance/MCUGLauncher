@@ -20,6 +20,7 @@ public partial class ShellWindow : Window
     readonly AccountView accountView;
     readonly GamesView gamesView;
     readonly BookmarksView bookmarksView;
+    readonly CommunityView communityView;
     readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     StackPanel? pageContent;
     IReadOnlyList<TaskInfo> tasks = [];
@@ -43,6 +44,7 @@ public partial class ShellWindow : Window
         accountView = new AccountView(facade);
         gamesView = new GamesView(facade);
         bookmarksView = new BookmarksView(facade);
+        communityView = new CommunityView(facade);
         Width = Math.Clamp(facade.Config.WindowWidth, 900, 7680);
         Height = Math.Clamp(facade.Config.WindowHeight, 600, 4320);
         if (facade.Config.WindowMaximized)
@@ -84,6 +86,7 @@ public partial class ShellWindow : Window
         TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
         GamesButton.Click += (_, _) => { gamesView.Activate(); Show("games"); };
         BookmarksButton.Click += (_, _) => Show("bookmarks");
+        CommunityButton.Click += (_, _) => Show("community");
         SettingsButton.Click += (_, _) => Show("settings");
         ClassicButton.Click += (_, _) => new MainWindow().Show();
         Render();
@@ -133,6 +136,11 @@ public partial class ShellWindow : Window
         if (page == "bookmarks")
         {
             PageHost.Content = bookmarksView;
+            return;
+        }
+        if (page == "community")
+        {
+            PageHost.Content = communityView;
             return;
         }
         var panel = new StackPanel { Spacing = 12 };

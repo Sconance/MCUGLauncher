@@ -44,6 +44,7 @@ internal sealed class LauncherFacade : IDisposable
     public event Action<MuaProfilesInfo>? MuaProfilesReceived;
     public event Action<LaunchOptionsInfo>? LaunchOptionsReceived;
     public event Action? LaunchOptionsSaved;
+    public event Action<PublishResultInfo>? PublishResultReceived;
     public event Action? SettingsSaved;
 
     public MCUGLauncher.Models.AppConfig Config => application.Config;
@@ -357,6 +358,16 @@ internal sealed class LauncherFacade : IDisposable
 
     public Task RefreshCommunityAsync() => application.HandleAsync("""{"type":"refreshCommunity"}""");
 
+    public Task PublishAsync(string title, string body, string expiresAt, string imageData = "") =>
+        CommandAsync(new
+        {
+            type = "publish",
+            title,
+            body,
+            expiresAt,
+            imageData
+        });
+
     public Task ToggleBookmarkAsync(string id, string name, string description, string author, string kind) =>
         CommandAsync(new
         {
@@ -475,6 +486,9 @@ internal sealed class LauncherFacade : IDisposable
                 break;
             case "error":
                 ErrorReceived?.Invoke(JsonRead.String(root, "message"));
+                break;
+            case "publishResult":
+                PublishResultReceived?.Invoke(PublishResultInfo.From(root));
                 break;
             case "launchResult":
                 LaunchResultReceived?.Invoke(LaunchResultInfo.From(root));

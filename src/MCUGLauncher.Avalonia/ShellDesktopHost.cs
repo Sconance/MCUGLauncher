@@ -47,6 +47,7 @@ internal sealed class ShellDesktopHost(
             "java" => "Java|java.exe;javaw.exe|所有文件|*.*",
             "offlineSkin" => "PNG 皮肤|*.png",
             "pack" => "整合包|*.mrpack;*.zip",
+            "announcementImage" => "公告配图|*.png;*.jpg;*.jpeg;*.webp",
             _ => "所有文件|*.*"
         };
         var path = NativeDialogs.OpenFile(handle(), filter, null);

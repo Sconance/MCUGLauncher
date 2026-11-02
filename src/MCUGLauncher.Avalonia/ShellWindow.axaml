@@ -18,6 +18,7 @@
         <Button x:Name="TasksButton" Classes="nav" Content="任务" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
         <Button x:Name="GamesButton" Classes="nav" Content="游戏" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
         <Button x:Name="BookmarksButton" Classes="nav" Content="收藏" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+        <Button x:Name="CommunityButton" Classes="nav" Content="社区" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
         <Button x:Name="SettingsButton" Classes="nav" Content="设置" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
         <Button x:Name="ClassicButton" Classes="nav" Content="经典界面（WebView）" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
       </StackPanel>

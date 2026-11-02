@@ -79,6 +79,14 @@ internal sealed record ToastInfo(string Message, bool Bad)
         JsonRead.Bool(element, "bad"));
 }
 
+internal sealed record PublishResultInfo(bool Ok, bool Pending, string Message)
+{
+    public static PublishResultInfo From(JsonElement element) => new(
+        JsonRead.Bool(element, "ok"),
+        JsonRead.Bool(element, "pending"),
+        JsonRead.String(element, "message"));
+}
+
 internal sealed record LaunchResultInfo(bool Ok, string Message)
 {
     public static LaunchResultInfo From(JsonElement element) => new(
