@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 提供 Network设置 相关功能。

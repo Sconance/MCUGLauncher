@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 提供 TransactionMove 相关功能。
@@ -54,7 +54,7 @@ public sealed class ContentTransaction
     public ContentTransaction(string instance)
     {
         this.instance = Path.GetFullPath(instance);
-        directory = Path.Combine(instance, ".blocklaunch", "backups", "transaction-" + Guid.NewGuid().ToString("N"));
+        directory = Path.Combine(instance, ".mcuglauncher", "backups", "transaction-" + Guid.NewGuid().ToString("N"));
         Stage = Path.Combine(directory, "stage");
         Directory.CreateDirectory(Stage);
         journalPath = Path.Combine(directory, "transaction.json");
@@ -73,7 +73,7 @@ public sealed class ContentTransaction
 
     string Destination(string relative)
     {
-        if (relative != ".blocklaunch-content.json" && !(relative.StartsWith("mods/", StringComparison.Ordinal) || relative.StartsWith("resourcepacks/", StringComparison.Ordinal) || relative.StartsWith("shaderpacks/", StringComparison.Ordinal) || relative.StartsWith("datapacks/", StringComparison.Ordinal)))
+        if (relative != ".mcuglauncher-content.json" && !(relative.StartsWith("mods/", StringComparison.Ordinal) || relative.StartsWith("resourcepacks/", StringComparison.Ordinal) || relative.StartsWith("shaderpacks/", StringComparison.Ordinal) || relative.StartsWith("datapacks/", StringComparison.Ordinal)))
             throw new IOException("事务目标不在内容目录中。");
         return PackService.SafePath(instance, relative);
     }
@@ -189,7 +189,7 @@ public sealed class ContentTransaction
     /// </summary>
     public static string? LatestCommitted(string instance)
     {
-        var directory = Path.Combine(instance, ".blocklaunch", "backups");
+        var directory = Path.Combine(instance, ".mcuglauncher", "backups");
         if (!Directory.Exists(directory))
             return null;
         return Directory.GetDirectories(directory, "transaction-*").Where(d => File.Exists(Path.Combine(d, "transaction.json"))).OrderByDescending(d => File.GetLastWriteTimeUtc(Path.Combine(d, "transaction.json"))).FirstOrDefault(d =>
@@ -241,10 +241,10 @@ public sealed class ContentTransaction
     public static List<string> Recover(string instance)
     {
         var messages = new List<string>();
-        var directory = Path.Combine(instance, ".blocklaunch", "backups");
+        var directory = Path.Combine(instance, ".mcuglauncher", "backups");
         if (!Directory.Exists(directory))
             return messages;
-        var lockPath = Path.Combine(instance, ".blocklaunch", "operation.lock");
+        var lockPath = Path.Combine(instance, ".mcuglauncher", "operation.lock");
         using var lease = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         foreach (var transaction in Directory.GetDirectories(directory, "transaction-*"))
         {

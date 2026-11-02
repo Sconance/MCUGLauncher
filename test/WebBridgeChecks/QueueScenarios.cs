@@ -1,5 +1,5 @@
 using System.IO;
-using BlockLaunch;
+using MCUGLauncher;
 using MCUGLauncher.Services;
 
 internal static class QueueScenarios

@@ -1,11 +1,11 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.Net;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-upgrades-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-upgrades-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 void Check(bool ok, string label)
 {
@@ -174,7 +174,7 @@ using (var upgrade = await PackUpgrade.Prepare(http, gameRoot, oldPack.InstanceI
     Check(!File.Exists(Path.Combine(result, "mods", "old.jar")) && File.ReadAllText(Path.Combine(result, "mods", "custom.jar")) == "player-mod" && File.Exists(Path.Combine(result, "mods", "new.jar")), "obsolete pack mod removed and custom mod preserved");
     Check(File.ReadAllText(Path.Combine(result, "saves", "world", "level.dat")) == "world-fixture" && File.ReadAllText(Path.Combine(oldDir, "config", "test.cfg")) == "player-config", "world copied and original instance untouched");
     Check(ContentService.ReadManaged(result).Any(m => m.ProjectId == "custom-managed" && m.VersionId == "managed-v1"), "migrated custom mod retains accurate update ownership");
-    Check(AtomicFile.ReadJson<Dictionary<string, string>>(Path.Combine(result, ".blocklaunch-upgrade.json"))["OriginalKey"] == oldPack.InstanceId, "upgrade records original instance for return");
+    Check(AtomicFile.ReadJson<Dictionary<string, string>>(Path.Combine(result, ".mcuglauncher-upgrade.json"))["OriginalKey"] == oldPack.InstanceId, "upgrade records original instance for return");
 }
 
 using (var upgrade = await PackUpgrade.Prepare(http, gameRoot, oldPack.InstanceId, oldDir, newZip, _ => Task.FromResult("base"), false, null, default))
@@ -217,11 +217,11 @@ using (var client = new HttpClient(new NetworkPolicyHandler(new()
 
 var recoveryRoot = Path.Combine(root, "interrupted-upgrade");
 var orphanAlias = "pack-123456abcdef";
-var stage = Path.Combine(recoveryRoot, ".blocklaunch-staging", "upgrade-fixture");
+var stage = Path.Combine(recoveryRoot, ".mcuglauncher-staging", "upgrade-fixture");
 Directory.CreateDirectory(stage);
 var orphan = Path.Combine(recoveryRoot, "instances", orphanAlias);
 Directory.CreateDirectory(orphan);
-AtomicFile.WriteJson(Path.Combine(orphan, ".blocklaunch-pack.json"), new InstalledPack("fixture", "1.21.1", "vanilla", "", "base", orphanAlias));
+AtomicFile.WriteJson(Path.Combine(orphan, ".mcuglauncher-pack.json"), new InstalledPack("fixture", "1.21.1", "vanilla", "", "base", orphanAlias));
 AtomicFile.WriteJson(Path.Combine(stage, "pack-operation.json"), new PackCommitRecord(orphanAlias, "Preparing"));
 InstallationRecovery.Recover(recoveryRoot);
 Check(!Directory.Exists(orphan) && Directory.Exists(Path.Combine(stage, "recovered-instance")), "interrupted upgrade candidate isolated without deletion");

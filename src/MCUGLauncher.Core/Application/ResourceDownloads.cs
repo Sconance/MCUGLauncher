@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 资源文件下载。

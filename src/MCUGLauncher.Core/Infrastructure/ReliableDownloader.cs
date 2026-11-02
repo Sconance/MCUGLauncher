@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 可校验、可断点续传的下载器。
@@ -15,7 +15,7 @@ public static class ReliableDownloader
     /// <summary>
     /// 执行 Partial路径。
     /// </summary>
-    public static string PartialPath(string target, string hash) => Path.Combine(Path.GetDirectoryName(Path.GetFullPath(target))!, ".blocklaunch-" + Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(target) + "\n" + hash.ToLowerInvariant()))).ToLowerInvariant() + ".part");
+    public static string PartialPath(string target, string hash) => Path.Combine(Path.GetDirectoryName(Path.GetFullPath(target))!, ".mcuglauncher-" + Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(target) + "\n" + hash.ToLowerInvariant()))).ToLowerInvariant() + ".part");
 
     /// <summary>
     /// 执行 下载。

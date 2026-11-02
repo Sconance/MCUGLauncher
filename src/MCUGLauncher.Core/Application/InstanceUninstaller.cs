@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 UninstallPlan 数据。
@@ -94,7 +94,7 @@ public static class InstanceUninstaller
                 var other = Path.GetFileName(directory);
                 if (other.Equals(key, StringComparison.OrdinalIgnoreCase))
                     continue;
-                var file = Path.Combine(directory, ".blocklaunch-instance.json");
+                var file = Path.Combine(directory, ".mcuglauncher-instance.json");
                 if (!File.Exists(file))
                     continue;
                 var otherDescriptor = AtomicFile.ReadJson<InstanceDescriptor>(file);
@@ -103,7 +103,7 @@ public static class InstanceUninstaller
                     throw new IOException("其他实例正在共用此版本的数据目录：" + other);
             }
 
-        var marker = Path.Combine(root, ".blocklaunch-installations", key + ".json");
+        var marker = Path.Combine(root, ".mcuglauncher-installations", key + ".json");
         paths.Add(marker);
         paths = paths.Select(Full).Distinct(StringComparer.OrdinalIgnoreCase).Where(p => File.Exists(p) || Directory.Exists(p)).ToList();
         foreach (var path in paths)
@@ -125,7 +125,7 @@ public static class InstanceUninstaller
         if (current.InstanceId != confirmed.InstanceId || current.SharedData != confirmed.SharedData || !current.Paths.SequenceEqual(confirmed.Paths, StringComparer.OrdinalIgnoreCase))
             throw new IOException("实例身份或删除范围已变化，请重新确认卸载。");
         // Keep all targets in a journal so a locked file cannot leave untraceable remnants.
-        var journal = Path.Combine(confirmed.Root, ".blocklaunch-uninstalls", Guid.NewGuid().ToString("N") + ".json");
+        var journal = Path.Combine(confirmed.Root, ".mcuglauncher-uninstalls", Guid.NewGuid().ToString("N") + ".json");
         AtomicFile.WriteJson(journal, confirmed);
         using var commit = OperationExecution.BeginCommit();
         try

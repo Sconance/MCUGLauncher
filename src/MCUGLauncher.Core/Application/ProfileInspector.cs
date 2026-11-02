@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>Reads installed metadata, not display names, so renamed profiles retain their loader identity.</summary>
 public static class ProfileInspector

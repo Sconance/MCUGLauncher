@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 // Counts bytes actually consumed from HTTP responses for the current download operation.
 /// <summary>

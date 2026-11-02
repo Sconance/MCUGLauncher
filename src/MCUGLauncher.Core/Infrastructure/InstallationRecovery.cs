@@ -1,4 +1,4 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 PackCommitRecord 数据。
@@ -36,7 +36,7 @@ public static class InstallationRecovery
                     messages.Add("实例暂时无法恢复，已保留数据：" + Path.GetFileName(instance) + "：" + ex.Message);
                 }
 
-        if (Directory.Exists(Path.Combine(root, ".blocklaunch", "backups")))
+        if (Directory.Exists(Path.Combine(root, ".mcuglauncher", "backups")))
             messages.AddRange(ContentTransaction.Recover(root));
         foreach (var data in dataDirectories)
         {
@@ -44,7 +44,7 @@ public static class InstallationRecovery
             if (!Directory.Exists(saves))
                 continue;
             foreach (var world in Directory.GetDirectories(saves))
-                if (Directory.Exists(Path.Combine(world, ".blocklaunch", "backups")))
+                if (Directory.Exists(Path.Combine(world, ".mcuglauncher", "backups")))
                     try
                     {
                         messages.AddRange(ContentTransaction.Recover(world));
@@ -55,7 +55,7 @@ public static class InstallationRecovery
                     }
         }
 
-        var staging = Path.Combine(root, ".blocklaunch-staging");
+        var staging = Path.Combine(root, ".mcuglauncher-staging");
         if (!Directory.Exists(staging))
             return messages;
         foreach (var stage in Directory.GetDirectories(staging))
@@ -86,7 +86,7 @@ public static class InstallationRecovery
 
                 if (Directory.Exists(instance))
                 {
-                    var record = AtomicFile.ReadJson<InstalledPack>(Path.Combine(instance, ".blocklaunch-pack.json"));
+                    var record = AtomicFile.ReadJson<InstalledPack>(Path.Combine(instance, ".mcuglauncher-pack.json"));
                     if (record.InstanceId != alias)
                         throw new IOException("孤立实例身份不匹配，已保留数据。");
                     Directory.Move(instance, Path.Combine(stage, "recovered-instance"));

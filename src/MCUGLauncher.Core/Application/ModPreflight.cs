@@ -2,7 +2,7 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 模组Finding 数据。

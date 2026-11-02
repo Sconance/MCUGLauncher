@@ -1,4 +1,4 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>Freezes the chosen version and target into the existing persistent content queue format.</summary>
 public static class ResourceInstallPlanner

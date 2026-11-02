@@ -1,5 +1,5 @@
 using System.Text.Json;
-using BlockLaunch;
+using MCUGLauncher;
 using MCUGLauncher.Models;
 
 namespace MCUGLauncher.Services;

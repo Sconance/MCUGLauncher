@@ -1,4 +1,4 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 提供 Preferences 相关功能。
@@ -12,7 +12,7 @@ public class Preferences
     /// <summary>
     /// 获取或设置 根目录。
     /// </summary>
-    public string Root { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BlockLaunch", "minecraft");
+    public string Root { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MCUGLauncher", "minecraft");
     /// <summary>
     /// 获取或设置 Java。
     /// </summary>
@@ -86,7 +86,7 @@ public class Preferences
     /// <summary>
     /// 获取或设置 Resource下载Directory。
     /// </summary>
-    public string ResourceDownloadDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "BlockLaunch");
+    public string ResourceDownloadDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "MCUGLauncher");
     public bool DownloadsPaused
     {
         get;

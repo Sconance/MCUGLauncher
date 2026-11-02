@@ -6,7 +6,7 @@ namespace MCUGLauncher.Models;
 public sealed class AppConfig
 {
     // Preserve the complete previous settings model, including currently hidden preferences.
-    public BlockLaunch.Preferences LegacyPreferences { get; set; } = new();
+    public MCUGLauncher.Preferences LegacyPreferences { get; set; } = new();
     public double WindowWidth { get; set; } = 1200;
     public double WindowHeight { get; set; } = 780;
     public bool WindowMaximized

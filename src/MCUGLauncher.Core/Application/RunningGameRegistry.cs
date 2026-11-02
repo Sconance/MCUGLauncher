@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 RunningGame 数据。

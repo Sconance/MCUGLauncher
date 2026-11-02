@@ -7,16 +7,14 @@ namespace MCUGLauncher.Services;
 /// 启动器配置存储。
 /// </summary>
 /// <remarks>
-/// 依赖 %LOCALAPPDATA%/MCUGLauncher/config.json；Load 会导入旧 BlockLaunch 配置并修正无效路径，Save 直接覆盖写入。
+/// 依赖 %LOCALAPPDATA%/MCUGLauncher/config.json；Load 读取当前配置并修正无效路径，Save 直接覆盖写入。
 /// </remarks>
 public sealed class ConfigStore
 {
     readonly string _file;
-    readonly bool dataDirectoryIsolated;
 
     public ConfigStore(string? dataDirectory = null)
     {
-        dataDirectoryIsolated = dataDirectory != null;
         DataDirectory = dataDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "MCUGLauncher");
@@ -53,7 +51,7 @@ public sealed class ConfigStore
         }
         else
         {
-            config = dataDirectoryIsolated ? new AppConfig() : ImportLegacy() ?? new AppConfig();
+            config = new AppConfig();
         }
 
         if (string.IsNullOrWhiteSpace(config.Root) || !Directory.Exists(config.Root))
@@ -91,65 +89,6 @@ public sealed class ConfigStore
         File.Move(temp, _file, true);
     }
 
-    AppConfig? ImportLegacy()
-    {
-        var legacy = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "BlockLaunch",
-            "settings.json");
-        return ReadLegacy(legacy);
-    }
-
-    internal static AppConfig? ReadLegacy(string legacy)
-    {
-        if (!File.Exists(legacy))
-            return null;
-
-        try
-        {
-            using var doc = JsonDocument.Parse(File.ReadAllText(legacy));
-            var root = doc.RootElement;
-            string Read(string name) => root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
-                ? value.GetString() ?? ""
-                : "";
-            int ReadInt(string name, int fallback) => root.TryGetProperty(name, out var value) && value.TryGetInt32(out var number)
-                ? number
-                : fallback;
-
-            var config = new AppConfig
-            {
-                LegacyPreferences = new BlockLaunch.SettingsStore(Path.GetDirectoryName(legacy)!).Load(),
-                Root = Read("Root"),
-                Player = Read("Player"),
-                Java = Read("Java"),
-                Ram = ReadInt("Ram", 4096),
-                Width = ReadInt("Width", 1280),
-                Height = ReadInt("Height", 720),
-                LastVersion = Read("LastVersion"),
-                SkinFile = Read("OfflineSkin")
-            };
-
-            if (root.TryGetProperty("Servers", out var servers) && servers.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var item in servers.EnumerateArray())
-                {
-                    if (item.ValueKind != JsonValueKind.Object)
-                        continue;
-                    var name = item.TryGetProperty("Name", out var n) ? n.GetString() ?? "" : "";
-                    var address = item.TryGetProperty("Address", out var a) ? a.GetString() ?? "" : "";
-                    if (address.Length > 0)
-                        config.Servers.Add(new SavedServer { Name = name, Address = address });
-                }
-            }
-
-            return config;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
     static string FindDefaultRoot()
     {
         var roaming = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
@@ -157,7 +96,7 @@ public sealed class ConfigStore
             return roaming;
         var local = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "BlockLaunch",
+            "MCUGLauncher",
             "minecraft");
         Directory.CreateDirectory(local);
         return local;

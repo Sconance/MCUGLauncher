@@ -1,10 +1,10 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Xml.Linq;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-download-checks-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-download-checks-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 var bytes = Enumerable.Range(0, 4096).Select(i => (byte)(i % 251)).ToArray();
 var hash = Convert.ToHexString(SHA512.HashData(bytes));

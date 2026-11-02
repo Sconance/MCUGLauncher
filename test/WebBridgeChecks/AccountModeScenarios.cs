@@ -1,7 +1,7 @@
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
-using BlockLaunch;
+using MCUGLauncher;
 using CmlLib.Core.Auth;
 using MCUGLauncher.Models;
 using MCUGLauncher.Services;

@@ -5,14 +5,14 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using XboxAuthNet.Game.Accounts.JsonStorage;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 提供 Protected账号Storage 相关功能。
 /// </summary>
 public sealed class ProtectedAccountStorage(string file) : IJsonStorage
 {
-    static readonly byte[] Entropy = Encoding.UTF8.GetBytes("BlockLaunch.Accounts.v1");
+    static readonly byte[] Entropy = Encoding.UTF8.GetBytes("MCUGLauncher.Accounts.v1");
 
     /// <summary>
     /// 读取AsJsonNode。

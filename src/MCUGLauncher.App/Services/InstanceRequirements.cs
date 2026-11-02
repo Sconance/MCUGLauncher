@@ -1,5 +1,5 @@
 using System.Text.Json;
-using BlockLaunch;
+using MCUGLauncher;
 
 namespace MCUGLauncher.Services;
 
@@ -9,7 +9,7 @@ internal static class InstanceRequirements
     public static PackRequirements Read(string root, string key)
     {
         ContentService.SafeFile(key);
-        var pack = Path.Combine(root, "instances", key, ".blocklaunch-pack.json");
+        var pack = Path.Combine(root, "instances", key, ".mcuglauncher-pack.json");
         if (File.Exists(pack))
         {
             var installed = AtomicFile.ReadJson<InstalledPack>(pack);

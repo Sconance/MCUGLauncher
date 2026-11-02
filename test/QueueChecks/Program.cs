@@ -1,7 +1,7 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.Text.Json;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-queue-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-queue-" + Guid.NewGuid().ToString("N"));
 var queue = new OperationCoordinator(root);
 void Check(bool value, string name)
 {
@@ -97,7 +97,7 @@ Directory.CreateDirectory(instance);
 var profile = Path.Combine(root, "versions", alias);
 Directory.CreateDirectory(profile);
 File.WriteAllText(Path.Combine(profile, alias + ".json"), "{}");
-AtomicFile.WriteJson(Path.Combine(instance, ".blocklaunch-pack.json"), new InstalledPack("pack", "1.21.1", "vanilla", "", "1.21.1", alias));
+AtomicFile.WriteJson(Path.Combine(instance, ".mcuglauncher-pack.json"), new InstalledPack("pack", "1.21.1", "vanilla", "", "1.21.1", alias));
 var calls = 0;
 var pack = await new PackService(new HttpClient()).Import("does-not-exist", root, _ =>
 {

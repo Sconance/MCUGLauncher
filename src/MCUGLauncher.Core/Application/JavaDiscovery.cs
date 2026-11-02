@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// Java 查找与探测。

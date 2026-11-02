@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 PackUpgrade文件 数据。
@@ -54,7 +54,7 @@ public sealed class PackUpgradePreview : IDisposable
     /// </summary>
     public void Dispose()
     {
-        var parent = Path.GetFullPath(Path.Combine(Root, ".blocklaunch-upgrade-staging")) + Path.DirectorySeparatorChar;
+        var parent = Path.GetFullPath(Path.Combine(Root, ".mcuglauncher-upgrade-staging")) + Path.DirectorySeparatorChar;
         var target = Path.GetFullPath(Workspace);
         if (!target.StartsWith(parent, StringComparison.OrdinalIgnoreCase))
             throw new IOException("升级暂存路径无效。");
@@ -166,11 +166,11 @@ public static class PackUpgrade
     {
         var catalog = new InstanceCatalog(root);
         var descriptor = catalog.GetOrCreate(originalKey);
-        if (!File.Exists(Path.Combine(catalog.MetadataDirectory(originalKey), ".blocklaunch-pack.json")))
+        if (!File.Exists(Path.Combine(catalog.MetadataDirectory(originalKey), ".mcuglauncher-pack.json")))
             throw new IOException("请选择已导入的整合包实例。");
         if (Path.GetFullPath(source).TrimEnd(Path.DirectorySeparatorChar).Equals(Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
             throw new IOException("请先将整合包设为独立实例后升级。");
-        var workspace = Path.Combine(Path.GetFullPath(root), ".blocklaunch-upgrade-staging", Guid.NewGuid().ToString("N"));
+        var workspace = Path.Combine(Path.GetFullPath(root), ".mcuglauncher-upgrade-staging", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(workspace);
         try
         {
@@ -178,7 +178,7 @@ public static class PackUpgrade
             using var sourceLock = ContentService.LockInstance(source);
             using var worlds = new WorldLease(source);
             var oldFiles = await Snapshot(source, token);
-            var baselineFile = Path.Combine(catalog.MetadataDirectory(originalKey), ".blocklaunch-pack-files.json");
+            var baselineFile = Path.Combine(catalog.MetadataDirectory(originalKey), ".mcuglauncher-pack-files.json");
             var baseline = File.Exists(baselineFile) ? new Dictionary<string, string>(AtomicFile.ReadJson<Dictionary<string, string>>(baselineFile), StringComparer.OrdinalIgnoreCase) : new(StringComparer.OrdinalIgnoreCase);
             var pack = await new PackService(http, token).Import(archive, workspace, installGame, optional, progress);
             var candidate = Path.Combine(workspace, "instances", pack.InstanceId);
@@ -268,19 +268,19 @@ public static class PackUpgrade
         }
 
         if (managed.Count > 0)
-            await File.WriteAllTextAsync(Path.Combine(candidate, ".blocklaunch-content.json"), System.Text.Json.JsonSerializer.Serialize(managed, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower }), token);
+            await File.WriteAllTextAsync(Path.Combine(candidate, ".mcuglauncher-content.json"), System.Text.Json.JsonSerializer.Serialize(managed, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower }), token);
         var catalog = new InstanceCatalog(preview.Root);
         var targetDirectory = catalog.MetadataDirectory(preview.Pack.InstanceId);
         var effective = System.Text.Json.JsonSerializer.Deserialize<LaunchSettings>(System.Text.Json.JsonSerializer.Serialize(settings))!;
         effective.Isolation = "独立实例";
-        AtomicFile.WriteJson(Path.Combine(candidate, ".blocklaunch-instance.json"), new InstanceDescriptor { Key = preview.Pack.InstanceId, DisplayName = preview.Pack.Name + " · 升级", LaunchProfileId = preview.Pack.LaunchVersion, Launch = effective, Category = "整合包" });
-        AtomicFile.WriteJson(Path.Combine(candidate, ".blocklaunch-upgrade.json"), new Dictionary<string, string> { ["OriginalKey"] = preview.OriginalKey });
+        AtomicFile.WriteJson(Path.Combine(candidate, ".mcuglauncher-instance.json"), new InstanceDescriptor { Key = preview.Pack.InstanceId, DisplayName = preview.Pack.Name + " · 升级", LaunchProfileId = preview.Pack.LaunchVersion, Launch = effective, Category = "整合包" });
+        AtomicFile.WriteJson(Path.Combine(candidate, ".mcuglauncher-upgrade.json"), new Dictionary<string, string> { ["OriginalKey"] = preview.OriginalKey });
         token.ThrowIfCancellationRequested();
         using var commit = OperationExecution.BeginCommit();
         var profile = Path.Combine(preview.Root, "versions", preview.Pack.InstanceId);
         if (Directory.Exists(targetDirectory) || Directory.Exists(profile))
             throw new IOException("升级实例标识冲突。");
-        var commitStage = Path.Combine(preview.Root, ".blocklaunch-staging", "upgrade-" + Guid.NewGuid().ToString("N"));
+        var commitStage = Path.Combine(preview.Root, ".mcuglauncher-staging", "upgrade-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(commitStage);
         using var stageLease = new FileStream(Path.Combine(commitStage, "operation.lock"), FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
         var commitRecord = new PackCommitRecord(preview.Pack.InstanceId, "Preparing");

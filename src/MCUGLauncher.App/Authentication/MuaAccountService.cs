@@ -8,7 +8,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using CmlLib.Core.Auth;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 Mua档案 数据。

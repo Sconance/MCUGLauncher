@@ -1,4 +1,4 @@
-using BlockLaunch;
+using MCUGLauncher;
 
 namespace MCUGLauncher.Services;
 

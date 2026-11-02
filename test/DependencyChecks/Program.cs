@@ -1,10 +1,10 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-dependencies-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-dependencies-" + Guid.NewGuid().ToString("N"));
 var handler = new FixtureHandler();
 using var http = new HttpClient(handler);
 var service = new ContentService(http);

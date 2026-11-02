@@ -19,7 +19,7 @@ public partial class ShellWindow : Window
     internal ShellWindow(LauncherFacade? injected)
     {
         InitializeComponent();
-        Title = BlockLaunch.ProductInfo.Name + " · " + BlockLaunch.ProductInfo.Version + " · AI 迁移框架尝试";
+        Title = MCUGLauncher.ProductInfo.Name + " · " + MCUGLauncher.ProductInfo.Version + " · AI 迁移框架尝试";
         session = injected ?? App.CreateSession(new ShellDesktopHost(this, value => session!.SendMessage(value)));
         var size = session.WindowPreferences;
         Width = Math.Clamp(size.Width, 960, 3840);

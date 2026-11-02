@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 // Persisted task models. Keep property names and enum values compatible with existing queues.
 [JsonConverter(typeof(JsonStringEnumConverter))]

@@ -1,7 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 ExportOptions 数据。
@@ -70,7 +70,7 @@ public static class InstanceManagement
                     formatVersion = 1,
                     components
                 });
-                await Json("blocklaunch-export.json", new
+                await Json("mcuglauncher-export.json", new
                 {
                     formatVersion = 1,
                     name,
@@ -132,7 +132,7 @@ public static class InstanceManagement
                 throw new IOException("其他实例依赖此游戏版本，请先移除依赖实例。不会删除共享游戏库。");
         }
 
-        var trash = Path.Combine(root, ".blocklaunch-trash", key + "-" + Guid.NewGuid().ToString("N"));
+        var trash = Path.Combine(root, ".mcuglauncher-trash", key + "-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(trash);
         var metadata = catalog.MetadataDirectory(key);
         var profileDir = Path.Combine(versions, key);

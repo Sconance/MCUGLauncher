@@ -1,4 +1,4 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 JavaSearchProgress 数据。

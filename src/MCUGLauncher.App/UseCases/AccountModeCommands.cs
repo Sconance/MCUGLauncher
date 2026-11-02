@@ -1,4 +1,4 @@
-using BlockLaunch;
+using MCUGLauncher;
 using CmlLib.Core.Auth;
 
 namespace MCUGLauncher.UseCases;

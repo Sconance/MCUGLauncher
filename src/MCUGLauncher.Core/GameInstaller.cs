@@ -8,7 +8,7 @@ using CmlLib.Core;
 using CmlLib.Core.Auth;
 using CmlLib.Core.ProcessBuilder;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 游戏与加载器安装器。
@@ -88,7 +88,7 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
         var version = neo ? request.LoaderVersion : request.Minecraft + "-" + request.LoaderVersion;
         var artifact = neo ? "neoforge" : "forge";
         var url = neo ? $"https://maven.neoforged.net/releases/net/neoforged/neoforge/{version}/neoforge-{version}-installer.jar" : $"https://maven.minecraftforge.net/net/minecraftforge/forge/{version}/forge-{version}-installer.jar";
-        var cache = Path.Combine(root, ".blocklaunch-installers");
+        var cache = Path.Combine(root, ".mcuglauncher-installers");
         Directory.CreateDirectory(cache);
         var jar = Path.Combine(cache, artifact + "-" + ContentService.SafeFile(version) + "-installer.jar");
         progress?.Invoke("获取官方 " + request.Loader + " 安装器…");

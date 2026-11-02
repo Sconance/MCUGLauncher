@@ -1,5 +1,5 @@
 using Avalonia.Threading;
-using BlockLaunch;
+using MCUGLauncher;
 using XboxAuthNet.OAuth.CodeFlow;
 
 namespace MCUGLauncher.Avalonia;

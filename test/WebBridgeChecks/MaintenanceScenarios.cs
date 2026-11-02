@@ -4,7 +4,7 @@ using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
-using BlockLaunch;
+using MCUGLauncher;
 using MCUGLauncher.Models;
 using MCUGLauncher.Services;
 using MCUGLauncher.UseCases;
@@ -98,7 +98,7 @@ internal static class MaintenanceScenarios
     static async Task UpdatesAsync(string fixture, ConfigStore store, string source)
     {
         var original = new ManagedContent { ProjectId = "fixture-project", VersionId = "old", Name = "Fixture", RelativePath = "mods/fixture.jar", Sha512 = new string('b', 128) };
-        File.WriteAllText(Path.Combine(source, ".blocklaunch-content.json"), JsonSerializer.Serialize(new[] { original }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower }));
+        File.WriteAllText(Path.Combine(source, ".mcuglauncher-content.json"), JsonSerializer.Serialize(new[] { original }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower }));
         var messages = new List<JsonElement>();
         using var context = new LauncherContext(value => messages.Add(JsonSerializer.SerializeToElement(value)), store);
         var commands = new ContentUpdateCommands(context, _ => new FakeUpdates());

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 原子文件写入。

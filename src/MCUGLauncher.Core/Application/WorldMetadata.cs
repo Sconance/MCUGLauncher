@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Text;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 WorldMetadata 数据。

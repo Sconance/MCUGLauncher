@@ -1,4 +1,4 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 // Flows the current commit boundary through asynchronous service calls.
 /// <summary>

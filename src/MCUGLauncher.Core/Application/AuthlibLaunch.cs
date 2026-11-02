@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 Authlib启动 数据。

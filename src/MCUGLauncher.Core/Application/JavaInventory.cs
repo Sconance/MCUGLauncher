@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 JavaInstallation 数据。

@@ -1,4 +1,4 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 // Reserved provider boundary: never scrape pages or silently send an unlicensed key.
 /// <summary>

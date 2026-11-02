@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 产品名称与运行期版本号的唯一入口。

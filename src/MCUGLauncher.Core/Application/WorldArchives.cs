@@ -1,6 +1,6 @@
 using System.IO.Compression;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 WorldEntry 数据。
@@ -123,7 +123,7 @@ public static class WorldArchives
             throw new IOException("备份 ZIP 请保存到存档目录之外。");
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         using var worldLock = HoldWorld(world);
-        var temp = Path.Combine(Path.GetDirectoryName(target)!, ".blocklaunch-world-" + Guid.NewGuid().ToString("N") + ".tmp");
+        var temp = Path.Combine(Path.GetDirectoryName(target)!, ".mcuglauncher-world-" + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
             using (var zip = new ZipArchive(new FileStream(temp, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None), ZipArchiveMode.Create))
@@ -169,7 +169,7 @@ public static class WorldArchives
         Directory.CreateDirectory(saves);
         NoLink(saves);
         // Stage next to the destination, allowing the final directory move to be atomic on this volume.
-        var staging = Path.Combine(instance, ".blocklaunch-world-staging");
+        var staging = Path.Combine(instance, ".mcuglauncher-world-staging");
         Directory.CreateDirectory(staging);
         NoLink(staging);
         var stage = Path.Combine(staging, Guid.NewGuid().ToString("N"));

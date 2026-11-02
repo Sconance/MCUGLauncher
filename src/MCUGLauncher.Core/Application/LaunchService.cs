@@ -3,7 +3,7 @@ using CmlLib.Core;
 using CmlLib.Core.Auth;
 using CmlLib.Core.ProcessBuilder;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 启动Request 数据。

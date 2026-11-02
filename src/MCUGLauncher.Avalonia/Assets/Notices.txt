@@ -1,9 +1,9 @@
-BlockLaunch 0.8.0 - Independent Minecraft launcher. MIT license.
+MCUGLauncher 0.8.0 - Independent Minecraft launcher. MIT license.
 Design reference: PCL by 龙腾猫跃 https://github.com/Meloong-Git/PCL https://afdian.com/a/LTCat
 Only a small format-detection entry was consulted. No PCL source code or assets are included.
 MIT License
 
-Copyright (c) 2026 BlockLaunch contributors
+Copyright (c) 2026 MCUGLauncher contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

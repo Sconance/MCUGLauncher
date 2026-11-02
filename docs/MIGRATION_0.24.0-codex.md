@@ -37,7 +37,7 @@ App/Core 继续负责下载与安装，不依赖视图。新增 readImage 使用
 
 ## 兼容与限制
 
-- 配置、令牌、任务历史仍使用 `%LOCALAPPDATA%/MCUGLauncher`，未迁移到另一份不兼容配置。
+- 配置与任务历史使用 `%LOCALAPPDATA%/MCUGLauncher`。当前名称统一修订包含账号存储标识及实例元数据文件名变化，相关缓存需要重新登录或重新建立，见 [命名与数据位置](NAMING.md)。
 - 测试 EXE 必须单独命名；本次不覆盖正式或旧 codex EXE。
 - Windows x64 实验，Core 仍含 Windows 进程/路径能力，不宣称跨平台。
 - 没有自动合并其他版本的新功能；本分支基线及限制在 README 明示。

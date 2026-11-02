@@ -3,7 +3,7 @@ namespace MCUGLauncher.Avalonia;
 using Presentation;
 internal sealed record LauncherState
 {
-    public string AppVersion { get; init; } = BlockLaunch.ProductInfo.Version;
+    public string AppVersion { get; init; } = MCUGLauncher.ProductInfo.Version;
     public string Player { get; init; } = "";
     public string AccountType { get; init; } = "offline";
     public string AccountLabel { get; init; } = "离线账号";

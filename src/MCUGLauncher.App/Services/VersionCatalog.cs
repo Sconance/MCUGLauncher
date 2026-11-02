@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using BlockLaunch;
+using MCUGLauncher;
 using MCUGLauncher.Models;
 
 namespace MCUGLauncher.Services;
@@ -91,7 +91,7 @@ public sealed class VersionCatalog
 
     static string DisplayName(string root, string key)
     {
-        var file = Path.Combine(new InstanceCatalog(root).MetadataDirectory(key), ".blocklaunch-instance.json");
+        var file = Path.Combine(new InstanceCatalog(root).MetadataDirectory(key), ".mcuglauncher-instance.json");
         if (!File.Exists(file))
             return key;
         try
@@ -220,9 +220,9 @@ public sealed class VersionCatalog
             throw new IOException("无效的实例名称。");
         var catalog = new InstanceCatalog(root);
         var metadata = catalog.MetadataDirectory(instance);
-        if (File.Exists(Path.Combine(metadata, ".blocklaunch-instance.json")))
+        if (File.Exists(Path.Combine(metadata, ".mcuglauncher-instance.json")))
             return catalog.DirectoryFor(instance);
-        if (File.Exists(Path.Combine(metadata, ".blocklaunch-pack.json")))
+        if (File.Exists(Path.Combine(metadata, ".mcuglauncher-pack.json")))
             return metadata;
         return Path.Combine(root, "versions", instance);
     }

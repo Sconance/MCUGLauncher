@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 内容Project 数据。
@@ -369,14 +369,14 @@ public sealed class ContentService : IResourceProvider
         return file;
     }
 
-    static string Manifest(string instance) => System.IO.Path.Combine(instance, ".blocklaunch-content.json");
+    static string Manifest(string instance) => System.IO.Path.Combine(instance, ".mcuglauncher-content.json");
 
     /// <summary>
     /// 执行 Lock实例。
     /// </summary>
     public static FileStream LockInstance(string instance)
     {
-        var folder = System.IO.Path.Combine(instance, ".blocklaunch");
+        var folder = System.IO.Path.Combine(instance, ".mcuglauncher");
         Directory.CreateDirectory(folder);
         try
         {
@@ -513,7 +513,7 @@ public sealed class ContentService : IResourceProvider
                 var temp = PackService.SafePath(stage, record.RelativePath);
                 Directory.CreateDirectory(Path.GetDirectoryName(temp)!);
                 token.ThrowIfCancellationRequested();
-                var cache = Path.Combine(instance, ".blocklaunch", "downloads", record.Sha512.ToLowerInvariant());
+                var cache = Path.Combine(instance, ".mcuglauncher", "downloads", record.Sha512.ToLowerInvariant());
                 await ReliableDownloader.Download(http, uri, cache, record.Sha512, size: x.File.Size, progress: progress, token: token);
                 File.Copy(cache, temp, true);
                 overallProgress?.Invoke(InstallationStages.ContentFiles * ++completedFiles / files.Count);
@@ -551,8 +551,8 @@ public sealed class ContentService : IResourceProvider
 
             var manifestStage = System.IO.Path.Combine(stage, "manifest.json");
             File.WriteAllText(manifestStage, JsonSerializer.Serialize(nextManaged, Json));
-            transaction.Backup(".blocklaunch-content.json");
-            transaction.Write(manifestStage, ".blocklaunch-content.json");
+            transaction.Backup(".mcuglauncher-content.json");
+            transaction.Write(manifestStage, ".mcuglauncher-content.json");
             transaction.Commit();
             return added.Count;
         }
@@ -678,7 +678,7 @@ public sealed class ContentService : IResourceProvider
         var record = records.FirstOrDefault(r => ContentPath(instance, r.RelativePath).Equals(content.Path.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase) ? content.Path[..^9] : content.Path, StringComparison.OrdinalIgnoreCase));
         var remaining = records.Where(r => r != record).ToList();
         CheckActiveDependencies(instance, remaining);
-        var dir = System.IO.Path.Combine(instance, ".blocklaunch", "backups", Guid.NewGuid().ToString("N"));
+        var dir = System.IO.Path.Combine(instance, ".mcuglauncher", "backups", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
         var backupFile = System.IO.Path.Combine(dir, System.IO.Path.GetFileName(content.Path));
         File.Move(content.Path, backupFile);

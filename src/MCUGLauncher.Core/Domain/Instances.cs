@@ -1,4 +1,4 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 提供 实例Descriptor 相关功能。
@@ -69,7 +69,7 @@ public sealed class InstanceCatalog(string root)
     /// </summary>
     public string DirectoryFor(string key)
     {
-        var file = Path.Combine(MetadataDirectory(key), ".blocklaunch-instance.json");
+        var file = Path.Combine(MetadataDirectory(key), ".mcuglauncher-instance.json");
         var stored = File.Exists(file) ? AtomicFile.ReadJson<InstanceDescriptor>(file).DataDirectory : "";
         return stored.Length == 0 ? MetadataDirectory(key) : Path.GetFullPath(stored);
     }
@@ -81,7 +81,7 @@ public sealed class InstanceCatalog(string root)
     {
         GetOrCreate(record.Key);
         Safe(record.LaunchProfileId);
-        AtomicFile.WriteJson(Path.Combine(MetadataDirectory(record.Key), ".blocklaunch-instance.json"), record);
+        AtomicFile.WriteJson(Path.Combine(MetadataDirectory(record.Key), ".mcuglauncher-instance.json"), record);
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public sealed class InstanceCatalog(string root)
     {
         var directory = MetadataDirectory(key);
         Directory.CreateDirectory(directory);
-        var file = Path.Combine(directory, ".blocklaunch-instance.json");
+        var file = Path.Combine(directory, ".mcuglauncher-instance.json");
         if (File.Exists(file))
         {
             var stored = AtomicFile.ReadJson<InstanceDescriptor>(file);
@@ -119,7 +119,7 @@ public sealed class InstanceCatalog(string root)
             "servers.dat"
         }.Any(d => Directory.Exists(Path.Combine(legacyDirectory, d)) || File.Exists(Path.Combine(legacyDirectory, d))))
             record.DataDirectory = Path.GetFullPath(legacyDirectory);
-        var legacy = Path.Combine(directory, ".blocklaunch-pack.json");
+        var legacy = Path.Combine(directory, ".mcuglauncher-pack.json");
         if (File.Exists(legacy))
         {
             var pack = AtomicFile.ReadJson<InstalledPack>(legacy);
@@ -170,7 +170,7 @@ public sealed class InstanceCatalog(string root)
         };
         using var commit = OperationExecution.BeginCommit();
         Directory.CreateDirectory(directory);
-        AtomicFile.WriteJson(Path.Combine(directory, ".blocklaunch-instance.json"), record);
+        AtomicFile.WriteJson(Path.Combine(directory, ".mcuglauncher-instance.json"), record);
         var profile = Path.Combine(root, "versions", key, key + ".json");
         AtomicFile.WriteJson(profile, new
         {
@@ -207,7 +207,7 @@ public sealed class VersionInstallation
         set;
     }
 
-    static string FileFor(string root, string version) => Path.Combine(root, ".blocklaunch-installations", ContentService.SafeFile(version) + ".json");
+    static string FileFor(string root, string version) => Path.Combine(root, ".mcuglauncher-installations", ContentService.SafeFile(version) + ".json");
 
     /// <summary>
     /// 判断是否为Ready。

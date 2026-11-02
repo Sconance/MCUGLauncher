@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using BlockLaunch;
+using MCUGLauncher;
 using CmlLib.Core.Auth;
 using MCUGLauncher.Models;
 using MCUGLauncher.Services;

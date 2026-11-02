@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 DiagnosticContext 数据。
@@ -246,7 +246,7 @@ public static class Diagnostics
         var documents = new List<FeedbackDocument>
         {
             new("diagnosis.txt", snapshot.Summary + "\n\n" + findings + "\n\n" + string.Join('\n', snapshot.Notices)),
-            new("README.txt", "BlockLaunch 本地反馈包\n此 ZIP 不会自动上传。诊断为规则推测，请结合日志排查。\n日志为截断快照，不是完整原始文件；未收集账号缓存、配置、存档、服务器列表、模组本体或启动命令。\n已尽力过滤令牌、邮箱、IPv4 与用户目录，但不能保证完全脱敏。分享前请检查每一项文本；日志仍可能包含聊天、玩家名、服务器域名或其他私人信息。\n")
+            new("README.txt", "MCUGLauncher 本地反馈包\n此 ZIP 不会自动上传。诊断为规则推测，请结合日志排查。\n日志为截断快照，不是完整原始文件；未收集账号缓存、配置、存档、服务器列表、模组本体或启动命令。\n已尽力过滤令牌、邮箱、IPv4 与用户目录，但不能保证完全脱敏。分享前请检查每一项文本；日志仍可能包含聊天、玩家名、服务器域名或其他私人信息。\n")
         };
         if (options.Logs)
             documents.AddRange(snapshot.Logs.Select(s => new FeedbackDocument("logs/" + s.Name, s.Text)));
@@ -271,7 +271,7 @@ public static class Diagnostics
         var directory = Path.GetDirectoryName(target)!;
         NoLink(directory);
         System.IO.Directory.CreateDirectory(directory);
-        var temp = Path.Combine(directory, ".blocklaunch-feedback-" + Guid.NewGuid().ToString("N") + ".tmp");
+        var temp = Path.Combine(directory, ".mcuglauncher-feedback-" + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
             using (var zip = new ZipArchive(new FileStream(temp, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None), ZipArchiveMode.Create))

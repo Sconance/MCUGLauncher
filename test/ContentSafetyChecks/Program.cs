@@ -1,9 +1,9 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-content-safety-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-content-safety-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 void Check(bool ok, string label)
 {

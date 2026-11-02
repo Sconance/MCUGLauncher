@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using BlockLaunch;
+using MCUGLauncher;
 using CmlLib.Core.Auth;
 using MCUGLauncher.Services;
 using static MCUGLauncher.UseCases.ProtocolValues;

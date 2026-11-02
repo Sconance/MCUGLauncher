@@ -5,7 +5,7 @@ using System.Text.Json;
 using CmlLib.Core.Auth.Microsoft.Sessions;
 using XboxAuthNet.Game.Authenticators;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 提供 MinecraftOwnershipGuard 相关功能。

@@ -1,7 +1,7 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.IO.Compression;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-library-check-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-library-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 var instance = Path.Combine(root, "instance");
 var original = Path.Combine(instance, "saves", "ExistingWorld");
@@ -44,7 +44,7 @@ foreach (var (label, file) in new[] {
     {
     }
 
-    Assert(WorldArchives.List(instance).Count == count && !Directory.EnumerateDirectories(Path.Combine(instance, ".blocklaunch-world-staging")).Any(), label + "_REJECTED_NO_COMMIT");
+    Assert(WorldArchives.List(instance).Count == count && !Directory.EnumerateDirectories(Path.Combine(instance, ".mcuglauncher-world-staging")).Any(), label + "_REJECTED_NO_COMMIT");
 }
 
 var symlink = Archive("symlink", ("level.dat", "fixture"), ("link", "../outside"));
@@ -87,7 +87,7 @@ using (var cancel = new CancellationTokenSource())
     {
     }
 
-    Assert(File.ReadAllText(lockedTarget) == "old-backup" && !Directory.EnumerateFiles(root, ".blocklaunch-world-*.tmp").Any(), "CANCEL_BACKUP_PRESERVES_TARGET");
+    Assert(File.ReadAllText(lockedTarget) == "old-backup" && !Directory.EnumerateFiles(root, ".mcuglauncher-world-*.tmp").Any(), "CANCEL_BACKUP_PRESERVES_TARGET");
 }
 
 using (var cancel = new CancellationTokenSource())

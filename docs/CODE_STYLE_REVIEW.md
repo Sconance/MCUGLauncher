@@ -72,3 +72,8 @@ ResourceChoiceCommands、LaunchOptionsCommands、MuaProfileSelection、AvatarCom
 ## 版本分类及窗口修订
 
 VanillaPage 从 DownloadPage 中分离原版专用展示，资源页不再混有第二套原版逻辑；加载器入口复用既有用例，操作目标取 NativeItem.Minecraft。NotificationView 仅负责临时反馈及定时器生命周期。ShellWindow 仍只组装页面、通知和原生窗口事件。后端仅移除版本清单截断、透传 requestId，依赖登记已更新，无新下载器或安装服务。格式、边界、NativeUiChecks 及 WebBridgeChecks 均需检查。
+
+
+## 当前名称统一
+
+本轮主要是标识和路径统一，不改变业务层划分，不新增中间转发类。ConfigStore 移除名称导入分支，继续只负责配置读写；用户手动选择的目录不由重命名脚本改动。配置回归改为当前格式完整往返，而非保留已移除的导入接口。Core/App 公共类型及测试均同步根命名空间；默认目录、事务和包清单标识与调用方一致。数据格式影响见 NAMING.md，不能把通过格式检查等同于跨标识数据兼容。

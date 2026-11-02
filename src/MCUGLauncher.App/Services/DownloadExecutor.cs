@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using BlockLaunch;
+using MCUGLauncher;
 
 namespace MCUGLauncher.Services;
 

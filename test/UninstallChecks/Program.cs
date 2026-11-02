@@ -1,7 +1,7 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.Text.Json;
 
-var testRoot = Path.Combine(Path.GetTempPath(), "BlockLaunch-uninstall-" + Guid.NewGuid().ToString("N"));
+var testRoot = Path.Combine(Path.GetTempPath(), "MCUGLauncher-uninstall-" + Guid.NewGuid().ToString("N"));
 var defaults = new LaunchSettings();
 void Check(bool condition, string name)
 {
@@ -62,7 +62,7 @@ InstanceUninstaller.Delete(plan, defaults);
 Check(!Directory.Exists(data) && !Directory.Exists(Path.Combine(root, "versions", "selected")), "version saves mods config screenshots logs permanently removed");
 Check(File.Exists(Path.Combine(root, "libraries", "shared.jar")) && File.Exists(Path.Combine(root, "assets", "shared.asset")), "shared assets and libraries preserved");
 Check(File.Exists(Path.Combine(root, "instances", "other", "saves", "world", "level.dat")), "other instance world preserved");
-Check(!Directory.Exists(Path.Combine(root, ".blocklaunch-trash")), "no hidden backup of deleted game data");
+Check(!Directory.Exists(Path.Combine(root, ".mcuglauncher-trash")), "no hidden backup of deleted game data");
 root = Fixture("shared");
 catalog = new(root);
 var descriptor = catalog.GetOrCreate("selected");

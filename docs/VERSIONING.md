@@ -1,6 +1,6 @@
 # 版本号控制
 
-版本号只有一个来源：仓库根目录 `Directory.Build.props` 的 `<McugVersion>`。程序集版本、文件版本与 `AssemblyInformationalVersion` 都由它派生；运行期统一通过 `BlockLaunch.ProductInfo.Version` 读取，User-Agent、诊断信息和关于页面不再各自维护字面量。
+版本号只有一个来源：仓库根目录 `Directory.Build.props` 的 `<McugVersion>`。程序集版本、文件版本与 `AssemblyInformationalVersion` 都由它派生；运行期统一通过 `MCUGLauncher.ProductInfo.Version` 读取，User-Agent、诊断信息和关于页面不再各自维护字面量。
 
 ## 规则
 

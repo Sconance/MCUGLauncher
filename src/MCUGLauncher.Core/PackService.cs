@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 PackRequirements 数据。
@@ -138,7 +138,7 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
             throw new IOException("整合包下载地址不在支持的 HTTPS 来源中。");
         if (sha512.Length != 128 || sha512.Any(c => !Uri.IsHexDigit(c)))
             throw new IOException("整合包缺少有效 SHA-512。");
-        var cached = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BlockLaunch", "downloads", sha512.ToLowerInvariant());
+        var cached = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MCUGLauncher", "downloads", sha512.ToLowerInvariant());
         await ReliableDownloader.Download(http, uri, cached, sha512, progress: progress, token: token);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(target))!);
         File.Copy(cached, target, true);
@@ -155,13 +155,13 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
         var committedProfile = Path.Combine(root, "versions", alias, alias + ".json");
         if (instanceId != null && File.Exists(committedProfile))
         {
-            var existing = AtomicFile.ReadJson<InstalledPack>(Path.Combine(root, "instances", alias, ".blocklaunch-pack.json"));
+            var existing = AtomicFile.ReadJson<InstalledPack>(Path.Combine(root, "instances", alias, ".mcuglauncher-pack.json"));
             if (existing.InstanceId != alias)
                 throw new IOException("整合包实例身份不匹配。");
             return existing;
         }
 
-        var stage = Path.Combine(root, ".blocklaunch-staging", Guid.NewGuid().ToString("N"));
+        var stage = Path.Combine(root, ".mcuglauncher-staging", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(stage);
         var instanceStage = Path.Combine(stage, "instance");
         Directory.CreateDirectory(instanceStage);
@@ -251,7 +251,7 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
                 if (json.TryGetProperty("formatVersion", out var format) && format.GetInt32() != 1)
                     throw new IOException("不支持的 MultiMC 整合包格式版本。");
                 name = Path.GetFileNameWithoutExtension(archivePath);
-                var exported = archive.GetEntry(prefix + "blocklaunch-export.json");
+                var exported = archive.GetEntry(prefix + "mcuglauncher-export.json");
                 if (exported != null)
                 {
                     using var metadata = await JsonDocument.ParseAsync(exported.Open(), cancellationToken: token);
@@ -263,9 +263,9 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
                 await ExtractLayer(archive, prefix + ".minecraft/", instanceStage, token);
             }
             // Never allow pack contents to inject launcher-owned state.
-            if (File.Exists(Path.Combine(instanceStage, ".blocklaunch-content.json")))
+            if (File.Exists(Path.Combine(instanceStage, ".mcuglauncher-content.json")))
                 throw new IOException("整合包包含保留的启动器配置文件。");
-            AtomicFile.WriteJson(Path.Combine(instanceStage, ".blocklaunch-pack-files.json"), await PackUpgrade.Snapshot(instanceStage, token));
+            AtomicFile.WriteJson(Path.Combine(instanceStage, ".mcuglauncher-pack-files.json"), await PackUpgrade.Snapshot(instanceStage, token));
             progress?.Invoke($"安装 Minecraft {requirements.Minecraft} / {requirements.Loader} {requirements.LoaderVersion}");
             overallProgress?.Invoke(InstallationStages.PackFiles);
             var launchVersion = await installGame(requirements);
@@ -273,7 +273,7 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
             ContentService.SafeFile(launchVersion);
             token.ThrowIfCancellationRequested();
             var record = new InstalledPack(name, requirements.Minecraft, requirements.Loader, requirements.LoaderVersion, launchVersion, alias);
-            await File.WriteAllTextAsync(Path.Combine(instanceStage, ".blocklaunch-pack.json"), JsonSerializer.Serialize(record));
+            await File.WriteAllTextAsync(Path.Combine(instanceStage, ".mcuglauncher-pack.json"), JsonSerializer.Serialize(record));
             var instance = Path.Combine(root, "instances", alias);
             Directory.CreateDirectory(Path.GetDirectoryName(instance)!);
             using var commit = OperationExecution.BeginCommit();
@@ -320,7 +320,7 @@ public sealed class PackService(HttpClient http, CancellationToken token = defau
             if (((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000)
                 throw new IOException("整合包包含符号链接。");
             var relative = entry.FullName[prefix.Length..];
-            if (relative.Replace('\\', '/').Split('/')[0].StartsWith(".blocklaunch", StringComparison.OrdinalIgnoreCase))
+            if (relative.Replace('\\', '/').Split('/')[0].StartsWith(".mcuglauncher", StringComparison.OrdinalIgnoreCase))
                 throw new IOException("整合包不能覆盖启动器实例或事务配置。");
             var path = SafePath(destination, relative);
             if (!paths.Add(path))

@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 服务器Favorite 数据。

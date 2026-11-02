@@ -4,7 +4,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text;
-using BlockLaunch;
+using MCUGLauncher;
 using MCUGLauncher.Services;
 
 internal static class ResourceScenarios

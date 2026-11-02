@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 LoaderRelease 数据。

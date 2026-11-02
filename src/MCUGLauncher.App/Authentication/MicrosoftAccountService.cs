@@ -10,7 +10,7 @@ using XboxAuthNet.Game.OAuth;
 using XboxAuthNet.Game;
 using XboxAuthNet.Game.Authenticators;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 SavedMicrosoft账号 数据。

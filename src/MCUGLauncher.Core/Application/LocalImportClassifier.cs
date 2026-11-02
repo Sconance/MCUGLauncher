@@ -1,6 +1,6 @@
 using System.IO.Compression;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 定义 LocalImportKind 的取值。

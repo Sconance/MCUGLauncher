@@ -1,4 +1,4 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 // One execution's cancellation, progress and commit boundary; owned by OperationCoordinator.
 /// <summary>

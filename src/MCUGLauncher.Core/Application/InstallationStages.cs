@@ -1,4 +1,4 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 // Stage weights describe work completed, not elapsed time. Only the queue commits 100%.
 public static class InstallationStages

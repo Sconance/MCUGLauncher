@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 CloneOptions 数据。
@@ -53,7 +53,7 @@ public static class InstanceCloner
         NoLink(source);
         using var sourceLock = ContentService.LockInstance(source);
         var newKey = "instance-" + Guid.NewGuid().ToString("N")[..12];
-        var parent = Path.Combine(root, ".blocklaunch-clone-staging");
+        var parent = Path.Combine(root, ".mcuglauncher-clone-staging");
         Directory.CreateDirectory(parent);
         NoLink(parent);
         var stage = Path.Combine(parent, Guid.NewGuid().ToString("N"));
@@ -108,7 +108,7 @@ public static class InstanceCloner
                 "options.txt",
                 "optionsof.txt",
                 "optionsshaders.txt",
-                ".blocklaunch-content.json"
+                ".mcuglauncher-content.json"
             }.Concat(options.Servers ? ["servers.dat"] : Array.Empty<string>()))
                 if (File.Exists(Path.Combine(source, child)))
                 {
@@ -168,12 +168,12 @@ public static class InstanceCloner
                 descriptor.IconPath = Path.Combine(target, icon);
             }
 
-            AtomicFile.WriteJson(Path.Combine(stage, ".blocklaunch-instance.json"), descriptor);
-            var packFile = Path.Combine(catalog.MetadataDirectory(key), ".blocklaunch-pack.json");
+            AtomicFile.WriteJson(Path.Combine(stage, ".mcuglauncher-instance.json"), descriptor);
+            var packFile = Path.Combine(catalog.MetadataDirectory(key), ".mcuglauncher-pack.json");
             if (File.Exists(packFile))
             {
                 var pack = AtomicFile.ReadJson<InstalledPack>(packFile);
-                AtomicFile.WriteJson(Path.Combine(stage, ".blocklaunch-pack.json"), pack with
+                AtomicFile.WriteJson(Path.Combine(stage, ".mcuglauncher-pack.json"), pack with
                 {
                     Name = name.Trim(),
                     InstanceId = newKey,
@@ -181,11 +181,11 @@ public static class InstanceCloner
                 });
             }
 
-            var baseline = Path.Combine(catalog.MetadataDirectory(key), ".blocklaunch-pack-files.json");
+            var baseline = Path.Combine(catalog.MetadataDirectory(key), ".mcuglauncher-pack-files.json");
             if (File.Exists(baseline))
             {
                 NoLink(baseline);
-                File.Copy(baseline, Path.Combine(stage, ".blocklaunch-pack-files.json"));
+                File.Copy(baseline, Path.Combine(stage, ".mcuglauncher-pack-files.json"));
             }
 
             token.ThrowIfCancellationRequested();

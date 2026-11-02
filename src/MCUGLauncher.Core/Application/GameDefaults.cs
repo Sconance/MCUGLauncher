@@ -1,4 +1,4 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 提供 GameDefaults 相关功能。
@@ -38,7 +38,7 @@ public static class GameDefaults
         lines.RemoveAll(line => line.StartsWith("lang:", StringComparison.Ordinal));
         var legacy = Version.TryParse(minecraft, out var version) && version < new Version(1, 11);
         lines.Add("lang:" + (legacy ? "zh_CN" : "zh_cn"));
-        var temporary = path + ".blocklaunch-" + Guid.NewGuid().ToString("N");
+        var temporary = path + ".mcuglauncher-" + Guid.NewGuid().ToString("N");
         try
         {
             File.WriteAllLines(temporary, lines, new System.Text.UTF8Encoding(false));

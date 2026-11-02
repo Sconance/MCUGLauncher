@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 // Serializes task state changes and persists recoverable queue history.
 /// <summary>

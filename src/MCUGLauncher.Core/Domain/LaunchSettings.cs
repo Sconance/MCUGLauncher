@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 提供 启动设置 相关功能。
@@ -43,7 +43,7 @@ public sealed class LaunchSettings
     /// <summary>
     /// 获取或设置 版本信息。
     /// </summary>
-    public string VersionInfo { get; set; } = "BlockLaunch";
+    public string VersionInfo { get; set; } = "MCUGLauncher";
     /// <summary>
     /// 获取或设置 Visibility。
     /// </summary>

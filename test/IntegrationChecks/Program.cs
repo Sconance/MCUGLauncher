@@ -1,4 +1,4 @@
-using BlockLaunch;
+using MCUGLauncher;
 using CmlLib.Core.Auth;
 using System.Text.Json;
 
@@ -128,10 +128,10 @@ if (args.Contains("--real-pack-upgrade"))
     var oldDir = catalog.DirectoryFor(old.InstanceId);
     catalog.GetOrCreate(old.InstanceId);
     Directory.CreateDirectory(Path.Combine(oldDir, "config"));
-    File.WriteAllText(Path.Combine(oldDir, "config", "blocklaunch-player-test.txt"), "player-custom-config");
+    File.WriteAllText(Path.Combine(oldDir, "config", "mcuglauncher-player-test.txt"), "player-custom-config");
     using var upgrade = await PackUpgrade.Prepare(live, root, old.InstanceId, oldDir, await Archive(versions[0]), Install, false, Console.WriteLine, default);
     var key = await PackUpgrade.Commit(upgrade, upgrade.Files.Where(f => f.KeepOld).Select(f => f.Relative), new(), Console.WriteLine, default);
-    if (File.ReadAllText(Path.Combine(catalog.DirectoryFor(key), "config", "blocklaunch-player-test.txt")) != "player-custom-config")
+    if (File.ReadAllText(Path.Combine(catalog.DirectoryFor(key), "config", "mcuglauncher-player-test.txt")) != "player-custom-config")
         throw new Exception("Custom config not preserved");
     await Run(key, "REAL_PACK_UPGRADED");
     await Run(old.InstanceId, "REAL_PACK_ORIGINAL");
@@ -258,7 +258,7 @@ if (!args.Contains("--pack-only"))
         return;
 }
 
-var packFile = Directory.GetFiles(Path.Combine(root, "instances"), ".blocklaunch-pack.json", SearchOption.AllDirectories).First(f => JsonSerializer.Deserialize<InstalledPack>(File.ReadAllText(f))?.Loader == "quilt");
+var packFile = Directory.GetFiles(Path.Combine(root, "instances"), ".mcuglauncher-pack.json", SearchOption.AllDirectories).First(f => JsonSerializer.Deserialize<InstalledPack>(File.ReadAllText(f))?.Loader == "quilt");
 var pack = JsonSerializer.Deserialize<InstalledPack>(File.ReadAllText(packFile))!;
 await Run(pack.InstanceId, "MODPACK");
 var packDirectory = catalog.DirectoryFor(pack.InstanceId);
@@ -284,8 +284,8 @@ async Task Run(string key, string label, string minecraft = "1.21.1", int ram = 
         RamMb = ram,
         Width = 854,
         Height = 480,
-        JvmArguments = "-Dblocklaunch.test=true",
-        VersionInfo = "BlockLaunch-test"
+        JvmArguments = "-Dmcuglauncher.test=true",
+        VersionInfo = "MCUGLauncher-test"
     };
     var discovered = await JavaDiscovery.FindCompatible(root, instance.LaunchProfileId, CancellationToken.None);
     var identity = external == null ? MSession.CreateOfflineSession("StableTester") : new MSession
@@ -313,7 +313,7 @@ async Task Run(string key, string label, string minecraft = "1.21.1", int ram = 
     var command = process.StartInfo.Arguments + string.Join(" ", process.StartInfo.ArgumentList);
     if (external != null && (!command.Contains("-javaagent:") || !command.Contains(AuthlibLaunch.Api) || !command.Contains("-Dauthlibinjector.yggdrasil.prefetched=")))
         throw new Exception("MUA injection arguments missing");
-    if (!command.Contains("-Dblocklaunch.test=true") || !command.Contains("BlockLaunch-test"))
+    if (!command.Contains("-Dmcuglauncher.test=true") || !command.Contains("MCUGLauncher-test"))
         throw new Exception("Advanced arguments not applied");
     Console.WriteLine(label + "_ADVANCED_LAUNCH_ARGUMENTS_OK");
     var captured = Path.GetFullPath("work/v0141-" + label.ToLowerInvariant() + "-process.log");

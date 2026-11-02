@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>
 /// 表示 内容更新 数据。
@@ -71,7 +71,7 @@ public static class ContentUpdates
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         var paths = ContentService.ListLocal(instance).Select(x => x.Path).ToList();
-        var manifest = System.IO.Path.Combine(instance, ".blocklaunch-content.json");
+        var manifest = System.IO.Path.Combine(instance, ".mcuglauncher-content.json");
         if (File.Exists(manifest))
             paths.Add(manifest);
         foreach (var path in paths.OrderBy(p => p, StringComparer.OrdinalIgnoreCase))

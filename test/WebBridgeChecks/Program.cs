@@ -77,27 +77,25 @@ await Request("""{"type":"saveAnnouncements","items":"bad"}""");
 Check(Has("error") && File.ReadAllText(Path.Combine(fixture, "announcements.local.json")).Contains("fixture"), "malformed community request cannot erase saved announcements");
 Check(ProtocolValues.OfflineUuid("Notch") == "b50ad385829d3141a2167e7d7539ba7f", "offline UUID uses Java byte order");
 
-var legacyDirectory = Path.Combine(fixture, "legacy");
-Directory.CreateDirectory(legacyDirectory);
-var legacyPreferences = new BlockLaunch.Preferences
+var preferencesDirectory = Path.Combine(fixture, "preferences-roundtrip");
+var preferencesStore = new ConfigStore(preferencesDirectory);
+var savedPreferences = new MCUGLauncher.Preferences
 {
-    Player = "Old",
     ProtectSaves = false,
     SaveBackupCount = 12,
-    ExtraJavaPaths = new List<string> { "fixture-java" },
     BackgroundPath = "fixture-background"
 };
-legacyPreferences.Network.LimitKibPerSecond = 777;
-legacyPreferences.Launch.JvmArguments = "-Dfixture=true";
-new BlockLaunch.SettingsStore(legacyDirectory).Save(legacyPreferences);
-var imported = ConfigStore.ReadLegacy(Path.Combine(legacyDirectory, "settings.json"))!;
-Check(imported.LegacyPreferences.Network.LimitKibPerSecond == 777 && imported.LegacyPreferences.SaveBackupCount == 12
-    && imported.LegacyPreferences.Launch.JvmArguments == "-Dfixture=true" && imported.LegacyPreferences.BackgroundPath == "fixture-background",
-    "legacy migration preserves network launch appearance and save preferences");
+savedPreferences.Network.LimitKibPerSecond = 777;
+savedPreferences.Launch.JvmArguments = "-Dfixture=true";
+preferencesStore.Save(new MCUGLauncher.Models.AppConfig { Root = gameRoot, LegacyPreferences = savedPreferences });
+var restoredPreferences = preferencesStore.Load().LegacyPreferences;
+Check(restoredPreferences.Network.LimitKibPerSecond == 777 && restoredPreferences.SaveBackupCount == 12
+    && restoredPreferences.Launch.JvmArguments == "-Dfixture=true" && restoredPreferences.BackgroundPath == "fixture-background",
+    "current configuration preserves network launch appearance and save preferences");
 await Request("""{"type":"toggleBookmark","id":"fixture-project","kind":"mod","name":"Fixture","description":"fixture","author":"fixture"}""");
-Check(new BlockLaunch.ResourceBookmarkStore(fixture).Read().Any(b => b.Project.Id == "fixture-project"), "bookmark command persists through Core store");
+Check(new MCUGLauncher.ResourceBookmarkStore(fixture).Read().Any(b => b.Project.Id == "fixture-project"), "bookmark command persists through Core store");
 await Request("""{"type":"toggleBookmark","id":"fixture-project"}""");
-Check(!new BlockLaunch.ResourceBookmarkStore(fixture).Read().Any(b => b.Project.Id == "fixture-project"), "bookmark command removes through Core store");
+Check(!new MCUGLauncher.ResourceBookmarkStore(fixture).Read().Any(b => b.Project.Id == "fixture-project"), "bookmark command removes through Core store");
 await Request("""{"type":"listSaveBackups"}""");
 Check(Has("saveBackups") && messages.Last().GetProperty("items").GetArrayLength() == 0, "save backup listing uses selected instance");
 await Request("""{"type":"requestGames"}""");
