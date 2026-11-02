@@ -13,6 +13,7 @@ public partial class ShellWindow : Window
 {
     readonly LauncherFacade session;
     readonly NotificationView notice = new();
+    readonly BackgroundView background = new();
     NativePage? page;
     string group = "";
     public ShellWindow() : this(null) { }
@@ -39,6 +40,8 @@ public partial class ShellWindow : Window
             TopNavigation.Children.Add(button);
         }
         NoticeHost.Content = notice;
+        BackgroundHost.Content = background;
+        PageHost.SizeChanged += (_, _) => { if (page != null) page.MaxWidth = PageHost.Bounds.Width; };
         MinimizeButton.Click += (_, _) => WindowState = WindowState.Minimized;
         MaximizeButton.Click += (_, _) => ToggleMaximized();
         CloseButton.Click += (_, _) => Close();
@@ -63,7 +66,7 @@ public partial class ShellWindow : Window
         TaskButton.Click += (_, _) => Navigate("tasks");
         TaskButton.Classes.Add("soft");
         Opened += async (_, _) => { if (injected == null) await session.SendAsync(new { type = "ready" }); };
-        Closed += (_, _) => { session.RememberWindow(Width, Height, WindowState == WindowState.Maximized); notice.Dispose(); page?.Dispose(); session.PropertyChanged -= Changed; session.MessageReceived -= OnMessage; session.Dispose(); };
+        Closed += (_, _) => { session.RememberWindow(Width, Height, WindowState == WindowState.Maximized); notice.Dispose(); background.Dispose(); page?.Dispose(); session.PropertyChanged -= Changed; session.MessageReceived -= OnMessage; session.Dispose(); };
         Navigate("home");
         Changed(this, new(null));
     }
@@ -99,6 +102,8 @@ public partial class ShellWindow : Window
             button.Classes.Set("selected", button.Tag as string == (group == "home" ? "home" : group == "download" ? "community" : "settings"));
         page?.Dispose();
         page = entry.Create(session);
+        if (PageHost.Bounds.Width > 0)
+            page.MaxWidth = PageHost.Bounds.Width;
         PageHost.Content = page;
         PageScroll.Offset = default;
         foreach (var button in Sidebar.Children.OfType<Button>())
@@ -106,6 +111,7 @@ public partial class ShellWindow : Window
     }
     void Changed(object? sender, PropertyChangedEventArgs args)
     {
+        background.Update(session.State.Preferences);
         if (args.PropertyName == nameof(LauncherFacade.Status))
             notice.Show(session.Status);
         var active = session.Tasks.Where(t => t.State is "Running" or "Queued" or "Paused").ToArray();

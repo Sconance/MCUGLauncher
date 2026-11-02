@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace MCUGLauncher;
 
 /// <summary>
-/// 提供 启动设置 相关功能。
+/// 全局与实例共用的游戏启动参数。
 /// </summary>
 public sealed class LaunchSettings
 {
@@ -27,6 +27,8 @@ public sealed class LaunchSettings
     /// 获取或设置 Height。
     /// </summary>
     public int Height { get; set; } = 720;
+    /// <summary>启动前将未运行实例的游戏语言设置为简体中文，可按实例覆盖。</summary>
+    public bool AutoChinese { get; set; } = true;
     public bool FullScreen
     {
         get;

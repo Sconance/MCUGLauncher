@@ -48,7 +48,7 @@ internal sealed class TasksPage : NativePage
             foreach (var (label, action) in allowed)
                 actions.Children.Add(Ui.Button(label, () => Send(new { type = "taskAction", id = task.Id, action })));
             list.Children.Add(Ui.Card(Ui.Stack(
-                        Ui.Text(task.Name + " · " + task.State, 16),
+                        Ui.Text(task.Name + " · " + StateLabel(task.State), 16),
                         Ui.Text(task.Message),
                         new ProgressBar { Minimum = 0, Maximum = 100, Value = task.Percent ?? 0, IsIndeterminate = task.Percent == null, Height = 7 },
                         Ui.Text(task.Percent is { } percent ? $"{percent:0.0}%" : "正在准备…"),
@@ -59,6 +59,20 @@ internal sealed class TasksPage : NativePage
         if (list.Children.Count == 0)
             list.Children.Add(Ui.Text("当前没有下载任务。"));
     }
+
+    static string StateLabel(string state) => state switch
+    {
+        "Running" => "进行中",
+        "Queued" => "排队中",
+        "Paused" => "已暂停",
+        "Pausing" => "正在暂停",
+        "Cancelling" => "正在取消",
+        "Cancelled" => "已取消",
+        "Completed" => "已完成",
+        "Failed" => "失败",
+        "Interrupted" => "已中断",
+        _ => state
+    };
 
     protected override void Receive(NativeMessage message)
     {

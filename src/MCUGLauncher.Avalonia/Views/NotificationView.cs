@@ -20,14 +20,26 @@ internal sealed class NotificationView : Border, IDisposable
         var close = Ui.Action("×", Hide);
         close.Classes.Add("link");
         global::Avalonia.Automation.AutomationProperties.SetName(close, "关闭提示");
-        Child = Ui.Beside(text, close);
+        MinWidth = 220;
+        MinHeight = 48;
+        text.Name = "NotificationText";
+        text.TextAlignment = global::Avalonia.Media.TextAlignment.Center;
+        text.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("24,*,24") };
+        Grid.SetColumn(text, 1);
+        row.Children.Add(text);
+        Grid.SetColumn(close, 2);
+        close.Width = 24;
+        close.Padding = default;
+        row.Children.Add(close);
+        Child = row;
         timer.Tick += Expire;
     }
     public void Show(string message)
     {
         if (string.IsNullOrWhiteSpace(message))
             return;
-        text.Text = message;
+        text.Text = message.Trim().TrimEnd('。', '.');
         IsVisible = true;
         timer.Stop();
         timer.Start();

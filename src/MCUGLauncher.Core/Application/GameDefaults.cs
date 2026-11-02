@@ -1,7 +1,7 @@
 namespace MCUGLauncher;
 
 /// <summary>
-/// 提供 GameDefaults 相关功能。
+/// 解析游戏目录并写入版本适用的默认选项。
 /// </summary>
 public static class GameDefaults
 {
@@ -26,7 +26,7 @@ public static class GameDefaults
 
     // Only seed a missing language; a player's later language choice survives launches and repairs.
     /// <summary>
-    /// 确保Chinese。
+    /// 按游戏版本写入简体中文语言键，保留其他选项。
     /// </summary>
     public static void EnsureChinese(string directory, string minecraft, bool overwrite = false)
     {

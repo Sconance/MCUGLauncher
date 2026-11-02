@@ -244,6 +244,7 @@ internal static class Program
         await CodexParity(window);
         await DialogParity(window);
         await WindowAndVanillaParity(window);
+        await SettingsParity(window);
         await ButtonAppearance();
         window.Navigate("sources");
         await Task.Delay(20);
@@ -342,6 +343,49 @@ internal static class Program
         window.Close();
         Console.WriteLine("ALL_NATIVE_UI_CHECKS_PASSED (headless native controls and simulated application responses; no live account/game)");
     }
+    static async Task SettingsParity(ShellWindow window)
+    {
+        window.Navigate("network");
+        await Task.Delay(25);
+        await Click(Find(window, "保存网络设置"));
+        Check(Sent.Last().GetProperty("network").GetProperty("proxyMode").GetString() == "系统代理", "network page sends actual policy settings instead of community URLs");
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/settings-network.png");
+        window.Navigate("appearance");
+        await Task.Delay(25);
+        await Click(Find(window, "保存外观设置"));
+        Check(Sent.Last().GetProperty("appearance").GetProperty("path").GetString() == "", "appearance can save an empty background without a placeholder asset");
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/settings-appearance.png");
+        window.Navigate("settings");
+        await Task.Delay(30);
+        var chinese = Controls<CheckBox>(window).Single(c => c.Content?.ToString() == "启动时自动切换为简体中文");
+        Check(chinese.IsChecked == true, "automatic Simplified Chinese is enabled by default");
+        chinese.IsChecked = false;
+        await Click(Find(window, "保存设置"));
+        Check(!Sent.Last().GetProperty("settings").GetProperty("autoChinese").GetBoolean(), "language preference is sent through the shared launch editor");
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/settings-launch.png");
+        window.Navigate("saves");
+        await Task.Delay(25);
+        await Click(Find(window, "保存备份设置"));
+        Check(Sent.Last().GetProperty("backupCount").GetInt32() == 5, "save protection exposes existing backup retention");
+        window.Navigate("directories");
+        await Task.Delay(25);
+        Check(Find(window, "正在使用").IsEnabled == false, "active directory cannot be removed or switched redundantly");
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/settings-directories.png");
+        Session.Report("社区内容已刷新。");
+        await Task.Delay(25);
+        var notice = Controls<NotificationView>(window).Single();
+        var text = Controls<TextBlock>(notice).Single(t => t.Name == "NotificationText");
+        Check(text.Text == "社区内容已刷新" && text.TextAlignment == global::Avalonia.Media.TextAlignment.Center, "notification text is centered and omits the final full stop");
+        Check(Math.Abs(text.TranslatePoint(default, notice)!.Value.X + text.Bounds.Width / 2 - notice.Bounds.Width / 2) < 1, "notification text area is centered independently of its close button");
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/notification-centered.png");
+        await Click(Controls<Button>(notice).Single());
+    }
+
     static void CheckDialogFooter(Window dialog, string primaryLabel)
     {
         Check(dialog is DialogWindow && dialog.SystemDecorations == SystemDecorations.BorderOnly, "shared native dialog shell: " + dialog.Title);
@@ -521,8 +565,8 @@ internal static class Program
     }
     static async Task CodexParity(ShellWindow window)
     {
-        var expected = new[] { "启动设置", "Java 管理", "安装与导入", "下载与网络", "界面与背景", "更多选项", "管理员", "数据源", "服务器收藏", "运行中的游戏", "实例维护", "我的收藏", "存档保护", "下载任务", "任务与恢复", "运行日志", "诊断与反馈", "关于与许可" };
-        Check(NavigationCatalog.All.Where(i => i.Group == "settings" && i.Visible).Select(i => i.Label).SequenceEqual(expected), "settings sections preserve codex order and labels");
+        var expected = new[] { "启动设置", "Java 管理", "游戏目录", "实例维护", "存档保护", "界面与背景", "下载与网络", "安装与导入", "维护与恢复", "账号与社区", "数据源", "服务器收藏", "我的收藏", "管理员", "下载任务", "运行中的游戏", "运行日志", "诊断与反馈", "关于与许可" };
+        Check(NavigationCatalog.All.Where(i => i.Group == "settings" && i.Visible).Select(i => i.Label).SequenceEqual(expected), "settings retain all functions with user-approved category grouping");
         Session.HomeInstancePanelOpen = false;
         window.Navigate("home");
         await Task.Delay(25);

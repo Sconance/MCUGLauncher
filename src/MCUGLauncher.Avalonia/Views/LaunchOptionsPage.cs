@@ -9,7 +9,7 @@ internal sealed class LaunchOptionsPage : NativePage
         Title("启动参数");
     }
 
-    public async Task Load(string version)
+    public async Task Load(string version, bool inline = false)
     {
         var id = Guid.NewGuid().ToString("N");
         var result = await Session.RequestAsync("launchOptions", new
@@ -22,7 +22,8 @@ internal sealed class LaunchOptionsPage : NativePage
         var name = Ui.Input(result.Name);
         var inherit = Ui.Check("继承全局启动设置", result.Inherited);
         var auto = Ui.Check("自动分配内存", options.AutoMemory);
-        var full = Ui.Check("全屏", options.FullScreen);
+        var full = Ui.Check("全屏启动", options.FullScreen);
+        var chinese = Ui.Check("启动时自动切换为简体中文", options.AutoChinese);
         var java = Ui.Input(options.Java);
         var ram = Ui.Input(options.RamMb.ToString());
         var width = Ui.Input(options.Width.ToString());
@@ -30,19 +31,19 @@ internal sealed class LaunchOptionsPage : NativePage
         var args = Ui.Input(options.JvmArguments);
         var title = Ui.Input(options.WindowTitle);
         var server = Ui.Input(options.Server);
+        Control javaEditor = version.Length > 0
+            ? Ui.Stack(Ui.Field("Java（留空自动）", java), Ui.Button("选择 Java", async () => java.Text = await FilePicker.Open(Owner, "Java", "java.exe", "javaw.exe") ?? java.Text))
+            : Ui.Setting("Java 运行环境", "由 Java 管理统一选择，默认自动匹配游戏版本", Ui.Action("Java 管理", () => Session.Navigate?.Invoke("java")));
         var fields = Ui.Stack(
-            auto,
-            Ui.Field("Java（留空自动）", java),
-            Ui.Button("选择 Java", async () =>
-                {
-                    java.Text = await FilePicker.Open(Owner, "Java", "java.exe", "javaw.exe") ?? java.Text;
-                }),
+            Ui.Text("运行环境与内存", 16), javaEditor, auto,
             Ui.Field("内存 MB", ram),
             Ui.Row(
-                Ui.Field("窗口宽", width),
-                Ui.Field("窗口高", height)
+                Ui.Field("游戏窗口宽", width),
+                Ui.Field("游戏窗口高", height)
             ),
             full,
+            chinese,
+            Ui.Muted("开启后会在启动前设置简体中文；关闭后保留游戏自己的语言设置。运行中的实例不修改。"),
             Ui.Field("附加 JVM 参数", args),
             Ui.Field("窗口标题", title),
             Ui.Field("自动加入服务器", server)
@@ -76,6 +77,7 @@ internal sealed class LaunchOptionsPage : NativePage
                         settings = new
                         {
                             autoMemory = auto.IsChecked == true,
+                            autoChinese = chinese.IsChecked == true,
                             java = java.Text ?? "",
                             ramMb = memory,
                             width = w,
@@ -87,7 +89,10 @@ internal sealed class LaunchOptionsPage : NativePage
                         }
                     });
                 }, true);
-        DialogActions = Ui.DialogActions(this, save);
+        if (inline)
+            Body.Children.Add(Ui.Row(save));
+        else
+            DialogActions = Ui.DialogActions(this, save);
     }
 
     public static async Task Open(LauncherFacade session, Window owner, string version = "")

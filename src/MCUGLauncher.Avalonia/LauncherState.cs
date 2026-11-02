@@ -3,6 +3,7 @@ namespace MCUGLauncher.Avalonia;
 using Presentation;
 internal sealed record LauncherState
 {
+    public MCUGLauncher.Preferences Preferences { get; init; } = new();
     public string AppVersion { get; init; } = MCUGLauncher.ProductInfo.Version;
     public string Player { get; init; } = "";
     public string AccountType { get; init; } = "offline";

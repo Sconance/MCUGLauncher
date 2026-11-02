@@ -21,6 +21,7 @@ internal sealed class ResourceDialog : NativePage
     int revision;
     public ResourceDialog(LauncherFacade session, NativeItem project, string category) : base(session)
     {
+        destination.Text = State.Preferences.ResourceDownloadDirectory;
         this.project = project;
         this.category = category;
         var choices = new[]

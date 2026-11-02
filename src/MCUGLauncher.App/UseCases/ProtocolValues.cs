@@ -16,9 +16,9 @@ internal static class ProtocolValues
             var expected = field.Name switch
             {
                 "enabled" or "anonymous" or "saves" or "servers" or "inherit" or "autoMemory" => JsonValueKind.True,
-                "ram" or "width" or "height" => JsonValueKind.Number,
-                "dataSources" or "settings" => JsonValueKind.Object,
-                "items" or "projects" => JsonValueKind.Array,
+                "ram" or "width" or "height" or "backupCount" => JsonValueKind.Number,
+                "dataSources" or "settings" or "network" or "appearance" => JsonValueKind.Object,
+                "items" or "projects" or "gameRoots" => JsonValueKind.Array,
                 _ => JsonValueKind.Undefined
             };
             if (expected == JsonValueKind.True && field.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False)

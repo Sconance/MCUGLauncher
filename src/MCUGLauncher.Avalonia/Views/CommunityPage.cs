@@ -14,10 +14,10 @@ internal sealed class CommunityPage : NativePage
     {
         this.recommendationsOnly = recommendationsOnly;
         this.onlyFeed = onlyFeed;
-        Title(onlyFeed == "announcements" ? "全部公告" : recommendationsOnly ? "群友推荐" : "社区内容", "内容来自配置的数据源；没有内容或请求失败时不会填入演示数据。");
+        Title(onlyFeed == "announcements" ? "全部公告" : recommendationsOnly ? "群友推荐" : "社区内容", "浏览群友推荐的服务器、资源包和光影。");
         Body.Children.Add(Ui.Row(
                 Ui.Button("刷新社区内容", () => Send(new { type = "refreshCommunity" })),
-                Ui.Action("服务器列表", () => Session.Navigate?.Invoke("servers"))
+                Ui.Action("管理服务器收藏", () => Session.Navigate?.Invoke("servers"))
         ));
         if (recommendationsOnly)
         {
@@ -25,7 +25,7 @@ internal sealed class CommunityPage : NativePage
             foreach (var (label, kind) in new[] { ("服务器", "server"), ("材质包", "material"), ("光影", "shader") })
             {
                 var tab = Ui.Action(label, () => { recommendationType = kind; Draw(); });
-                tab.Classes.Add("account-tab");
+                tab.Classes.Add("filter-tab");
                 categoryTabs[kind] = tab;
                 tabs.Children.Add(tab);
             }
@@ -39,7 +39,7 @@ internal sealed class CommunityPage : NativePage
     {
         entries.Children.Clear();
         foreach (var (kind, tab) in categoryTabs)
-            tab.Classes.Set("active", kind == recommendationType);
+            tab.Classes.Set("primary", kind == recommendationType);
         foreach (var key in (onlyFeed != null ? new[] { onlyFeed } : recommendationsOnly ? new[] { "recommendations" } : new[]
             {
                 "announcements",
@@ -49,12 +49,13 @@ internal sealed class CommunityPage : NativePage
 
         )
         {
-            entries.Children.Add(Ui.Heading(key switch
-            {
-                "announcements" => "公告",
-                "recommendations" => "群友推荐",
-                _ => "群友语录"
-            }));
+            if (!recommendationsOnly && onlyFeed == null)
+                entries.Children.Add(Ui.Heading(key switch
+                {
+                    "announcements" => "公告",
+                    "recommendations" => "群友推荐",
+                    _ => "群友语录"
+                }));
             foreach (var entry in (Session.Community.GetValueOrDefault(key) ?? []).Where(e => !recommendationsOnly || e.Type == recommendationType))
             {
                 if (DateTimeOffset.TryParse(entry.ExpiresAt, out var expiry) && expiry < DateTimeOffset.Now)

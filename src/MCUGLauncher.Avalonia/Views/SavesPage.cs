@@ -8,6 +8,17 @@ internal sealed class SavesPage : NativePage
     public SavesPage(LauncherFacade session) : base(session)
     {
         Title("存档保护", "当前实例：" + State.SelectedInstance + "。恢复会创建新存档，不覆盖原存档。");
+        var retention = Ui.Input(State.Preferences.SaveBackupCount.ToString());
+        Body.Children.Add(Ui.SettingsCard("备份保留", Ui.Setting("每个实例保留的备份数", "1–50 份，创建备份时按此数量保留历史记录", retention), Ui.Button("保存备份设置", async () =>
+        {
+            if (!int.TryParse(retention.Text, out var count))
+                throw new ArgumentException("备份数量必须是整数。");
+            await Send(new
+            {
+                type = "saveSettings",
+                backupCount = count
+            });
+        })));
         Body.Children.Add(Ui.Row(
                 Ui.Button("备份当前实例", () => Send(new { type = "backupSaves" }), true),
                 Ui.Button("打开存档文件夹", () => Send(new { type = "openFolder", kind = "saves" })),

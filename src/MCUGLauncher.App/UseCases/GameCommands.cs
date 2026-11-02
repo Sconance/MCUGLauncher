@@ -6,6 +6,13 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
 
+/// <summary>准备并启动独立游戏会话，观察退出并处理关闭请求。</summary>
+/// <remarks>
+/// B 类。成员级依赖与跨模块契约见 docs/components/GameCommands.md。
+/// LauncherContext.Config/OnlineSession/Mua/Token/Http/Store/Tasks/Games 提供启动快照与运行环境；
+/// MarkPreparing(string,string)/ReleasePreparing(string) 保留准备状态；Send(object)/SendGames()/Log(string) 回推结果。
+/// 不依赖任何 View、窗口或控件；语言设置复用 Core GameDefaults.EnsureChinese。
+/// </remarks>
 internal sealed class GameCommands(LauncherContext context,
     Func<LaunchRequest, CancellationToken, Task<Process>>? buildProcess = null)
 {
@@ -57,6 +64,8 @@ internal sealed class GameCommands(LauncherContext context,
                     throw new IOException("账号身份已改变，请重新选择账号后启动。");
             }
             var settings = instance.Settings;
+            if (settings.AutoChinese && !context.Games.UsesDirectory(instance.Directory))
+                GameDefaults.EnsureChinese(instance.Directory, instance.Requirements.Minecraft, overwrite: true);
             settings.VersionInfo = "MCUGLauncher";
             if (settings.AutoMemory)
             {

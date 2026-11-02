@@ -374,3 +374,8 @@ IDesktopHost 确认契约变更：ConfirmStopGameAsync() / ConfirmUninstallAsync
 ### 0.24.0-codex 原版清单修订
 
 ResourceCommands（B）保持既有依赖：LauncherContext.Http / Token 读取 Mojang manifest，LauncherContext.Send(object) 回推结果。ManifestEntries(JsonElement) 只是该用例内的纯协议映射，无新增组件或外部依赖；移除 release-only 过滤及 24 项上限，保留 type。SendVanillaVersionsAsync(string requestId) 在成功与失败回推 requestId，LauncherApplication（C）只透传现有字段。分类、搜索、分页由 VanillaPage 展示层完成；安装仍使用原队列与 Core。WebBridgeChecks 用含 30 个正式版、快照和历史版本的隔离清单验证完整性。
+
+
+### 本轮设置与语言修订
+
+GameCommands、SettingsCommands、LaunchOptionsCommands 仍为 B 类，完整成员依赖见 docs/components 下同名文档和类 remarks。GameCommands 复用 Core GameDefaults，不引入视图依赖；SettingsCommands 扩展既有偏好保存，不新建服务；LaunchOptionsCommands 统一全局/实例的 AutoChinese。LauncherStateBuilder 只将 AppConfig.LegacyPreferences 加入状态快照，UI 不获得存储器或认证对象。

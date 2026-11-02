@@ -65,6 +65,7 @@ internal sealed record NativeItem
 }
 internal sealed record LaunchOptions
 {
+    public bool AutoChinese { get; init; } = true;
     public bool AutoMemory
     {
         get; init;

@@ -238,4 +238,5 @@
   <Style Selector="Button.danger-primary:pointerover"><Setter Property="Background" Value="#A7372F"/></Style>
   <Style Selector="Button.danger-primary:pressed"><Setter Property="Background" Value="#8F302A"/></Style>
   <Style Selector="Button.danger-primary:disabled"><Setter Property="Background" Value="#D7A5A1"/><Setter Property="Foreground" Value="White"/></Style>
+  <Style Selector="Button.filter-tab"><Setter Property="MinHeight" Value="30"/><Setter Property="FontSize" Value="12"/><Setter Property="Padding" Value="12,5"/></Style>
 </Styles>

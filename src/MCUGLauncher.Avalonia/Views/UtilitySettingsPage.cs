@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using MCUGLauncher.Avalonia.Presentation;
 namespace MCUGLauncher.Avalonia.Views;
 
-// Restores the separate settings routes used by the codex UI, rather than merging them.
+// Small utility routes share read-only output; each keeps its existing command contract.
 internal sealed class UtilitySettingsPage : NativePage
 {
     readonly TextBox output = Ui.Input();
@@ -17,16 +17,10 @@ internal sealed class UtilitySettingsPage : NativePage
             case "install":
                 Install();
                 break;
-            case "network":
-                Network();
-                break;
-            case "appearance":
-                Title("界面与背景", "蓝白主题与窗口显示。");
-                Body.Children.Add(Ui.Card(Ui.Stack(Ui.Text("蓝白 · 默认"), Ui.Text("#006DB8 强调色 / #F3F7F9 页面底色"), Ui.Button("恢复默认窗口尺寸", () => Send(new { type = "resetWindow" })))));
-                break;
             case "recovery":
-                Title("任务与恢复", "窗口、界面与配置目录。");
-                Body.Children.Add(Ui.Row(Ui.Button("恢复窗口尺寸", () => Send(new { type = "resetWindow" })), Ui.Action("重新加载界面", () => Session.Navigate?.Invoke("recovery")), Ui.Button("打开配置目录", OpenData)));
+                Title("维护与恢复", "打开配置与日志目录，检查问题时保留原文件。");
+                Body.Children.Add(Ui.SettingsCard("界面与窗口", Ui.Text("窗口大小在界面设置中统一恢复。"), Ui.Action("前往界面设置", () => Session.Navigate?.Invoke("appearance"))));
+                Body.Children.Add(Ui.SettingsCard("问题排查", Ui.Row(Ui.Button("打开配置目录", OpenData), Ui.Action("查看运行日志", () => Session.Navigate?.Invoke("logs")), Ui.Action("诊断与反馈", () => Session.Navigate?.Invoke("diagnose")))));
                 break;
             case "logs":
                 Title("运行日志", "最近 400 行启动与游戏日志。");
@@ -57,61 +51,8 @@ internal sealed class UtilitySettingsPage : NativePage
     void Install()
     {
         Title("安装与导入", "选择游戏版本安装加载器，或导入本地整合包。");
-        var game = Ui.Input("", "例如 1.21.1");
-        Body.Children.Add(Ui.Card(Ui.Stack(Ui.Field("游戏版本", game), Ui.Button("配置 Fabric / Quilt / Forge / NeoForge", () => InstallDialogs.Loader(Session, Owner, game.Text ?? "")))));
+        Body.Children.Add(Ui.SettingsCard("Minecraft 与加载器", Ui.Text("在版本列表中选择正式版、快照或历史版本，再查看兼容的加载器。"), Ui.Action("选择游戏版本", () => Session.Navigate?.Invoke("vanilla"))));
         Body.Children.Add(Ui.Card(Ui.Stack(Ui.Heading("本地整合包"), Ui.Text("支持的 ZIP / mrpack 会先显示名称与目录确认。"), Ui.Button("选择整合包", () => InstallDialogs.Import(Session, Owner)), Ui.Action("查看任务", () => Session.Navigate?.Invoke("tasks")))));
     }
-    void Network()
-    {
-        Title("下载与网络", "数据源与连接诊断。");
-        var sources = State.DataSources;
-        Body.Children.Add(Ui.Card(Ui.Stack(Ui.Text("公告：" + sources.Announcements), Ui.Text("服务器：" + sources.Servers), Ui.Text("推荐：" + sources.Recommendations), Ui.Text("语录：" + sources.Quotes), Ui.Action("打开数据源设置", () => Session.Navigate?.Invoke("sources")))));
-        Body.Children.Add(Ui.Button("测试四类地址", async () =>
-        {
-            var lines = new List<string>();
-            foreach (var (name, url) in new[] { ("announcements", sources.Announcements), ("servers", sources.Servers), ("recommendations", sources.Recommendations), ("quotes", sources.Quotes) })
-            {
-                var requestId = Guid.NewGuid().ToString("N");
-                var result = await Session.RequestAsync("testResult", new
-                {
-                    type = "testSource",
-                    name,
-                    url,
-                    requestId
-                }, m => m.RequestId == requestId);
-                lines.Add(name + "：" + result.Message);
-            }
-            output.Text = string.Join('\n', lines);
-        }));
-        Body.Children.Add(output);
-    }
-}
-internal sealed class CommunityOptionsPage : NativePage
-{
-    public CommunityOptionsPage(LauncherFacade session) : base(session)
-    {
-        Title("账号与社区设置", "本地账号与社区密钥；保存密钥不等于服务器身份认证。");
-        Body.Children.Add(Ui.Card(Ui.Stack(Ui.Heading("当前账号"), Ui.Text(State.Player + " · " + State.AccountLabel), Ui.Action("返回主页切换账号", () => Session.Navigate?.Invoke("home")), Ui.Text("切换到离线不会删除在线授权。"), Forget("移除保存的正版账号", "microsoft"), Forget("移除保存的 MUA 账号", "mua"))));
-        Body.Children.Add(Ui.Card(Ui.Stack(Ui.Heading("社区请求"), Ui.Text(State.Anonymous ? "匿名模式：已开启" : "匿名模式：已关闭"), Ui.Button("切换匿名模式", () => Send(new { type = "saveSettings", anonymous = !State.Anonymous })))));
-        var key = Ui.Input("", "粘贴社区密钥");
-        key.PasswordChar = '●';
-        var status = Ui.Text(State.CommunityKey ? "已保存在本机" : "尚未保存");
-        Body.Children.Add(Ui.Card(Ui.Stack(Ui.Heading("社区密钥"), status, key, Ui.Button("保存密钥", async () => { var result = await Session.RequestAsync("keyResult", new { type = "verifyKey", role = "community", key = key.Text ?? "" }); key.Text = ""; status.Text = result.Message; }))));
-    }
-    Button Forget(string label, string account) => Ui.Button(label, async () => { if (await Ui.Confirm(Owner, "移除账号", "仅移除本机登录缓存。下次使用此账号时需要重新登录。", "移除账号", true)) await Send(new { type = "forgetAccount", account }); });
-}
-internal sealed class VersionOverviewPage : NativePage
-{
-    public VersionOverviewPage(LauncherFacade session) : base(session)
-    {
-        var item = State.Instances.FirstOrDefault(i => i.Name == State.SelectedInstance);
-        Title("版本设置 · " + (item?.Title ?? "未选择实例"));
-        Body.Children.Add(Ui.Row(Ui.Action("返回", () => Session.Navigate?.Invoke("home")), Ui.Action("版本内容管理", () => Session.Navigate?.Invoke("manage"))));
-        if (item == null)
-        {
-            Body.Children.Add(Ui.Text("请先选择实例。"));
-            return;
-        }
-        Body.Children.Add(Ui.Card(Ui.Stack(Ui.Text(item.Title, 20), Ui.Text(item.Minecraft + " · " + item.Loader), Ui.Button("启动设置", () => LaunchOptionsPage.Open(Session, Owner, item.Name)), Ui.Button("打开版本文件夹", () => Send(new { type = "openFolder", kind = "version" })), Ui.Button("启动此版本", () => Send(new { type = "launch", version = item.Name }), true))));
-    }
+
 }

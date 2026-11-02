@@ -18,11 +18,12 @@
         </StackPanel>
       </Grid>
     </Border>
+    <ContentControl Grid.Row="1" x:Name="BackgroundHost" IsHitTestVisible="False" ClipToBounds="True" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
     <Grid Grid.Row="1" x:Name="PageGrid" ColumnDefinitions="190,*">
       <Border Grid.Column="0" Background="#F7FAFC" BorderBrush="#DFE8EF" BorderThickness="0,0,1,0">
         <ScrollViewer><StackPanel x:Name="Sidebar" Spacing="5" Margin="10,18" /></ScrollViewer>
       </Border>
-      <ScrollViewer Grid.Column="1" x:Name="PageScroll"><ContentControl x:Name="PageHost" Margin="24,20" /></ScrollViewer>
+      <ScrollViewer Grid.Column="1" x:Name="PageScroll" HorizontalScrollBarVisibility="Disabled"><ContentControl x:Name="PageHost" HorizontalContentAlignment="Stretch" Margin="24,20" /></ScrollViewer>
     </Grid>
     <ContentControl Grid.Row="1" x:Name="NoticeHost" HorizontalAlignment="Right" VerticalAlignment="Top" MaxWidth="520" Margin="16" />
   </Grid>

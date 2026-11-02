@@ -35,10 +35,7 @@ public sealed class AppConfig
     /// 获取或设置 Ram。
     /// </summary>
     public int Ram { get; set; } = 4096;
-    public bool AutoMemory
-    {
-        get; set;
-    }
+    public bool AutoMemory { get; set; } = true;
     /// <summary>
     /// 获取或设置 Width。
     /// </summary>

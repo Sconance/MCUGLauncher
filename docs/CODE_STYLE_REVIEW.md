@@ -82,3 +82,8 @@ VanillaPage 从 DownloadPage 中分离原版专用展示，资源页不再混有
 ## 统一弹窗展示
 
 DialogWindow 归纳原 Ui.Show/Confirm/Error 重复的窗口组装，专职标题、视口、底栏、拖动和关闭；不包含网络、配置、认证或安装算法。各视图显式提供 DialogActions，不通过扫描按钮文字猜测业务动作。NativePage.PrepareDialog 只处理自身标记的重复标题。MicrosoftLoginWindow 只复用外框，保留原认证逻辑。无 App/Core 修改，无新增后端组件依赖。验证包括 NativeUiChecks 的真实鼠标状态、弹窗位置/文本/按钮边界与取消行为。
+
+
+## 设置与提示本轮复查
+
+全局启动编辑复用实例编辑器，消除重复保存逻辑；Java、网络、外观、目录按职责独立视图，账号及版本概览从综合工具页移出。语言写入在 GameCommands 调用 Core，窗口中无启动算法。新增配置通过既有 SettingsCommands 保存；没有新建只转发的 Manager。SourceFormatter 之外人工检查了网络对象引用、实例目录冻结和依赖声明。

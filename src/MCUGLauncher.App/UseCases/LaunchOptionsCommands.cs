@@ -5,6 +5,14 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
 
+/// <summary>读取、验证并保存全局或指定实例的启动选项。</summary>
+/// <remarks>
+/// B 类。成员级依赖见 docs/components/LaunchOptionsCommands.md。
+/// LauncherContext.Config.Root/LegacyPreferences/AutoMemory/Ram/Java/Width/Height 提供当前配置；
+/// Store.Save(AppConfig)/Send(object)/RefreshState() 持久化并回推；
+/// InstanceSnapshot.Capture(AppConfig,string).Settings 冻结实例选项，PreviewCache.Add/Get 绑定预览目标。
+/// 不依赖窗口、视图或其他 Commands。
+/// </remarks>
 internal sealed class LaunchOptionsCommands(LauncherContext context)
 {
     sealed record Target(string Root, string Version);
@@ -57,6 +65,8 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
             settings = InstanceSnapshot.Capture(ConfigAt(target.Root), target.Version).Settings;
         settings.AutoMemory = options.GetProperty("autoMemory").GetBoolean();
         settings.FullScreen = options.GetProperty("fullScreen").GetBoolean();
+        if (options.TryGetProperty("autoChinese", out var autoChinese))
+            settings.AutoChinese = autoChinese.GetBoolean();
         settings.RamMb = Number(options, "ramMb", 512, 65536);
         settings.Width = Number(options, "width", 640, 7680);
         settings.Height = Number(options, "height", 480, 4320);

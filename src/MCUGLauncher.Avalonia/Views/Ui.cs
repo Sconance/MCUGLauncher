@@ -73,6 +73,22 @@ internal static class Ui
         BorderThickness = new(1),
         Margin = new(0, 0, 0, 12)
     };
+    public static Border SettingsCard(string title, params Control[] controls)
+    {
+        var heading = Text(title, 16);
+        heading.FontWeight = FontWeight.SemiBold;
+        return Card(Stack([heading, .. controls]));
+    }
+    public static Control Setting(string title, string detail, Control editor)
+    {
+        var copy = Stack(Text(title), Muted(detail));
+        copy.Spacing = 4;
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,300"), ColumnSpacing = 24, Margin = new Thickness(0, 4) };
+        row.Children.Add(copy);
+        Grid.SetColumn(editor, 1);
+        row.Children.Add(editor);
+        return row;
+    }
     public static TextBox Input(string value = "", string hint = "") => new()
     {
         Text = value,
