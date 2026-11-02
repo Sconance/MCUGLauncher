@@ -234,11 +234,14 @@ internal static class Program
             Check(window.GetVisualDescendants().OfType<NativePage>().Any(), "native route " + entry.Id);
         }
         await CodexParity(window);
+        await ButtonAppearance();
         window.Navigate("sources");
         await Task.Delay(20);
         Check(Find(window, "已使用默认源").IsEnabled == false, "default source active status");
+        Check(Find(window, "默认源").Classes.Contains("primary"), "source tab selection uses original primary-button role");
         var before = Sent.Count(i => i.GetProperty("type").GetString() == "testSource");
         await Click(Find(window, "自定义源"));
+        Check(Find(window, "自定义源").Classes.Contains("primary") && !Find(window, "默认源").Classes.Contains("primary"), "source tab visual selection follows the visible page");
         Check(Sent.Count(i => i.GetProperty("type").GetString() == "testSource") == before + 4, "tab entry automatically tests all four sources");
         var boxes = Controls<TextBox>(window).ToArray();
         boxes[0].Text = "https://example.org/custom.json";
@@ -305,7 +308,16 @@ internal static class Program
             frame!.Save("work/native-ui/sources.png");
         window.Navigate("mod");
         await Task.Delay(25);
-        await Click(Find(window, "搜索 / 刷新"));
+        await Click(Find(window, "搜索"));
+        await Click(Find(window, "♡"));
+        Check(Sent.Last().GetProperty("type").GetString() == "toggleBookmark", "heart button preserves the existing bookmark command");
+        var snapshot = JsonSerializer.SerializeToNode(Session.State with
+        {
+            Favorites = [new NativeItem { Id = "sodium", Kind = "mod", Name = "Sodium" }]
+        }, Json)!;
+        snapshot["type"] = "state";
+        Session.Receive(snapshot.ToJsonString());
+        Check(Find(window, "♥") != null, "filled heart follows confirmed favorite state");
         using (var frame = window.CaptureRenderedFrame())
             frame!.Save("work/native-ui/catalog.png");
         window.Navigate("home");
@@ -319,6 +331,46 @@ internal static class Program
             frame!.Save("work/native-ui/instance-panel.png");
         window.Close();
         Console.WriteLine("ALL_NATIVE_UI_CHECKS_PASSED (headless native controls and simulated application responses; no live account/game)");
+    }
+    static async Task ButtonAppearance()
+    {
+        var activations = 0;
+        var primary = Ui.Button("主要操作", () => { activations++; return Task.CompletedTask; }, true);
+        var child = Ui.Text("按钮内嵌文字");
+        primary.Content = child;
+        var ghost = Ui.Action("普通操作", () => { });
+        var soft = Ui.Action("次要操作", () => { });
+        soft.Classes.Add("soft");
+        var link = Ui.Action("文字链接", () => { });
+        link.Classes.Add("link");
+        var dialog = new Window { Width = 520, Height = 280, Content = Ui.Stack(primary, ghost, soft, link) };
+        dialog.Show();
+        await Task.Delay(30);
+        static bool Color(global::Avalonia.Media.IBrush? brush, string expected) => brush is global::Avalonia.Media.ISolidColorBrush solid && solid.Color == global::Avalonia.Media.Color.Parse(expected);
+        Check(Color(ghost.Background, "#FFFFFF") && Color(ghost.Foreground, "#414B55"), "ordinary buttons preserve white background and gray text");
+        Check(Color(soft.Background, "#E8F2F8") && Color(soft.Foreground, "#0B4F7A"), "soft buttons use original tint and deep-blue text");
+        Check(Color(primary.Background, "#006DB8") && Color(child.Foreground, "#FFFFFF"), "primary button text inherits white even inside custom content");
+        using (var frame = dialog.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/button-states.png");
+        var point = primary.TranslatePoint(new Point(10, 10), dialog)!.Value;
+        dialog.MouseMove(point);
+        await Task.Delay(20);
+        Check(Color(primary.Background, "#2C6193") && Color(child.Foreground, "#FFFFFF"), "primary hover keeps original blue and white text");
+        using (var frame = dialog.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/button-hover.png");
+        dialog.MouseDown(point, global::Avalonia.Input.MouseButton.Left);
+        await Task.Delay(20);
+        Check(Color(primary.Background, "#005A99"), "primary pressed state avoids Fluent default gray");
+        dialog.MouseUp(point, global::Avalonia.Input.MouseButton.Left);
+        await Task.Delay(20);
+        Check(activations == 1, "isolated button theme preserves real mouse activation");
+        dialog.MouseMove(new Point(510, 260));
+        primary.IsEnabled = false;
+        await Task.Delay(20);
+        Check(Color(primary.Background, "#ACC3D9") && Color(child.Foreground, "#FFFFFF"), "disabled primary keeps the original pale-blue and white palette");
+        using (var frame = dialog.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/button-disabled.png");
+        dialog.Close();
     }
     static void CheckHomeGeometry(ShellWindow window)
     {

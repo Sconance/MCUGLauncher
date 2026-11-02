@@ -60,6 +60,7 @@ internal sealed class InstancePickerView : NativePage
                 var selection = Ui.Button(item.Title + "\n" + item.Minecraft + " · " + item.Loader, () => Select(item));
                 selection.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
                 selection.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Left;
+                selection.Classes.Add("instance-row");
                 selection.Classes.Set("instance-selected", item.Name == State.SelectedVersion);
                 var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,40,40"), ColumnSpacing = 5 };
                 row.Children.Add(selection);

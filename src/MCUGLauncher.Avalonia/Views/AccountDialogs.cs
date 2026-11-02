@@ -16,7 +16,7 @@ internal static class AccountDialogs
         return Ui.Show(owner, "正版账号登录", Ui.Stack(
             Ui.Heading("正版账号登录"),
             Ui.Text("使用 Microsoft 账号完成正版验证。启动器不保存密码，只保留授权会话。"),
-            Ui.Button("打开 Microsoft 登录", () => session.SendAsync(new { type = "loginMicrosoft" }), true)), 480, 320);
+            Ui.Button("打开登录窗口", () => session.SendAsync(new { type = "loginMicrosoft" }), true)), 480, 320);
     }
     static Task Mua(LauncherFacade session, Window owner)
     {
@@ -24,7 +24,7 @@ internal static class AccountDialogs
         var password = Ui.Input("", "密码");
         password.PasswordChar = '●';
         var content = Ui.Stack(Ui.Heading("MUA 登录"), user, password);
-        content.Children.Add(Ui.Button("登录", async () =>
+        content.Children.Add(Ui.Button("登录 MUA", async () =>
         {
             var secret = password.Text ?? "";
             password.Text = "";
@@ -55,10 +55,10 @@ internal static class AccountDialogs
     {
         var preview = Ui.Avatar(session.Avatar, 96);
         var content = Ui.Stack(Ui.Heading("皮肤与披风"), preview, Ui.Text(session.State.Player + " · " + session.State.AccountLabel));
-        content.Children.Add(Ui.Button("读取当前账号皮肤", () => session.SendAsync(new { type = "readAvatar" })));
+        content.Children.Add(Ui.Button("重新读取皮肤", () => session.SendAsync(new { type = "readAvatar" })));
         if (session.State.AccountType == "offline")
         {
-            content.Children.Add(Ui.Button("选择本地 PNG", async () =>
+            content.Children.Add(Ui.Button("选择本地 PNG 皮肤", async () =>
             {
                 var path = await FilePicker.Open((Window)TopLevel.GetTopLevel(content)!, "PNG 皮肤", "*.png");
                 if (path != null)
@@ -67,8 +67,8 @@ internal static class AccountDialogs
                         type = "setOfflineSkin",
                         path
                     });
-            }));
-            content.Children.Add(Ui.Button("恢复史蒂夫", () => session.SendAsync(new { type = "setOfflineSkin", path = "" })));
+            }, true));
+            content.Children.Add(Ui.Button("恢复默认头像", () => session.SendAsync(new { type = "setOfflineSkin", path = "" })));
         }
         content.Children.Add(Ui.Text("本地皮肤仅用于启动器头像；正版/MUA 皮肤来自认证站。披风上传原后端尚未接入。"));
         void Update(NativeMessage message)

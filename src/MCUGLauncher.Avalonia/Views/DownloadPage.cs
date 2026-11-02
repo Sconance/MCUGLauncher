@@ -9,6 +9,7 @@ internal sealed class DownloadPage : NativePage
     readonly TextBox game = Ui.Input("", "游戏版本（留空不限）");
     readonly ComboBox loader = Ui.Select(new[] { "", "fabric", "forge", "neoforge", "quilt" });
     readonly StackPanel results = Ui.Stack();
+    readonly Dictionary<string, Button> bookmarkButtons = [];
     readonly global::Avalonia.Controls.Primitives.UniformGrid cards = new() { Columns = 1 };
     public DownloadPage(LauncherFacade session, string category) : base(session)
     {
@@ -28,7 +29,7 @@ internal sealed class DownloadPage : NativePage
         };
         Title(label, "发现并下载 Minecraft " + label + "。");
         query.MinWidth = 0;
-        Body.Children.Add(Ui.Beside(query, Ui.Button("搜索 / 刷新", Search, true)));
+        Body.Children.Add(Ui.Beside(query, Ui.Button(category == "vanilla" ? "刷新列表" : "搜索", Search, true)));
         if (category != "vanilla")
         {
             var filters = Ui.Row(Ui.Field("游戏版本", game));
@@ -62,14 +63,18 @@ internal sealed class DownloadPage : NativePage
             }, m => m.RequestId == request);
             results.Children.Clear();
             cards.Children.Clear();
+            bookmarkButtons.Clear();
             foreach (var item in response.Items.Where(i => category != "vanilla" || i.Id.Contains(query.Text ?? "", StringComparison.OrdinalIgnoreCase)))
             {
+                var bookmark = Ui.Button("♡", () => Send(new { type = "toggleBookmark", id = item.Id, name = item.Name, description = item.Description, author = item.Author, kind = category }));
+                bookmark.Classes.Add("bookmark");
+                bookmarkButtons[item.Id] = bookmark;
                 var buttons = category == "vanilla" ? Ui.Row(
                     Ui.Button("安装", () => Send(new { type = "installVanilla", version = item.Id }), true),
                     Ui.Button("配置加载器", () => InstallDialogs.Loader(Session, Owner, item.Id))
                 ) : Ui.Row(
-                    Ui.Button("详情与下载", () => ResourceDialog.Open(Session, Owner, item, category), true),
-                    Ui.Button("收藏 / 取消收藏", () => Send(new { type = "toggleBookmark", id = item.Id, name = item.Name, description = item.Description, author = item.Author, kind = category }))
+                    Ui.Button(category == "modpack" ? "下载整合包" : "下载", () => ResourceDialog.Open(Session, Owner, item, category), true),
+                    bookmark
                 );
                 var card = Ui.Card(Ui.Stack(
                             Ui.Row(
@@ -83,6 +88,7 @@ internal sealed class DownloadPage : NativePage
                 card.Margin = new global::Avalonia.Thickness(0, 0, 12, 12);
                 cards.Children.Add(card);
             }
+            RefreshBookmarks();
             if (cards.Children.Count == 0)
                 results.Children.Add(Ui.Text("没有匹配的结果，请调整条件。"));
             else
@@ -93,5 +99,20 @@ internal sealed class DownloadPage : NativePage
             results.Children.Clear();
             results.Children.Add(Ui.Text("获取失败：" + ex.Message));
         }
+    }
+    void RefreshBookmarks()
+    {
+        foreach (var (id, button) in bookmarkButtons)
+        {
+            var active = State.Favorites.Any(f => f.Id == id && f.Kind == category);
+            button.Content = active ? "♥" : "♡";
+            ToolTip.SetTip(button, active ? "取消收藏" : "添加收藏");
+            global::Avalonia.Automation.AutomationProperties.SetName(button, active ? "取消收藏" : "添加收藏");
+        }
+    }
+    protected override void Receive(NativeMessage message)
+    {
+        if (message.Type == "state")
+            RefreshBookmarks();
     }
 }

@@ -59,7 +59,7 @@ internal static class Ui
     public static TextBlock Muted(string text, double size = 11)
     {
         var block = Text(text, size);
-        block.Foreground = Brush.Parse("#687D8D");
+        block.Foreground = Brush.Parse("#5F717D");
         return block;
     }
     public static Border Card(Control child) => new()
@@ -68,7 +68,7 @@ internal static class Ui
         Padding = new(18),
         CornerRadius = new(12),
         Background = Brushes.White,
-        BorderBrush = Brush.Parse("#DCE8F0"),
+        BorderBrush = Brush.Parse("#E3EAF0"),
         BorderThickness = new(1),
         Margin = new(0, 0, 0, 12)
     };

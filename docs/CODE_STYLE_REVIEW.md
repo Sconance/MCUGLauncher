@@ -62,3 +62,8 @@ ResourceChoiceCommands、LaunchOptionsCommands、MuaProfileSelection、AvatarCom
 ## UI 对齐修订
 
 本轮只调整 Views、主题与壳的展示参数，继续采用 0.22.3-Avalonia 的职责划分。网格布局留在各功能视图；Ui.Beside 只归纳多个页面共同使用的“弹性内容 + 右侧操作”布局，不创建新的业务管理器。分组折叠、窄窗换行是视图状态；下载目标、资源令牌、数据源保存/启用仍走原协议。未修改 App/Core 或引入后端依赖。SourceFormatter 和边界检查之外，实际查看了几何断言及渲染截图。
+
+
+## 按钮角色与状态修订
+
+按钮颜色和状态统一定义在 Theme.axaml，不在点击事件里硬改背景。页面只指定 primary/soft/link/nav/account-tab/bookmark 等展示角色；Favorites、源模式和推荐类别驱动选中态。共享 Button ControlTheme 只控制呈现，不承载账号、配置或下载逻辑。App/Core 及依赖登记表不变，原协议兼容。实际鼠标状态回归用于避免只检查按钮外层属性而漏掉内部文字覆盖。

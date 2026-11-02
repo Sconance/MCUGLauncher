@@ -8,6 +8,7 @@ internal sealed class CommunityPage : NativePage
     readonly StackPanel entries = Ui.Stack();
     readonly bool recommendationsOnly;
     readonly string? onlyFeed;
+    readonly Dictionary<string, Button> categoryTabs = [];
     string recommendationType = "server";
     public CommunityPage(LauncherFacade session, bool recommendationsOnly = false, string? onlyFeed = null) : base(session)
     {
@@ -22,7 +23,12 @@ internal sealed class CommunityPage : NativePage
         {
             var tabs = Ui.Row();
             foreach (var (label, kind) in new[] { ("服务器", "server"), ("材质包", "material"), ("光影", "shader") })
-                tabs.Children.Add(Ui.Action(label, () => { recommendationType = kind; Draw(); }));
+            {
+                var tab = Ui.Action(label, () => { recommendationType = kind; Draw(); });
+                tab.Classes.Add("account-tab");
+                categoryTabs[kind] = tab;
+                tabs.Children.Add(tab);
+            }
             Body.Children.Add(tabs);
         }
         Body.Children.Add(entries);
@@ -32,6 +38,8 @@ internal sealed class CommunityPage : NativePage
     void Draw()
     {
         entries.Children.Clear();
+        foreach (var (kind, tab) in categoryTabs)
+            tab.Classes.Set("active", kind == recommendationType);
         foreach (var key in (onlyFeed != null ? new[] { onlyFeed } : recommendationsOnly ? new[] { "recommendations" } : new[]
             {
                 "announcements",

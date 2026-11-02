@@ -127,7 +127,7 @@ internal sealed class HomeFeedPanel : NativePage
     Grid Recommendations()
     {
         var panel = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 10 };
-        panel.Children.Add(Header("群友推荐", Link("浏览更多", () => Session.Navigate?.Invoke("community"))));
+        panel.Children.Add(Header("群友推荐", Link("查看更多", () => Session.Navigate?.Invoke("community"))));
         var rows = Ui.Stack();
         rows.Spacing = 6;
         foreach (var entry in Entries("recommendations").Take(3))

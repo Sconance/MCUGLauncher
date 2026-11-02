@@ -12,16 +12,17 @@ internal sealed class SourcesPage : NativePage
     readonly Dictionary<string, (string Id, string Url)> requests = [];
     readonly Dictionary<string, string> draft;
     readonly Button use;
+    readonly Button defaultTab;
+    readonly Button customTab;
     string mode = "default";
     public SourcesPage(LauncherFacade session) : base(session)
     {
         draft = Values(State.CustomDataSources);
         Title("数据源设置", "进入页面或切换页签自动测试，也可逐项手动测试。保存与使用分开。");
         use = Ui.Button("使用默认源", () => Send(new { type = "useDataSources", mode }), true);
-        Body.Children.Add(Ui.Row(
-                Ui.Action("默认源", () => Switch("default")),
-                Ui.Action("自定义源", () => Switch("custom"))
-        ));
+        defaultTab = Ui.Action("默认源", () => Switch("default"));
+        customTab = Ui.Action("自定义源", () => Switch("custom"));
+        Body.Children.Add(Ui.Row(defaultTab, customTab));
         Body.Children.Add(rows);
         Switch(mode);
     }
@@ -38,6 +39,8 @@ internal sealed class SourcesPage : NativePage
         if (use.Parent is Panel parent)
             parent.Children.Remove(use);
         mode = next;
+        defaultTab.Classes.Set("primary", mode == "default");
+        customTab.Classes.Set("primary", mode == "custom");
         rows.Children.Clear();
         results.Clear();
         requests.Clear();

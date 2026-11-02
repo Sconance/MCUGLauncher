@@ -105,6 +105,7 @@ internal sealed class HomePage : NativePage
         var change = Ui.Button(State.AccountType == "offline" ? "切换本地账号" : "切换账号", () => AccountDialogs.Open(Session, Owner, State.AccountType));
         change.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
         change.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        change.Classes.Add("soft");
         change.Height = 36;
         change.Margin = new Thickness(0, 14, 0, 0);
         details.Children.Add(change);
@@ -135,6 +136,7 @@ internal sealed class HomePage : NativePage
         detail.TextWrapping = global::Avalonia.Media.TextWrapping.NoWrap;
         detail.TextTrimming = global::Avalonia.Media.TextTrimming.CharacterEllipsis;
         detail.MaxWidth = 160;
+        detail.FontWeight = global::Avalonia.Media.FontWeight.Normal;
         var text = Ui.Stack(title, detail);
         text.Spacing = 4;
         var content = new StackPanel
@@ -162,6 +164,7 @@ internal sealed class HomePage : NativePage
         button.Content = content;
         button.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         button.IsEnabled = State.SelectedVersion.Length > 0;
+        button.Classes.Add("launch");
         button.Height = 78;
         button.Name = "HomeLaunchButton";
         button.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
@@ -171,6 +174,7 @@ internal sealed class HomePage : NativePage
         actions.Spacing = 6;
         foreach (var action in actions.Children.OfType<Button>())
         {
+            action.Classes.Add("soft");
             action.Height = 36;
             action.Width = 38;
             action.Padding = default;

@@ -36,6 +36,7 @@ public partial class ShellWindow : Window
             TopNavigation.Children.Add(button);
         }
         TaskButton.Click += (_, _) => Navigate("tasks");
+        TaskButton.Classes.Add("soft");
         Opened += async (_, _) => { if (injected == null) await session.SendAsync(new { type = "ready" }); };
         Closed += (_, _) => { session.RememberWindow(Width, Height, WindowState == WindowState.Maximized); page?.Dispose(); session.PropertyChanged -= Changed; session.MessageReceived -= OnMessage; session.Dispose(); };
         Navigate("home");
