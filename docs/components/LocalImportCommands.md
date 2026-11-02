@@ -15,3 +15,6 @@
 Core LocalImportClassifier.Identify 识别文件，ContentService.ImportFiles 做事务复制，WorldArchives.Import 负责存档。整合包仍走原 packPreview/packQueued，不新增整合包安装算法。数据包必须选择具体存档，本轮不把它错误写入实例根目录。
 
 DownloadExecutor 在执行前重新校验来源哈希，防止预览后文件变化；任务记录保存冻结目录，不再读取当前选择。运行/准备启动时拒绝写入；任务生命周期与页面无关。
+
+## 本轮修订
+Preview 额外读取 instance 与 resourceKind；InstanceSnapshot.Requirements.Loader 用于加载器类型检查。LocalImportClassifier.Inspect 返回语义类别、加载器标识和可选用途。仅在目标可写且无同名冲突时缓存 Choice；预览/入队回执携带 requestId。World 与数据包范围见 [本地导入](../local-import.md)。

@@ -54,7 +54,7 @@ internal sealed class UtilitySettingsPage : NativePage
     {
         Title("安装与导入", "选择游戏版本安装加载器，或导入本地整合包。");
         Body.Children.Add(Ui.SettingsCard("Minecraft 与加载器", Ui.Text("在版本列表中选择正式版、快照或历史版本，再查看兼容的加载器。"), Ui.Action("选择游戏版本", () => UI.Navigate?.Invoke("vanilla"))));
-        Body.Children.Add(Ui.Card(Ui.Stack(Ui.Heading("本地整合包"), Ui.Text("支持的 ZIP / mrpack 会先显示名称与目录确认。"), Ui.Button("选择整合包", () => InstallDialogs.Import(Session, UI, Owner)), Ui.Action("查看任务", () => UI.Navigate?.Invoke("tasks")))));
+        Body.Children.Add(Ui.Card(Ui.Stack(Ui.Heading("本地文件导入"), Ui.Text("支持 JAR 模组、ZIP 资源包/光影/存档与受支持的整合包。可拖入窗口，或选择文件；安装前检查内容并确认目标。"), Ui.Button("选择本地文件", () => LocalImportDialog.Pick(Session, UI, Owner)), Ui.Action("查看任务", () => UI.Navigate?.Invoke("tasks")))));
     }
 
 }

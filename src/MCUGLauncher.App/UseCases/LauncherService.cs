@@ -65,7 +65,7 @@ public sealed class LauncherService : ILauncherService
     public Task<OperationReceipt> PublishAsync(string title = "", string body = "", string expiresAt = "", string imageData = "") => Request<OperationReceipt>("publishResult", new { type = "publish", title, body, expiresAt, imageData });
     public Task<OperationReceipt> SaveRecommendationsAsync(CommunityEntry[] items) => Request<OperationReceipt>("saved", new { type = "saveRecommendations", items = CommunityRecords(items) });
     public Task<OperationReceipt> SaveAnnouncementsAsync(CommunityEntry[] items) => Request<OperationReceipt>("saved", new { type = "saveAnnouncements", items = CommunityRecords(items) });
-    public Task<LocalImportPreviewInfo> PreviewLocalImportAsync(string path = "") => Request<LocalImportPreviewInfo>("localImportPreview", new { type = "previewLocalImport", path });
+    public Task<LocalImportPreviewInfo> PreviewLocalImportAsync(string path = "", string instance = "", string resourceKind = "") => Request<LocalImportPreviewInfo>("localImportPreview", new { type = "previewLocalImport", path, instance, resourceKind });
     public Task<OperationReceipt> ConfirmLocalImportAsync(string token = "") => Request<OperationReceipt>("localImportQueued", new { type = "confirmLocalImport", token });
     public Task<ServerResultInfo> SaveServerAsync(string name = "", string address = "", string oldAddress = "") => Request<ServerResultInfo>("serverResult", new { type = "saveServer", name, address, oldAddress });
     public Task SwitchAccountModeAsync(string account = "") => Command(new { type = "switchAccountMode", account });

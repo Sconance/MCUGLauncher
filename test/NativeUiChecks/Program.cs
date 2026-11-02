@@ -20,6 +20,7 @@ internal static class Program
     static UiContext UI = null!;
     static int code;
     static bool rejectNextAuth;
+    static bool rejectNextImport;
     [STAThread]
     public static int Main()
     {
@@ -50,6 +51,38 @@ internal static class Program
                 type = "vanillaList",
                 items = new[] { new { id = "1.21.1", type = "release", released = "2024-08-08" }, new { id = "26.4-snapshot-6", type = "snapshot", released = "2026-01-01" }, new { id = "b1.7.3", type = "old_beta", released = "2011-01-01" } }
             });
+        if (type == "previewLocalImport" && item.GetProperty("path").GetString() == "fixture.mrpack")
+        {
+            Deliver(new
+            {
+                type = "localImportPreview",
+                kind = "modpack",
+                path = "fixture.mrpack"
+            });
+            return Task.CompletedTask;
+        }
+        if (type == "previewPack")
+            Deliver(new
+            {
+                type = "packPreview",
+                token = "pack-token",
+                name = "新整合包实例",
+                root = "fixture-root",
+                game = "1.21.1",
+                loader = "fabric"
+            });
+        if (type == "previewLocalImport" && item.GetProperty("path").GetString() == "ambiguous.zip" && item.GetProperty("resourceKind").GetString() == "")
+        {
+            Deliver(new
+            {
+                type = "localImportPreview",
+                kind = "ambiguous",
+                canImport = false,
+                choices = new[] { "resourcepacks" },
+                warnings = new[] { "请明确选择用途" }
+            });
+            return Task.CompletedTask;
+        }
         if (type == "previewLocalImport")
             Deliver(new
             {
@@ -61,11 +94,24 @@ internal static class Program
                 path = "fixture.jar"
             });
         if (type == "confirmLocalImport")
-            Deliver(new
+        {
+            if (rejectNextImport)
             {
-                type = "localImportQueued",
-                token = "drop-token"
-            });
+                rejectNextImport = false;
+                Deliver(new
+                {
+                    type = "error",
+                    requestId = item.GetProperty("requestId").GetString(),
+                    message = "目标正忙，请重试"
+                });
+            }
+            else
+                Deliver(new
+                {
+                    type = "localImportQueued",
+                    token = "drop-token"
+                });
+        }
         if (type == "saveLaunchOptions")
             Deliver(new
             {
@@ -443,15 +489,52 @@ internal static class Program
         Check(!window.OwnedWindows.Contains(launch), "saved launch options close only after acknowledgment");
         var drops = Controls<FileDropView>(window).Single();
         var before = Sent.Count(m => m.GetProperty("type").GetString() == "confirmLocalImport");
+        var canceled = drops.Import(new[] { "cancel.jar" });
+        await Task.Delay(25);
+        var canceledDialog = window.OwnedWindows.Last();
+        await Click(Find(canceledDialog, "取消"));
+        await canceled;
+        Check(Sent.Count(m => m.GetProperty("type").GetString() == "confirmLocalImport") == before, "canceling import confirmation queues nothing");
         var dropping = drops.Import(new[] { "fixture.jar" });
         await Task.Delay(25);
         var prompt = window.OwnedWindows.Last();
         using (var frame = prompt.CaptureRenderedFrame())
             frame!.Save("work/native-ui/drop-confirmation.png");
         Check(Sent.Count(m => m.GetProperty("type").GetString() == "confirmLocalImport") == before, "file drop previews before queuing");
+        Check(Controls<ComboBox>(prompt).Any(), "local import provides an explicit instance selector");
+        Check(Sent.Last(m => m.GetProperty("type").GetString() == "previewLocalImport").GetProperty("instance").GetString() == "fixture", "preview receives the selected instance explicitly");
         await Click(Find(prompt, "开始导入"));
         await dropping;
         Check(Sent.Count(m => m.GetProperty("type").GetString() == "confirmLocalImport") == before + 1, "drop confirmation submits frozen preview token");
+        var retrying = drops.Import(new[] { "retry.jar" });
+        await Task.Delay(25);
+        var retryDialog = window.OwnedWindows.Last();
+        rejectNextImport = true;
+        await Click(Find(retryDialog, "开始导入"));
+        var importError = retryDialog.OwnedWindows.Last();
+        Check(window.OwnedWindows.Contains(retryDialog), "failed import keeps its confirmation window open");
+        await Click(Find(importError, "知道了"));
+        await Click(Find(retryDialog, "开始导入"));
+        await retrying;
+        Check(!window.OwnedWindows.Contains(retryDialog), "retried import closes only after queue acknowledgment");
+        var ambiguousImport = drops.Import(new[] { "ambiguous.zip" });
+        await Task.Delay(25);
+        var ambiguousDialog = window.OwnedWindows.Last();
+        Check(!Find(ambiguousDialog, "开始导入").IsEnabled, "ambiguous archive cannot queue before explicit use selection");
+        Controls<ComboBox>(ambiguousDialog).Last().SelectedIndex = 0;
+        await Task.Delay(25);
+        Check(Find(ambiguousDialog, "开始导入").IsEnabled, "explicit use triggers a fresh import validation");
+        await Click(Find(ambiguousDialog, "开始导入"));
+        await ambiguousImport;
+        var packImport = drops.Import(new[] { "fixture.mrpack" });
+        await Task.Delay(50);
+        var packDialog = window.OwnedWindows.Last();
+        Check(packDialog.Title == "导入整合包", "recognized modpack switches to the existing new-instance import workflow");
+        await Click(Find(packDialog, "取消"));
+        await packImport;
+
+
+
 
     }
 

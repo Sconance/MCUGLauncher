@@ -26,7 +26,7 @@ jobs:
         run: ./scripts/build.ps1
 
       - name: Run isolated regression checks
-        run: ./scripts/run-checks.ps1 -Name LauncherChecks,MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks,WebBridgeChecks
+        run: ./scripts/run-checks.ps1 -Name LauncherChecks,LibraryChecks,MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks,WebBridgeChecks
 
       - name: Native Avalonia interaction and Skia layout checks
         run: ./scripts/run-checks.ps1 -Name NativeUiChecks

@@ -160,6 +160,9 @@ public sealed record PackPreviewInfo
 
 public sealed record LocalImportPreviewInfo
 {
+    public string[] Choices { get; init; } = [];
+    public bool CanImport { get; init; } = true;
+    public string[] Warnings { get; init; } = [];
     public string Token { get; init; } = "";
     public string Kind { get; init; } = "";
     public string Path { get; init; } = "";

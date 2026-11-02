@@ -55,7 +55,7 @@ public interface ILauncherService : IDisposable
     Task<OperationReceipt> PublishAsync(string title = "", string body = "", string expiresAt = "", string imageData = "");
     Task<OperationReceipt> SaveRecommendationsAsync(CommunityEntry[] items);
     Task<OperationReceipt> SaveAnnouncementsAsync(CommunityEntry[] items);
-    Task<LocalImportPreviewInfo> PreviewLocalImportAsync(string path = "");
+    Task<LocalImportPreviewInfo> PreviewLocalImportAsync(string path = "", string instance = "", string resourceKind = "");
     Task<OperationReceipt> ConfirmLocalImportAsync(string token = "");
     Task<ServerResultInfo> SaveServerAsync(string name = "", string address = "", string oldAddress = "");
     Task SwitchAccountModeAsync(string account = "");

@@ -492,3 +492,11 @@ internal sealed class SaveCommands(LauncherContext context)
 ## codex 分支补充
 
 本分支保留已实现的自动简体中文、安装回执、来源切换、网络外观设置和拖拽导入。新增契约及依赖登记见 [类型化迁移记录](docs/typed-contract-migration.md)。此前组件补充登记保留于 [历史登记](docs/architecture-backend-before-typed-contract.md)，其中旧前端描述已被本规范及迁移记录替代。
+
+## 本地导入依赖补充
+| 组件 | 职责 | 实际依赖面 |
+| --- | --- | --- |
+| LocalImportCommands（B） | 类型识别适配、目标/占用/冲突验证、预览确认入队 | LauncherContext.Config.Root/LastInstance、Token、Games.UsesDirectory(string)、Tasks.RequireLaunchAvailable(string,string,string)/Enqueue(string,string,string,DownloadRequest)、Send(object)；InstanceSnapshot.Capture(AppConfig,string) 的 Root/Key/Name/Directory/Requirements.Loader；PreviewCache.Add/Get；ProtocolValues.ReadString(JsonElement,string) |
+| DownloadExecutor（B，修订） | 复用原队列执行本地事务导入及进度回报 | InstallationProgress.Message(string)/Advance(double)、InstanceOperationExecutor.ExecuteAsync(OperationRecord,OperationContext)、VersionCatalog.InstanceDirectory(string,string)，其余 Core/BCL；ContentService.ImportFiles 新增可选进度回调，旧调用保持兼容 |
+
+详细行为和验证范围见 docs/local-import.md。本轮用户授权同时完善导入业务及对应 UI；未借机修改其他页面布局或插件化架构。

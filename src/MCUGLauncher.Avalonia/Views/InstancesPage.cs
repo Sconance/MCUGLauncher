@@ -29,6 +29,7 @@ internal sealed class InstancesPage : NativePage
         Body.Children.Add(Ui.Card(Ui.Stack(
             Ui.Text("内容管理", 14),
             Ui.Row(Ui.Action("下载模组", () => UI.Navigate?.Invoke("mod")),
+                Ui.Button("导入本地文件", () => LocalImportDialog.Pick(Session, UI, Owner)),
                 Ui.Button("检查内容更新", () => MaintenanceDialogs.Updates(Session, UI, Owner, Selected)),
                 Ui.Action("存档保护", () => UI.Navigate?.Invoke("saves"))),
             Ui.Text("本地文件", 14),

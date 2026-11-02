@@ -54,15 +54,19 @@ internal sealed class DownloadExecutor(HttpClient http, Func<string, bool>? inUs
                 throw new IOException("导入目标实例已被移除。 ");
             if (inUse?.Invoke(record.Target) == true || preparingRoot?.Invoke(record.Root) == true)
                 throw new IOException("实例正在运行或准备启动，暂不能导入。");
+            progress.Message("正在校验本地导入文件");
             await VerifySource(request, task.Token);
+            progress.Advance(5);
             if (request.ResourceKind == "world")
-                await WorldArchives.Import(record.Target, request.File, token: task.Token);
+                await WorldArchives.Import(record.Target, request.File, progress: progress.Message, token: task.Token);
             else
             {
-                var count = await new ContentService(http, task.Token).ImportFiles(record.Target, request.ResourceKind, new[] { request.File });
+                var count = await new ContentService(http, task.Token).ImportFiles(record.Target, request.ResourceKind, new[] { request.File }, value => progress.Advance(5 + value * .9));
                 if (count == 0)
                     throw new IOException("同名文件已存在，未覆盖原文件。");
             }
+            progress.Advance(95);
+            progress.Message("本地文件导入完成");
             return;
         }
         var version = request.Content ?? throw new IOException("任务缺少资源版本。");

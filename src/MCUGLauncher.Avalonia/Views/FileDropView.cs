@@ -46,7 +46,7 @@ internal sealed class FileDropView : Border, IDisposable
         IsVisible = false;
         e.Handled = true;
         var paths = e.DataTransfer.TryGetFiles()?.OfType<IStorageFile>().Select(f => f.TryGetLocalPath()).Where(p => p != null).Cast<string>().ToArray() ?? [];
-        await Import(paths);
+        await Import(paths.Distinct(StringComparer.OrdinalIgnoreCase));
     }
     internal async Task Import(IEnumerable<string> paths)
     {
@@ -59,11 +59,7 @@ internal sealed class FileDropView : Border, IDisposable
             {
                 try
                 {
-                    var preview = await session.PreviewLocalImportAsync(path: path);
-                    if (preview.Kind == "modpack")
-                        await InstallDialogs.ImportPath(session, ui, owner, preview.Path);
-                    else if (await Ui.Confirm(owner, "确认导入", Path.GetFileName(path) + "\n目标实例：" + preview.Name + "\n目录：" + preview.Target + "\n同名文件不会覆盖", "开始导入"))
-                        await session.ConfirmLocalImportAsync(token: preview.Token);
+                    await LocalImportDialog.Open(session, ui, owner, path);
                 }
                 catch (Exception error) { await Ui.Error(owner, error.Message); }
             }

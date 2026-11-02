@@ -604,7 +604,7 @@ public sealed class ContentService : IResourceProvider
     /// <summary>
     /// 导入Files。
     /// </summary>
-    public async Task<int> ImportFiles(string instance, string child, IEnumerable<string> sources)
+    public async Task<int> ImportFiles(string instance, string child, IEnumerable<string> sources, Action<double>? progress = null)
     {
         token.ThrowIfCancellationRequested();
         if (child is not ("mods" or "resourcepacks" or "shaderpacks" or "datapacks"))
@@ -630,7 +630,23 @@ public sealed class ContentService : IResourceProvider
                 var staged = Path.Combine(transaction.Stage, name);
                 await using (var input = File.OpenRead(source))
                 await using (var output = File.Create(staged))
-                    await input.CopyToAsync(output, token);
+                {
+                    var buffer = new byte[81920];
+                    long copied = 0;
+                    var lastPercent = -1;
+                    int read;
+                    while ((read = await input.ReadAsync(buffer, token)) > 0)
+                    {
+                        await output.WriteAsync(buffer.AsMemory(0, read), token);
+                        copied += read;
+                        var percent = input.Length == 0 ? 100 : (int)(copied * 100.0 / input.Length);
+                        if (percent != lastPercent)
+                        {
+                            lastPercent = percent;
+                            progress?.Invoke(percent);
+                        }
+                    }
+                }
                 files.Add((staged, relative));
             }
 
