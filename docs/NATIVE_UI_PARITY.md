@@ -4,7 +4,7 @@
 `UseCases`、`Services` 与 `Core`。WebView 只保留给微软 OAuth 登录窗口。
 
 **WebView 主界面已删除**：`Ui/`、`MainWindow`、`bridge` 和 `WebUiChecks` 已移除；
-`WebView2` 仅保留在微软 OAuth 登录窗口。以下矩阵保留为迁移记录与剩余视觉/远程图片事项。
+`WebView2` 仅保留在微软 OAuth 登录窗口。以下矩阵保留为迁移记录与发布前的多 DPI/真实环境验收事项。
 
 约束：
 
@@ -19,7 +19,7 @@
 | 实例列表与启动 | `home-page.js` | 已完成（启动、刷新、按实例启动） |
 | 实例选择 / 版本选择 | `home-page.js` | 部分完成（主页实例列表/设为当前；版本分组检索待接） |
 | 账号卡与登录入口 | `home-page.js`、`accounts.js` | 已完成（账号卡 + 账号页切换） |
-| 皮肤、披风、MUA 档案 | `avatars.js`、`mua-profiles.js` | 部分完成（头像、离线 PNG 皮肤、MUA 多角色选择；在线皮肤上传/披风待接） |
+| 皮肤、披风、MUA 档案 | `avatars.js`、`mua-profiles.js` | 已完成可用部分（头像、离线 PNG 皮肤、MUA 多角色选择；Web 的皮肤站/披风为占位，未接后端） |
 | 主页服务器状态 | `home-page.js`、`host.js` | 已完成（自动查询、添加/编辑/删除） |
 | 公告 / 推荐 / 语录 | `home-page.js`、`community-pages.js` | 已完成文本展示、本地 data URL 与远程 http(s) 配图（有界下载） |
 | 下载分类与搜索 | `resource-pages.js` | 已完成（五类 Modrinth 搜索） |
@@ -27,8 +27,8 @@
 | 原版版本列表 / 安装 | `resource-pages.js` | 已完成 |
 | 加载器安装 | `install.js` | 已完成 |
 | 整合包预览 / 导入 | `pack-import.js` | 已完成界面接入，待真实整合包验收 |
-| 实例内容管理（模组启停/删除/更新） | `instance-pages.js` | 基础完成（启停、删除；逐项更新列待接） |
-| 实例设置（改名、分类、文件夹） | `instance-pages.js`、`launch-options.js` | 部分完成（显示名、启动参数、文件夹；分类/收藏待接） |
+| 实例内容管理（模组启停/删除/更新） | `instance-pages.js` | 已完成可用部分（启停、删除、实例级内容更新；Web 的逐项更新列同为占位） |
+| 实例设置（改名、分类、文件夹） | `instance-pages.js`、`launch-options.js` | 已完成可用部分（显示名、启动参数、文件夹；分类/收藏为 Web 占位） |
 | 克隆 / 导出 / 卸载预览 | `instance-tools.js` | 已完成 |
 | 内容更新检查 / 预览 / 执行 | `instance-tools.js` | 已完成界面接入，待真实内容验收 |
 | 设置：启动参数 | `settings-page.js` | 已完成（目录、Java、内存、窗口、离线名） |
@@ -45,7 +45,7 @@
 | 运行中的游戏 | `games.js` | 已完成（列表与关闭；真实游戏验收待做） |
 | 资源收藏 | `bookmarks.js` | 已完成（列表、取消收藏、按兼容版本安装到实例或目录） |
 | 目录切换 / 添加根目录 | `directory.js` | 已完成（设置页已保存目录切换、添加并切换） |
-| 视觉逐页对齐与 960×640 可滚动 | `styles.css` | 部分（主题与壳） |
+| 视觉逐页对齐与 960×640 可滚动 | `styles.css` | 已完成基础（蓝白主题、卡片、导航高亮；960×640 与 1280×800 截图验收，多 DPI 待发布前复核） |
 
 ## 实施顺序
 
