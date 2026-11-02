@@ -11,6 +11,8 @@ namespace MCUGLauncher.Avalonia;
 public partial class ShellWindow : Window
 {
     LauncherFacade facade = null!;
+    ShellDesktopHost host = null!;
+    string exportVersion = "";
     JsonElement state;
     LauncherState? typed;
     IReadOnlyList<TaskInfo> tasks = Array.Empty<TaskInfo>();
@@ -23,7 +25,7 @@ public partial class ShellWindow : Window
         InitializeComponent();
         using (var empty = JsonDocument.Parse("{}"))
             state = empty.RootElement.Clone();
-        var host = new ShellDesktopHost(
+        host = new ShellDesktopHost(
             () => Handle,
             message => facade?.SendMessage(message),
             HandleWindow,
@@ -70,6 +72,15 @@ public partial class ShellWindow : Window
     {
         if (!message.TryGetProperty("type", out var type))
             return;
+        if (type.GetString() == "pickedPath"
+            && ReadString(message, "target") == "export"
+            && exportVersion.Length > 0)
+        {
+            var version = exportVersion;
+            exportVersion = "";
+            _ = facade.ExportInstanceAsync(version, ReadString(message, "path"), false, false);
+            return;
+        }
         if (type.GetString() == "state")
         {
             state = message;
@@ -190,9 +201,12 @@ public partial class ShellWindow : Window
                     await facade.CloneInstanceAsync(instance.Name, name);
                     await facade.RequestStateAsync();
                 };
+                var export = new Button { Content = "导出" };
+                export.Click += (_, _) => { exportVersion = instance.Name; host.PickSaveFile("export"); };
                 var uninstall = new Button { Content = "卸载预览" };
                 uninstall.Click += async (_, _) => await facade.PreviewUninstallAsync(instance.Name);
                 row.Children.Add(clone);
+                row.Children.Add(export);
                 row.Children.Add(uninstall);
                 Content.Children.Add(row);
             }
