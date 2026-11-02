@@ -206,7 +206,7 @@ LauncherApplication / LauncherContext
 | 组件 | 说明 | 依赖面 |
 | --- | --- | --- |
 | `AvatarImage` | 把皮肤字节编码为 PNG Data URI | `AvatarRenderer`（WPF 渲染）、`PngBitmapEncoder` |
-| `ConfigStore` | `config.json` 读取、迁移、保存 | `AppConfig`（Models） |
+| `ConfigStore` | `config.json` 读取、补全、保存 | `AppConfig` 字段；Core AtomicFile.ReadJson/WriteJson，详见组件文档 |
 | `DownloadExecutor` | 按任务类型执行下载/安装/维护 | `InstanceOperationExecutor` 与 Core 的 `OperationRecord`/`OperationContext` |
 | `InstanceSnapshot` | 捕获实例根目录、名称、要求与启动设置 | AppConfig 全局默认字段、InstanceRequirements.Read；Core Copy/实例类型，见 docs/components/InstanceSnapshot.md |
 | `LauncherStateBuilder` | 组装前端 `state` 快照 | `AppConfig`、`VersionCatalog`、收藏快照参数（由调用方传入） |
@@ -232,7 +232,7 @@ LauncherApplication / LauncherContext
 | `InstanceRequirements` | `Services/InstanceRequirements.cs` | 读取实例安装元数据；只依赖 Core 的类型与 JSON |
 | `LauncherTaskQueue` | `Services/LauncherTaskQueue.cs` | 持久任务队列；只依赖 Core `OperationCoordinator` 与注入的执行委托 |
 | `PreviewCache<T>` | `Services/PreviewCache.cs` | 通用、带过期的预览缓存 |
-| `ServerPingService` | `Services/ServerPingService.cs` | Minecraft SLP 查询；只依赖 BCL 网络/JSON |
+| `ServerPingService` | `Services/ServerPingService.cs` | Core ServerFavorites.Ping 的结果/错误适配；仅 Core/BCL |
 | `AuthenticationCheckpoint` | `Authentication/AuthenticationCheckpoint.cs` | 认证阶段日志钩子；只依赖 XboxAuthNet 接口 |
 | `MinecraftOwnershipGuard` | `Authentication/MinecraftOwnershipGuard.cs` | 正版资格校验；依赖 CmlLib 认证上下文 |
 | `ProtectedAccountStorage` | `Authentication/ProtectedAccountStorage.cs` | DPAPI 账号存储；依赖 `IJsonStorage` 与 BCL 加密 |
@@ -384,3 +384,8 @@ GameCommands、SettingsCommands、LaunchOptionsCommands 仍为 B 类，完整成
 ### 重复逻辑归并复查
 
 InstanceRequirements（A）保留整合包安装记录优先级，其余直接调用 Core ProfileInspector.Read。InstanceSnapshot（B）统一合并全局启动默认，LaunchOptionsCommands（B）复用它并直接传根目录；不再克隆整个 AppConfig。LaunchSettings.Copy（Core）由两者使用；仅支持现有值类型/字符串字段，可变字段由回归检查阻止静默浅复制。VersionCatalog（B）不再自己猜加载器或重写继承算法；旧模组入口复用 Core 内容事务。详见 docs/ARCHITECTURE_REVIEW_2026-11-02.md。
+
+
+### Core 复用复查
+
+ServerPingService 为 A 类适配，移除 App 自写 SLP 编码/拆包，统一 Core ServerFavorites.Ping。ConfigStore、CommunityCommands 复用 AtomicFile 存储。SettingsCommands 使用 Preferences.Copy 和 DataSourceConfig.Copy；不再用 JSON 序列化复制编辑草稿或比较来源。依赖面没有新增服务，详见 docs/CORE_REUSE_AUDIT.md。

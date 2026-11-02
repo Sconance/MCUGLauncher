@@ -22,6 +22,39 @@ internal static class SettingsScenarios
         store.Save(new AppConfig { Root = root, Player = "SettingsFixture", Ram = 1536 });
         using var context = new LauncherContext(_ => { }, store);
         var commands = new SettingsCommands(context);
+        var defaults = new MCUGLauncher.Models.DataSourceConfig();
+        var draft = defaults.Copy();
+        Check(draft.HasSameAddresses(defaults), "source copy preserves all default addresses");
+        draft.Quotes = "https://example.invalid/custom.json";
+        Check(!draft.HasSameAddresses(defaults) && new MCUGLauncher.Models.AppConfig { DataSources = draft }.EffectiveDataSourceMode == "custom",
+            "editing a source draft does not change defaults and detects custom mode");
+        var preferences = context.Config.LegacyPreferences;
+        preferences.GameRoots.Add(root);
+        preferences.BackgroundImages.Add("background.png");
+        preferences.ExtraJavaPaths.Add("java.exe");
+        preferences.Servers.Add(new ServerFavorite("fixture", "Before", "localhost", ""));
+        var copy = preferences.Copy();
+        Check(JsonSerializer.Serialize(copy) == JsonSerializer.Serialize(preferences), "typed preferences copy retains every serialized value");
+        copy.GameRoots.Clear();
+        copy.BackgroundImages.Clear();
+        copy.ExtraJavaPaths.Clear();
+        copy.Servers[0] = copy.Servers[0] with
+        {
+            Name = "After"
+        };
+        copy.Launch.AutoChinese = !preferences.Launch.AutoChinese;
+        copy.Network.ProxyMode = "直连";
+        Check(preferences.GameRoots.Count == 1 && preferences.BackgroundImages.Count == 1
+            && preferences.ExtraJavaPaths.Count == 1 && preferences.Servers[0].Name == "Before"
+            && preferences.Launch.AutoChinese != copy.Launch.AutoChinese && preferences.Network.ProxyMode == "系统代理",
+            "preferences draft isolates mutable members from live settings");
+        var brokenFile = Path.Combine(fixture, "broken-config", "config.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(brokenFile)!);
+        File.WriteAllText(brokenFile, "null");
+        var recovered = new ConfigStore(Path.GetDirectoryName(brokenFile)!).Load();
+        Check(recovered.Player.Length > 0 && Directory.GetFiles(Path.GetDirectoryName(brokenFile)!, "config.json.broken-*").Length == 1,
+            "empty config preserves broken file before returning defaults");
+
         var network = context.Config.LegacyPreferences.Network;
         commands.SaveSettings(Message(new
         {

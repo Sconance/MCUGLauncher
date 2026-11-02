@@ -117,6 +117,21 @@ public class Preferences
     /// 获取或设置 Servers。
     /// </summary>
     public List<ServerFavorite> Servers { get; set; } = [];
+
+    /// <summary>创建编辑草稿，隔离所有可变集合、启动和网络选项。</summary>
+    /// <remarks>新增引用成员时须同步复制及隔离测试；字符串无需深复制。</remarks>
+    public Preferences Copy()
+    {
+        var copy = (Preferences)MemberwiseClone();
+        copy.GameRoots = [.. GameRoots];
+        copy.Launch = Launch.Copy();
+        copy.Network = Network.Copy();
+        copy.BackgroundImages = [.. BackgroundImages];
+        copy.ExtraJavaPaths = [.. ExtraJavaPaths];
+        copy.Servers = Servers.Select(server => server with { }).ToList();
+        return copy;
+    }
+
 }
 
 /// <summary>

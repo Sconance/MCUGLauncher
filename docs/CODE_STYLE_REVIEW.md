@@ -92,3 +92,8 @@ DialogWindow 归纳原 Ui.Show/Confirm/Error 重复的窗口组装，专职标�
 ## 重复逻辑与 Core 复用
 
 见 ARCHITECTURE_REVIEW_2026-11-02.md。本轮删除 App 的重复继承/加载器算法和启动配置 JSON 复制，复用 Core 内容变更，补齐修改组件依赖声明。没有用文件数量或格式通过作为全仓合规证明。
+
+
+## Core 复用复查
+
+详见 CORE_REUSE_AUDIT.md。删除 App 重复 SLP 协议代码，复用原子存储，使用明确的副本/地址比较代替 JSON 中转。没有新增管理器或机械拆文件，保留现有分支上的快照改进。测试覆盖核心行为及异常路径；未宣称全项目零缺陷。

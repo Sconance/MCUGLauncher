@@ -87,7 +87,7 @@ internal sealed class SettingsCommands(LauncherContext context)
 
     MCUGLauncher.Preferences ReadPreferences(JsonElement message)
     {
-        var preferences = JsonSerializer.Deserialize<MCUGLauncher.Preferences>(JsonSerializer.Serialize(context.Config.LegacyPreferences))!;
+        var preferences = context.Config.LegacyPreferences.Copy();
         if (message.TryGetProperty("network", out var network))
         {
             preferences.Network = new NetworkSettings
@@ -134,14 +134,6 @@ internal sealed class SettingsCommands(LauncherContext context)
         UseDataSources("default");
     }
 
-    static MCUGLauncher.Models.DataSourceConfig CopySources(MCUGLauncher.Models.DataSourceConfig sources) => new()
-    {
-        Announcements = sources.Announcements,
-        Servers = sources.Servers,
-        Recommendations = sources.Recommendations,
-        Quotes = sources.Quotes
-    };
-
     public void SaveCustomSources(JsonElement message)
     {
         var sources = message.GetProperty("dataSources");
@@ -166,8 +158,8 @@ internal sealed class SettingsCommands(LauncherContext context)
     {
         if (mode is not ("default" or "custom"))
             throw new ArgumentException("未知数据源类型。");
-        context.Config.CustomDataSources ??= CopySources(context.Config.DataSources);
-        context.Config.DataSources = mode == "default" ? new() : CopySources(context.Config.CustomDataSources);
+        context.Config.CustomDataSources ??= context.Config.DataSources.Copy();
+        context.Config.DataSources = mode == "default" ? new() : context.Config.CustomDataSources.Copy();
         context.Config.DataSourceMode = mode;
         context.Store.Save(context.Config);
         context.RefreshState();

@@ -79,7 +79,7 @@ public sealed class AppConfig
     }
     public string DataSourceMode { get; set; } = "";
     public string EffectiveDataSourceMode => DataSourceMode is "default" or "custom" ? DataSourceMode
-        : System.Text.Json.JsonSerializer.Serialize(DataSources) == System.Text.Json.JsonSerializer.Serialize(new DataSourceConfig()) ? "default" : "custom";
+        : DataSources.HasSameAddresses(new DataSourceConfig()) ? "default" : "custom";
     /// <summary>
     /// 获取或设置 Servers。
     /// </summary>
@@ -103,6 +103,14 @@ public sealed class AppConfig
 /// </summary>
 public sealed class DataSourceConfig
 {
+    /// <summary>返回独立的数据源草稿，保存草稿不等于启用。</summary>
+    public DataSourceConfig Copy() => (DataSourceConfig)MemberwiseClone();
+
+    /// <summary>逐字段比较地址，保留原有大小写和空白的精确比较语义。</summary>
+    public bool HasSameAddresses(DataSourceConfig other) =>
+        Announcements == other.Announcements && Servers == other.Servers
+        && Recommendations == other.Recommendations && Quotes == other.Quotes;
+
     /// <summary>
     /// 获取或设置 Announcements。
     /// </summary>

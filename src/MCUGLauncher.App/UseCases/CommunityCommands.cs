@@ -10,6 +10,7 @@ namespace MCUGLauncher.UseCases;
 /// <remarks>B: LauncherContext.Community.ReadAsync/TestAsync; Config.DataSources/Servers/Player/
 /// CommunityKey/AdminKey/WriteEndpoint; Store.DataDirectory/Save(AppConfig); Http; Token;
 /// Send(object); RefreshState(); ServerPingService.PingAsync. No UI or browser dependencies.
+/// Core AtomicFile.ReadJson/WriteJson handles local feed persistence; dependency details: docs/components/CommunityCommands.md.
 /// Server feeds use the same reader and network policy as announcements.</remarks>
 internal sealed class CommunityCommands(LauncherContext context)
 {
@@ -185,7 +186,8 @@ internal sealed class CommunityCommands(LauncherContext context)
             ? value.GetRawText()
             : "[]";
         var file = Path.Combine(context.Store.DataDirectory, fileName);
-        File.WriteAllText(file, items);
+        using (var document = JsonDocument.Parse(items))
+            AtomicFile.WriteJson(file, document.RootElement);
         var key = fileName.StartsWith("announcements", StringComparison.OrdinalIgnoreCase) ? "announcements" : "recommendations";
         context.Send(new
         {
@@ -228,11 +230,11 @@ internal sealed class CommunityCommands(LauncherContext context)
         };
         var file = Path.Combine(context.Store.DataDirectory, "announcements.local.json");
         var list = File.Exists(file)
-            ? JsonSerializer.Deserialize<List<JsonElement>>(File.ReadAllText(file)) ?? []
+            ? AtomicFile.ReadJson<List<JsonElement>>(file)
             : [];
         list.Add(JsonSerializer.SerializeToElement(record));
         var localJson = JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(file, localJson);
+        AtomicFile.WriteJson(file, list);
         context.Send(new
         {
             type = "community",

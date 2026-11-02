@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MCUGLauncher.Models;
+using MCUGLauncher;
 
 namespace MCUGLauncher.Services;
 
@@ -7,7 +8,11 @@ namespace MCUGLauncher.Services;
 /// 启动器配置存储。
 /// </summary>
 /// <remarks>
-/// 依赖 %LOCALAPPDATA%/MCUGLauncher/config.json；Load 读取当前配置并修正无效路径，Save 直接覆盖写入。
+/// B 类。依赖 AppConfig.Root/GameRoots/Player/OfflinePlayer/AccountType/LastVersion/LastInstance/Java/Ram/Width/Height/LegacyPreferences；
+/// 读取并补全配置，同步 Core Preferences.Root/Player/Java/Ram/Width/Height/LastVersion。
+/// Core AtomicFile.ReadJson&lt;AppConfig&gt;(string)/WriteJson&lt;AppConfig&gt;(string,AppConfig) 负责原子存储。
+/// 默认使用 %LOCALAPPDATA%/MCUGLauncher/config.json，不依赖窗口、视图、Commands 或其他服务。
+/// 依赖详情见 docs/components/ConfigStore.md。
 /// </remarks>
 public sealed class ConfigStore
 {
@@ -41,9 +46,9 @@ public sealed class ConfigStore
         {
             try
             {
-                config = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(_file)) ?? new AppConfig();
+                config = AtomicFile.ReadJson<AppConfig>(_file);
             }
-            catch (JsonException)
+            catch (Exception error) when (error is JsonException or InvalidDataException)
             {
                 File.Move(_file, _file + ".broken-" + DateTime.Now.ToString("yyyyMMddHHmmss"), true);
                 config = new AppConfig();
@@ -84,9 +89,7 @@ public sealed class ConfigStore
         config.LegacyPreferences.Width = config.Width;
         config.LegacyPreferences.Height = config.Height;
         config.LegacyPreferences.LastVersion = config.LastVersion;
-        var temp = _file + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
-        File.Move(temp, _file, true);
+        AtomicFile.WriteJson(_file, config);
     }
 
     static string FindDefaultRoot()

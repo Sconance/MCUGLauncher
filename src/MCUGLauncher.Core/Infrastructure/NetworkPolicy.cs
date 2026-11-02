@@ -25,6 +25,9 @@ public sealed class NetworkSettings
     /// </summary>
     public string DownloadSource { get; set; } = "官方优先，失败切换 BMCLAPI";
 
+    /// <summary>复制网络选项，编辑草稿不会修改活动 HTTP 策略。</summary>
+    public NetworkSettings Copy() => (NetworkSettings)MemberwiseClone();
+
     /// <summary>
     /// 执行 Validate。
     /// </summary>

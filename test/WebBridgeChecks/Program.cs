@@ -62,6 +62,14 @@ await Request("""{"type":"deleteServer","address":"localhost:25565"}""");
 Check(!store.Load().Servers.Any(s => s.Name == "Fixture"), "server delete persists");
 await Request("""{"type":"saveAnnouncements","items":[{"title":"fixture"}]}""");
 Check(Has("community") && File.Exists(Path.Combine(fixture, "announcements.local.json")), "community local write and response");
+var announcementFile = Path.Combine(fixture, "announcements.local.json");
+Check(AtomicFile.ReadJson<JsonElement>(announcementFile)[0].GetProperty("title").GetString() == "fixture",
+    "community persistence remains an array after atomic write");
+await Request("""{"type":"publish","title":"Appended","body":"Fixture body"}""");
+Check(AtomicFile.ReadJson<JsonElement>(announcementFile).GetArrayLength() == 2,
+    "publishing appends to existing local announcements");
+Check(Directory.GetFiles(fixture, "*.tmp").Length == 0, "atomic config and community writes leave no temporary files");
+
 var modDir = Path.Combine(versionDir, "mods");
 Directory.CreateDirectory(modDir);
 File.WriteAllText(Path.Combine(modDir, "fixture.jar"), "fixture");
@@ -118,6 +126,7 @@ await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await SettingsScenarios.Run(fixture);
+await ServerPingScenarios.Run();
 ArchitectureScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);
 Console.WriteLine("ALL_WEB_BRIDGE_CHECKS_PASSED (isolated fixtures; no live account or gameplay)");
