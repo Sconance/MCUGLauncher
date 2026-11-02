@@ -43,3 +43,5 @@ dotnet run --project tools/SourceFormatter
 - `test/NativeUiChecks`：原生控件交互与渲染检查。
 
 详细范围、限制与验证见 [迁移说明](docs/MIGRATION_0.24.0-codex.md)。
+
+开发须遵循 [AGENTS.md](AGENTS.md) 与 [交付流程](docs/DEVELOPMENT_WORKFLOW.md)。本地测试版按分支名命名，保存文档、检查风格、推送分支和更新 Lite 均属于交付步骤。
