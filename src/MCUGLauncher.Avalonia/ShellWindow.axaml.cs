@@ -60,6 +60,7 @@ public partial class ShellWindow : Window
         MaintenanceButton.Click += (_, _) => Show("maintenance");
         AccountButton.Click += (_, _) => Show("account");
         TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
+        ModsButton.Click += (_, _) => Show("mods");
         SettingsButton.Click += (_, _) => Show("settings");
         ClassicButton.Click += (_, _) => new MainWindow().Show();
         Opened += async (_, _) => await facade.StartAsync();
@@ -121,6 +122,8 @@ public partial class ShellWindow : Window
         Content.Children.Clear();
         if (page == "settings")
             RenderSettings();
+        else if (page == "mods")
+            RenderMods();
         else if (page == "maintenance")
             RenderMaintenance();
         else if (page == "download")
@@ -165,6 +168,31 @@ public partial class ShellWindow : Window
         var refresh = new Button { Content = "刷新状态", HorizontalAlignment = HorizontalAlignment.Left };
         refresh.Click += async (_, _) => await facade.RequestStateAsync();
         Content.Children.Add(refresh);
+    }
+
+    void RenderMods()
+    {
+        var snapshot = typed;
+        AddHeading("模组");
+        Add("当前实例：" + (snapshot?.SelectedVersion ?? ""));
+        if (snapshot is not { Mods.Count: > 0 })
+        {
+            Add("当前实例没有可管理的模组。");
+            return;
+        }
+        foreach (var mod in snapshot.Mods)
+        {
+            var check = new CheckBox { Content = mod.Name, IsChecked = mod.Enabled };
+            var file = mod.File;
+            var enabled = mod.Enabled;
+            check.Click += async (_, _) =>
+            {
+                await facade.ToggleModAsync(file, !enabled);
+                await facade.RequestStateAsync();
+            };
+            Content.Children.Add(check);
+        }
+        Add("切换后会自动刷新模组状态。");
     }
 
     void RenderSettings()

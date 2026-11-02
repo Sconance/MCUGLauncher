@@ -119,6 +119,14 @@ internal sealed class LauncherFacade : IDisposable
             version
         }, Options));
 
+    public Task ToggleModAsync(string file, bool enabled) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "toggleMod",
+            file,
+            enabled
+        }, Options));
+
     public Task CheckUpdatesAsync(string version) =>
         application.HandleAsync(JsonSerializer.Serialize(new
         {
