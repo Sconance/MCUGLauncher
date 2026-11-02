@@ -21,8 +21,10 @@
         <Button x:Name="ClassicButton" Classes="nav" Content="经典界面（WebView）" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
       </StackPanel>
     </Border>
-    <ScrollViewer Grid.Column="1">
-      <StackPanel x:Name="Content" Margin="24" Spacing="12" />
-    </ScrollViewer>
+    <Border Grid.Column="1" Background="{StaticResource AppCard}" CornerRadius="16" Margin="18" Padding="20">
+      <ScrollViewer>
+        <StackPanel x:Name="Content" Spacing="12" />
+      </ScrollViewer>
+    </Border>
   </Grid>
 </Window>
