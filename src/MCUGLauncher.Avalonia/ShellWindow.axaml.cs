@@ -147,21 +147,16 @@ public partial class ShellWindow : Window
 
     void RenderSettings()
     {
-        AddHeading("设置");
-        var root = new TextBox { Text = ReadString(state, "root"), Watermark = "游戏根目录" };
-        var java = new TextBox { Text = ReadString(state, "java"), Watermark = "Java 路径（留空自动）" };
-        var ram = new TextBox
-        {
-            Text = state.TryGetProperty("ram", out var ramValue) && ramValue.TryGetInt32(out var value) ? value.ToString() : "4096",
-            Watermark = "内存 MB"
-        };
+        var snapshot = typed;
+        var root = new TextBox { Text = snapshot?.Root ?? "", Watermark = "游戏根目录" };
+        var java = new TextBox { Text = snapshot?.Java ?? "", Watermark = "Java 路径（留空自动）" };
+        var ram = new TextBox { Text = (snapshot?.Ram ?? 4096).ToString(), Watermark = "内存 MB" };
         Add("游戏目录");
         Content.Children.Add(root);
         Add("Java");
         Content.Children.Add(java);
         Add("内存（MB）");
         Content.Children.Add(ram);
-
         var save = new Button { Content = "保存设置", HorizontalAlignment = HorizontalAlignment.Left };
         save.Click += async (_, _) =>
         {
@@ -176,30 +171,29 @@ public partial class ShellWindow : Window
 
     void RenderMaintenance()
     {
+        var snapshot = typed;
         AddHeading("实例维护");
-        if (state.TryGetProperty("instances", out var instances) && instances.ValueKind == JsonValueKind.Array)
+        if (snapshot is { Instances.Count: > 0 })
         {
             var cloneName = new TextBox { Watermark = "新实例名称", Width = 260, HorizontalAlignment = HorizontalAlignment.Left };
             Content.Children.Add(cloneName);
-            foreach (var item in instances.EnumerateArray())
+            foreach (var instance in snapshot.Instances)
             {
-                var version = ReadString(item, "name");
-                if (version.Length == 0)
+                if (instance.Name.Length == 0)
                     continue;
-                Add(version);
+                Add(instance.Name);
                 var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
                 var clone = new Button { Content = "克隆" };
-                var source = version;
                 clone.Click += async (_, _) =>
                 {
                     var name = cloneName.Text?.Trim() ?? "";
                     if (name.Length == 0)
                         return;
-                    await facade.CloneInstanceAsync(source, name);
+                    await facade.CloneInstanceAsync(instance.Name, name);
                     await facade.RequestStateAsync();
                 };
                 var uninstall = new Button { Content = "卸载预览" };
-                uninstall.Click += async (_, _) => await facade.PreviewUninstallAsync(source);
+                uninstall.Click += async (_, _) => await facade.PreviewUninstallAsync(instance.Name);
                 row.Children.Add(clone);
                 row.Children.Add(uninstall);
                 Content.Children.Add(row);
@@ -268,14 +262,13 @@ public partial class ShellWindow : Window
 
     void RenderAccount()
     {
+        var snapshot = typed;
         AddHeading("账号");
-        Add("当前：" + (ReadString(state, "accountLabel") is { Length: > 0 } label ? label : "离线账号"));
-        Add("玩家：" + ReadString(state, "player"));
-
+        Add("当前：" + (snapshot?.AccountLabel is { Length: > 0 } label ? label : "离线账号"));
+        Add("玩家：" + (snapshot?.Player ?? ""));
         var microsoft = new Button { Content = "登录微软账号", HorizontalAlignment = HorizontalAlignment.Left };
         microsoft.Click += async (_, _) => { await facade.LoginMicrosoftAsync(); await facade.RequestStateAsync(); };
         Content.Children.Add(microsoft);
-
         AddHeading("MUA 账号");
         var account = new TextBox { Watermark = "MUA 账号" };
         var password = new TextBox { Watermark = "密码", PasswordChar = '●' };
@@ -288,15 +281,13 @@ public partial class ShellWindow : Window
             await facade.RequestStateAsync();
         };
         Content.Children.Add(muaLogin);
-
         var offline = new Button { Content = "切换到离线账号", HorizontalAlignment = HorizontalAlignment.Left };
         offline.Click += async (_, _) => { await facade.SwitchAccountModeAsync("offline"); await facade.RequestStateAsync(); };
         Content.Children.Add(offline);
-
         var forget = new Button { Content = "忘记已保存账号", HorizontalAlignment = HorizontalAlignment.Left };
         forget.Click += async (_, _) =>
         {
-            await facade.ForgetAccountAsync(ReadString(state, "accountType") is { Length: > 0 } mode ? mode : "offline");
+            await facade.ForgetAccountAsync(snapshot?.AccountType is { Length: > 0 } mode ? mode : "offline");
             await facade.RequestStateAsync();
         };
         Content.Children.Add(forget);
