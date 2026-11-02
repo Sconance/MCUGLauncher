@@ -1,6 +1,6 @@
 # test 与 refactor 的结构比较（合并前快照）
 
-> 历史归档：本文记录 refactor 时期的一次性过程，`refactor` 分支已废弃。现行文档见 [开发导览](../../DEVELOPMENT.md) 与 [合并到主分支前的说明](../../MERGE_TO_MAIN.md)。
+> 历史归档：本文记录 refactor 时期的一次性过程，`refactor` 分支已废弃。现行文档见 [开发导览](../legacy-wpf/DEVELOPMENT.md) 与 合并到主分支前的说明（历史文件已退役）。
 
 
 > 本文拍摄于合并前（2026-10-28）：`test` 在 `0eaf5ec`、`refactor` 在 `db0ab6a`，版本仍为 0.20.2。随后 `refactor` 已作为第二父提交并入 `test`（合并提交 `145bf37`），版本统一为 0.21.0。本文保留为结构对比的历史依据，现行关系、迁移去向与退役文档见 [refactor 分支整合记录](REFACTOR_INTEGRATION.md)。

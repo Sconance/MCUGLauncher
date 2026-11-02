@@ -120,7 +120,7 @@ WorkflowUiChecks 的截图保存方法自行创建输出目录，不依赖其他
 
 ## refactor 合并与版本号整合（0.21.0）
 
-`refactor`（`db0ab6a`）以第二父提交并入 `test`（合并提交 `145bf37`），结构保持 test 的窗口 shell、九个 XAML 页面与组合根；逐项迁移与退役理由见 [整合记录](archive/branch_refactor/REFACTOR_INTEGRATION.md)。
+`refactor`（`db0ab6a`）以第二父提交并入 `test`（合并提交 `145bf37`），结构保持 test 的窗口 shell、九个 XAML 页面与组合根；逐项迁移与退役理由见 [整合记录](../branch_refactor/REFACTOR_INTEGRATION.md)。
 
 本地实跑结果：
 

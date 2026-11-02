@@ -1,4 +1,4 @@
-MCUGLauncher 0.8.0 - Independent Minecraft launcher. MIT license.
+MCUG Launcher - bundled copyright and license notices.
 Design reference: PCL by 龙腾猫跃 https://github.com/Meloong-Git/PCL https://afdian.com/a/LTCat
 Only a small format-detection entry was consulted. No PCL source code or assets are included.
 MIT License

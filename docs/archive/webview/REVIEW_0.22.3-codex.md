@@ -1,3 +1,5 @@
+> 历史记录，不作为当前开发规范。当前入口见 [架构说明](../../ARCHITECTURE.md)。
+
 # 0.22.3-codex 整理记录
 
 基于 `0.22.3-fix`，保留其 SDK、解决方案、VS Code 配置、CI 清理与 WebView2 迁移。原 `0.22.3` 的 HTML/CSS/JS 外观保持不变。

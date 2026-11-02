@@ -1,24 +1,23 @@
 # 参与改进
 
-欢迎提交问题与改进建议。Issue 请包含软件和系统版本、复现步骤、预期与实际结果，截图和日志先脱敏。
+Issue 请说明版本、系统、复现步骤、预期与实际结果，日志和截图先脱敏。不要提交账号、令牌、游戏文件、存档或私人路径。
 
-代码修改保持范围清晰，说明目的与验证。不要提交 bin、obj、账号文件、Token、私人路径、游戏文件或存档。涉及启动、认证、下载或实例删除时补充针对性检查。
+## 当前分支与结构
 
-源码放在 `src/`，检查项目放在 `test/`，界面预览放在 `tools/`。
-构建和检查命令见 [构建与目录说明](docs/BUILD.md)。迁移或新增项目后运行
-`python scripts/check-layout.py`，核对引用和资源路径。
+当前开发分支为 `0.24.0-codex`，属于 AI 迁移框架尝试。主界面为 Avalonia 原生控件；WebView2 仅用于微软官方授权页面。
 
-项目整体许可证尚未指定，复用或再分发前请与维护者确认。第三方组件遵循各自许可证。
+- `src/MCUGLauncher.Avalonia/Views`：页面和弹窗展示、事件。
+- `Presentation` 与 `LauncherFacade`：界面状态与消息适配。
+- `src/MCUGLauncher.App/UseCases`：校验、预览、确认和入队。
+- App 的 Services/Authentication：运行环境适配。
+- `src/MCUGLauncher.Core`：可复用的启动、安装、解析、事务和存储能力。
 
-开发与构建说明见 [构建与目录说明](docs/BUILD.md)，架构与数据存储见 [README](README.md)。提交前执行源码格式检查，并按改动范围运行行为检查。
+开发严格遵循 [AGENTS.md](AGENTS.md) 与 [后端规范](BACKEND_DEVELOPMENT.md)。不把业务放回窗口，不用 partial 隐藏业务，不为缩短文件而增加空转发层。B 类组件必须更新成员级依赖说明。历史网页前端说明仅保留在 [归档](docs/archive/webview/README.md)，不能按其旧目录新增页面。
 
-## 分支与版本
+## 验证与交付
 
-- `main` 是发布分支；功能开发在版本分支（如 `0.22.3`）进行，修复分支如 `0.22.3-fix`。
-- 版本号只改 `Directory.Build.props` 的 `McugVersion`，运行期读取 `ProductInfo.Version`；发版前运行 `python scripts/check-version.py`（需要标签时加 `--tag`），规则见 [版本号控制](docs/VERSIONING.md)。
-- 界面由 `src/MCUGLauncher/Ui` 下的 HTML/CSS/JS 与 WebView2 宿主组成，C# 只保留服务与消息桥接；不要重新引入旧的 WPF 页面/控制器结构。
-- 提交前运行 `python scripts/check-layout.py`、`dotnet run --project tools/SourceFormatter`，并按改动范围运行 `test/*Checks`。旧 WPF 时期的检查项目已退役，相关历史见 [WPF 归档](docs/archive/legacy-wpf/)。
+构建见 [BUILD](docs/BUILD.md)。提交前运行 SourceFormatter、布局、版本与原生边界检查，按影响范围运行 test/*Checks。页面修改运行 NativeUiChecks 并查看截图；模拟响应不替代真实账号、系统拖放及游戏验收。
 
-`0.22.3-codex` 在 WebView2 迁移上继续整理：业务放入 `UseCases`，窗口仅保留原生职责。新增命令须补 `WebBridgeChecks`，并运行 `python scripts/check-web-boundaries.py`；详见 [开发说明](docs/WEBVIEW_UI.md)。
+只推送约定分支；发布 Release 和移动标签按用户指令。版本唯一来源为 Directory.Build.props，运行期读取 ProductInfo.Version。
 
-后端新增/修改组件按 [后端开发规范](BACKEND_DEVELOPMENT.md) 执行：优先完全独立组件；依赖现有组件的必须声明到“类.成员（含参数）”；修改现有组件不新增组件，共用逻辑膨胀时下沉 Core。
+项目整体许可证尚未指定，复用或再分发前请与维护者确认。第三方声明仍需保留在相应包或分发资源中。

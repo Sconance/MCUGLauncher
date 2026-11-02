@@ -1,17 +1,50 @@
-# NuGet dependency inventory
+# 当前依赖清单
 
-| Package | License |
-| --- | --- |
-| CmlLib.Core/4.1.0 | MIT |
-| CmlLib.Core.Auth.Microsoft/3.3.0 | MIT |
-| CmlLib.Core.Commons/4.0.0 | MIT |
-| LZMA-SDK/19.0.0 | MIT |
-| Microsoft.Extensions.DependencyInjection.Abstractions/8.0.1 | MIT |
-| Microsoft.Extensions.Logging.Abstractions/8.0.1 | MIT |
-| Microsoft.Web.WebView2/1.0.1823.32 | LICENSE.txt |
-| SharpZipLib/1.4.2 | MIT |
-| System.Net.Http.Json/8.0.0 | MIT |
-| System.Text.Json/8.0.5 | MIT |
-| System.Threading.Tasks.Dataflow/8.0.1 | MIT |
-| XboxAuthNet/3.0.4 | MIT |
-| XboxAuthNet.Game/1.4.0 | MIT |
+根据本分支 Avalonia 项目的 NuGet restore 结果生成（包含传递依赖），不代表每个构建辅助包都打入 EXE。许可证列为包元数据原文，完整声明仍随包和程序资源保留。更新包后应重新核对。
+
+| 包 | 版本 | 包声明的许可或许可文件 |
+| --- | --- | --- |
+| Avalonia.Angle.Windows.Natives | 2.1.25547.20250602 | LICENSE |
+| Avalonia.BuildServices | 11.3.2 | MIT |
+| Avalonia.Desktop | 11.3.22 | MIT |
+| Avalonia.Fonts.Inter | 11.3.22 | MIT |
+| Avalonia.FreeDesktop | 11.3.22 | MIT |
+| Avalonia.Native | 11.3.22 | MIT |
+| Avalonia.Remote.Protocol | 11.3.22 | MIT |
+| Avalonia.Skia | 11.3.22 | MIT |
+| Avalonia.Themes.Fluent | 11.3.22 | MIT |
+| Avalonia.Win32 | 11.3.22 | MIT |
+| Avalonia.X11 | 11.3.22 | MIT |
+| Avalonia | 11.3.22 | MIT |
+| CmlLib.Core.Auth.Microsoft | 3.3.0 | MIT |
+| CmlLib.Core.Commons | 4.0.0 | MIT |
+| CmlLib.Core | 4.1.0 | MIT |
+| HarfBuzzSharp.NativeAssets.Linux | 8.3.1.1 | MIT |
+| HarfBuzzSharp.NativeAssets.macOS | 8.3.1.1 | MIT |
+| HarfBuzzSharp.NativeAssets.WebAssembly | 8.3.1.1 | MIT |
+| HarfBuzzSharp.NativeAssets.Win32 | 8.3.1.1 | MIT |
+| HarfBuzzSharp | 8.3.1.1 | MIT |
+| LZMA-SDK | 19.0.0 | MIT |
+| MicroCom.Runtime | 0.11.0 | MIT |
+| Microsoft.Extensions.DependencyInjection.Abstractions | 8.0.1 | MIT |
+| Microsoft.Extensions.Logging.Abstractions | 8.0.1 | MIT |
+| Microsoft.IO.RecyclableMemoryStream | 3.0.1 | MIT |
+| Microsoft.NET.ILLink.Tasks | 8.0.32 | MIT |
+| Microsoft.Web.WebView2 | 1.0.1823.32 | LICENSE.txt |
+| SharpZipLib | 1.4.2 | MIT |
+| SkiaSharp.NativeAssets.Linux | 2.88.9 | MIT |
+| SkiaSharp.NativeAssets.macOS | 2.88.9 | MIT |
+| SkiaSharp.NativeAssets.WebAssembly | 2.88.9 | MIT |
+| SkiaSharp.NativeAssets.Win32 | 2.88.9 | MIT |
+| SkiaSharp | 2.88.9 | MIT |
+| System.IO.Pipelines | 9.0.4 | MIT |
+| System.Net.Http.Json | 8.0.0 | MIT |
+| System.Text.Encodings.Web | 9.0.4 | MIT |
+| System.Text.Json | 9.0.4 | MIT |
+| System.Threading.Tasks.Dataflow | 8.0.1 | MIT |
+| Tmds.DBus.Protocol | 0.21.3 | MIT |
+| Utf8StringInterpolation | 1.3.2 | MIT |
+| WebView2.Avalonia | 1.0.3240.44-preview.250526.1 | MIT |
+| WebView2.NativeAssets.Win32 | 1.0.3240.44-d250526.1 | LICENSE.txt |
+| XboxAuthNet.Game | 1.4.0 | MIT |
+| XboxAuthNet | 3.0.4 | MIT |

@@ -1,6 +1,6 @@
 # refactor 组件在 test 中的延续
 
-> 历史归档：本文记录 refactor 时期的一次性过程，`refactor` 分支已废弃。现行文档见 [开发导览](../../DEVELOPMENT.md) 与 [合并到主分支前的说明](../../MERGE_TO_MAIN.md)。
+> 历史归档：本文记录 refactor 时期的一次性过程，`refactor` 分支已废弃。现行文档见 [开发导览](../legacy-wpf/DEVELOPMENT.md) 与 合并到主分支前的说明（历史文件已退役）。
 
 
 参考基线固定为 `db0ab6af7cde32ca685de7ff3371cfefdf308f18`。合并前的这一轮从本地 `test` 的 `156208e` 继续，只向 `test` 提交，没有移动或改写 `refactor` 的分支指针，也没有修改当时的正式版本号；随后的合并与版本统一见文末。

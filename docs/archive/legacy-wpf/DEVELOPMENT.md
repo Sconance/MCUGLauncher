@@ -1,7 +1,7 @@
 # 开发导览
 
 MCUG Launcher 是 .NET 8 / WPF 应用。先从本文件定位功能，再阅读对应入口。
-构建、打包和运行检查见 [BUILD.md](BUILD.md)。
+构建、打包和运行检查见 [BUILD.md](../../BUILD.md)。
 
 ## 先读哪些文件
 
@@ -17,7 +17,7 @@ MCUG Launcher 是 .NET 8 / WPF 应用。先从本文件定位功能，再阅读�
 `LauncherWorkspace` 只负责组合，不拥有下载、账号或实例业务状态。不要重新添加 `partial MainWindow` 功能文件。
 页面迁移时保留原有动态布局的视图树形状；详细说明见 [MainWindow 重构记录](MAINWINDOW_REFACTOR.md)。
 
-每个顶层类型的职责、主要入口与源码位置见 [类文档目录](classes/README.md)；新增或拆分类型时同步补页，`python scripts/check-class-docs.py` 校验覆盖与索引。
+每个顶层类型的职责、主要入口与源码位置见 类文档目录（历史文件已退役）；新增或拆分类型时同步补页，`python scripts/check-class-docs.py` 校验覆盖与索引。
 
 ## 功能域与命名
 
@@ -35,7 +35,7 @@ MCUG Launcher 是 .NET 8 / WPF 应用。先从本文件定位功能，再阅读�
 | `Components/Bookmarks/` | 收藏夹与书签库 |
 | `Components/Support/` | 诊断与反馈 |
 
-本次整理的代表性改名：`SketchController` → `InstanceContentController`、`InstancePagesController` → `InstanceWorkspaceController`、`ContentController` → `ResourceBrowserController`、`CollectionsController` → `BookmarkLibraryController`、`UpdatesController` → `ContentUpdatesController`、`LoaderController` → `LoaderSelectionController`、`PackController` → `ModpackController`、`StabilityController` → `TaskRecoveryController`、`MiniDownloadController` → `DownloadMiniBarController`、`ModernController` → `ModernShellController`。`scripts/refactor-reuse.json` 固定的 11 个逐字复用文件保留 refactor 中的类名，只调整目录；其余类名可按功能调整，调整后必须同步 [类文档目录](classes/README.md)。
+本次整理的代表性改名：`SketchController` → `InstanceContentController`、`InstancePagesController` → `InstanceWorkspaceController`、`ContentController` → `ResourceBrowserController`、`CollectionsController` → `BookmarkLibraryController`、`UpdatesController` → `ContentUpdatesController`、`LoaderController` → `LoaderSelectionController`、`PackController` → `ModpackController`、`StabilityController` → `TaskRecoveryController`、`MiniDownloadController` → `DownloadMiniBarController`、`ModernController` → `ModernShellController`。`scripts/refactor-reuse.json` 固定的 11 个逐字复用文件保留 refactor 中的类名，只调整目录；其余类名可按功能调整，调整后必须同步 类文档目录（历史文件已退役）。
 
 ## 功能定位
 
@@ -115,18 +115,18 @@ dotnet run --project tools/SourceFormatter
 
 ## test 分支的组件依赖细化
 
-查看 [窗口拆分与依赖约束](MAINWINDOW_REFACTOR.md) 和 [分支结构比较](archive/branch_refactor/TEST_REFACTOR_COMPARISON.md)。账号展示、加载器概览、网络编辑及原生窗口控件通过显式构造参数连接；新的小组件优先接收实际控件、只读状态或操作回调。公共 UI 元素位于 `Views/Shared`，表单位于 `Views/Forms`，数据记录位于 `Models`，纯文件构建位于 `Builders`。
+查看 [窗口拆分与依赖约束](MAINWINDOW_REFACTOR.md) 和 [分支结构比较](../branch_refactor/TEST_REFACTOR_COMPARISON.md)。账号展示、加载器概览、网络编辑及原生窗口控件通过显式构造参数连接；新的小组件优先接收实际控件、只读状态或操作回调。公共 UI 元素位于 `Views/Shared`，表单位于 `Views/Forms`，数据记录位于 `Models`，纯文件构建位于 `Builders`。
 
 版本设置的页面主体位于 `Views/VersionSettings/`，动作连接在 `Composition/VersionSettingsComposition.cs`。新增或修改某一页时优先定位对应的 `Version*Page`，不要把页面代码重新加进版本设置协调器。
 
-内容管理、全局启动选项和实例导出分别位于 `Presentation/SketchContentManagerDialog.cs`、`LaunchOptionsDialog.cs`、`InstancePackExportDialog.cs`，组合在 `Composition/InstanceDialogComposition.cs`。内容更新的两个视图位于 `Views/Updates`；通用初始化与导航样式位于 `Initialization`、`Styling`。与参考分支的继承关系和准确复用范围见 [延续记录](archive/branch_refactor/REFACTOR_CONTINUATION.md)。
+内容管理、全局启动选项和实例导出分别位于 `Presentation/SketchContentManagerDialog.cs`、`LaunchOptionsDialog.cs`、`InstancePackExportDialog.cs`，组合在 `Composition/InstanceDialogComposition.cs`。内容更新的两个视图位于 `Views/Updates`；通用初始化与导航样式位于 `Initialization`、`Styling`。与参考分支的继承关系和准确复用范围见 [延续记录](../branch_refactor/REFACTOR_CONTINUATION.md)。
 
 ## 版本号与分支
 
-- 版本号唯一来源是根目录 `Directory.Build.props` 的 `McugVersion`；运行期读取 `ProductInfo.Version`，不要在界面、User-Agent 或诊断信息里写版本字面量。发版与标签规则见 [版本号控制](VERSIONING.md)。
-- 0.22.0 在 `test` 分支准备合并到 `main`，步骤、验证与检查清单见 [合并到主分支前的说明](MERGE_TO_MAIN.md)。
-- `refactor` 分支已废弃并归档，历史材料见 [历史归档](archive/branch_refactor/README.md)；不要重新引入 `partial MainWindow` 或把窗口字段汇总回组合根。
-- 合并其他分支时遵循 [重构路线图](../TODO.md) 中的整合检查要点：按组件迁移、保留数据兼容、先查对应服务与 `test/*Checks`，并同步文档与版本号。
+- 版本号唯一来源是根目录 `Directory.Build.props` 的 `McugVersion`；运行期读取 `ProductInfo.Version`，不要在界面、User-Agent 或诊断信息里写版本字面量。发版与标签规则见 [版本号控制](../../VERSIONING.md)。
+- 0.22.0 在 `test` 分支准备合并到 `main`，步骤、验证与检查清单见 合并到主分支前的说明（历史文件已退役）。
+- `refactor` 分支已废弃并归档，历史材料见 [历史归档](../branch_refactor/README.md)；不要重新引入 `partial MainWindow` 或把窗口字段汇总回组合根。
+- 合并其他分支时遵循 [重构路线图](../../../TODO.md) 中的整合检查要点：按组件迁移、保留数据兼容、先查对应服务与 `test/*Checks`，并同步文档与版本号。
 
 ## 0.22.1：运行会话与本地优先启动
 
