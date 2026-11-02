@@ -79,6 +79,11 @@ internal sealed record ToastInfo(string Message, bool Bad)
         JsonRead.Bool(element, "bad"));
 }
 
+internal sealed record SavedInfo(string Message)
+{
+    public static SavedInfo From(JsonElement element) => new(JsonRead.String(element, "message"));
+}
+
 internal sealed record PublishResultInfo(bool Ok, bool Pending, string Message)
 {
     public static PublishResultInfo From(JsonElement element) => new(
@@ -367,6 +372,8 @@ internal sealed record AnnouncementInfo(
     DateTimeOffset? PublishedAt,
     string ImageUrl)
 {
+    public string Raw { get; init; } = "";
+
     public static AnnouncementInfo From(JsonElement element)
     {
         var date = JsonRead.String(element, "publishedAt");
@@ -379,7 +386,10 @@ internal sealed record AnnouncementInfo(
             JsonRead.String(element, "tag") is { Length: > 0 } tag ? tag : "公告",
             JsonRead.String(element, "author"),
             DateTimeOffset.TryParse(date, out var published) ? published : null,
-            JsonRead.String(element, "imageUrl") is { Length: > 0 } image ? image : JsonRead.String(element, "image"));
+            JsonRead.String(element, "imageUrl") is { Length: > 0 } image ? image : JsonRead.String(element, "image"))
+        {
+            Raw = element.GetRawText()
+        };
     }
 }
 
@@ -394,6 +404,8 @@ internal sealed record RecommendationInfo(
     string Size,
     string Url)
 {
+    public string Raw { get; init; } = "";
+
     public static RecommendationInfo From(JsonElement element)
     {
         var type = JsonRead.String(element, "type");
@@ -408,7 +420,10 @@ internal sealed record RecommendationInfo(
             JsonRead.Strings(element, "tags"),
             JsonRead.String(element, "version"),
             JsonRead.String(element, "size"),
-            JsonRead.String(element, "url") is { Length: > 0 } url ? url : JsonRead.String(element, "address"));
+            JsonRead.String(element, "url") is { Length: > 0 } url ? url : JsonRead.String(element, "address"))
+        {
+            Raw = element.GetRawText()
+        };
     }
 }
 

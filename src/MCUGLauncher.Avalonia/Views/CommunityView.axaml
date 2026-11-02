@@ -49,6 +49,24 @@
             <StackPanel x:Name="AnnouncementsPanel" Spacing="6" />
           </StackPanel>
         </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="管理公告" Classes="h2" />
+            <TextBlock Text="删除会重写本机公告列表，保留未删除项及其原始字段；需要管理员密钥。"
+                       Classes="muted" TextWrapping="Wrap" />
+            <StackPanel x:Name="AnnouncementManagePanel" Spacing="6" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="管理推荐" Classes="h2" />
+            <TextBlock Text="删除会重写本机推荐列表，保留未删除项及其原始字段；需要管理员密钥。"
+                       Classes="muted" TextWrapping="Wrap" />
+            <StackPanel x:Name="RecommendationManagePanel" Spacing="6" />
+          </StackPanel>
+        </Border>
       </StackPanel>
     </ScrollViewer>
   </Grid>

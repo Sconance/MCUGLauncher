@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 
@@ -7,8 +9,10 @@ namespace MCUGLauncher.Avalonia.Views;
 internal partial class CommunityView : UserControl
 {
     LauncherFacade? facade;
+    CommunityData community = CommunityData.Empty;
     string imageData = "";
     Bitmap? image;
+    bool canManage;
 
     public CommunityView()
     {
@@ -27,6 +31,7 @@ internal partial class CommunityView : UserControl
         facade.StateChanged += ApplyState;
         facade.CommunityChanged += OnCommunity;
         facade.PublishResultReceived += OnPublishResult;
+        facade.SavedReceived += info => PublishStatus.Text = info.Message;
         facade.KeyResultReceived += OnKeyResult;
         facade.PathPicked += OnPathPicked;
         facade.ToastReceived += info => PublishStatus.Text = info.Message;
@@ -69,23 +74,32 @@ internal partial class CommunityView : UserControl
         if (snapshot is null)
             return;
         var hasKey = snapshot.HasAdminKey;
+        canManage = hasKey;
         AdminHint.Text = hasKey
             ? "本机已设置管理员密钥。密钥只保存在本机，不会上传。"
             : "尚未设置管理员密钥。首次输入任意 8 位以上密钥即设置本机管理员密钥。";
         PublishButton.IsEnabled = hasKey;
         if (!hasKey)
             PublishStatus.Text = "请先设置管理员密钥后再发布公告。";
+        RenderManagement();
     }
 
     void OnCommunity(CommunityData data)
     {
+        community = data;
+        RenderAnnouncements();
+        RenderManagement();
+    }
+
+    void RenderAnnouncements()
+    {
         AnnouncementsPanel.Children.Clear();
-        if (data.Announcements.Count == 0)
+        if (community.Announcements.Count == 0)
         {
             AnnouncementsPanel.Children.Add(Muted("暂无公告。"));
             return;
         }
-        foreach (var item in data.Announcements.Take(10))
+        foreach (var item in community.Announcements.Take(10))
         {
             var copy = new StackPanel { Spacing = 2 };
             copy.Children.Add(new TextBlock
@@ -107,6 +121,78 @@ internal partial class CommunityView : UserControl
             });
             AnnouncementsPanel.Children.Add(copy);
         }
+    }
+
+    void RenderManagement()
+    {
+        AnnouncementManagePanel.Children.Clear();
+        if (community.Announcements.Count == 0)
+            AnnouncementManagePanel.Children.Add(Muted("没有可管理的公告。"));
+        else
+            for (var index = 0; index < community.Announcements.Count; index++)
+            {
+                var item = community.Announcements[index];
+                var copy = new StackPanel { Spacing = 2 };
+                copy.Children.Add(new TextBlock
+                {
+                    Text = "[" + item.Tag + "] " + item.Title,
+                    FontWeight = FontWeight.SemiBold,
+                    TextWrapping = TextWrapping.Wrap
+                });
+                copy.Children.Add(new TextBlock
+                {
+                    Text = (item.Author.Length > 0 ? item.Author + " · " : "")
+                        + (item.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "未注明时间"),
+                    Classes = { "muted" }
+                });
+                var remove = new Button { Content = "删除", Classes = { "ghost" }, IsEnabled = canManage };
+                var position = index;
+                remove.Click += async (_, _) => await RemoveAnnouncement(position);
+                AnnouncementManagePanel.Children.Add(SeparatedRow(copy, remove));
+            }
+
+        RecommendationManagePanel.Children.Clear();
+        if (community.Recommendations.Count == 0)
+            RecommendationManagePanel.Children.Add(Muted("没有可管理的推荐。"));
+        else
+            for (var index = 0; index < community.Recommendations.Count; index++)
+            {
+                var item = community.Recommendations[index];
+                var copy = new StackPanel { Spacing = 2 };
+                copy.Children.Add(new TextBlock
+                {
+                    Text = item.Name,
+                    FontWeight = FontWeight.SemiBold,
+                    TextWrapping = TextWrapping.Wrap
+                });
+                copy.Children.Add(new TextBlock
+                {
+                    Text = item.Type + " · " + item.Author,
+                    Classes = { "muted" }
+                });
+                var remove = new Button { Content = "删除", Classes = { "ghost" }, IsEnabled = canManage };
+                var position = index;
+                remove.Click += async (_, _) => await RemoveRecommendation(position);
+                RecommendationManagePanel.Children.Add(SeparatedRow(copy, remove));
+            }
+    }
+
+    async Task RemoveAnnouncement(int index)
+    {
+        if (!canManage || index < 0 || index >= community.Announcements.Count)
+            return;
+        PublishStatus.Text = "正在保存公告列表…";
+        var remaining = community.Announcements.Where((_, position) => position != index).ToArray();
+        await facade!.SaveAnnouncementsAsync(remaining);
+    }
+
+    async Task RemoveRecommendation(int index)
+    {
+        if (!canManage || index < 0 || index >= community.Recommendations.Count)
+            return;
+        PublishStatus.Text = "正在保存推荐列表…";
+        var remaining = community.Recommendations.Where((_, position) => position != index).ToArray();
+        await facade!.SaveRecommendationsAsync(remaining);
     }
 
     async void OnPathPicked(PickedPathInfo info)
@@ -174,6 +260,23 @@ internal partial class CommunityView : UserControl
         ".webp" => "image/webp",
         _ => "image/png"
     };
+
+    static Control SeparatedRow(Control copy, Control action)
+    {
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        row.Children.Add(copy);
+        Grid.SetColumn(action, 1);
+        action.Margin = new Thickness(12, 0, 0, 0);
+        action.VerticalAlignment = VerticalAlignment.Center;
+        row.Children.Add(action);
+        return new Border
+        {
+            BorderBrush = new SolidColorBrush(Color.Parse("#E3EAF0")),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            Padding = new Thickness(0, 6),
+            Child = row
+        };
+    }
 
     static TextBlock Muted(string text) => new() { Text = text, Classes = { "muted" } };
 }

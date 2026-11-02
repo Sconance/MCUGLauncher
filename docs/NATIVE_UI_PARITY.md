@@ -19,7 +19,7 @@
 | 账号卡与登录入口 | `home-page.js`、`accounts.js` | 已完成（账号卡 + 账号页切换） |
 | 皮肤、披风、MUA 档案 | `avatars.js`、`mua-profiles.js` | 部分完成（头像、离线 PNG 皮肤、MUA 多角色选择；在线皮肤上传/披风待接） |
 | 主页服务器状态 | `home-page.js`、`host.js` | 已完成（自动查询、添加/编辑/删除） |
-| 公告 / 推荐 / 语录 | `home-page.js`、`community-pages.js` | 已完成文本展示（公告配图待接） |
+| 公告 / 推荐 / 语录 | `home-page.js`、`community-pages.js` | 已完成文本展示与本地 data URL 配图（远程配图待接） |
 | 下载分类与搜索 | `resource-pages.js` | 已完成（五类 Modrinth 搜索） |
 | 资源详情 / 版本选择 / 安装 | `resource-pages.js`、`resource-picker.js` | 已完成基础流程（版本选择、实例安装/目录下载） |
 | 原版版本列表 / 安装 | `resource-pages.js` | 已完成 |
@@ -38,7 +38,7 @@
 | 设置：运行日志 / 诊断 | `settings-actions.js` | 已完成 |
 | 设置：关于与许可 | `settings-page.js` | 已完成 |
 | 社区：匿名 / 身份密钥 | `community-pages.js` | 已完成 |
-| 社区：管理员发布 | `community-pages.js` | 部分完成（管理员密钥、标题/正文/过期时间/配图发布；公告与推荐删除待接） |
+| 社区：管理员发布 | `community-pages.js` | 已完成（管理员密钥、发布公告、公告/推荐删除管理） |
 | 任务：排队 / 暂停 / 继续 / 取消 / 删除 | `tasks.js` | 基础完成 |
 | 运行中的游戏 | `games.js` | 已完成（列表与关闭；真实游戏验收待做） |
 | 资源收藏 | `bookmarks.js` | 部分完成（列表/取消收藏；从收藏直接选版本安装待接） |
@@ -56,8 +56,8 @@
    社区推荐内容仍由主页展示，下载页内导航后续按视觉稿补。
 5. **主页与账号（已完成第一版）**：账号卡、实例列表/启动、服务器状态、公告/推荐/语录；
    账号头像、离线皮肤、MUA 多角色选择。披风与在线皮肤上传待接。
-6. **外围工具（进行中）**：任务、运行中游戏、收藏、目录、管理员公告发布已接入；
-   公告/推荐删除管理、收藏内直接安装仍待接。
+6. **外围工具（进行中）**：任务、运行中游戏、收藏、目录、管理员公告发布与
+   公告/推荐删除管理已接入；收藏内直接安装仍待接。
 7. **删除 WebView 主界面**：删除 `Ui/`、`MainWindow`、`bridge.js`、Web 边界检查与 `WebUiChecks`；
    更新 `scripts/build.ps1`、CI 与文档；保留 `MicrosoftLoginWindow` 的 WebView2。
 

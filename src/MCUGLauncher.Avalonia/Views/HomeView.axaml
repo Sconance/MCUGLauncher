@@ -62,6 +62,8 @@
           </Grid>
           <TextBlock x:Name="AnnouncementTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
           <TextBlock x:Name="AnnouncementBody" TextWrapping="Wrap" />
+          <Image x:Name="AnnouncementImage" MaxHeight="180" Stretch="Uniform"
+                 HorizontalAlignment="Left" IsVisible="False" />
           <TextBlock x:Name="AnnouncementMeta" Classes="muted" />
         </StackPanel>
       </Border>

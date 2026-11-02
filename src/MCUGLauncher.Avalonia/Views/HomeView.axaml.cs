@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 
 namespace MCUGLauncher.Avalonia.Views;
 
@@ -11,6 +12,7 @@ internal partial class HomeView : UserControl
     LauncherFacade? facade;
     LauncherState? state;
     CommunityData community = CommunityData.Empty;
+    Bitmap? announcementImage;
     string serverSignature = "";
     string editingServer = "";
     int announcementIndex;
@@ -269,6 +271,7 @@ internal partial class HomeView : UserControl
             AnnouncementBody.Text = "新的群公告会出现在这里。";
             AnnouncementMeta.Text = "";
             AnnouncementIndex.Text = "0 / 0";
+            ShowAnnouncementImage("");
             return;
         }
         var item = community.Announcements[announcementIndex];
@@ -281,6 +284,34 @@ internal partial class HomeView : UserControl
             item.ImageUrl.Length > 0 ? "含配图" : ""
         }.Where(value => value.Length > 0));
         AnnouncementIndex.Text = $"{announcementIndex + 1} / {community.Announcements.Count}";
+        ShowAnnouncementImage(item.ImageUrl);
+    }
+
+    void ShowAnnouncementImage(string url)
+    {
+        announcementImage?.Dispose();
+        announcementImage = null;
+        AnnouncementImage.Source = null;
+        AnnouncementImage.IsVisible = false;
+        if (!url.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
+            return;
+        try
+        {
+            var comma = url.IndexOf(',');
+            if (comma < 0)
+                return;
+            var bytes = Convert.FromBase64String(url[(comma + 1)..]);
+            using var input = new MemoryStream(bytes);
+            announcementImage = new Bitmap(input);
+            AnnouncementImage.Source = announcementImage;
+            AnnouncementImage.IsVisible = true;
+        }
+        catch
+        {
+            announcementImage = null;
+            AnnouncementImage.Source = null;
+            AnnouncementImage.IsVisible = false;
+        }
     }
 
     void RenderRecommendations()

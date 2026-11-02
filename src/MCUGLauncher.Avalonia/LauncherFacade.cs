@@ -45,6 +45,7 @@ internal sealed class LauncherFacade : IDisposable
     public event Action<LaunchOptionsInfo>? LaunchOptionsReceived;
     public event Action? LaunchOptionsSaved;
     public event Action<PublishResultInfo>? PublishResultReceived;
+    public event Action<SavedInfo>? SavedReceived;
     public event Action? SettingsSaved;
 
     public MCUGLauncher.Models.AppConfig Config => application.Config;
@@ -368,6 +369,35 @@ internal sealed class LauncherFacade : IDisposable
             imageData
         });
 
+    public Task SaveAnnouncementsAsync(IReadOnlyList<AnnouncementInfo> items) =>
+        CommandAsync(new
+        {
+            type = "saveAnnouncements",
+            items = items.Select(item => ParseRaw(item.Raw)).OfType<JsonElement>().ToArray()
+        });
+
+    public Task SaveRecommendationsAsync(IReadOnlyList<RecommendationInfo> items) =>
+        CommandAsync(new
+        {
+            type = "saveRecommendations",
+            items = items.Select(item => ParseRaw(item.Raw)).OfType<JsonElement>().ToArray()
+        });
+
+    static JsonElement? ParseRaw(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+        try
+        {
+            using var document = JsonDocument.Parse(raw);
+            return document.RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     public Task ToggleBookmarkAsync(string id, string name, string description, string author, string kind) =>
         CommandAsync(new
         {
@@ -546,6 +576,9 @@ internal sealed class LauncherFacade : IDisposable
                 break;
             case "launchOptionsSaved":
                 LaunchOptionsSaved?.Invoke();
+                break;
+            case "saved":
+                SavedReceived?.Invoke(SavedInfo.From(root));
                 break;
             case "settingsSaved":
                 SettingsSaved?.Invoke();
