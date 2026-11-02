@@ -17,9 +17,9 @@ public partial class ShellWindow : Window
     readonly InstancesView instancesView;
     readonly HomeView homeView;
     readonly DownloadView downloadView;
+    readonly AccountView accountView;
     readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     StackPanel? pageContent;
-    LauncherState? typed;
     IReadOnlyList<TaskInfo> tasks = [];
     string page = "home";
 
@@ -38,6 +38,7 @@ public partial class ShellWindow : Window
         homeView = new HomeView(facade);
         homeView.AccountRequested += () => Show("account");
         downloadView = new DownloadView(facade);
+        accountView = new AccountView(facade);
         Width = Math.Clamp(facade.Config.WindowWidth, 900, 7680);
         Height = Math.Clamp(facade.Config.WindowHeight, 600, 4320);
         if (facade.Config.WindowMaximized)
@@ -57,12 +58,6 @@ public partial class ShellWindow : Window
         {
             ToastLayer.IsVisible = false;
             toastTimer.Stop();
-        };
-        facade.StateChanged += snapshot =>
-        {
-            typed = snapshot;
-            if (page == "account")
-                Render();
         };
         facade.TasksChanged += list =>
         {
@@ -118,6 +113,12 @@ public partial class ShellWindow : Window
             PageHost.Content = downloadView;
             return;
         }
+        if (page == "account")
+        {
+            accountView.Activate();
+            PageHost.Content = accountView;
+            return;
+        }
         var panel = new StackPanel { Spacing = 12 };
         pageContent = panel;
         PageHost.Content = new ScrollViewer
@@ -125,43 +126,8 @@ public partial class ShellWindow : Window
             Content = panel,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
-        if (page == "account")
-            RenderAccount();
-        else if (page == "tasks")
+        if (page == "tasks")
             RenderTasks();
-    }
-
-    void RenderAccount()
-    {
-        var snapshot = typed;
-        AddHeading("账号");
-        Add("当前：" + (snapshot?.AccountLabel is { Length: > 0 } label ? label : "离线账号"));
-        Add("玩家：" + (snapshot?.Player ?? ""));
-        var microsoft = new Button { Content = "登录微软账号", HorizontalAlignment = HorizontalAlignment.Left };
-        microsoft.Click += async (_, _) => { await facade.LoginMicrosoftAsync(); await facade.RequestStateAsync(); };
-        Add(microsoft);
-        AddHeading("MUA 账号");
-        var account = new TextBox { Watermark = "MUA 账号" };
-        var password = new TextBox { Watermark = "密码", PasswordChar = '●' };
-        Add(account);
-        Add(password);
-        var muaLogin = new Button { Content = "登录 MUA", HorizontalAlignment = HorizontalAlignment.Left };
-        muaLogin.Click += async (_, _) =>
-        {
-            await facade.LoginMuaAsync(account.Text?.Trim() ?? "", password.Text ?? "");
-            await facade.RequestStateAsync();
-        };
-        Add(muaLogin);
-        var offline = new Button { Content = "切换到离线账号", HorizontalAlignment = HorizontalAlignment.Left };
-        offline.Click += async (_, _) => { await facade.SwitchAccountModeAsync("offline"); await facade.RequestStateAsync(); };
-        Add(offline);
-        var forget = new Button { Content = "忘记已保存账号", HorizontalAlignment = HorizontalAlignment.Left };
-        forget.Click += async (_, _) =>
-        {
-            await facade.ForgetAccountAsync(snapshot?.AccountType is { Length: > 0 } mode ? mode : "offline");
-            await facade.RequestStateAsync();
-        };
-        Add(forget);
     }
 
     void RenderTasks()

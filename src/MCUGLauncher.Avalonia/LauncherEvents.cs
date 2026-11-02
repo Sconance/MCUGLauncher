@@ -31,6 +31,14 @@ internal sealed record AuthResultInfo(bool? Ok, bool Pending, string Message)
         JsonRead.String(element, "message"));
 }
 
+internal sealed record AccountSwitchResultInfo(string Account, bool NeedsLogin, string Message)
+{
+    public static AccountSwitchResultInfo From(JsonElement element) => new(
+        JsonRead.String(element, "account"),
+        JsonRead.Bool(element, "needsLogin"),
+        JsonRead.String(element, "message"));
+}
+
 internal sealed record AccountStateInfo(string Player, string AccountType, string AccountLabel)
 {
     public static AccountStateInfo From(JsonElement element) => new(

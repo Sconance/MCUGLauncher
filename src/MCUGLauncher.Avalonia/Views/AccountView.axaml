@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MCUGLauncher.Avalonia.Views.AccountView">
+  <Grid ColumnDefinitions="280,*">
+    <Border Classes="card" VerticalAlignment="Top">
+      <StackPanel Spacing="10">
+        <TextBlock Text="账号" Classes="h2" />
+        <Border Width="128" Height="128" CornerRadius="12" Background="{StaticResource AppBg}"
+                HorizontalAlignment="Left">
+          <Image x:Name="AvatarImage" Width="128" Height="128" Stretch="Uniform" />
+        </Border>
+        <TextBlock x:Name="AvatarLabel" Classes="muted" TextWrapping="Wrap" />
+        <Button x:Name="ChooseSkinButton" Content="选择本地皮肤" Classes="ghost" HorizontalAlignment="Left" />
+        <Button x:Name="ClearSkinButton" Content="清除本地皮肤" Classes="ghost" HorizontalAlignment="Left" />
+        <TextBlock x:Name="SkinHint" Classes="muted" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <ScrollViewer Grid.Column="1" Margin="18,0,0,0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="14">
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="当前账号" Classes="h2" />
+            <TextBlock x:Name="CurrentPlayer" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" />
+            <TextBlock x:Name="CurrentMode" Classes="muted" />
+            <TextBlock x:Name="AuthStatus" Classes="status" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="账号模式" Classes="h2" />
+            <WrapPanel Orientation="Horizontal">
+              <Button x:Name="MicrosoftLoginButton" Content="登录正版账号" Classes="primary" Margin="0,0,8,6" />
+              <Button x:Name="OfflineSwitchButton" Content="切换到离线" Classes="ghost" Margin="0,0,8,6" />
+              <Button x:Name="ForgetMicrosoftButton" Content="忘记正版账号" Classes="ghost" Margin="0,0,8,6" />
+              <Button x:Name="ForgetMuaButton" Content="忘记 MUA 账号" Classes="ghost" Margin="0,0,8,6" />
+            </WrapPanel>
+            <TextBlock Text="离线玩家名在“设置 → 启动设置”中修改；关闭启动器不会退出已启动的游戏。"
+                       Classes="muted" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="MUA 账号" Classes="h2" />
+            <TextBlock Text="使用外置登录账号；存在多个角色时会显示角色选择。" Classes="muted" />
+            <TextBox x:Name="MuaAccountBox" Watermark="MUA 账号" />
+            <TextBox x:Name="MuaPasswordBox" PasswordChar="●" Watermark="密码" />
+            <Button x:Name="MuaLoginButton" Content="登录 MUA" Classes="primary" HorizontalAlignment="Left" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="ProfilesCard" Classes="card" IsVisible="False">
+          <StackPanel Spacing="8">
+            <TextBlock Text="选择 MUA 角色" Classes="h2" />
+            <StackPanel x:Name="ProfilesPanel" Spacing="6" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

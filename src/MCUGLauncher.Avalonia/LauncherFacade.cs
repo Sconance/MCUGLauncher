@@ -21,6 +21,7 @@ internal sealed class LauncherFacade : IDisposable
     public event Action<SystemInfoInfo>? SystemInfoReceived;
     public event Action<AuthResultInfo>? AuthResultReceived;
     public event Action<AccountStateInfo>? AccountStateChanged;
+    public event Action<AccountSwitchResultInfo>? AccountSwitchResultReceived;
     public event Action<PickedPathInfo>? PathPicked;
     public event Action<ToastInfo>? ToastReceived;
     public event Action<string>? ErrorReceived;
@@ -462,6 +463,9 @@ internal sealed class LauncherFacade : IDisposable
                 break;
             case "accountState":
                 AccountStateChanged?.Invoke(AccountStateInfo.From(root));
+                break;
+            case "accountSwitchResult":
+                AccountSwitchResultReceived?.Invoke(AccountSwitchResultInfo.From(root));
                 break;
             case "pickedPath":
                 PathPicked?.Invoke(PickedPathInfo.From(root));
