@@ -90,6 +90,9 @@ internal sealed class MicrosoftLoginWindow : Window
         core.NavigationStarting += OnNavigationStarting;
         core.NavigationCompleted += OnNavigationCompleted;
         core.NewWindowRequested += OnNewWindowRequested;
+        // A cached browser session can redirect before the first document-loaded event.
+        if (Uri.TryCreate(core.Source, UriKind.Absolute, out var current))
+            CompleteAuthorization(current);
     }
 
     void OnNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
@@ -99,12 +102,9 @@ internal sealed class MicrosoftLoginWindow : Window
             e.Cancel = true;
             return;
         }
-        var authorization = checker?.GetAuthCodeResult(next);
-        if (authorization.HasValue && !authorization.Value.IsEmpty)
+        if (CompleteAuthorization(next))
         {
             e.Cancel = true;
-            result.TrySetResult(authorization.Value);
-            CloseIfOpen();
             return;
         }
         if (next.Scheme != Uri.UriSchemeHttps)
@@ -113,6 +113,16 @@ internal sealed class MicrosoftLoginWindow : Window
             return;
         }
         status.Text = "正在连接 " + next.Host + "…";
+    }
+
+    bool CompleteAuthorization(Uri uri)
+    {
+        var authorization = checker?.GetAuthCodeResult(uri);
+        if (!authorization.HasValue || authorization.Value.IsEmpty)
+            return false;
+        result.TrySetResult(authorization.Value);
+        CloseIfOpen();
+        return true;
     }
 
     void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
