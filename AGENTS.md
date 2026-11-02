@@ -3,7 +3,7 @@
 ## 架构
 
 - ShellWindow 只管理导航、窗口生命周期和原生对话框，不新增账号、安装、下载、配置或社区业务。
-- 业务页面放在 `Views/*View`，通过 `LauncherFacade` 调用 UseCases；不要把窗口或控件传入 UseCases。
+- 业务页面放在 `Views/*View`，只通过 `Contracts.ILauncherService` 调用 UseCases；不要把窗口、控件或内部命令协议传入 UseCases。共享 DTO 位于 `App/Contracts`。
 - 新功能优先复用 Core；Services 负责适配，UseCases 负责流程，Views 负责展示和事件。不能为了换界面另写一套下载器、依赖解析器或 Java 扫描。
 - 后台任务由 LauncherTaskQueue/OperationCoordinator 管理，不能绑定在页面导航或视图生命周期上。
 - WebView2 只用于微软 OAuth 登录窗口；不要在启动器主界面重新引入 Web UI、`Ui/` 资源或浏览器消息桥。
@@ -27,4 +27,4 @@
 
 只推送用户指定分支。发布 Release、移动标签或覆盖正式程序须有相应用户指示。
 
-Views 通过 `LauncherFacade` 调用业务，服务层不反向依赖 UseCases。卸载必须经过路径预览与原生确认，恢复排队卸载也必须确认。WebView2 仅用于微软登录，不得恢复主界面 Web UI。
+Views 通过 `ILauncherService` 调用业务，不得直接接触 `LauncherService` 内部协议或 `AppConfig`；服务层不反向依赖 UseCases。卸载必须经过路径预览与原生确认，恢复排队卸载也必须确认。WebView2 仅用于微软登录，不得恢复主界面 Web UI。

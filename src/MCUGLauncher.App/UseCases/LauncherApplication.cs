@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BlockLaunch;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Models;
 using MCUGLauncher.Services;
 using static MCUGLauncher.UseCases.ProtocolValues;
@@ -9,7 +10,6 @@ namespace MCUGLauncher.UseCases;
 internal sealed class LauncherApplication : IDisposable
 {
     readonly LauncherContext context;
-    readonly Action<Action> dispatch;
     Task? startup;
     readonly IDesktopHost desktop;
     readonly InstanceMaintenanceCommands maintenanceCommands;
@@ -31,10 +31,9 @@ internal sealed class LauncherApplication : IDisposable
     readonly CommunityCommands communityCommands;
 
     public AppConfig Config => context.Config;
-    public LauncherApplication(Action<object> send, IDesktopHost desktop, ConfigStore? store = null, Action<Action>? dispatch = null, Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null, Func<byte[]?, string>? avatarEncoder = null)
+    public LauncherApplication(Action<object> send, IDesktopHost desktop, ConfigStore? store = null, Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null, Func<byte[]?, string>? avatarEncoder = null)
     {
         this.desktop = desktop;
-        this.dispatch = dispatch ?? (action => action());
         context = new LauncherContext(send, store, microsoftBrowser);
         context.RefreshState = SendState;
         maintenanceCommands = new InstanceMaintenanceCommands(context);
@@ -58,8 +57,8 @@ internal sealed class LauncherApplication : IDisposable
 
     public void RememberWindow(double width, double height, bool maximized)
     {
-        context.Config.WindowWidth = Math.Clamp(width, 960, 7680);
-        context.Config.WindowHeight = Math.Clamp(height, 640, 4320);
+        context.Config.WindowWidth = Math.Clamp(width, LaunchLimits.ShellWidthMin, LaunchLimits.ShellWidthMax);
+        context.Config.WindowHeight = Math.Clamp(height, LaunchLimits.ShellHeightMin, LaunchLimits.ShellHeightMax);
         context.Config.WindowMaximized = maximized;
         context.Store.Save(context.Config);
     }
@@ -91,7 +90,15 @@ internal sealed class LauncherApplication : IDisposable
                     maintenanceCommands.Export(root);
                     break;
                 case "pickSaveFile":
-                    desktop.PickSaveFile(ReadString(root, "target"));
+                    var saveTarget = ReadString(root, "target");
+                    var savePath = desktop.PickSaveFile(saveTarget);
+                    if (savePath is not null)
+                        context.Send(new
+                        {
+                            type = "pickedPath",
+                            target = saveTarget,
+                            path = savePath
+                        });
                     break;
                 case "previewUninstall":
                     await uninstallCommands.PreviewAsync(ReadString(root, "version"));
@@ -249,10 +256,26 @@ internal sealed class LauncherApplication : IDisposable
                     settingsCommands.SaveSettings(root);
                     break;
                 case "pickFolder":
-                    desktop.PickFolder(ReadString(root, "target"));
+                    var folderTarget = ReadString(root, "target");
+                    var folderPath = desktop.PickFolder(folderTarget);
+                    if (folderPath is not null)
+                        context.Send(new
+                        {
+                            type = "pickedPath",
+                            target = folderTarget,
+                            path = folderPath
+                        });
                     break;
                 case "pickFile":
-                    desktop.PickFile(ReadString(root, "target"));
+                    var fileTarget = ReadString(root, "target");
+                    var filePath = desktop.PickFile(fileTarget);
+                    if (filePath is not null)
+                        context.Send(new
+                        {
+                            type = "pickedPath",
+                            target = fileTarget,
+                            path = filePath
+                        });
                     break;
                 case "scanJava":
                     await settingsCommands.ScanJavaAsync();
@@ -314,12 +337,13 @@ internal sealed class LauncherApplication : IDisposable
         }
     }
 
-    // Background completion refreshes are composed on the same thread as configuration edits.
-    public void SendState() => dispatch(() =>
+    // Build the snapshot away from the UI thread; LauncherService marshals the typed result.
+    public void SendState()
     {
         try
         {
-            context.Send(LauncherStateBuilder.Build(context.Config, bookmarkCommands.Snapshot()));
+            var state = LauncherStateBuilder.Build(context.Config, bookmarkCommands.Snapshot());
+            context.Send(state);
         }
         catch (Exception ex)
         {
@@ -330,7 +354,7 @@ internal sealed class LauncherApplication : IDisposable
                 message = ex.Message
             });
         }
-    });
+    }
 
     // Bounded image fetch for community announcements; the facade only receives bytes.
     public async Task<byte[]> DownloadImageAsync(string url)

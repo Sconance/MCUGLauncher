@@ -2,12 +2,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class BookmarksView : UserControl
 {
-    LauncherFacade? facade;
+    ILauncherService? service;
     LauncherState? state;
     FavoriteInfo? selected;
     ResourceVersionsInfo? versions;
@@ -22,20 +23,20 @@ internal partial class BookmarksView : UserControl
         CancelInstallButton.Click += (_, _) => CloseInstall();
     }
 
-    public BookmarksView(LauncherFacade facade) : this()
+    public BookmarksView(ILauncherService service) : this()
     {
-        Attach(facade);
+        Attach(service);
     }
 
-    public void Attach(LauncherFacade value)
+    public void Attach(ILauncherService value)
     {
-        facade = value;
-        facade.StateChanged += ApplyState;
-        facade.ResourceVersionsReceived += OnVersions;
-        facade.PathPicked += OnPathPicked;
-        facade.ToastReceived += info => Status(info.Message);
-        facade.ErrorReceived += message => Status("操作失败：" + message);
-        ApplyState(facade.State);
+        service = value;
+        service.StateChanged += ApplyState;
+        service.ResourceVersionsReceived += OnVersions;
+        service.PathPicked += OnPathPicked;
+        service.ToastReceived += info => Status(info.Message);
+        service.ErrorReceived += message => Status("操作失败：" + message);
+        ApplyState(service.State);
     }
 
     void ApplyState(LauncherState? snapshot)
@@ -77,7 +78,7 @@ internal partial class BookmarksView : UserControl
             {
                 if (selected?.Id == id)
                     CloseInstall();
-                await facade!.ToggleBookmarkAsync(id, name, description, "", kind);
+                await service!.ToggleBookmarkAsync(id, name, description, "", kind);
                 Status("已取消收藏：" + name);
             };
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
@@ -94,7 +95,7 @@ internal partial class BookmarksView : UserControl
 
     void OpenInstall(FavoriteInfo favorite)
     {
-        if (facade is null)
+        if (service is null)
             return;
         selected = favorite;
         versions = null;
@@ -105,7 +106,7 @@ internal partial class BookmarksView : UserControl
         InstallVersions.ItemsSource = null;
         InstallMode.ItemsSource = null;
         StartInstallButton.IsEnabled = false;
-        _ = facade.ListContentVersionsAsync(
+        _ = service.ListContentVersionsAsync(
             favorite.Id,
             favorite.Kind,
             state?.SelectedInstance ?? "",
@@ -135,7 +136,7 @@ internal partial class BookmarksView : UserControl
 
     async Task StartInstall()
     {
-        if (facade is null || selected is null || versions is null || InstallVersions.SelectedIndex < 0)
+        if (service is null || selected is null || versions is null || InstallVersions.SelectedIndex < 0)
         {
             Status("请选择要安装的版本。");
             return;
@@ -147,10 +148,10 @@ internal partial class BookmarksView : UserControl
         {
             pendingVersion = versionId;
             pendingToken = versions.Token;
-            await facade.PickFolderAsync("bookmarkDownload");
+            await service.PickFolderAsync("bookmarkDownload");
             return;
         }
-        await facade.QueueContentVersionAsync(versions.Token, versionId, "instance");
+        await service.QueueContentVersionAsync(versions.Token, versionId, "instance");
         Status("下载请求已提交，请查看任务列表。");
     }
 
@@ -164,7 +165,7 @@ internal partial class BookmarksView : UserControl
         pendingToken = "";
         if (token.Length == 0)
             return;
-        _ = facade!.QueueContentVersionAsync(token, versionId, "local", info.Path);
+        _ = service!.QueueContentVersionAsync(token, versionId, "local", info.Path);
         Status("下载请求已提交，请查看任务列表。");
     }
 

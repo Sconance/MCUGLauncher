@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
 
@@ -12,7 +13,7 @@ internal partial class DownloadView : UserControl
     static readonly string[] LoaderValues = ["fabric", "quilt", "forge", "neoforge"];
     static readonly string[] LoaderLabels = ["Fabric", "Quilt", "Forge", "NeoForge"];
 
-    LauncherFacade? facade;
+    ILauncherService? service;
     LauncherState? state;
     IReadOnlyList<ContentItem> results = [];
     ContentItem? selected;
@@ -39,25 +40,25 @@ internal partial class DownloadView : UserControl
         WireButtons();
     }
 
-    public DownloadView(LauncherFacade facade) : this()
+    public DownloadView(ILauncherService service) : this()
     {
-        Attach(facade);
+        Attach(service);
     }
 
-    public void Attach(LauncherFacade value)
+    public void Attach(ILauncherService value)
     {
-        facade = value;
-        facade.StateChanged += ApplyState;
-        facade.ContentChanged += OnContent;
-        facade.ResourceVersionsReceived += OnResourceVersions;
-        facade.VanillaListReceived += OnVanilla;
-        facade.LoaderListReceived += OnLoaders;
-        facade.PackPreviewReceived += OnPackPreview;
-        facade.ContentErrorReceived += OnContentError;
-        facade.PathPicked += OnPathPicked;
-        facade.ToastReceived += info => Status(info.Message);
-        facade.ErrorReceived += message => Status("操作失败：" + message);
-        ApplyState(facade.State);
+        service = value;
+        service.StateChanged += ApplyState;
+        service.ContentChanged += OnContent;
+        service.ResourceVersionsReceived += OnResourceVersions;
+        service.VanillaListReceived += OnVanilla;
+        service.LoaderListReceived += OnLoaders;
+        service.PackPreviewReceived += OnPackPreview;
+        service.ContentErrorReceived += OnContentError;
+        service.PathPicked += OnPathPicked;
+        service.ToastReceived += info => Status(info.Message);
+        service.ErrorReceived += message => Status("操作失败：" + message);
+        ApplyState(service.State);
     }
 
     public void Activate()
@@ -78,7 +79,7 @@ internal partial class DownloadView : UserControl
             ResultsPanel.Children.Add(Muted("正在搜索…"));
             downloadCategory = CategoryValues[Math.Max(0, CategoryBox.SelectedIndex)];
             Status("正在搜索 Modrinth…");
-            await facade!.SearchContentAsync(downloadCategory, QueryBox.Text?.Trim() ?? "");
+            await service!.SearchContentAsync(downloadCategory, QueryBox.Text?.Trim() ?? "");
         };
         ChooseVersionButton.Click += (_, _) => LoadVersions();
         DownloadButton.Click += async (_, _) => await QueueDownload();
@@ -101,7 +102,7 @@ internal partial class DownloadView : UserControl
             }
             var version = vanilla[VanillaList.SelectedIndex].Id;
             VanillaHint.Text = "正在提交原版安装…";
-            await facade!.InstallVanillaAsync(version);
+            await service!.InstallVanillaAsync(version);
             VanillaHint.Text = "原版安装请求已提交：" + version;
         };
         LoadGameVersionsButton.Click += (_, _) => LoadVanilla();
@@ -116,7 +117,7 @@ internal partial class DownloadView : UserControl
             var loader = LoaderValues[Math.Max(0, LoaderTypeBox.SelectedIndex)];
             LoaderVersionBox.ItemsSource = null;
             LoaderHint.Text = "正在读取 " + LoaderLabels[LoaderTypeBox.SelectedIndex] + " 版本…";
-            await facade!.ListLoadersAsync(game, loader);
+            await service!.ListLoadersAsync(game, loader);
         };
         InstallLoaderButton.Click += async (_, _) =>
         {
@@ -128,11 +129,11 @@ internal partial class DownloadView : UserControl
                 return;
             }
             var loader = LoaderValues[Math.Max(0, LoaderTypeBox.SelectedIndex)];
-            await facade!.InstallLoaderAsync(game, loader, loaderVersion);
+            await service!.InstallLoaderAsync(game, loader, loaderVersion);
             LoaderHint.Text = $"安装请求已提交：{game} / {LoaderLabels[LoaderTypeBox.SelectedIndex]} {loaderVersion}";
         };
-        PickPackButton.Click += async (_, _) => await facade!.PickFileAsync("pack");
-        PickPackRootButton.Click += async (_, _) => await facade!.PickFolderAsync("packRoot");
+        PickPackButton.Click += async (_, _) => await service!.PickFileAsync("pack");
+        PickPackRootButton.Click += async (_, _) => await service!.PickFolderAsync("packRoot");
         ConfirmPackButton.Click += async (_, _) =>
         {
             if (pack is null)
@@ -145,7 +146,7 @@ internal partial class DownloadView : UserControl
                 return;
             }
             PackHint.Text = "正在提交导入…";
-            await facade!.ConfirmPackAsync(pack.Token, name, root);
+            await service!.ConfirmPackAsync(pack.Token, name, root);
             PackHint.Text = "整合包导入请求已提交，请查看任务列表。";
         };
     }
@@ -167,12 +168,12 @@ internal partial class DownloadView : UserControl
 
     void LoadVanilla()
     {
-        if (facade is null || loadingVanilla)
+        if (service is null || loadingVanilla)
             return;
         loadingVanilla = true;
         vanillaLoaded = false;
         VanillaHint.Text = "正在读取 Mojang 版本列表…";
-        _ = facade.ListVanillaVersionsAsync();
+        _ = service.ListVanillaVersionsAsync();
     }
 
     void OnVanilla(VanillaVersionInfo[] items)
@@ -189,7 +190,7 @@ internal partial class DownloadView : UserControl
 
     void FillLoaderGames()
     {
-        if (facade?.State is not { } snapshot)
+        if (service?.State is not { } snapshot)
             return;
         var current = LoaderGameBox.SelectedItem as string;
         var instanceGame = snapshot.Instances
@@ -252,7 +253,7 @@ internal partial class DownloadView : UserControl
                 ShowDetail(current);
                 LoadVersions();
             };
-            var bookmarked = facade?.State?.Favorites.Any(favorite => favorite.Id == item.Id) == true;
+            var bookmarked = service?.State?.Favorites.Any(favorite => favorite.Id == item.Id) == true;
             var bookmark = new Button
             {
                 Content = bookmarked ? "取消收藏" : "收藏",
@@ -265,7 +266,7 @@ internal partial class DownloadView : UserControl
             var itemKind = downloadCategory;
             bookmark.Click += async (_, _) =>
             {
-                await facade!.ToggleBookmarkAsync(itemId, itemName, itemDescription, itemAuthor, itemKind);
+                await service!.ToggleBookmarkAsync(itemId, itemName, itemDescription, itemAuthor, itemKind);
                 Status(bookmarked ? "已取消收藏：" + itemName : "已收藏：" + itemName);
             };
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(0, 10, 0, 0) };
@@ -308,12 +309,12 @@ internal partial class DownloadView : UserControl
 
     void LoadVersions()
     {
-        if (facade is null || selected is null)
+        if (service is null || selected is null)
             return;
         versionRequest = selected.Id;
         DetailVersionsHint.Text = "正在读取兼容版本…";
         ChooseVersionButton.IsVisible = false;
-        _ = facade.ListContentVersionsAsync(
+        _ = service.ListContentVersionsAsync(
             selected.Id,
             downloadCategory,
             state?.SelectedInstance ?? "",
@@ -346,7 +347,7 @@ internal partial class DownloadView : UserControl
 
     async Task QueueDownload()
     {
-        if (facade is null || versions is null || VersionList.SelectedIndex < 0)
+        if (service is null || versions is null || VersionList.SelectedIndex < 0)
         {
             Status("请选择资源版本。");
             return;
@@ -358,10 +359,10 @@ internal partial class DownloadView : UserControl
         {
             pendingVersion = versionId;
             pendingToken = versions.Token;
-            await facade.PickFolderAsync("download");
+            await service.PickFolderAsync("download");
             return;
         }
-        await facade.QueueContentVersionAsync(versions.Token, versionId, "instance");
+        await service.QueueContentVersionAsync(versions.Token, versionId, "instance");
         Status("下载请求已提交，请查看任务列表。");
     }
 
@@ -370,7 +371,7 @@ internal partial class DownloadView : UserControl
         if (info.Target == "pack")
         {
             Status("正在读取整合包…");
-            _ = facade!.PreviewPackAsync(info.Path);
+            _ = service!.PreviewPackAsync(info.Path);
         }
         else if (info.Target == "packRoot")
         {
@@ -384,7 +385,7 @@ internal partial class DownloadView : UserControl
             pendingToken = "";
             if (token.Length > 0)
             {
-                _ = facade!.QueueContentVersionAsync(token, versionId, "local", info.Path);
+                _ = service!.QueueContentVersionAsync(token, versionId, "local", info.Path);
                 Status("下载请求已提交，请查看任务列表。");
             }
         }

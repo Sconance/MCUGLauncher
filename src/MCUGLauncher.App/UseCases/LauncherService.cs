@@ -1,16 +1,18 @@
 using System.Text.Json;
-using Avalonia.Threading;
-using MCUGLauncher.UseCases;
+using MCUGLauncher.Contracts;
+using MCUGLauncher.Services;
 
-namespace MCUGLauncher.Avalonia;
+namespace MCUGLauncher.UseCases;
 
-/// <summary>类型化 UI 门面：原生页面只调用强类型方法，消息协议留在内部。</summary>
-internal sealed class LauncherFacade : IDisposable
+/// <summary>
+/// 应用服务：对 UI 暴露统一类型化接口，内部命令协议与桌面适配保持隐藏。
+/// </summary>
+public sealed class LauncherService : ILauncherService
 {
     static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
     readonly LauncherApplication application;
+    readonly Action<Action> dispatch;
 
-    public event Action<JsonElement>? MessageReceived;
     public event Action<LauncherState>? StateChanged;
     public event Action<IReadOnlyList<TaskInfo>>? TasksChanged;
     public event Action<IReadOnlyList<ContentItem>>? ContentChanged;
@@ -48,7 +50,10 @@ internal sealed class LauncherFacade : IDisposable
     public event Action<SavedInfo>? SavedReceived;
     public event Action? SettingsSaved;
 
-    public MCUGLauncher.Models.AppConfig Config => application.Config;
+    public WindowPlacement WindowPlacement => new(
+        application.Config.WindowWidth,
+        application.Config.WindowHeight,
+        application.Config.WindowMaximized);
 
     public LauncherState? State
     {
@@ -61,14 +66,20 @@ internal sealed class LauncherFacade : IDisposable
     public IReadOnlyList<SaveBackupInfo> SaveBackups { get; private set; } = Array.Empty<SaveBackupInfo>();
     public CommunityData Community { get; private set; } = CommunityData.Empty;
 
-    public LauncherFacade(IDesktopHost desktop)
+    public LauncherService(
+        IDesktopHost desktop,
+        Action<Action> dispatch,
+        Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI> browser,
+        Func<byte[]?, string> avatarEncoder,
+        ConfigStore? store = null)
     {
+        this.dispatch = dispatch;
         application = new LauncherApplication(
             Send,
             desktop,
-            dispatch: action => Dispatcher.UIThread.Post(action),
-            microsoftBrowser: _ => new MicrosoftLoginWebUi(),
-            avatarEncoder: AvaloniaAvatarImage.Encode);
+            store,
+            microsoftBrowser: browser,
+            avatarEncoder: avatarEncoder);
     }
 
     public Task StartAsync() => application.HandleAsync("""{"type":"ready"}""");
@@ -450,17 +461,21 @@ internal sealed class LauncherFacade : IDisposable
             requestId
         });
 
-    public void SendMessage(object payload) => Send(payload);
-
     Task CommandAsync(object payload) => application.HandleAsync(JsonSerializer.Serialize(payload, Options));
 
     void Send(object payload)
     {
+        if (payload is LauncherState state)
+        {
+            dispatch(() =>
+            {
+                State = state;
+                StateChanged?.Invoke(state);
+            });
+            return;
+        }
         var json = JsonSerializer.Serialize(payload, Options);
-        if (Dispatcher.UIThread.CheckAccess())
-            Handle(json);
-        else
-            Dispatcher.UIThread.Post(() => Handle(json));
+        dispatch(() => Handle(json));
     }
 
     void Handle(string json)
@@ -471,10 +486,6 @@ internal sealed class LauncherFacade : IDisposable
             return;
         switch (type)
         {
-            case "state":
-                State = LauncherState.From(root);
-                StateChanged?.Invoke(State);
-                break;
             case "tasks":
                 Tasks = ParseItems(root, "items", TaskInfo.From);
                 TasksChanged?.Invoke(Tasks);
@@ -586,7 +597,6 @@ internal sealed class LauncherFacade : IDisposable
                 SettingsSaved?.Invoke();
                 break;
         }
-        MessageReceived?.Invoke(root);
     }
 
     static IReadOnlyList<T> ParseItems<T>(JsonElement root, string name, Func<JsonElement, T> map) =>
@@ -594,26 +604,3 @@ internal sealed class LauncherFacade : IDisposable
 
     public void Dispose() => application.Dispose();
 }
-
-internal sealed record AppSettingsPatch(
-    string? Root = null,
-    string? Java = null,
-    int? Ram = null,
-    int? Width = null,
-    int? Height = null,
-    bool? AutoMemory = null,
-    bool? Anonymous = null,
-    string? Player = null,
-    string? WriteEndpoint = null,
-    DataSourceSet? DataSources = null);
-
-internal sealed record LaunchOptionsSettings(
-    bool AutoMemory,
-    bool FullScreen,
-    int RamMb,
-    int Width,
-    int Height,
-    string Java,
-    string JvmArguments,
-    string WindowTitle,
-    string Server);

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BlockLaunch;
+using MCUGLauncher.Contracts;
 using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
@@ -7,7 +8,9 @@ namespace MCUGLauncher.UseCases;
 internal sealed class BookmarkCommands(LauncherContext context)
 {
     ResourceBookmarkStore Store => new(context.Store.DataDirectory);
-    public object Snapshot() => Store.Read().Select(b => new { id = b.Project.Id, kind = b.Kind, name = b.Project.Title, description = b.Project.Description });
+    public IReadOnlyList<FavoriteInfo> Snapshot() => Store.Read()
+        .Select(item => new FavoriteInfo(item.Project.Id, item.Kind, item.Project.Title, item.Project.Description))
+        .ToArray();
     public void Toggle(JsonElement root)
     {
         var id = ReadString(root, "id");

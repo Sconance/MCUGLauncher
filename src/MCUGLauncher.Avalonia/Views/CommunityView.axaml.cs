@@ -3,12 +3,13 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class CommunityView : UserControl
 {
-    LauncherFacade? facade;
+    ILauncherService? service;
     CommunityData community = CommunityData.Empty;
     string imageData = "";
     Bitmap? image;
@@ -20,24 +21,24 @@ internal partial class CommunityView : UserControl
         WireButtons();
     }
 
-    public CommunityView(LauncherFacade facade) : this()
+    public CommunityView(ILauncherService service) : this()
     {
-        Attach(facade);
+        Attach(service);
     }
 
-    public void Attach(LauncherFacade value)
+    public void Attach(ILauncherService value)
     {
-        facade = value;
-        facade.StateChanged += ApplyState;
-        facade.CommunityChanged += OnCommunity;
-        facade.PublishResultReceived += OnPublishResult;
-        facade.SavedReceived += info => PublishStatus.Text = info.Message;
-        facade.KeyResultReceived += OnKeyResult;
-        facade.PathPicked += OnPathPicked;
-        facade.ToastReceived += info => PublishStatus.Text = info.Message;
-        facade.ErrorReceived += message => PublishStatus.Text = "操作失败：" + message;
-        ApplyState(facade.State);
-        OnCommunity(facade.Community);
+        service = value;
+        service.StateChanged += ApplyState;
+        service.CommunityChanged += OnCommunity;
+        service.PublishResultReceived += OnPublishResult;
+        service.SavedReceived += info => PublishStatus.Text = info.Message;
+        service.KeyResultReceived += OnKeyResult;
+        service.PathPicked += OnPathPicked;
+        service.ToastReceived += info => PublishStatus.Text = info.Message;
+        service.ErrorReceived += message => PublishStatus.Text = "操作失败：" + message;
+        ApplyState(service.State);
+        OnCommunity(service.Community);
     }
 
     void WireButtons()
@@ -51,9 +52,9 @@ internal partial class CommunityView : UserControl
                 return;
             }
             AdminStatus.Text = "正在验证…";
-            await facade!.VerifyKeyAsync("admin", key);
+            await service!.VerifyKeyAsync("admin", key);
         };
-        PickImageButton.Click += async (_, _) => await facade!.PickFileAsync("announcementImage");
+        PickImageButton.Click += async (_, _) => await service!.PickFileAsync("announcementImage");
         ClearImageButton.Click += (_, _) => ClearImage();
         PublishButton.Click += async (_, _) =>
         {
@@ -65,7 +66,7 @@ internal partial class CommunityView : UserControl
                 return;
             }
             PublishStatus.Text = "正在保存公告…";
-            await facade!.PublishAsync(title, body, ExpiresBox.Text?.Trim() ?? "", imageData);
+            await service!.PublishAsync(title, body, ExpiresBox.Text?.Trim() ?? "", imageData);
         };
     }
 
@@ -183,7 +184,7 @@ internal partial class CommunityView : UserControl
             return;
         PublishStatus.Text = "正在保存公告列表…";
         var remaining = community.Announcements.Where((_, position) => position != index).ToArray();
-        await facade!.SaveAnnouncementsAsync(remaining);
+        await service!.SaveAnnouncementsAsync(remaining);
     }
 
     async Task RemoveRecommendation(int index)
@@ -192,7 +193,7 @@ internal partial class CommunityView : UserControl
             return;
         PublishStatus.Text = "正在保存推荐列表…";
         var remaining = community.Recommendations.Where((_, position) => position != index).ToArray();
-        await facade!.SaveRecommendationsAsync(remaining);
+        await service!.SaveRecommendationsAsync(remaining);
     }
 
     async void OnPathPicked(PickedPathInfo info)
@@ -231,7 +232,7 @@ internal partial class CommunityView : UserControl
         BodyBox.Text = "";
         ExpiresBox.Text = "";
         ClearImage();
-        _ = facade!.RefreshCommunityAsync();
+        _ = service!.RefreshCommunityAsync();
     }
 
     void OnKeyResult(KeyResultInfo info)
@@ -240,7 +241,7 @@ internal partial class CommunityView : UserControl
         if (info.Ok)
         {
             AdminKeyBox.Text = "";
-            _ = facade!.RequestStateAsync();
+            _ = service!.RequestStateAsync();
         }
     }
 

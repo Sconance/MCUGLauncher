@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
 
@@ -9,7 +10,7 @@ internal partial class SettingsView : UserControl
 {
     readonly Dictionary<string, Control> panels = new();
     readonly Dictionary<string, string> pings = new(StringComparer.OrdinalIgnoreCase);
-    LauncherFacade? facade;
+    ILauncherService? service;
     LauncherState? state;
     string current = "launch";
     string editingServer = "";
@@ -37,45 +38,45 @@ internal partial class SettingsView : UserControl
         Nav.SelectedIndex = 0;
     }
 
-    public SettingsView(LauncherFacade facade) : this()
+    public SettingsView(ILauncherService service) : this()
     {
-        Attach(facade);
+        Attach(service);
     }
 
-    public void Attach(LauncherFacade value)
+    public void Attach(ILauncherService value)
     {
-        if (facade is not null)
+        if (service is not null)
             Detach();
-        facade = value;
-        facade.StateChanged += ApplyState;
-        facade.JavaListChanged += RenderJavaList;
-        facade.SaveBackupsChanged += RenderSaveBackups;
-        facade.LogTextReceived += text => LogBox.Text = text;
-        facade.SystemInfoReceived += info => DiagnosticsBox.Text = Format(info);
-        facade.PathPicked += OnPathPicked;
-        facade.ServerPingReceived += OnServerPing;
-        facade.ServerResultReceived += OnServerResult;
-        facade.TestResultReceived += OnTestResult;
-        facade.KeyResultReceived += OnKeyResult;
-        facade.ToastReceived += info => Status(info.Message);
-        facade.ErrorReceived += message => Status("操作失败：" + message);
-        facade.SettingsSaved += () => Status("设置已保存。");
-        ApplyState(facade.State);
+        service = value;
+        service.StateChanged += ApplyState;
+        service.JavaListChanged += RenderJavaList;
+        service.SaveBackupsChanged += RenderSaveBackups;
+        service.LogTextReceived += text => LogBox.Text = text;
+        service.SystemInfoReceived += info => DiagnosticsBox.Text = Format(info);
+        service.PathPicked += OnPathPicked;
+        service.ServerPingReceived += OnServerPing;
+        service.ServerResultReceived += OnServerResult;
+        service.TestResultReceived += OnTestResult;
+        service.KeyResultReceived += OnKeyResult;
+        service.ToastReceived += info => Status(info.Message);
+        service.ErrorReceived += message => Status("操作失败：" + message);
+        service.SettingsSaved += () => Status("设置已保存。");
+        ApplyState(service.State);
     }
 
     void Detach()
     {
-        if (facade is null)
+        if (service is null)
             return;
-        facade.StateChanged -= ApplyState;
-        facade.JavaListChanged -= RenderJavaList;
-        facade.SaveBackupsChanged -= RenderSaveBackups;
-        facade.PathPicked -= OnPathPicked;
-        facade.ServerPingReceived -= OnServerPing;
-        facade.ServerResultReceived -= OnServerResult;
-        facade.TestResultReceived -= OnTestResult;
-        facade.KeyResultReceived -= OnKeyResult;
-        facade = null;
+        service.StateChanged -= ApplyState;
+        service.JavaListChanged -= RenderJavaList;
+        service.SaveBackupsChanged -= RenderSaveBackups;
+        service.PathPicked -= OnPathPicked;
+        service.ServerPingReceived -= OnServerPing;
+        service.ServerResultReceived -= OnServerResult;
+        service.TestResultReceived -= OnTestResult;
+        service.KeyResultReceived -= OnKeyResult;
+        service = null;
     }
 
     void WireButtons()
@@ -83,26 +84,26 @@ internal partial class SettingsView : UserControl
         BrowseRootButton.Click += async (_, _) =>
         {
             addRootOnPick = false;
-            await Pick(facade?.PickFolderAsync("root"));
+            await Pick(service?.PickFolderAsync("root"));
         };
         AddRootButton.Click += async (_, _) =>
         {
             addRootOnPick = true;
-            await Pick(facade?.PickFolderAsync("root"));
+            await Pick(service?.PickFolderAsync("root"));
         };
         GameRootBox.SelectionChanged += async (_, _) =>
         {
-            if (updatingRoots || facade is null || GameRootBox.SelectedItem is not string root)
+            if (updatingRoots || service is null || GameRootBox.SelectedItem is not string root)
                 return;
             if (root.Length == 0 || root == state?.Root)
                 return;
             LaunchStatus.Text = "正在切换游戏目录…";
-            await facade.SaveSettingsAsync(new AppSettingsPatch(Root: root));
+            await service.SaveSettingsAsync(new AppSettingsPatch(Root: root));
         };
-        BrowseJavaButton.Click += async (_, _) => await Pick(facade?.PickFileAsync("java"));
+        BrowseJavaButton.Click += async (_, _) => await Pick(service?.PickFileAsync("java"));
         ScanJavaButton.Click += async (_, _) => await ScanJava(JavaStatus);
         SaveLaunchButton.Click += async (_, _) => await SaveLaunch();
-        BrowseJavaPathButton.Click += async (_, _) => await Pick(facade?.PickFileAsync("java"));
+        BrowseJavaPathButton.Click += async (_, _) => await Pick(service?.PickFileAsync("java"));
         ScanJavaListButton.Click += async (_, _) => await ScanJava(JavaStatus);
         SaveJavaButton.Click += async (_, _) => await SaveJava();
         TestAnnouncementsButton.Click += async (_, _) => await TestSource("公告", SourceAnnouncementsBox, "announcements");
@@ -113,17 +114,17 @@ internal partial class SettingsView : UserControl
         UseCustomSourcesButton.Click += async (_, _) => await SaveSources(use: true);
         UseDefaultSourcesButton.Click += async (_, _) => await UseDefaultSources();
         SaveWriteEndpointButton.Click += async (_, _) => await SaveWriteEndpoint();
-        ResetWindowButton.Click += async (_, _) => await facade!.ResetWindowAsync();
+        ResetWindowButton.Click += async (_, _) => await service!.ResetWindowAsync();
         SaveServerButton.Click += async (_, _) => await SaveServer();
         CancelServerEditButton.Click += (_, _) => ResetServerForm();
-        BackupSavesButton.Click += async (_, _) => await facade!.BackupSavesAsync();
-        OpenSavesFolderButton.Click += async (_, _) => await facade!.OpenFolderAsync("saves");
-        ResetWindowRecoveryButton.Click += async (_, _) => await facade!.ResetWindowAsync();
-        OpenConfigButton.Click += async (_, _) => await facade!.OpenFolderAsync("config");
-        OpenRootButton.Click += async (_, _) => await facade!.OpenFolderAsync("root");
-        ReadLogButton.Click += async (_, _) => await facade!.ReadLogAsync();
-        OpenLogFolderButton.Click += async (_, _) => await facade!.OpenFolderAsync("config");
-        ReadSystemInfoButton.Click += async (_, _) => await facade!.SystemInfoAsync();
+        BackupSavesButton.Click += async (_, _) => await service!.BackupSavesAsync();
+        OpenSavesFolderButton.Click += async (_, _) => await service!.OpenFolderAsync("saves");
+        ResetWindowRecoveryButton.Click += async (_, _) => await service!.ResetWindowAsync();
+        OpenConfigButton.Click += async (_, _) => await service!.OpenFolderAsync("config");
+        OpenRootButton.Click += async (_, _) => await service!.OpenFolderAsync("root");
+        ReadLogButton.Click += async (_, _) => await service!.ReadLogAsync();
+        OpenLogFolderButton.Click += async (_, _) => await service!.OpenFolderAsync("config");
+        ReadSystemInfoButton.Click += async (_, _) => await service!.SystemInfoAsync();
         CopyDiagnosticsButton.Click += async (_, _) => await CopyDiagnostics();
         SaveAnonymousButton.Click += async (_, _) => await SaveAnonymous();
         VerifyCommunityKeyButton.Click += async (_, _) => await VerifyKey("community", CommunityKeyBox);
@@ -138,29 +139,29 @@ internal partial class SettingsView : UserControl
 
     async Task ScanJava(TextBlock status)
     {
-        if (facade is null)
+        if (service is null)
             return;
         status.Text = "正在扫描本机 Java…";
-        await facade.ScanJavaAsync();
+        await service.ScanJavaAsync();
     }
 
     async Task SaveLaunch()
     {
-        if (facade is null)
+        if (service is null)
             return;
-        if (!int.TryParse(RamBox.Text, out var ram) || ram is < 512 or > 65536)
+        if (!int.TryParse(RamBox.Text, out var ram) || ram is < LaunchLimits.RamMin or > LaunchLimits.RamMax)
         {
-            LaunchStatus.Text = "最大内存需在 512–65536 MB 之间。";
-            return;
-        }
-        if (!int.TryParse(WidthBox.Text, out var width) || width is < 640 or > 7680)
-        {
-            LaunchStatus.Text = "窗口宽需在 640–7680 之间。";
+            LaunchStatus.Text = $"最大内存需在 {LaunchLimits.RamMin}–{LaunchLimits.RamMax} MB 之间。";
             return;
         }
-        if (!int.TryParse(HeightBox.Text, out var height) || height is < 480 or > 4320)
+        if (!int.TryParse(WidthBox.Text, out var width) || width is < LaunchLimits.WindowWidthMin or > LaunchLimits.WindowWidthMax)
         {
-            LaunchStatus.Text = "窗口高需在 480–4320 之间。";
+            LaunchStatus.Text = $"窗口宽需在 {LaunchLimits.WindowWidthMin}–{LaunchLimits.WindowWidthMax} 之间。";
+            return;
+        }
+        if (!int.TryParse(HeightBox.Text, out var height) || height is < LaunchLimits.WindowHeightMin or > LaunchLimits.WindowHeightMax)
+        {
+            LaunchStatus.Text = $"窗口高需在 {LaunchLimits.WindowHeightMin}–{LaunchLimits.WindowHeightMax} 之间。";
             return;
         }
         var root = RootBox.Text?.Trim() ?? "";
@@ -176,7 +177,7 @@ internal partial class SettingsView : UserControl
             return;
         }
         LaunchStatus.Text = "正在保存…";
-        await facade.SaveSettingsAsync(new AppSettingsPatch(
+        await service.SaveSettingsAsync(new AppSettingsPatch(
             Root: root,
             Java: JavaBox.Text?.Trim() ?? "",
             Ram: ram,
@@ -188,15 +189,15 @@ internal partial class SettingsView : UserControl
 
     async Task SaveJava()
     {
-        if (facade is null)
+        if (service is null)
             return;
         JavaStatus.Text = "正在保存 Java 设置…";
-        await facade.SaveSettingsAsync(new AppSettingsPatch(Java: JavaPathBox.Text?.Trim() ?? ""));
+        await service.SaveSettingsAsync(new AppSettingsPatch(Java: JavaPathBox.Text?.Trim() ?? ""));
     }
 
     async Task TestSource(string label, TextBox box, string requestId)
     {
-        if (facade is null)
+        if (service is null)
             return;
         var url = box.Text?.Trim() ?? "";
         if (url.Length == 0)
@@ -205,17 +206,17 @@ internal partial class SettingsView : UserControl
             return;
         }
         DataSourceStatus.Text = "正在测试" + label + "…";
-        await facade.TestSourceAsync(label, url, requestId);
+        await service.TestSourceAsync(label, url, requestId);
     }
 
     async Task SaveSources(bool use)
     {
-        if (facade is null)
+        if (service is null)
             return;
-        await facade.SaveCustomSourcesAsync(ReadSources());
+        await service.SaveCustomSourcesAsync(ReadSources());
         if (use)
         {
-            await facade.UseDataSourcesAsync("custom");
+            await service.UseDataSourcesAsync("custom");
             DataSourceStatus.Text = "已保存并切换到自定义数据源。";
         }
         else
@@ -224,23 +225,23 @@ internal partial class SettingsView : UserControl
 
     async Task UseDefaultSources()
     {
-        if (facade is null)
+        if (service is null)
             return;
-        await facade.UseDataSourcesAsync("default");
+        await service.UseDataSourcesAsync("default");
         DataSourceStatus.Text = "已切换到默认数据源。";
     }
 
     async Task SaveWriteEndpoint()
     {
-        if (facade is null)
+        if (service is null)
             return;
-        await facade.SaveSettingsAsync(new AppSettingsPatch(WriteEndpoint: WriteEndpointBox.Text?.Trim() ?? ""));
+        await service.SaveSettingsAsync(new AppSettingsPatch(WriteEndpoint: WriteEndpointBox.Text?.Trim() ?? ""));
         DataSourceStatus.Text = "写入接口已保存。";
     }
 
     async Task SaveServer()
     {
-        if (facade is null)
+        if (service is null)
             return;
         var address = ServerAddressBox.Text?.Trim() ?? "";
         if (address.Length == 0)
@@ -249,7 +250,7 @@ internal partial class SettingsView : UserControl
             return;
         }
         ServerStatus.Text = "正在保存…";
-        await facade.SaveServerAsync(ServerNameBox.Text?.Trim() ?? "", address, editingServer);
+        await service.SaveServerAsync(ServerNameBox.Text?.Trim() ?? "", address, editingServer);
     }
 
     void ResetServerForm()
@@ -274,15 +275,15 @@ internal partial class SettingsView : UserControl
 
     async Task SaveAnonymous()
     {
-        if (facade is null)
+        if (service is null)
             return;
-        await facade.SaveSettingsAsync(new AppSettingsPatch(Anonymous: AnonymousBox.IsChecked == true));
+        await service.SaveSettingsAsync(new AppSettingsPatch(Anonymous: AnonymousBox.IsChecked == true));
         CommunityStatus.Text = "匿名设置已保存。";
     }
 
     async Task VerifyKey(string role, TextBox box)
     {
-        if (facade is null)
+        if (service is null)
             return;
         var key = box.Text?.Trim() ?? "";
         if (key.Length == 0)
@@ -291,7 +292,7 @@ internal partial class SettingsView : UserControl
             return;
         }
         CommunityStatus.Text = "正在验证…";
-        await facade.VerifyKeyAsync(role, key);
+        await service.VerifyKeyAsync(role, key);
     }
 
     async Task CopyDiagnostics()
@@ -324,11 +325,11 @@ internal partial class SettingsView : UserControl
         foreach (var pair in panels)
             pair.Value.IsVisible = pair.Key == key;
         if (key == "saves")
-            _ = facade?.ListSaveBackupsAsync();
+            _ = service?.ListSaveBackupsAsync();
         else if (key == "logs")
-            _ = facade?.ReadLogAsync();
+            _ = service?.ReadLogAsync();
         else if (key == "diagnose")
-            _ = facade?.SystemInfoAsync();
+            _ = service?.SystemInfoAsync();
     }
 
     void OnPathPicked(PickedPathInfo info)
@@ -340,7 +341,7 @@ internal partial class SettingsView : UserControl
             {
                 addRootOnPick = false;
                 LaunchStatus.Text = "正在添加并切换游戏目录…";
-                _ = facade!.SaveSettingsAsync(new AppSettingsPatch(Root: info.Path));
+                _ = service!.SaveSettingsAsync(new AppSettingsPatch(Root: info.Path));
             }
             else
                 LaunchStatus.Text = "已选择游戏目录，保存后生效。";
@@ -451,10 +452,10 @@ internal partial class SettingsView : UserControl
         if (current == "community")
             CommunityStatus.Text = keys;
         RenderServers();
-        if (facade is { JavaList.Count: > 0 })
-            RenderJavaList(facade.JavaList);
-        if (facade is { SaveBackups.Count: > 0 })
-            RenderSaveBackups(facade.SaveBackups);
+        if (service is { JavaList.Count: > 0 })
+            RenderJavaList(service.JavaList);
+        if (service is { SaveBackups.Count: > 0 })
+            RenderSaveBackups(service.SaveBackups);
     }
 
     void RenderJavaList(IReadOnlyList<JavaInfo> items)
@@ -513,7 +514,7 @@ internal partial class SettingsView : UserControl
                 restore.Click += async (_, _) =>
                 {
                     SaveStatus.Text = "正在恢复存档…";
-                    await facade!.RestoreSaveAsync(id, name);
+                    await service!.RestoreSaveAsync(id, name);
                 };
                 copy.Children.Add(restore);
             }
@@ -549,14 +550,14 @@ internal partial class SettingsView : UserControl
             ping.Click += async (_, _) =>
             {
                 ServerStatus.Text = "正在查询 " + current.Address + "…";
-                await facade!.PingServerAsync(current.Address, current.Address);
+                await service!.PingServerAsync(current.Address, current.Address);
             };
             var edit = new Button { Content = "编辑", Classes = { "ghost" } };
             edit.Click += (_, _) => BeginEdit(current);
             var delete = new Button { Content = "删除", Classes = { "ghost" } };
             delete.Click += async (_, _) =>
             {
-                await facade!.DeleteServerAsync(current.Address);
+                await service!.DeleteServerAsync(current.Address);
                 pings.Remove(current.Address);
                 ServerStatus.Text = "已删除 " + current.Address;
             };

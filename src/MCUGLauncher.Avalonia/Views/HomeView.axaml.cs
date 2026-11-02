@@ -3,13 +3,14 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class HomeView : UserControl
 {
     readonly Dictionary<string, ServerPingInfo> pings = new(StringComparer.OrdinalIgnoreCase);
-    LauncherFacade? facade;
+    ILauncherService? service;
     LauncherState? state;
     CommunityData community = CommunityData.Empty;
     Bitmap? announcementImage;
@@ -20,6 +21,7 @@ internal partial class HomeView : UserControl
     bool updatingInstances;
     int announcementIndex;
     int quoteIndex;
+    string avatarAccount = "";
 
     public HomeView()
     {
@@ -27,28 +29,30 @@ internal partial class HomeView : UserControl
         WireButtons();
     }
 
-    public HomeView(LauncherFacade facade) : this()
+    public HomeView(ILauncherService service) : this()
     {
-        Attach(facade);
+        Attach(service);
     }
 
     public event Action? AccountRequested;
 
-    public void Attach(LauncherFacade value)
+    public void Attach(ILauncherService value)
     {
-        facade = value;
-        facade.StateChanged += ApplyState;
-        facade.CommunityChanged += OnCommunity;
-        facade.AvatarReceived += OnAvatar;
-        facade.ServerPingReceived += OnServerPing;
-        facade.ServerResultReceived += OnServerResult;
-        facade.ToastReceived += info => Status(info.Message);
-        facade.ErrorReceived += message => Status("操作失败：" + message);
-        community = facade.Community;
-        ApplyState(facade.State);
+        service = value;
+        service.StateChanged += ApplyState;
+        service.CommunityChanged += OnCommunity;
+        service.AvatarReceived += OnAvatar;
+        service.ServerPingReceived += OnServerPing;
+        service.ServerResultReceived += OnServerResult;
+        service.ToastReceived += info => Status(info.Message);
+        service.ErrorReceived += message => Status("操作失败：" + message);
+        community = service.Community;
+        ApplyState(service.State);
         RenderCommunity();
-        _ = facade.ReadAvatarAsync();
     }
+
+    /// <summary>账号恢复完成后由外壳调用，避免在 ready 之前读取头像。</summary>
+    public void Activate() => _ = service?.ReadAvatarAsync();
 
     void WireButtons()
     {
@@ -62,9 +66,9 @@ internal partial class HomeView : UserControl
                 return;
             }
             Status("正在准备启动…");
-            await facade!.LaunchAsync(target);
+            await service!.LaunchAsync(target);
         };
-        RefreshButton.Click += async (_, _) => await facade!.RequestStateAsync();
+        RefreshButton.Click += async (_, _) => await service!.RequestStateAsync();
         InstanceSelector.SelectionChanged += async (_, _) =>
         {
             if (updatingInstances || state is null)
@@ -74,7 +78,7 @@ internal partial class HomeView : UserControl
                 return;
             var name = instances[InstanceSelector.SelectedIndex].Name;
             if (name != state.SelectedInstance)
-                await facade!.SelectInstanceAsync(name);
+                await service!.SelectInstanceAsync(name);
         };
         AddServerButton.Click += (_, _) =>
         {
@@ -94,7 +98,7 @@ internal partial class HomeView : UserControl
                 return;
             }
             ServerStatus.Text = "正在保存…";
-            await facade!.SaveServerAsync(ServerNameBox.Text?.Trim() ?? "", address, editingServer);
+            await service!.SaveServerAsync(ServerNameBox.Text?.Trim() ?? "", address, editingServer);
         };
         PrevAnnouncementButton.Click += (_, _) =>
         {
@@ -120,7 +124,7 @@ internal partial class HomeView : UserControl
         RefreshCommunityButton.Click += async (_, _) =>
         {
             HomeStatus.Text = "正在刷新社区内容…";
-            await facade!.RefreshCommunityAsync();
+            await service!.RefreshCommunityAsync();
         };
     }
 
@@ -130,7 +134,13 @@ internal partial class HomeView : UserControl
         if (snapshot is null)
             return;
         PlayerName.Text = snapshot.Player.Length > 0 ? snapshot.Player : "未登录";
-        AccountMeta.Text = snapshot.AccountLabel.Length > 0 ? snapshot.AccountLabel : "离线账号 · 本地启动";
+        AccountMeta.Text = AccountText.Label(snapshot.AccountType);
+        var avatarKey = snapshot.AccountType + "|" + snapshot.Player;
+        if (avatarKey != avatarAccount)
+        {
+            avatarAccount = avatarKey;
+            _ = service?.ReadAvatarAsync();
+        }
         var current = snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)
             ?? snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedVersion);
         LaunchTarget.Text = current is null
@@ -148,7 +158,7 @@ internal partial class HomeView : UserControl
             pings.Clear();
             foreach (var server in snapshot.Servers)
                 if (server.Address.Length > 0)
-                    _ = facade!.PingServerAsync(server.Address, server.Address);
+                    _ = service!.PingServerAsync(server.Address, server.Address);
         }
         RenderServers();
     }
@@ -171,7 +181,7 @@ internal partial class HomeView : UserControl
     IReadOnlyList<InstanceInfo> Instances() => state is null
         ? Array.Empty<InstanceInfo>()
         : state.Instances
-            .Where(item => item.Name.Length > 0 && item.Loader != "请安装版本")
+            .Where(item => item.Name.Length > 0 && !item.IsPlaceholder)
             .ToArray();
 
     void RenderServers()
@@ -252,13 +262,13 @@ internal partial class HomeView : UserControl
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
             var current = server;
             var query = new Button { Content = "查询", Classes = { "link" } };
-            query.Click += async (_, _) => await facade!.PingServerAsync(current.Address, current.Address);
+            query.Click += async (_, _) => await service!.PingServerAsync(current.Address, current.Address);
             var edit = new Button { Content = "编辑", Classes = { "link" } };
             edit.Click += (_, _) => ShowServerForm(current);
             var delete = new Button { Content = "删除", Classes = { "link" } };
             delete.Click += async (_, _) =>
             {
-                await facade!.DeleteServerAsync(current.Address);
+                await service!.DeleteServerAsync(current.Address);
                 pings.Remove(current.Address);
                 Status("已删除 " + current.Address);
             };
@@ -345,9 +355,9 @@ internal partial class HomeView : UserControl
             else if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
                      || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
-                if (facade is null)
+                if (service is null)
                     return;
-                bytes = await facade.DownloadImageAsync(url);
+                bytes = await service.DownloadImageAsync(url);
             }
             else
                 return;

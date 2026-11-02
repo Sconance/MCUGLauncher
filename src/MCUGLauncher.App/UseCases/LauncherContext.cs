@@ -64,13 +64,7 @@ internal sealed class LauncherContext : IDisposable
     {
         type = "accountState",
         player = Config.Player,
-        accountType = Config.AccountType,
-        accountLabel = Config.AccountType switch
-        {
-            "microsoft" => "正版账号 · 在线验证",
-            "mua" => "MUA 账号 · 外置登录",
-            _ => "离线账号 · 本地启动"
-        }
+        accountType = Config.AccountType
     });
 
     public Action RefreshState { get; set; } = () => { };

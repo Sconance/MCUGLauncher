@@ -1,12 +1,13 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media.Imaging;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class AccountView : UserControl
 {
-    LauncherFacade? facade;
+    ILauncherService? service;
     LauncherState? state;
     Bitmap? avatar;
 
@@ -16,31 +17,31 @@ internal partial class AccountView : UserControl
         WireButtons();
     }
 
-    public AccountView(LauncherFacade facade) : this()
+    public AccountView(ILauncherService service) : this()
     {
-        Attach(facade);
+        Attach(service);
     }
 
-    public void Attach(LauncherFacade value)
+    public void Attach(ILauncherService value)
     {
-        facade = value;
-        facade.StateChanged += ApplyState;
-        facade.AvatarReceived += OnAvatar;
-        facade.AuthResultReceived += OnAuth;
-        facade.AccountSwitchResultReceived += OnSwitchResult;
-        facade.MuaProfilesReceived += OnProfiles;
-        facade.PathPicked += OnPathPicked;
-        facade.ToastReceived += info => Status(info.Message);
-        facade.ErrorReceived += message => Status("操作失败：" + message);
-        ApplyState(facade.State);
+        service = value;
+        service.StateChanged += ApplyState;
+        service.AvatarReceived += OnAvatar;
+        service.AuthResultReceived += OnAuth;
+        service.AccountSwitchResultReceived += OnSwitchResult;
+        service.MuaProfilesReceived += OnProfiles;
+        service.PathPicked += OnPathPicked;
+        service.ToastReceived += info => Status(info.Message);
+        service.ErrorReceived += message => Status("操作失败：" + message);
+        ApplyState(service.State);
     }
 
     public void Activate()
     {
-        if (facade is null)
+        if (service is null)
             return;
         Status("正在读取头像…");
-        _ = facade.ReadAvatarAsync();
+        _ = service.ReadAvatarAsync();
     }
 
     void WireButtons()
@@ -48,7 +49,7 @@ internal partial class AccountView : UserControl
         MicrosoftLoginButton.Click += async (_, _) =>
         {
             AuthStatus.Text = "正在打开微软登录页…";
-            await facade!.LoginMicrosoftAsync();
+            await service!.LoginMicrosoftAsync();
         };
         MuaLoginButton.Click += async (_, _) =>
         {
@@ -59,29 +60,29 @@ internal partial class AccountView : UserControl
                 return;
             }
             AuthStatus.Text = "正在登录 MUA…";
-            await facade!.LoginMuaAsync(account, MuaPasswordBox.Text ?? "");
+            await service!.LoginMuaAsync(account, MuaPasswordBox.Text ?? "");
         };
         OfflineSwitchButton.Click += async (_, _) =>
         {
             AuthStatus.Text = "正在切换到离线账号…";
-            await facade!.SwitchAccountModeAsync("offline");
+            await service!.SwitchAccountModeAsync("offline");
         };
         ForgetMicrosoftButton.Click += async (_, _) => await Forget("microsoft");
         ForgetMuaButton.Click += async (_, _) => await Forget("mua");
-        ChooseSkinButton.Click += async (_, _) => await facade!.PickFileAsync("offlineSkin");
+        ChooseSkinButton.Click += async (_, _) => await service!.PickFileAsync("offlineSkin");
         ClearSkinButton.Click += async (_, _) =>
         {
-            await facade!.SetOfflineSkinAsync("");
+            await service!.SetOfflineSkinAsync("");
             Status("已清除本地皮肤。");
         };
     }
 
     async Task Forget(string mode)
     {
-        if (facade is null)
+        if (service is null)
             return;
         AuthStatus.Text = "正在移除本机保存的账号…";
-        await facade.ForgetAccountAsync(mode);
+        await service.ForgetAccountAsync(mode);
     }
 
     void ApplyState(LauncherState? snapshot)
@@ -90,7 +91,7 @@ internal partial class AccountView : UserControl
         if (snapshot is null)
             return;
         CurrentPlayer.Text = snapshot.Player.Length > 0 ? snapshot.Player : "未登录";
-        CurrentMode.Text = snapshot.AccountLabel.Length > 0 ? snapshot.AccountLabel : "离线账号 · 本地启动";
+        CurrentMode.Text = AccountText.Label(snapshot.AccountType);
         var offline = snapshot.AccountType == "offline";
         ChooseSkinButton.IsEnabled = offline;
         ClearSkinButton.IsEnabled = offline;
@@ -121,8 +122,8 @@ internal partial class AccountView : UserControl
             ProfilesCard.IsVisible = false;
         if (info.Ok == true)
         {
-            _ = facade!.RequestStateAsync();
-            _ = facade.ReadAvatarAsync();
+            _ = service!.RequestStateAsync();
+            _ = service.ReadAvatarAsync();
         }
     }
 
@@ -150,7 +151,7 @@ internal partial class AccountView : UserControl
             {
                 ProfilesCard.IsVisible = false;
                 AuthStatus.Text = "已选择角色 " + profile.Name + "，正在完成登录…";
-                await facade!.SelectMuaProfileAsync(token, id);
+                await service!.SelectMuaProfileAsync(token, id);
             };
             ProfilesPanel.Children.Add(button);
         }
@@ -164,7 +165,7 @@ internal partial class AccountView : UserControl
         if (info.Target != "offlineSkin")
             return;
         AuthStatus.Text = "正在应用本地皮肤…";
-        _ = facade!.SetOfflineSkinAsync(info.Path);
+        _ = service!.SetOfflineSkinAsync(info.Path);
     }
 
     void Status(string message) => AuthStatus.Text = message;

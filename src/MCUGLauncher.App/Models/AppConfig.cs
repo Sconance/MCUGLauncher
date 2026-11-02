@@ -151,6 +151,10 @@ public sealed record InstanceInfo(string Name, string Loader, int Mods, int Upda
 {
     public string DisplayName { get; init; } = Name;
     public string Minecraft { get; init; } = "";
+    public bool IsPlaceholder
+    {
+        get; init;
+    }
 }
 
 /// <summary>

@@ -82,7 +82,7 @@ public sealed class VersionCatalog
             groups.Add(new VersionGroup(pair.Key + " 版本", pair.Value.Count, pair.Value));
 
         if (instances.Count == 0)
-            instances.Add(new InstanceInfo("未找到版本", "请安装版本", 0, 0));
+            instances.Add(new InstanceInfo("未找到版本", "请安装版本", 0, 0) { IsPlaceholder = true });
 
         var current = instances.FirstOrDefault(i => i.Name.Equals(selected, StringComparison.OrdinalIgnoreCase))?.Name
             ?? instances[0].Name;

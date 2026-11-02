@@ -1,81 +1,76 @@
 using BlockLaunch;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Models;
+using InstanceDto = MCUGLauncher.Contracts.InstanceInfo;
+using ModDto = MCUGLauncher.Contracts.ModInfo;
 
 namespace MCUGLauncher.Services;
 
-// Reads one local snapshot; message routing stays in LauncherApplication.
+// Reads one local snapshot; UI only receives the typed, presentation-neutral result.
 internal static class LauncherStateBuilder
 {
-    public static object Build(AppConfig config, object favorites)
+    public static LauncherState Build(AppConfig config, IReadOnlyList<FavoriteInfo> favorites)
     {
         var catalog = VersionCatalog.Load(config.Root, config.LastInstance);
         var selectedVersion = catalog.Groups.Count == 0 ? "" :
             catalog.Instances.Any(item => item.Name.Equals(config.LastVersion, StringComparison.OrdinalIgnoreCase))
                 ? config.LastVersion : catalog.Selected;
-
         var mods = VersionCatalog.ReadMods(config.Root, catalog.Selected);
-        var state = new
-        {
-            type = "state",
-            appVersion = ProductInfo.Version,
-            player = config.Player,
-            accountType = config.AccountType,
-            accountLabel = config.AccountType switch
-            {
-                "microsoft" => "正版账号 · 在线验证",
-                "mua" => "MUA 账号 · 外置登录",
-                _ => "离线账号 · 本地启动"
-            },
-            root = config.Root,
-            gameRoots = config.GameRoots.Append(config.Root).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
-            java = config.Java,
-            width = config.Width,
-            height = config.Height,
+        return new LauncherState(
+            ProductInfo.Version,
+            config.Player,
+            config.AccountType,
+            config.Root,
+            config.GameRoots.Append(config.Root)
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray(),
+            config.Java,
+            config.Width,
+            config.Height,
+            config.Ram,
+            config.AutoMemory,
+            config.Anonymous,
+            !string.IsNullOrWhiteSpace(config.CommunityKey),
+            !string.IsNullOrWhiteSpace(config.AdminKey),
+            config.SkinStation,
+            config.Cape,
             selectedVersion,
-            selectedInstance = catalog.Selected,
-            ram = config.Ram,
-            autoMemory = config.AutoMemory,
-            anonymous = config.Anonymous,
-            communityKey = !string.IsNullOrWhiteSpace(config.CommunityKey),
-            adminKey = !string.IsNullOrWhiteSpace(config.AdminKey),
-            skinStation = config.SkinStation,
-            cape = config.Cape,
-            versionGroups = catalog.Groups,
-            instances = catalog.Instances,
-            mods = mods.Select(mod => new
-            {
-                id = mod.Id,
-                name = mod.Name,
-                author = "本地模组",
-                desc = mod.File,
-                tags = new[] { "本地" },
-                size = FormatSize(mod.Size),
-                downloads = "",
-                v = string.IsNullOrWhiteSpace(mod.Version) ? "—" : mod.Version,
-                color = mod.Enabled ? "green" : "slate",
-                ic = "box",
-                file = mod.File,
-                path = mod.Path,
-                enabled = mod.Enabled,
-                update = ""
-            }),
-            favorites = favorites,
-            servers = config.Servers,
-            dataSources = new
-            {
-                announcements = config.DataSources.Announcements,
-                servers = config.DataSources.Servers,
-                recommendations = config.DataSources.Recommendations,
-                quotes = config.DataSources.Quotes
-            },
-            defaultDataSources = new DataSourceConfig(),
-            customDataSources = config.CustomDataSources ?? config.DataSources,
-            dataSourceMode = config.EffectiveDataSourceMode,
-            writeEndpoint = config.WriteEndpoint
-        };
-        return state;
+            catalog.Selected,
+            catalog.Instances.Select(item => new InstanceDto(
+                item.Name,
+                item.Loader,
+                item.Mods,
+                item.Updates,
+                item.DisplayName,
+                item.Minecraft,
+                item.IsPlaceholder)).ToArray(),
+            mods.Select(item => new ModDto(
+                item.Id,
+                item.Name,
+                item.File,
+                item.Version,
+                item.Enabled,
+                item.Path,
+                item.Size)).ToArray(),
+            config.Servers.Select(item => new SavedServerInfo(item.Name, item.Address)).ToArray(),
+            favorites,
+            catalog.Groups.Select(group => new VersionGroupInfo(
+                group.Label,
+                group.Count,
+                group.Versions.Select(version => new VersionChoice(
+                    version.Length > 0 ? version[0] : "",
+                    version.Length > 1 ? version[1] : "")).ToArray())).ToArray(),
+            ToSet(config.DataSources),
+            ToSet(new DataSourceConfig()),
+            ToSet(config.CustomDataSources ?? config.DataSources),
+            config.EffectiveDataSourceMode,
+            config.WriteEndpoint);
     }
-    static string FormatSize(long bytes) => bytes <= 0 ? "—" : bytes < 1024 * 1024
-        ? $"{bytes / 1024.0:0.#} KB" : $"{bytes / 1024.0 / 1024.0:0.#} MB";
 
+    static DataSourceSet ToSet(DataSourceConfig sources) => new(
+        sources.Announcements,
+        sources.Servers,
+        sources.Recommendations,
+        sources.Quotes);
 }

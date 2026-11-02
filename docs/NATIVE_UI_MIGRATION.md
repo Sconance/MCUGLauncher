@@ -5,28 +5,34 @@
 ## 目标架构
 
 ```text
-Views (Avalonia XAML)
-  ├─ ShellView / MainWindow：导航、标题栏、状态栏
+Views (Avalonia XAML + code-behind)
+  ├─ ShellWindow：导航、标题栏、窗口生命周期
   ├─ HomeView / DownloadView / SettingsView / ...
-  └─ ViewModels（每页一个，持有状态与命令）
+  └─ 仅依赖 Contracts.ILauncherService
 
-Application Facade（新增）
-  ├─ ILauncherFacade：类型化方法（LaunchAsync、InstallAsync、SaveSettings…）
-  ├─ 状态事件：StateChanged、TaskChanged、AccountChanged、GameChanged
-  └─ 复用现有 UseCases / LauncherContext，不再经过 JSON 字符串
+Contracts（App/Contracts）
+  ├─ ILauncherService：统一类型化入口
+  ├─ LauncherState、事件 DTO、窗口位置与校验边界
+  └─ UI 不接触 AppConfig、JSON 或命令字符串
 
-Core / App 库：保持不变
+UseCases.LauncherService
+  ├─ 实现 ILauncherService，统一 UI 线程调度
+  ├─ 内部包装 LauncherApplication 命令分发
+  └─ 复用现有 UseCases / LauncherContext
+
+Core / Services：保持不变
 ```
 
-### 中间层适配
+### 中间层现状
 
-当前 `LauncherApplication.HandleAsync(string json)` 是唯一的 UI 入口。原生 UI 不应再拼 JSON，新增 `LauncherFacade`：
+`LauncherApplication.HandleAsync(string json)` 仍是 App 内部命令分发实现，但不再是 UI 入口。
+页面只调用 `ILauncherService`：
 
-- 把 68 条命令映射为强类型方法（如 `Task LaunchAsync(string version)`、`Task SaveSettingsAsync(AppConfig patch)`）；
-- 状态通过 `event Action<LauncherState> StateChanged` 推送，替代 `Send(new { type = "state" ... })`；
-- 任务、游戏、账号状态拆为独立事件；
-- UI 线程调度由 Avalonia `Dispatcher.UIThread` 负责；
-- JSON 协议暂时保留给 WebView 登录窗口和旧的 WebUiChecks，最终删除。
+- 强类型方法（如 `LaunchAsync`、`SaveSettingsAsync`、`SearchContentAsync`）；
+- 状态由 `LauncherState` 共享 DTO 推送，`LauncherStateBuilder` 直接构建，不再经过匿名 JSON；
+- 任务、游戏、账号、内容等事件均为类型化事件；
+- UI 线程调度由 `LauncherService` 注入的 `dispatch` 负责；
+- JSON 只作为 `LauncherService` 内部传输细节，不暴露给页面。
 
 ## 页面映射
 
@@ -51,26 +57,27 @@ Core / App 库：保持不变
 
 ## 阶段
 
-1. **壳与 Facade**：`ShellView`（侧栏 + 内容区）、导航服务、`LauncherFacade` 与状态事件；首页/设置两个页面先行。
+1. **壳与服务契约**：`ShellWindow`（顶栏 + 内容区）、导航、`ILauncherService` 与状态事件；首页/设置两个页面先行。
 2. **核心页面**：下载、实例、任务、账号、运行游戏。
 3. **外围页面**：社区、收藏、存档、数据源、维护、安装。
 4. **删除 WebView 主界面**：移除 `Ui/` 资源、`bridge.js`、WebUiChecks；仅保留登录窗口 WebView2。
 5. **验收**：真实账号、下载安装、启动/多开、DPI/缩放与键盘操作。
 
-## 风险
+## 风险与现状
 
-- 30 个前端模块与 68 条命令需要逐页迁移，不能一次性替换；
-- 现有 `WebUiChecks` 只验证 DOM，原生 UI 需要新的 ViewModel/集成测试；
-- 状态模型目前是匿名对象，需先定义强类型 `LauncherState`；
-- 原生 UI 需要重新实现主题、滚动、响应式布局；
+- 页面已全部迁移为原生 View；业务入口已统一为 `ILauncherService`；
+- `LauncherApplication` 内部仍暂存命令字符串/JSON 分发实现，但已不对页面暴露；
+- 原生 UI 已有静态边界检查，但尚无 Avalonia Headless/截图自动化测试；
+- 多 DPI、键盘操作与真实账号/游戏仍需发布前人工验收；
 - 登录窗口仍依赖 WebView2，属于合理例外。
 
 ## 进展
 
 阶段 1 已落地：
 
-- `LauncherFacade`：类型化消息入口，包装 `LauncherApplication`；`LauncherState` 覆盖账号、实例、
-  任务、服务器、收藏、版本分组与数据源，并通过 `StateChanged` / `TasksChanged` 等事件推送；
+- `ILauncherService` + `LauncherService`：统一类型化入口，包装 `LauncherApplication`；共享
+  `LauncherState` 覆盖账号、实例、任务、服务器、收藏、版本分组与数据源，并通过
+  `StateChanged` / `TasksChanged` 等事件推送；
 - `ShellWindow`：原生侧栏 + `PageHost` 页面宿主，可列出实例、启动、搜索/选择资源版本、查看任务；
 - `SettingsView`：启动、Java、数据源、界面、服务器收藏、存档、恢复、日志、诊断、社区身份、关于；
 - `InstancesView`：实例切换、启动、模组启停/删除、实例启动参数（继承或独立）、版本文件夹、

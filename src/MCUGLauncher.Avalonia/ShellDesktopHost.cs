@@ -5,7 +5,6 @@ namespace MCUGLauncher.Avalonia;
 /// <summary>Avalonia 宿主适配：确认框与文件选择走 Win32，窗口操作回调到 ShellWindow。</summary>
 internal sealed class ShellDesktopHost(
     Func<IntPtr> handle,
-    Action<object> send,
     Action<string> window,
     Action drag,
     Action reset) : IDesktopHost
@@ -16,31 +15,13 @@ internal sealed class ShellDesktopHost(
     public bool ConfirmUninstall(string name) =>
         NativeDialogs.Confirm(handle(), "确认执行「" + name + "」的卸载计划？列出的文件将永久删除，请先确认备份。", "确认卸载");
 
-    public void PickSaveFile(string target)
-    {
-        var path = NativeDialogs.SaveFile(handle(), "整合包 ZIP|*.zip", "instance-export.zip", null);
-        if (path is not null)
-            send(new
-            {
-                type = "pickedPath",
-                target,
-                path
-            });
-    }
+    public string? PickSaveFile(string target) =>
+        NativeDialogs.SaveFile(handle(), "整合包 ZIP|*.zip", "instance-export.zip", null);
 
-    public void PickFolder(string target)
-    {
-        var path = NativeDialogs.PickFolder(handle(), "选择文件夹");
-        if (path is not null)
-            send(new
-            {
-                type = "pickedPath",
-                target,
-                path
-            });
-    }
+    public string? PickFolder(string target) =>
+        NativeDialogs.PickFolder(handle(), "选择文件夹");
 
-    public void PickFile(string target)
+    public string? PickFile(string target)
     {
         var filter = target switch
         {
@@ -50,14 +31,7 @@ internal sealed class ShellDesktopHost(
             "announcementImage" => "公告配图|*.png;*.jpg;*.jpeg;*.webp",
             _ => "所有文件|*.*"
         };
-        var path = NativeDialogs.OpenFile(handle(), filter, null);
-        if (path is not null)
-            send(new
-            {
-                type = "pickedPath",
-                target,
-                path
-            });
+        return NativeDialogs.OpenFile(handle(), filter, null);
     }
 
     public void Window(string action) => window(action);

@@ -92,7 +92,7 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-Avalonia 分支使用
 
 ```
 Avalonia 原生窗口 (ShellWindow + Views/*View)
-        │  类型化 LauncherFacade
+        │  ILauncherService（App/Contracts 共享契约）
         ▼
 UseCases / Services（账号、版本、任务、社区、配置）
         ▼

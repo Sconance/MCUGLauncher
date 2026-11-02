@@ -8,7 +8,7 @@
 
 约束：
 
-- 新页面只通过 `LauncherFacade` 调用业务命令，不在页面拼 JSON，也不复制下载器、依赖解析器或 Java 扫描。
+- 新页面只通过 `Contracts.ILauncherService` 调用业务命令，不在页面拼 JSON，也不复制下载器、依赖解析器或 Java 扫描。
 - 每个页面独立为 `Views/*View`，`ShellWindow` 只负责导航、窗口生命周期和页面宿主。
 - 页面接入后同步更新本文件的矩阵。
 
@@ -49,7 +49,7 @@
 
 ## 实施顺序
 
-1. **壳与中间层（已完成第一版）**：`LauncherState` 类型化，`LauncherFacade` 暴露状态事件与强类型命令；
+1. **壳与中间层（已完成）**：`LauncherState` 类型化并移入 `App/Contracts`，`ILauncherService` 暴露状态事件与强类型命令；
    `ShellWindow` 改为 `PageHost` 页面宿主，设置页落到 `Views/SettingsView`。
 2. **设置页（已完成第一版）**：启动、Java、数据源、界面、服务器收藏、存档、恢复、日志、诊断、关于、社区密钥。
 3. **实例页（已完成第一版）**：实例切换、启动参数、模组启停/删除、克隆/导出/卸载/更新；

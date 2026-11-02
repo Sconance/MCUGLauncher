@@ -2,6 +2,7 @@ using System.Text.Json;
 using BlockLaunch;
 using MCUGLauncher.Services;
 using static MCUGLauncher.UseCases.ProtocolValues;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.UseCases;
 
@@ -57,9 +58,9 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
             settings = InstanceSnapshot.Capture(ConfigAt(target.Root), target.Version).Settings;
         settings.AutoMemory = options.GetProperty("autoMemory").GetBoolean();
         settings.FullScreen = options.GetProperty("fullScreen").GetBoolean();
-        settings.RamMb = Number(options, "ramMb", 512, 65536);
-        settings.Width = Number(options, "width", 640, 7680);
-        settings.Height = Number(options, "height", 480, 4320);
+        settings.RamMb = Number(options, "ramMb", LaunchLimits.RamMin, LaunchLimits.RamMax);
+        settings.Width = Number(options, "width", LaunchLimits.WindowWidthMin, LaunchLimits.WindowWidthMax);
+        settings.Height = Number(options, "height", LaunchLimits.WindowHeightMin, LaunchLimits.WindowHeightMax);
         settings.Java = ReadString(options, "java").Trim();
         settings.JvmArguments = ReadString(options, "jvmArguments");
         settings.WindowTitle = ReadString(options, "windowTitle");
@@ -80,8 +81,8 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
             var catalog = new InstanceCatalog(target.Root);
             var descriptor = catalog.GetOrCreate(target.Version);
             var name = ReadString(message, "name").Trim();
-            if (name.Length == 0 || name.Length > 120)
-                throw new ArgumentException("实例显示名称需为 1–120 个字符。");
+            if (name.Length == 0 || name.Length > LaunchLimits.DisplayNameMax)
+                throw new ArgumentException("实例显示名称需为 1–" + LaunchLimits.DisplayNameMax + " 个字符。");
             descriptor.DisplayName = name;
             descriptor.Launch = inherited ? null : settings;
             catalog.Save(descriptor);

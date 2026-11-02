@@ -2,34 +2,35 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class GamesView : UserControl
 {
-    LauncherFacade? facade;
+    ILauncherService? service;
 
     public GamesView()
     {
         InitializeComponent();
-        RefreshButton.Click += async (_, _) => await facade!.RequestGamesAsync();
+        RefreshButton.Click += async (_, _) => await service!.RequestGamesAsync();
     }
 
-    public GamesView(LauncherFacade facade) : this()
+    public GamesView(ILauncherService service) : this()
     {
-        Attach(facade);
+        Attach(service);
     }
 
-    public void Attach(LauncherFacade value)
+    public void Attach(ILauncherService value)
     {
-        facade = value;
-        facade.GamesChanged += OnGames;
-        facade.ToastReceived += info => Status(info.Message);
-        facade.ErrorReceived += message => Status("操作失败：" + message);
-        OnGames(facade.Games);
+        service = value;
+        service.GamesChanged += OnGames;
+        service.ToastReceived += info => Status(info.Message);
+        service.ErrorReceived += message => Status("操作失败：" + message);
+        OnGames(service.Games);
     }
 
-    public void Activate() => _ = facade?.RequestGamesAsync();
+    public void Activate() => _ = service?.RequestGamesAsync();
 
     void OnGames(IReadOnlyList<GameInfo> items)
     {
@@ -53,7 +54,7 @@ internal partial class GamesView : UserControl
             stop.Click += async (_, _) =>
             {
                 Status("正在请求关闭 " + game.Version + "…");
-                await facade!.StopGameAsync(id);
+                await service!.StopGameAsync(id);
             };
             GamesPanel.Children.Add(new Border
             {

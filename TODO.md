@@ -5,7 +5,7 @@
 - 主界面已从 **WebView2 + HTML/CSS/JS** 迁移到 **原生 Avalonia**：
   - `Views/HomeView`、`DownloadView`、`InstancesView`、`AccountView`、`GamesView`、
     `BookmarksView`、`CommunityView`、`SettingsView`；
-  - `LauncherFacade` 提供类型化命令与状态事件；
+  - `ILauncherService` / `LauncherService` 提供统一类型化命令与状态事件；
   - `Ui/`、`MainWindow`、`bridge.js`、`WebUiChecks` 与 Web 边界脚本已删除；
   - WebView2 仅保留在 `MicrosoftLoginWindow` 中完成微软 OAuth。
 - 已接回下载任务、加载器、整合包导入、实例维护、收藏、存档、社区发布与数据源设置。
@@ -18,7 +18,8 @@
 - [x] 公告远程 `http(s)` 配图加载（有界下载；本地 data URL 同样支持）。
 - [x] 按 0.22.3-fix 前端样式重构顶栏、画布、卡片、按钮、输入框、列表与分段导航。
 - [ ] 逐页视觉验收：960×640、1280×800、1920×1080 截图与滚动可达性（多 DPI 待复核）。
-- [ ] 将 `ShellWindow` 中剩余的任务页渲染迁移为独立 `TasksView`（如继续拆分）。
+- [x] 将任务页渲染迁移为独立 `TasksView`。
+- [x] UI 与业务边界统一为 `App/Contracts/ILauncherService`；移除 UI 对 JSON、双份状态 schema 与可变 `AppConfig` 的依赖。
 
 ### 2. 验收
 
@@ -36,7 +37,7 @@
 ## 审查约定
 
 - 小步提交：一个提交只做一类改动，便于逐条审查。
-- 删除旧文件属于迁移的一部分；重点审查 `Views` 的状态与事件、`LauncherFacade` 的命令映射与
+- 删除旧文件属于迁移的一部分；重点审查 `Views` 的状态与事件、`ILauncherService` 的契约与
   `UseCases` 的数据边界。
 - 版本号只改 `Directory.Build.props` 的 `McugVersion`，规则见 [版本号控制](docs/VERSIONING.md)。
 

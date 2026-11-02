@@ -2,12 +2,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class InstancesView : UserControl
 {
-    LauncherFacade? facade;
+    ILauncherService? service;
     LauncherState? state;
     LaunchOptionsInfo? options;
     UninstallPreviewInfo? uninstall;
@@ -25,24 +26,24 @@ internal partial class InstancesView : UserControl
         WireButtons();
     }
 
-    public InstancesView(LauncherFacade facade) : this()
+    public InstancesView(ILauncherService service) : this()
     {
-        Attach(facade);
+        Attach(service);
     }
 
-    public void Attach(LauncherFacade value)
+    public void Attach(ILauncherService value)
     {
-        facade = value;
-        facade.StateChanged += ApplyState;
-        facade.LaunchOptionsReceived += OnLaunchOptions;
-        facade.LaunchOptionsSaved += OnLaunchOptionsSaved;
-        facade.UninstallPreviewReceived += OnUninstallPreview;
-        facade.ContentUpdatesReceived += OnUpdates;
-        facade.ContentUpdatePreviewReceived += OnUpdatePreview;
-        facade.PathPicked += OnPathPicked;
-        facade.ToastReceived += info => Status(info.Message);
-        facade.ErrorReceived += message => Status("操作失败：" + message);
-        ApplyState(facade.State);
+        service = value;
+        service.StateChanged += ApplyState;
+        service.LaunchOptionsReceived += OnLaunchOptions;
+        service.LaunchOptionsSaved += OnLaunchOptionsSaved;
+        service.UninstallPreviewReceived += OnUninstallPreview;
+        service.ContentUpdatesReceived += OnUpdates;
+        service.ContentUpdatePreviewReceived += OnUpdatePreview;
+        service.PathPicked += OnPathPicked;
+        service.ToastReceived += info => Status(info.Message);
+        service.ErrorReceived += message => Status("操作失败：" + message);
+        ApplyState(service.State);
     }
 
     void WireButtons()
@@ -53,11 +54,11 @@ internal partial class InstancesView : UserControl
             if (selected.Length == 0)
                 return;
             Status("正在准备启动…");
-            await facade!.LaunchAsync(selected);
+            await service!.LaunchAsync(selected);
         };
-        OpenVersionFolderButton.Click += async (_, _) => await facade!.OpenFolderAsync("version");
-        RefreshButton.Click += async (_, _) => await facade!.RequestStateAsync();
-        BrowseJavaButton.Click += async (_, _) => await facade!.PickFileAsync("java");
+        OpenVersionFolderButton.Click += async (_, _) => await service!.OpenFolderAsync("version");
+        RefreshButton.Click += async (_, _) => await service!.RequestStateAsync();
+        BrowseJavaButton.Click += async (_, _) => await service!.PickFileAsync("java");
         LoadOptionsButton.Click += (_, _) => LoadOptions(force: true);
         SaveOptionsButton.Click += async (_, _) => await SaveOptions();
         InheritCheck.Click += (_, _) => ApplyInheritState();
@@ -69,7 +70,7 @@ internal partial class InstancesView : UserControl
                 Status("请填写新实例名称。");
                 return;
             }
-            await facade!.CloneInstanceAsync(
+            await service!.CloneInstanceAsync(
                 selected,
                 name,
                 CloneSavesCheck.IsChecked == true,
@@ -81,9 +82,9 @@ internal partial class InstancesView : UserControl
             if (selected.Length == 0)
                 return;
             pendingExport = (selected, ExportSavesCheck.IsChecked == true, ExportServersCheck.IsChecked == true);
-            await facade!.PickSaveFileAsync("export");
+            await service!.PickSaveFileAsync("export");
         };
-        PreviewUninstallButton.Click += async (_, _) => await facade!.PreviewUninstallAsync(selected);
+        PreviewUninstallButton.Click += async (_, _) => await service!.PreviewUninstallAsync(selected);
         CheckUpdatesButton.Click += async (_, _) =>
         {
             if (selected.Length == 0)
@@ -93,7 +94,7 @@ internal partial class InstancesView : UserControl
             UpdatesPanel.Children.Clear();
             UpdatePreviewPanel.Children.Clear();
             Status("正在检查内容更新…");
-            await facade!.CheckUpdatesAsync(selected);
+            await service!.CheckUpdatesAsync(selected);
         };
     }
 
@@ -142,12 +143,12 @@ internal partial class InstancesView : UserControl
 
     static IReadOnlyList<InstanceInfo> ValidInstances(LauncherState snapshot) =>
         snapshot.Instances
-            .Where(item => item.Name.Length > 0 && item.Loader != "请安装版本")
+            .Where(item => item.Name.Length > 0 && !item.IsPlaceholder)
             .ToArray();
 
     void SelectInstance()
     {
-        if (updatingSelector || facade is null || state is null)
+        if (updatingSelector || service is null || state is null)
             return;
         var instances = ValidInstances(state).ToArray();
         if (InstanceSelector.SelectedIndex < 0 || InstanceSelector.SelectedIndex >= instances.Length)
@@ -164,19 +165,19 @@ internal partial class InstancesView : UserControl
         RenderUpdates();
         RenderUpdatePreview();
         Status("正在切换实例…");
-        _ = facade.SelectInstanceAsync(next);
+        _ = service.SelectInstanceAsync(next);
         LoadOptions();
     }
 
     void LoadOptions(bool force = false)
     {
-        if (facade is null || selected.Length == 0)
+        if (service is null || selected.Length == 0)
             return;
         if (!force && optionsRequest == selected)
             return;
         optionsRequest = selected;
         OptionsStatus.Text = "正在读取启动设置…";
-        _ = facade.ReadLaunchOptionsAsync(selected, selected);
+        _ = service.ReadLaunchOptionsAsync(selected, selected);
     }
 
     void OnLaunchOptions(LaunchOptionsInfo info)
@@ -191,7 +192,7 @@ internal partial class InstancesView : UserControl
     void OnLaunchOptionsSaved()
     {
         OptionsStatus.Text = "启动设置已保存。";
-        _ = facade!.RequestStateAsync();
+        _ = service!.RequestStateAsync();
     }
 
     void ApplyOptions(LaunchOptionsInfo info)
@@ -240,30 +241,30 @@ internal partial class InstancesView : UserControl
 
     async Task SaveOptions()
     {
-        if (facade is null || options is null)
+        if (service is null || options is null)
         {
             OptionsStatus.Text = "请先重新读取此实例的启动设置。";
             return;
         }
         var name = DisplayNameBox.Text?.Trim() ?? "";
-        if (name.Length is 0 or > 120)
+        if (name.Length is 0 or > LaunchLimits.DisplayNameMax)
         {
-            OptionsStatus.Text = "实例显示名需为 1–120 个字符。";
+            OptionsStatus.Text = $"实例显示名需为 1–{LaunchLimits.DisplayNameMax} 个字符。";
             return;
         }
-        if (!int.TryParse(RamBox.Text, out var ram) || ram is < 512 or > 131072)
+        if (!int.TryParse(RamBox.Text, out var ram) || ram is < LaunchLimits.RamMin or > LaunchLimits.RamMax)
         {
-            OptionsStatus.Text = "内存需在 512–131072 MB 之间。";
+            OptionsStatus.Text = $"内存需在 {LaunchLimits.RamMin}–{LaunchLimits.RamMax} MB 之间。";
             return;
         }
-        if (!int.TryParse(WidthBox.Text, out var width) || width is < 320 or > 16384)
+        if (!int.TryParse(WidthBox.Text, out var width) || width is < LaunchLimits.WindowWidthMin or > LaunchLimits.WindowWidthMax)
         {
-            OptionsStatus.Text = "窗口宽需在 320–16384 之间。";
+            OptionsStatus.Text = $"窗口宽需在 {LaunchLimits.WindowWidthMin}–{LaunchLimits.WindowWidthMax} 之间。";
             return;
         }
-        if (!int.TryParse(HeightBox.Text, out var height) || height is < 240 or > 16384)
+        if (!int.TryParse(HeightBox.Text, out var height) || height is < LaunchLimits.WindowHeightMin or > LaunchLimits.WindowHeightMax)
         {
-            OptionsStatus.Text = "窗口高需在 240–16384 之间。";
+            OptionsStatus.Text = $"窗口高需在 {LaunchLimits.WindowHeightMin}–{LaunchLimits.WindowHeightMax} 之间。";
             return;
         }
         var inherit = InheritCheck.IsChecked == true;
@@ -278,7 +279,7 @@ internal partial class InstancesView : UserControl
             WindowTitleBox.Text?.Trim() ?? "",
             ServerBox.Text?.Trim() ?? "");
         OptionsStatus.Text = "正在保存…";
-        await facade.SaveLaunchOptionsAsync(options.Token, selected, name, settings, inherit);
+        await service.SaveLaunchOptionsAsync(options.Token, selected, name, settings, inherit);
     }
 
     void OnPathPicked(PickedPathInfo info)
@@ -292,7 +293,7 @@ internal partial class InstancesView : UserControl
         if (info.Target == "export" && pendingExport is { } pending)
         {
             pendingExport = null;
-            _ = facade!.ExportInstanceAsync(pending.Version, info.Path, pending.Servers, pending.Saves);
+            _ = service!.ExportInstanceAsync(pending.Version, info.Path, pending.Servers, pending.Saves);
             Status("导出请求已提交，请查看任务列表。");
         }
     }
@@ -323,8 +324,8 @@ internal partial class InstancesView : UserControl
             var enabled = mod.Enabled;
             check.Click += async (_, _) =>
             {
-                await facade!.ToggleModAsync(file, !enabled);
-                await facade.RequestStateAsync();
+                await service!.ToggleModAsync(file, !enabled);
+                await service.RequestStateAsync();
             };
             var copy = new StackPanel { Spacing = 2 };
             copy.Children.Add(check);
@@ -338,9 +339,9 @@ internal partial class InstancesView : UserControl
             var name = mod.Name;
             delete.Click += async (_, _) =>
             {
-                await facade!.DeleteModAsync(file);
+                await service!.DeleteModAsync(file);
                 Status("已删除 " + name);
-                await facade.RequestStateAsync();
+                await service.RequestStateAsync();
             };
             ModsPanel.Children.Add(Row(copy, delete));
         }
@@ -378,7 +379,7 @@ internal partial class InstancesView : UserControl
             var token = preview.Token;
             uninstall = null;
             RenderUninstall();
-            await facade!.ApplyUninstallAsync(token);
+            await service!.ApplyUninstallAsync(token);
             Status("卸载请求已提交，请在系统确认框核对。");
         };
         UninstallPanel.Children.Add(confirm);
@@ -436,7 +437,7 @@ internal partial class InstancesView : UserControl
             updatePreview = null;
             UpdatePreviewPanel.Children.Clear();
             Status("正在解析更新及必需依赖…");
-            await facade!.PreviewUpdatesAsync(checkedUpdates.Token, projects);
+            await service!.PreviewUpdatesAsync(checkedUpdates.Token, projects);
         };
         UpdatesPanel.Children.Add(preview);
     }
@@ -475,7 +476,7 @@ internal partial class InstancesView : UserControl
             var token = preview.Token;
             updatePreview = null;
             RenderUpdatePreview();
-            await facade!.ApplyUpdatesAsync(token);
+            await service!.ApplyUpdatesAsync(token);
             Status("更新请求已提交，请查看任务列表。");
         };
         UpdatePreviewPanel.Children.Add(apply);

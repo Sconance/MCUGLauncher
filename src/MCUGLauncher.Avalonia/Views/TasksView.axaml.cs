@@ -2,34 +2,35 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class TasksView : UserControl
 {
-    LauncherFacade? facade;
+    ILauncherService? service;
 
     public TasksView()
     {
         InitializeComponent();
-        RefreshButton.Click += async (_, _) => await facade!.RequestTasksAsync();
+        RefreshButton.Click += async (_, _) => await service!.RequestTasksAsync();
     }
 
-    public TasksView(LauncherFacade facade) : this()
+    public TasksView(ILauncherService service) : this()
     {
-        Attach(facade);
+        Attach(service);
     }
 
-    public void Attach(LauncherFacade value)
+    public void Attach(ILauncherService value)
     {
-        facade = value;
-        facade.TasksChanged += Render;
-        facade.ToastReceived += info => StatusText.Text = info.Message;
-        facade.ErrorReceived += message => StatusText.Text = "操作失败：" + message;
-        Render(facade.Tasks);
+        service = value;
+        service.TasksChanged += Render;
+        service.ToastReceived += info => StatusText.Text = info.Message;
+        service.ErrorReceived += message => StatusText.Text = "操作失败：" + message;
+        Render(service.Tasks);
     }
 
-    public void Activate() => _ = facade?.RequestTasksAsync();
+    public void Activate() => _ = service?.RequestTasksAsync();
 
     void Render(IReadOnlyList<TaskInfo> tasks)
     {
@@ -80,8 +81,8 @@ internal partial class TasksView : UserControl
                 var taskAction = action;
                 button.Click += async (_, _) =>
                 {
-                    await facade!.TaskActionAsync(taskId, taskAction);
-                    await facade.RequestTasksAsync();
+                    await service!.TaskActionAsync(taskId, taskAction);
+                    await service.RequestTasksAsync();
                 };
                 actions.Children.Add(button);
             }

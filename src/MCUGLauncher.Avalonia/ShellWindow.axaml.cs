@@ -7,13 +7,15 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using BlockLaunch;
 using MCUGLauncher.Avalonia.Views;
+using MCUGLauncher.Contracts;
+using MCUGLauncher.UseCases;
 
 namespace MCUGLauncher.Avalonia;
 
-/// <summary>原生 Avalonia 外壳：导航、窗口生命周期与页面宿主；业务由 LauncherFacade 承担。</summary>
+/// <summary>原生 Avalonia 外壳：导航、窗口生命周期与页面宿主；业务由 ILauncherService 承担。</summary>
 public partial class ShellWindow : Window
 {
-    LauncherFacade facade = null!;
+    ILauncherService service = null!;
     readonly ShellDesktopHost host;
     readonly SettingsView settingsView;
     readonly InstancesView instancesView;
@@ -37,30 +39,34 @@ public partial class ShellWindow : Window
         BrandVersion.Text = ProductInfo.Version;
         host = new ShellDesktopHost(
             () => Handle,
-            message => facade.SendMessage(message),
             HandleWindow,
             DragWindow,
             ResetWindow);
-        facade = new LauncherFacade(host);
-        settingsView = new SettingsView(facade);
-        instancesView = new InstancesView(facade);
-        homeView = new HomeView(facade);
+        service = new LauncherService(
+            host,
+            action => Dispatcher.UIThread.Post(action),
+            _ => new MicrosoftLoginWebUi(),
+            AvaloniaAvatarImage.Encode);
+        settingsView = new SettingsView(service);
+        instancesView = new InstancesView(service);
+        homeView = new HomeView(service);
         homeView.AccountRequested += () => Show("account");
-        downloadView = new DownloadView(facade);
-        accountView = new AccountView(facade);
-        gamesView = new GamesView(facade);
-        bookmarksView = new BookmarksView(facade);
-        communityView = new CommunityView(facade);
-        tasksView = new TasksView(facade);
-        Width = Math.Clamp(facade.Config.WindowWidth, 960, 7680);
-        Height = Math.Clamp(facade.Config.WindowHeight, 640, 4320);
-        if (facade.Config.WindowMaximized)
+        downloadView = new DownloadView(service);
+        accountView = new AccountView(service);
+        gamesView = new GamesView(service);
+        bookmarksView = new BookmarksView(service);
+        communityView = new CommunityView(service);
+        tasksView = new TasksView(service);
+        var placement = service.WindowPlacement;
+        Width = Math.Clamp(placement.Width, LaunchLimits.ShellWidthMin, LaunchLimits.ShellWidthMax);
+        Height = Math.Clamp(placement.Height, LaunchLimits.ShellHeightMin, LaunchLimits.ShellHeightMax);
+        if (placement.Maximized)
             WindowState = WindowState.Maximized;
         Closing += (_, _) =>
         {
             try
             {
-                facade.RememberWindow(Bounds.Width, Bounds.Height, WindowState == WindowState.Maximized);
+                service.RememberWindow(Bounds.Width, Bounds.Height, WindowState == WindowState.Maximized);
             }
             catch
             {
@@ -72,10 +78,10 @@ public partial class ShellWindow : Window
             ToastLayer.IsVisible = false;
             toastTimer.Stop();
         };
-        facade.LaunchResultReceived += info => ShowToast(info.Message);
-        facade.AuthResultReceived += info => ShowToast(info.Message);
-        facade.ErrorReceived += message => ShowToast("操作失败：" + message);
-        facade.ToastReceived += info => ShowToast(info.Message);
+        service.LaunchResultReceived += info => ShowToast(info.Message);
+        service.AuthResultReceived += info => ShowToast(info.Message);
+        service.ErrorReceived += message => ShowToast("操作失败：" + message);
+        service.ToastReceived += info => ShowToast(info.Message);
         HomeButton.Click += (_, _) => Show("home");
         DownloadButton.Click += (_, _) =>
         {
@@ -88,9 +94,10 @@ public partial class ShellWindow : Window
         {
             var preference = 2; // DWMWCP_ROUND
             DwmSetWindowAttribute(Handle, 33, ref preference, sizeof(int));
-            await facade.StartAsync();
+            await service.StartAsync();
+            homeView.Activate();
         };
-        Closed += (_, _) => facade.Dispose();
+        Closed += (_, _) => service.Dispose();
     }
 
     void Show(string next)

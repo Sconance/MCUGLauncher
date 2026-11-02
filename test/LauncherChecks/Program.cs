@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net;
 using System.Text.Json;
 using System.Text;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Services;
 using MCUGLauncher.UseCases;
 using MCUGLauncher;
@@ -17,13 +18,14 @@ File.WriteAllText(Path.Combine(versionDir, "custom-fabric.json"), """{"id":"cust
 store.Save(new MCUGLauncher.Models.AppConfig { Root = gameRoot, Player = "Fixture", LastVersion = "custom-fabric", LastInstance = "custom-fabric" });
 var messages = new List<JsonElement>();
 var desktop = new FakeDesktop();
-using var application = new LauncherApplication(value => messages.Add(JsonSerializer.SerializeToElement(value)), desktop, store);
+var wire = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+using var application = new LauncherApplication(value => messages.Add(JsonSerializer.SerializeToElement(value, wire)), desktop, store);
 bool Has(string type) => messages.Any(m => m.GetProperty("type").GetString() == type);
 void Check(bool value, string name) { if (!value) throw new Exception(name); Console.WriteLine("PASS " + name); }
 async Task Request(string json) { messages.Clear(); await application.HandleAsync(json); }
 
 await Request("""{"type":"requestState"}""");
-Check(Has("state") && messages[0].GetProperty("selectedVersion").GetString() == "custom-fabric", "state reflects fixture instance");
+Check(messages.Count > 0 && messages[0].GetProperty("selectedVersion").GetString() == "custom-fabric", "state reflects fixture instance");
 await Request("""{"type":"saveSettings","player":"Changed","ram":1,"width":99999,"height":1}""");
 Check(Has("settingsSaved") && store.Load().Player == "Changed" && store.Load().Ram == 512 && store.Load().Width == 7680, "settings persist and clamp values");
 await Request("""{"type":"saveSettings","java":"fixture-java"}""");
@@ -98,26 +100,35 @@ await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);
+using (var service = new LauncherService(
+           desktop,
+           action => action(),
+           _ => null!,
+           _ => "",
+           store))
+{
+    LauncherState? typedState = null;
+    service.StateChanged += state => typedState = state;
+    await service.RequestStateAsync();
+    Check(typedState?.SelectedVersion == "custom-fabric" && service.State == typedState,
+        "typed launcher service exposes state without the UI JSON protocol");
+    Check(service.WindowPlacement.Width == 1400 && service.WindowPlacement.Maximized,
+        "typed launcher service exposes immutable window placement");
+}
 Console.WriteLine("ALL_LAUNCHER_CHECKS_PASSED (isolated fixtures; no live account or gameplay)");
 
 sealed class FakeDesktop : IDesktopHost
 {
     public bool ConfirmStopGame() => false;
     public bool ConfirmUninstall(string name) => false;
-    public void PickSaveFile(string target)
-    {
-    }
+    public string? PickSaveFile(string target) => null;
     public string LastAction = "";
     public void Window(string action) => LastAction = action;
     public void Drag()
     {
     }
-    public void PickFolder(string target)
-    {
-    }
-    public void PickFile(string target)
-    {
-    }
+    public string? PickFolder(string target) => null;
+    public string? PickFile(string target) => null;
     public void ResetWindow()
     {
     }

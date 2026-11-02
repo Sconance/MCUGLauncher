@@ -29,10 +29,12 @@ for token in ("new HttpClient", "new ConfigStore", "LauncherApplication.", "Json
 views = list((root / "src/MCUGLauncher.Avalonia/Views").glob("*.cs"))
 for source in views:
     text = source.read_text(encoding="utf-8-sig")
-    for token in ("new HttpClient", "new ConfigStore", "LauncherApplication", "JsonDocument.Parse",
-                  "Browser.", "CoreWebView2", "HandleAsync("):
+    for token in ("new HttpClient", "new ConfigStore", "LauncherApplication",
+                  "JsonDocument.Parse", "Browser.", "CoreWebView2", "HandleAsync("):
         if token in text:
-            errors.append(f"{source.name}: view must use LauncherFacade, not {token}")
+            errors.append(f"{source.name}: view must use ILauncherService, not {token}")
+    if re.search(r"(?<!I)LauncherService\b", text):
+        errors.append(f"{source.name}: view must not construct the concrete LauncherService")
 
 for source in (root / "src/MCUGLauncher.App/UseCases").glob("*.cs"):
     text = source.read_text(encoding="utf-8-sig")

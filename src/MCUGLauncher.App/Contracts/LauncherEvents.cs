@@ -1,10 +1,10 @@
 using System.Text.Json;
 
-namespace MCUGLauncher.Avalonia;
+namespace MCUGLauncher.Contracts;
 
-internal sealed record JavaInfo(string Path, int Major, string Arch, string Vendor, string Error)
+public sealed record JavaInfo(string Path, int Major, string Arch, string Vendor, string Error)
 {
-    public static JavaInfo From(JsonElement element) => new(
+    internal static JavaInfo From(JsonElement element) => new(
         JsonRead.String(element, "path"),
         JsonRead.Int(element, "major"),
         JsonRead.String(element, "arch"),
@@ -12,18 +12,18 @@ internal sealed record JavaInfo(string Path, int Major, string Arch, string Vend
         JsonRead.String(element, "error"));
 }
 
-internal sealed record GameInfo(string Id, string Version, string Player, int Pid)
+public sealed record GameInfo(string Id, string Version, string Player, int Pid)
 {
-    public static GameInfo From(JsonElement element) => new(
+    internal static GameInfo From(JsonElement element) => new(
         JsonRead.String(element, "id"),
         JsonRead.String(element, "version"),
         JsonRead.String(element, "player"),
         JsonRead.Int(element, "pid"));
 }
 
-internal sealed record AuthResultInfo(bool? Ok, bool Pending, string Message)
+public sealed record AuthResultInfo(bool? Ok, bool Pending, string Message)
 {
-    public static AuthResultInfo From(JsonElement element) => new(
+    internal static AuthResultInfo From(JsonElement element) => new(
         element.TryGetProperty("ok", out var ok) && ok.ValueKind is JsonValueKind.True or JsonValueKind.False
             ? ok.GetBoolean()
             : null,
@@ -31,31 +31,30 @@ internal sealed record AuthResultInfo(bool? Ok, bool Pending, string Message)
         JsonRead.String(element, "message"));
 }
 
-internal sealed record AccountSwitchResultInfo(string Account, bool NeedsLogin, string Message)
+public sealed record AccountSwitchResultInfo(string Account, bool NeedsLogin, string Message)
 {
-    public static AccountSwitchResultInfo From(JsonElement element) => new(
+    internal static AccountSwitchResultInfo From(JsonElement element) => new(
         JsonRead.String(element, "account"),
         JsonRead.Bool(element, "needsLogin"),
         JsonRead.String(element, "message"));
 }
 
-internal sealed record AccountStateInfo(string Player, string AccountType, string AccountLabel)
+public sealed record AccountStateInfo(string Player, string AccountType)
 {
-    public static AccountStateInfo From(JsonElement element) => new(
+    internal static AccountStateInfo From(JsonElement element) => new(
         JsonRead.String(element, "player"),
-        JsonRead.String(element, "accountType"),
-        JsonRead.String(element, "accountLabel"));
+        JsonRead.String(element, "accountType"));
 }
 
-internal sealed record SaveBackupInfo(string Id, string Created, IReadOnlyList<string> Worlds)
+public sealed record SaveBackupInfo(string Id, string Created, IReadOnlyList<string> Worlds)
 {
-    public static SaveBackupInfo From(JsonElement element) => new(
+    internal static SaveBackupInfo From(JsonElement element) => new(
         JsonRead.String(element, "id"),
         JsonRead.String(element, "created"),
         JsonRead.Strings(element, "worlds"));
 }
 
-internal sealed record SystemInfoInfo(
+public sealed record SystemInfoInfo(
     string App,
     string Dotnet,
     string Webview,
@@ -63,7 +62,7 @@ internal sealed record SystemInfoInfo(
     string Root,
     string Data)
 {
-    public static SystemInfoInfo From(JsonElement element) => new(
+    internal static SystemInfoInfo From(JsonElement element) => new(
         JsonRead.String(element, "app"),
         JsonRead.String(element, "dotnet"),
         JsonRead.String(element, "webview"),
@@ -72,34 +71,34 @@ internal sealed record SystemInfoInfo(
         JsonRead.String(element, "data"));
 }
 
-internal sealed record ToastInfo(string Message, bool Bad)
+public sealed record ToastInfo(string Message, bool Bad)
 {
-    public static ToastInfo From(JsonElement element) => new(
+    internal static ToastInfo From(JsonElement element) => new(
         JsonRead.String(element, "message"),
         JsonRead.Bool(element, "bad"));
 }
 
-internal sealed record SavedInfo(string Message)
+public sealed record SavedInfo(string Message)
 {
-    public static SavedInfo From(JsonElement element) => new(JsonRead.String(element, "message"));
+    internal static SavedInfo From(JsonElement element) => new(JsonRead.String(element, "message"));
 }
 
-internal sealed record PublishResultInfo(bool Ok, bool Pending, string Message)
+public sealed record PublishResultInfo(bool Ok, bool Pending, string Message)
 {
-    public static PublishResultInfo From(JsonElement element) => new(
+    internal static PublishResultInfo From(JsonElement element) => new(
         JsonRead.Bool(element, "ok"),
         JsonRead.Bool(element, "pending"),
         JsonRead.String(element, "message"));
 }
 
-internal sealed record LaunchResultInfo(bool Ok, string Message)
+public sealed record LaunchResultInfo(bool Ok, string Message)
 {
-    public static LaunchResultInfo From(JsonElement element) => new(
+    internal static LaunchResultInfo From(JsonElement element) => new(
         JsonRead.Bool(element, "ok"),
         JsonRead.String(element, "message"));
 }
 
-internal sealed record UninstallPreviewInfo(
+public sealed record UninstallPreviewInfo(
     string Token,
     string Version,
     string Name,
@@ -107,7 +106,7 @@ internal sealed record UninstallPreviewInfo(
     IReadOnlyList<string> Paths,
     bool Shared)
 {
-    public static UninstallPreviewInfo From(JsonElement element) => new(
+    internal static UninstallPreviewInfo From(JsonElement element) => new(
         JsonRead.String(element, "token"),
         JsonRead.String(element, "version"),
         JsonRead.String(element, "name"),
@@ -116,7 +115,7 @@ internal sealed record UninstallPreviewInfo(
         JsonRead.Bool(element, "shared"));
 }
 
-internal sealed record ContentUpdateInfo(
+public sealed record ContentUpdateInfo(
     string Id,
     string Name,
     string Before,
@@ -124,7 +123,7 @@ internal sealed record ContentUpdateInfo(
     bool Available,
     string Error)
 {
-    public static ContentUpdateInfo From(JsonElement element) => new(
+    internal static ContentUpdateInfo From(JsonElement element) => new(
         JsonRead.String(element, "id"),
         JsonRead.String(element, "name"),
         JsonRead.String(element, "before"),
@@ -133,20 +132,20 @@ internal sealed record ContentUpdateInfo(
         JsonRead.String(element, "error"));
 }
 
-internal sealed record ContentUpdatesInfo(
+public sealed record ContentUpdatesInfo(
     string Token,
     string Version,
     IReadOnlyList<ContentUpdateInfo> Items)
 {
-    public static ContentUpdatesInfo From(JsonElement element) => new(
+    internal static ContentUpdatesInfo From(JsonElement element) => new(
         JsonRead.String(element, "token"),
         JsonRead.String(element, "version"),
         JsonRead.Items(element, "items", ContentUpdateInfo.From));
 }
 
-internal sealed record ContentChangeInfo(string Project, string Before, string After, string Path, string OldPath)
+public sealed record ContentChangeInfo(string Project, string Before, string After, string Path, string OldPath)
 {
-    public static ContentChangeInfo From(JsonElement element) => new(
+    internal static ContentChangeInfo From(JsonElement element) => new(
         JsonRead.String(element, "project"),
         JsonRead.String(element, "before"),
         JsonRead.String(element, "after"),
@@ -154,20 +153,20 @@ internal sealed record ContentChangeInfo(string Project, string Before, string A
         JsonRead.String(element, "oldPath"));
 }
 
-internal sealed record ContentUpdatePreviewInfo(
+public sealed record ContentUpdatePreviewInfo(
     string Token,
     string Version,
     long Bytes,
     IReadOnlyList<ContentChangeInfo> Changes)
 {
-    public static ContentUpdatePreviewInfo From(JsonElement element) => new(
+    internal static ContentUpdatePreviewInfo From(JsonElement element) => new(
         JsonRead.String(element, "token"),
         JsonRead.String(element, "version"),
         JsonRead.Long(element, "bytes"),
         JsonRead.Items(element, "changes", ContentChangeInfo.From));
 }
 
-internal sealed record ServerPingInfo(
+public sealed record ServerPingInfo(
     string Id,
     bool Online,
     int Players,
@@ -177,7 +176,7 @@ internal sealed record ServerPingInfo(
     string Version,
     string Error)
 {
-    public static ServerPingInfo From(JsonElement element) => new(
+    internal static ServerPingInfo From(JsonElement element) => new(
         JsonRead.String(element, "id"),
         JsonRead.Bool(element, "online"),
         JsonRead.Int(element, "players"),
@@ -188,14 +187,14 @@ internal sealed record ServerPingInfo(
         JsonRead.String(element, "error"));
 }
 
-internal sealed record ServerResultInfo(bool Ok, string Message)
+public sealed record ServerResultInfo(bool Ok, string Message)
 {
-    public static ServerResultInfo From(JsonElement element) => new(
+    internal static ServerResultInfo From(JsonElement element) => new(
         JsonRead.Bool(element, "ok"),
         JsonRead.String(element, "message"));
 }
 
-internal sealed record TestResultInfo(
+public sealed record TestResultInfo(
     string RequestId,
     string Name,
     string Url,
@@ -203,7 +202,7 @@ internal sealed record TestResultInfo(
     string Message,
     int Ms)
 {
-    public static TestResultInfo From(JsonElement element) => new(
+    internal static TestResultInfo From(JsonElement element) => new(
         JsonRead.String(element, "requestId"),
         JsonRead.String(element, "name"),
         JsonRead.String(element, "url"),
@@ -212,30 +211,30 @@ internal sealed record TestResultInfo(
         JsonRead.Int(element, "ms"));
 }
 
-internal sealed record KeyResultInfo(string Role, bool Ok, string Message)
+public sealed record KeyResultInfo(string Role, bool Ok, string Message)
 {
-    public static KeyResultInfo From(JsonElement element) => new(
+    internal static KeyResultInfo From(JsonElement element) => new(
         JsonRead.String(element, "role"),
         JsonRead.Bool(element, "ok"),
         JsonRead.String(element, "message"));
 }
 
-internal sealed record ResourceVersionInfo(string Id, string Name, IReadOnlyList<string> Files)
+public sealed record ResourceVersionInfo(string Id, string Name, IReadOnlyList<string> Files)
 {
-    public static ResourceVersionInfo From(JsonElement element) => new(
+    internal static ResourceVersionInfo From(JsonElement element) => new(
         JsonRead.String(element, "id"),
         JsonRead.String(element, "name"),
         JsonRead.Strings(element, "files"));
 }
 
-internal sealed record ResourceVersionsInfo(
+public sealed record ResourceVersionsInfo(
     string RequestId,
     string Token,
     string Game,
     string Loader,
     IReadOnlyList<ResourceVersionInfo> Items)
 {
-    public static ResourceVersionsInfo From(JsonElement element) => new(
+    internal static ResourceVersionsInfo From(JsonElement element) => new(
         JsonRead.String(element, "requestId"),
         JsonRead.String(element, "token"),
         JsonRead.String(element, "game"),
@@ -243,25 +242,25 @@ internal sealed record ResourceVersionsInfo(
         JsonRead.Items(element, "items", ResourceVersionInfo.From));
 }
 
-internal sealed record LoaderListInfo(string Version, string Loader, IReadOnlyList<string> Versions)
+public sealed record LoaderListInfo(string Version, string Loader, IReadOnlyList<string> Versions)
 {
-    public static LoaderListInfo From(JsonElement element) => new(
+    internal static LoaderListInfo From(JsonElement element) => new(
         JsonRead.String(element, "version"),
         JsonRead.String(element, "loader"),
         JsonRead.Strings(element, "versions"));
 }
 
-internal sealed record VanillaVersionInfo(string Id, string Type, string Released)
+public sealed record VanillaVersionInfo(string Id, string Type, string Released)
 {
-    public static VanillaVersionInfo From(JsonElement element) => new(
+    internal static VanillaVersionInfo From(JsonElement element) => new(
         JsonRead.String(element, "id"),
         JsonRead.String(element, "type"),
         JsonRead.String(element, "released"));
 }
 
-internal sealed record PackPreviewInfo(string Token, string Name, string Root, string Game, string Loader)
+public sealed record PackPreviewInfo(string Token, string Name, string Root, string Game, string Loader)
 {
-    public static PackPreviewInfo From(JsonElement element) => new(
+    internal static PackPreviewInfo From(JsonElement element) => new(
         JsonRead.String(element, "token"),
         JsonRead.String(element, "name"),
         JsonRead.String(element, "root"),
@@ -269,9 +268,9 @@ internal sealed record PackPreviewInfo(string Token, string Name, string Root, s
         JsonRead.String(element, "loader"));
 }
 
-internal sealed record AvatarInfo(string Image, string Label, bool Fallback, string Account, string Player)
+public sealed record AvatarInfo(string Image, string Label, bool Fallback, string Account, string Player)
 {
-    public static AvatarInfo From(JsonElement element) => new(
+    internal static AvatarInfo From(JsonElement element) => new(
         JsonRead.String(element, "image"),
         JsonRead.String(element, "label"),
         JsonRead.Bool(element, "fallback"),
@@ -279,36 +278,36 @@ internal sealed record AvatarInfo(string Image, string Label, bool Fallback, str
         JsonRead.String(element, "player"));
 }
 
-internal sealed record MuaProfilesInfo(string Token, IReadOnlyList<MuaProfileInfo> Items)
+public sealed record MuaProfilesInfo(string Token, IReadOnlyList<MuaProfileInfo> Items)
 {
-    public static MuaProfilesInfo From(JsonElement element) => new(
+    internal static MuaProfilesInfo From(JsonElement element) => new(
         JsonRead.String(element, "token"),
         JsonRead.Items(element, "items", MuaProfileInfo.From));
 }
 
-internal sealed record MuaProfileInfo(string Id, string Name)
+public sealed record MuaProfileInfo(string Id, string Name)
 {
-    public static MuaProfileInfo From(JsonElement element) => new(
+    internal static MuaProfileInfo From(JsonElement element) => new(
         JsonRead.String(element, "id"),
         JsonRead.String(element, "name"));
 }
 
-internal sealed record ContentErrorInfo(string Category, string RequestId, string Message)
+public sealed record ContentErrorInfo(string Category, string RequestId, string Message)
 {
-    public static ContentErrorInfo From(JsonElement element) => new(
+    internal static ContentErrorInfo From(JsonElement element) => new(
         JsonRead.String(element, "category"),
         JsonRead.String(element, "requestId"),
         JsonRead.String(element, "message"));
 }
 
-internal sealed record PickedPathInfo(string Target, string Path)
+public sealed record PickedPathInfo(string Target, string Path)
 {
-    public static PickedPathInfo From(JsonElement element) => new(
+    internal static PickedPathInfo From(JsonElement element) => new(
         JsonRead.String(element, "target"),
         JsonRead.String(element, "path"));
 }
 
-internal sealed record LaunchSettingsInfo(
+public sealed record LaunchSettingsInfo(
     bool AutoMemory,
     bool FullScreen,
     int RamMb,
@@ -319,7 +318,7 @@ internal sealed record LaunchSettingsInfo(
     string WindowTitle,
     string Server)
 {
-    public static LaunchSettingsInfo From(JsonElement element) => new(
+    internal static LaunchSettingsInfo From(JsonElement element) => new(
         element.ValueKind == JsonValueKind.Object ? JsonRead.Bool(element, "autoMemory") : true,
         element.ValueKind == JsonValueKind.Object && JsonRead.Bool(element, "fullScreen"),
         element.ValueKind == JsonValueKind.Object ? JsonRead.Int(element, "ramMb", 4096) : 4096,
@@ -331,7 +330,7 @@ internal sealed record LaunchSettingsInfo(
         JsonRead.String(element, "server"));
 }
 
-internal sealed record LaunchOptionsInfo(
+public sealed record LaunchOptionsInfo(
     string RequestId,
     string Token,
     string Version,
@@ -339,7 +338,7 @@ internal sealed record LaunchOptionsInfo(
     bool Inherited,
     LaunchSettingsInfo Settings)
 {
-    public static LaunchOptionsInfo From(JsonElement element) => new(
+    internal static LaunchOptionsInfo From(JsonElement element) => new(
         JsonRead.String(element, "requestId"),
         JsonRead.String(element, "token"),
         JsonRead.String(element, "version"),
@@ -350,9 +349,9 @@ internal sealed record LaunchOptionsInfo(
             : LaunchSettingsInfo.From(default));
 }
 
-internal sealed record CommunityPayload(IReadOnlyDictionary<string, string> Payload)
+public sealed record CommunityPayload(IReadOnlyDictionary<string, string> Payload)
 {
-    public static CommunityPayload From(JsonElement element)
+    internal static CommunityPayload From(JsonElement element)
     {
         var payload = new Dictionary<string, string>(StringComparer.Ordinal);
         if (element.TryGetProperty("payload", out var value) && value.ValueKind == JsonValueKind.Object)
@@ -363,7 +362,7 @@ internal sealed record CommunityPayload(IReadOnlyDictionary<string, string> Payl
     }
 }
 
-internal sealed record AnnouncementInfo(
+public sealed record AnnouncementInfo(
     string Id,
     string Title,
     string Body,
@@ -374,7 +373,7 @@ internal sealed record AnnouncementInfo(
 {
     public string Raw { get; init; } = "";
 
-    public static AnnouncementInfo From(JsonElement element)
+    internal static AnnouncementInfo From(JsonElement element)
     {
         var date = JsonRead.String(element, "publishedAt");
         if (date.Length == 0)
@@ -393,7 +392,7 @@ internal sealed record AnnouncementInfo(
     }
 }
 
-internal sealed record RecommendationInfo(
+public sealed record RecommendationInfo(
     string Id,
     string Type,
     string Name,
@@ -406,7 +405,7 @@ internal sealed record RecommendationInfo(
 {
     public string Raw { get; init; } = "";
 
-    public static RecommendationInfo From(JsonElement element)
+    internal static RecommendationInfo From(JsonElement element)
     {
         var type = JsonRead.String(element, "type");
         return new RecommendationInfo(
@@ -427,7 +426,7 @@ internal sealed record RecommendationInfo(
     }
 }
 
-internal sealed record QuoteInfo(
+public sealed record QuoteInfo(
     string Id,
     string Type,
     string Text,
@@ -435,7 +434,7 @@ internal sealed record QuoteInfo(
     string Source,
     string ImageUrl)
 {
-    public static QuoteInfo From(JsonElement element) => new(
+    internal static QuoteInfo From(JsonElement element) => new(
         JsonRead.String(element, "id"),
         JsonRead.String(element, "type") is { Length: > 0 } type ? type : "text",
         JsonRead.String(element, "text"),
@@ -444,7 +443,7 @@ internal sealed record QuoteInfo(
         JsonRead.String(element, "imageUrl"));
 }
 
-internal sealed record CommunityData(
+public sealed record CommunityData(
     IReadOnlyList<AnnouncementInfo> Announcements,
     IReadOnlyList<RecommendationInfo> Recommendations,
     IReadOnlyList<QuoteInfo> Quotes)
