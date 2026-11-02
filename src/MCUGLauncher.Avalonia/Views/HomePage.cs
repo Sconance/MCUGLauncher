@@ -80,7 +80,7 @@ internal sealed class HomePage : NativePage
                 )
         ));
         account.Children.Add(Ui.Row(
-                Ui.Button("启动游戏", () => Send(new { type = "launch", version = State.SelectedVersion }), true),
+                LaunchButton(),
                 Ui.Action("运行中的游戏（" + Session.Games.Length + "）", () => Session.Navigate?.Invoke("games"))
         ));
         DrawInstances();
@@ -97,6 +97,12 @@ internal sealed class HomePage : NativePage
         community.Children.Add(Ui.Action("公告、推荐与服务器", () => Session.Navigate?.Invoke("community")));
     }
 
+    Button LaunchButton()
+    {
+        var button = Ui.Button("启动游戏", () => Send(new { type = "launch", version = State.SelectedVersion }), true);
+        button.IsEnabled = State.SelectedVersion.Length > 0;
+        return button;
+    }
     void DrawInstances()
     {
         instances.Children.Clear();

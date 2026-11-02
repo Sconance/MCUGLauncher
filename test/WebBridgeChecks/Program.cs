@@ -95,6 +95,15 @@ application.RememberWindow(1400, 900, true);
 Check(store.Load().WindowWidth == 1400 && store.Load().WindowMaximized, "window dimensions persist through application boundary");
 await Request("""{"type":"readImage","url":"http://localhost/private.png","requestId":"blocked-image"}""");
 Check(Has("imageData") && !messages.Last().GetProperty("ok").GetBoolean(), "native image reader rejects non-HTTPS and unapproved hosts without fetching");
+var emptyRoot = Path.Combine(fixture, "empty-game");
+Directory.CreateDirectory(emptyRoot);
+var emptyCatalog = VersionCatalog.Load(emptyRoot, "missing");
+Check(emptyCatalog.Instances.Count == 0 && emptyCatalog.Selected.Length == 0 && VersionCatalog.ReadMods(emptyRoot, "").Count == 0, "empty game directory has no fake selectable instance");
+using (var emptyHttp = new HttpClient())
+{
+    var feeds = new CommunityService(emptyHttp);
+    Check(await feeds.ReadAsync("", default) == null && await feeds.ReadAsync("not-a-url", default) == null, "blank and invalid community URLs do not throw or send network requests");
+}
 await ResourceScenarios.Run(fixture);
 await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);

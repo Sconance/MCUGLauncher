@@ -29,13 +29,14 @@ internal sealed class CommunityCommands(LauncherContext context)
             ("recommendations", context.Config.DataSources.Recommendations),
             ("quotes", context.Config.DataSources.Quotes)
         };
+        var successful = true;
         foreach (var (name, url) in jobs)
         {
             if (items.ContainsKey(name))
                 continue;
-            var text = await context.Community.ReadAsync(url, context.Token);
-            if (text != null)
-                items[name] = text;
+            var text = string.IsNullOrWhiteSpace(url) ? "[]" : await context.Community.ReadAsync(url, context.Token);
+            successful &= text != null;
+            items[name] = text ?? "[]";
         }
         if (items.Count > 0)
             context.Send(new
@@ -47,7 +48,7 @@ internal sealed class CommunityCommands(LauncherContext context)
             context.Send(new
             {
                 type = "communityRefreshDone",
-                ok = items.Count == jobs.Length
+                ok = successful
             });
     }
 

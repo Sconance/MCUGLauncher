@@ -367,3 +367,5 @@ internal sealed class SaveCommands(LauncherContext context)
 - ShellWindow、ShellDesktopHost、LauncherFacade（C）：装配、原生窗口操作和协议适配；Views 为前端视图，不列入后端 B 组件。
 
 IDesktopHost 确认契约变更：ConfirmStopGameAsync() / ConfirmUninstallAsync(string) 返回 Task<bool>；LauncherApplication 在关闭、卸载及恢复排队卸载前 await 结果。测试替身与 ShellDesktopHost 同步更新，取消不执行操作。
+
+空目录/源边界修正：VersionCatalog（B）仍只构造 Models.VersionGroup/InstanceInfo/ModInfo、读取 InstanceInfo.Name，复用 Core InstanceCatalog.MetadataDirectory/DirectoryFor、AtomicFile.ReadJson、ContentService.SafeFile；未增加依赖，空目录返回空列表。CommunityService 只依赖注入的 HttpClient 与 BCL，先验证 URL 再请求，空/无效源返回 null。

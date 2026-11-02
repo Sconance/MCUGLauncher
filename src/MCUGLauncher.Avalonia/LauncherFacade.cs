@@ -126,6 +126,8 @@ internal sealed class LauncherFacade : IDisposable, INotifyPropertyChanged
             }
         if (message.Type is "error" or "toast" or "saved" or "launchResult" or "publishResult" or "authResult" or "accountSwitchResult" or "serverResult")
             Report(message.Message);
+        if (message.Type == "communityRefreshDone")
+            Report(message.Ok ? "社区内容已刷新。" : "部分数据源读取失败，请检查数据源设置。");
         if (message.Type == "settingsSaved")
             Report("已保存设置。");
         if (message.Type is "state" or "accountState")

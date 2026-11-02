@@ -139,9 +139,11 @@ internal sealed class LauncherApplication : IDisposable
                     break;
                 case "useDataSources":
                     settingsCommands.UseDataSources(ReadString(root, "mode"));
+                    await communityCommands.SendCommunityAsync(notify: true);
                     break;
                 case "resetDataSources":
                     settingsCommands.ResetDataSources();
+                    await communityCommands.SendCommunityAsync(notify: true);
                     break;
                 case "readAvatar":
                     await avatars.ReadAsync();

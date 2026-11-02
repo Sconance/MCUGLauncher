@@ -62,3 +62,5 @@ App/Core 仍运行 MuaChecks、DownloadChecks、QueueChecks、CompatibilityCheck
 2026-11-02 使用独立 `--data-directory` 打开 Windows 原生窗口，检查首页、设置、数据源默认/自定义页签。四项真实 HTTPS 数据源测试返回连接结果，公告通过原生文本控件显示。没有执行账号登录、游戏安装、存档恢复或进程终止；正式配置与 EXE 不变。
 
 确认契约在本分支改为 ConfirmStopGameAsync / ConfirmUninstallAsync；应用分发 await 确认结果，取消不会执行关闭或卸载。所有原生确认和文件选择都由 Avalonia 提供，不再使用自写 Win32 消息框。
+
+单文件 Lite 已在独立空目录启动；据此补齐空数据源与空实例列表边界，空目录不再注入假实例。数据源启用后重新拉取对应内容，停用/无效源不保留上一源的远端列表。
