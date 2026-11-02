@@ -10,6 +10,18 @@
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
       <StackPanel Spacing="8">
         <StackPanel x:Name="FavoritesPanel" Spacing="6" />
+        <Border x:Name="InstallCard" Classes="card" IsVisible="False">
+          <StackPanel Spacing="8">
+            <TextBlock x:Name="InstallTitle" Classes="h2" TextWrapping="Wrap" />
+            <TextBlock x:Name="InstallHint" Classes="muted" TextWrapping="Wrap" />
+            <ListBox x:Name="InstallVersions" Height="160" />
+            <ComboBox x:Name="InstallMode" HorizontalAlignment="Left" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="StartInstallButton" Content="开始下载" Classes="primary" />
+              <Button x:Name="CancelInstallButton" Content="取消" Classes="ghost" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
         <TextBlock x:Name="StatusText" Classes="status" />
       </StackPanel>
     </ScrollViewer>

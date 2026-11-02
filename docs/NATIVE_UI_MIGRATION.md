@@ -80,11 +80,11 @@ Core / App 库：保持不变
   详情/版本选择/安装、整合包预览与导入；
 - `AccountView`：头像读取、离线 PNG 皮肤选择/清除、正版/MUA/离线切换、MUA 多角色选择；
 - `GamesView`：运行中游戏列表与关闭；
-- `BookmarksView`：收藏列表与取消收藏；
+- `BookmarksView`：收藏列表、取消收藏、按兼容版本安装到实例或目录；
 - `CommunityView`：管理员密钥、公告发布（标题/正文/过期时间/配图）、公告/推荐删除管理；
 - 主页公告支持本地 data URL 配图；
 - 设置页：已保存游戏目录切换、添加并切换；
 - 旧 `MainWindow`（WebView）保留为“经典界面”回退入口。
 
-下一步：收藏内直接选版本安装、远程公告配图与逐页视觉对齐；
-功能全对齐后再删除 WebView。
+下一步：远程公告配图、逐页视觉对齐与 WebView 退出；功能对齐后删除
+`Ui/`、`MainWindow`、`bridge` 与 Web 相关检查，仅保留微软登录 WebView2。

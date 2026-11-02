@@ -161,6 +161,8 @@ internal partial class DownloadView : UserControl
             : $"当前实例：{current.DisplayName} · {current.Loader} · {current.Minecraft}";
         if (vanillaLoaded)
             FillLoaderGames();
+        if (selected is null && ResultsPanel.IsVisible && results.Count > 0)
+            RenderResults();
     }
 
     void LoadVanilla()
@@ -250,9 +252,26 @@ internal partial class DownloadView : UserControl
                 ShowDetail(current);
                 LoadVersions();
             };
+            var bookmarked = facade?.State?.Favorites.Any(favorite => favorite.Id == item.Id) == true;
+            var bookmark = new Button
+            {
+                Content = bookmarked ? "取消收藏" : "收藏",
+                Classes = { "ghost" }
+            };
+            var itemId = item.Id;
+            var itemName = item.Name;
+            var itemDescription = item.Description;
+            var itemAuthor = item.Author;
+            var itemKind = downloadCategory;
+            bookmark.Click += async (_, _) =>
+            {
+                await facade!.ToggleBookmarkAsync(itemId, itemName, itemDescription, itemAuthor, itemKind);
+                Status(bookmarked ? "已取消收藏：" + itemName : "已收藏：" + itemName);
+            };
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
             actions.Children.Add(detail);
             actions.Children.Add(choose);
+            actions.Children.Add(bookmark);
             ResultsPanel.Children.Add(new Border
             {
                 BorderBrush = new SolidColorBrush(Color.Parse("#E3EAF0")),
