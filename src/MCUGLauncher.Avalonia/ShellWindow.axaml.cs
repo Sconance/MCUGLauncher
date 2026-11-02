@@ -16,16 +16,11 @@ public partial class ShellWindow : Window
     readonly SettingsView settingsView;
     readonly InstancesView instancesView;
     readonly HomeView homeView;
+    readonly DownloadView downloadView;
     readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     StackPanel? pageContent;
     LauncherState? typed;
     IReadOnlyList<TaskInfo> tasks = [];
-    IReadOnlyList<ContentItem> contentItems = [];
-    ContentItem? selectedContent;
-    ResourceVersionsInfo? availableVersions;
-    string versionRequest = "";
-    string downloadCategory = "mod";
-    string pendingLocalVersion = "";
     string page = "home";
 
     public ShellWindow()
@@ -42,6 +37,7 @@ public partial class ShellWindow : Window
         instancesView = new InstancesView(facade);
         homeView = new HomeView(facade);
         homeView.AccountRequested += () => Show("account");
+        downloadView = new DownloadView(facade);
         Width = Math.Clamp(facade.Config.WindowWidth, 900, 7680);
         Height = Math.Clamp(facade.Config.WindowHeight, 600, 4320);
         if (facade.Config.WindowMaximized)
@@ -74,41 +70,16 @@ public partial class ShellWindow : Window
             if (page == "tasks")
                 Render();
         };
-        facade.ContentChanged += list =>
-        {
-            contentItems = list;
-            if (page == "download")
-                Render();
-        };
-        facade.ResourceVersionsReceived += info =>
-        {
-            if (info.RequestId == versionRequest)
-            {
-                availableVersions = info;
-                if (page == "download")
-                    Render();
-            }
-        };
-        facade.PathPicked += info =>
-        {
-            if (info.Target == "download" && pendingLocalVersion.Length > 0)
-            {
-                var versionId = pendingLocalVersion;
-                pendingLocalVersion = "";
-                var token = availableVersions?.Token ?? "";
-                if (token.Length > 0)
-                {
-                    _ = facade.QueueContentVersionAsync(token, versionId, "local", info.Path);
-                    ShowToast("下载请求已提交，请查看任务列表。");
-                }
-            }
-        };
         facade.LaunchResultReceived += info => ShowToast(info.Message);
         facade.AuthResultReceived += info => ShowToast(info.Message);
         facade.ErrorReceived += message => ShowToast("操作失败：" + message);
         facade.ToastReceived += info => ShowToast(info.Message);
         HomeButton.Click += (_, _) => Show("home");
-        DownloadButton.Click += (_, _) => Show("download");
+        DownloadButton.Click += (_, _) =>
+        {
+            downloadView.Activate();
+            Show("download");
+        };
         MaintenanceButton.Click += (_, _) => Show("instances");
         AccountButton.Click += (_, _) => Show("account");
         TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
@@ -122,12 +93,6 @@ public partial class ShellWindow : Window
     void Show(string next)
     {
         page = next;
-        if (next == "download")
-        {
-            selectedContent = null;
-            availableVersions = null;
-            versionRequest = "";
-        }
         Render();
     }
 
@@ -148,6 +113,11 @@ public partial class ShellWindow : Window
             PageHost.Content = homeView;
             return;
         }
+        if (page == "download")
+        {
+            PageHost.Content = downloadView;
+            return;
+        }
         var panel = new StackPanel { Spacing = 12 };
         pageContent = panel;
         PageHost.Content = new ScrollViewer
@@ -155,161 +125,10 @@ public partial class ShellWindow : Window
             Content = panel,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
-        if (page == "download")
-            RenderDownload();
-        else if (page == "account")
+        if (page == "account")
             RenderAccount();
         else if (page == "tasks")
             RenderTasks();
-    }
-
-    void RenderDownload()
-    {
-        AddHeading("下载");
-        var categoryValues = new[] { "mod", "modpack", "resourcepack", "shader", "datapack" };
-        var categoryLabels = new[] { "模组", "整合包", "资源包", "光影", "数据包" };
-        var category = new ComboBox
-        {
-            ItemsSource = categoryLabels,
-            SelectedIndex = Math.Max(0, Array.IndexOf(categoryValues, downloadCategory)),
-            HorizontalAlignment = HorizontalAlignment.Left
-        };
-        var query = new TextBox { Watermark = "搜索关键词", Width = 320, HorizontalAlignment = HorizontalAlignment.Left };
-        Add(category);
-        Add(query);
-        var search = new Button { Content = "搜索", HorizontalAlignment = HorizontalAlignment.Left };
-        search.Classes.Add("primary");
-        search.Click += async (_, _) =>
-        {
-            selectedContent = null;
-            availableVersions = null;
-            versionRequest = "";
-            downloadCategory = categoryValues[Math.Max(0, category.SelectedIndex)];
-            await facade.SearchContentAsync(downloadCategory, query.Text?.Trim() ?? "");
-        };
-        Add(search);
-
-        if (selectedContent is { } selected)
-        {
-            AddHeading(selected.Name);
-            Add(selected.Description);
-            Add("项目 ID：" + selected.Id);
-            var back = new Button { Content = "返回搜索结果", HorizontalAlignment = HorizontalAlignment.Left };
-            back.Click += (_, _) =>
-            {
-                selectedContent = null;
-                availableVersions = null;
-                versionRequest = "";
-                Render();
-            };
-            Add(back);
-            var type = downloadCategory;
-            if (availableVersions is { } versions && versions.RequestId == selected.Id)
-            {
-                Add($"{versions.Game} · {versions.Loader} · {versions.Items.Count} 个兼容版本");
-                var list = new ListBox
-                {
-                    ItemsSource = versions.Items.Select(item =>
-                        item.Name + "  ·  " + string.Join(", ", item.Files)).ToArray(),
-                    Height = 180
-                };
-                if (versions.Items.Count > 0)
-                    list.SelectedIndex = 0;
-                else
-                    Add("当前实例没有兼容版本。请先在启动页切换实例，再重新选择版本。");
-                Add(list);
-                var localOnly = type is "modpack" or "datapack";
-                var mode = new ComboBox
-                {
-                    ItemsSource = localOnly ? new[] { "下载到目录" } : new[] { "安装到当前实例", "下载到目录" },
-                    SelectedIndex = 0,
-                    HorizontalAlignment = HorizontalAlignment.Left
-                };
-                Add(mode);
-                var download = new Button
-                {
-                    Content = "开始下载",
-                    HorizontalAlignment = HorizontalAlignment.Left,
-                    IsEnabled = versions.Items.Count > 0
-                };
-                download.Classes.Add("primary");
-                download.Click += async (_, _) =>
-                {
-                    if (list.SelectedIndex < 0)
-                    {
-                        ShowToast("请选择资源版本。");
-                        return;
-                    }
-                    var versionId = versions.Items[list.SelectedIndex].Id;
-                    var local = localOnly || mode.SelectedIndex == 1;
-                    if (local)
-                    {
-                        pendingLocalVersion = versionId;
-                        await facade.PickFolderAsync("download");
-                    }
-                    else
-                    {
-                        await facade.QueueContentVersionAsync(versions.Token, versionId, "instance");
-                        ShowToast("下载请求已提交，请查看任务列表。");
-                    }
-                };
-                Add(download);
-            }
-            else
-            {
-                var choose = new Button { Content = "选择版本并安装", HorizontalAlignment = HorizontalAlignment.Left };
-                choose.Classes.Add("primary");
-                choose.Click += async (_, _) =>
-                {
-                    versionRequest = selected.Id;
-                    ShowToast("正在读取兼容版本…");
-                    await facade.ListContentVersionsAsync(
-                        selected.Id,
-                        type,
-                        typed?.SelectedInstance ?? "",
-                        requestId: selected.Id);
-                };
-                Add(choose);
-            }
-            return;
-        }
-
-        if (contentItems.Count > 0)
-        {
-            foreach (var item in contentItems)
-            {
-                Add(item.Name + (item.Description.Length > 0 ? "  ·  " + item.Description : ""));
-                var current = item;
-                var detail = new Button { Content = "详情", HorizontalAlignment = HorizontalAlignment.Left };
-                detail.Click += (_, _) =>
-                {
-                    selectedContent = current;
-                    availableVersions = null;
-                    versionRequest = "";
-                    Render();
-                };
-                Add(detail);
-                var choose = new Button { Content = "选择版本", HorizontalAlignment = HorizontalAlignment.Left };
-                choose.Click += async (_, _) =>
-                {
-                    selectedContent = current;
-                    availableVersions = null;
-                    versionRequest = current.Id;
-                    Render();
-                    ShowToast("正在读取兼容版本…");
-                    await facade.ListContentVersionsAsync(
-                        current.Id,
-                        downloadCategory,
-                        typed?.SelectedInstance ?? "",
-                        requestId: current.Id);
-                };
-                Add(choose);
-            }
-        }
-        else
-        {
-            Add("输入关键词后搜索 Modrinth。");
-        }
     }
 
     void RenderAccount()
