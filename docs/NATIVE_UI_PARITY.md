@@ -14,12 +14,12 @@
 
 | 功能 | Web 入口 | 原生状态 |
 | --- | --- | --- |
-| 实例列表与启动 | `home-page.js` | 基础完成（启动、刷新） |
-| 实例选择 / 版本选择 | `home-page.js` | 缺失 |
-| 账号卡与登录入口 | `home-page.js`、`accounts.js` | 基础完成（微软/MUA/离线切换） |
+| 实例列表与启动 | `home-page.js` | 已完成（启动、刷新、按实例启动） |
+| 实例选择 / 版本选择 | `home-page.js` | 部分完成（主页实例列表/设为当前；版本分组检索待接） |
+| 账号卡与登录入口 | `home-page.js`、`accounts.js` | 已完成（账号卡 + 账号页切换） |
 | 皮肤、披风、MUA 档案 | `avatars.js`、`mua-profiles.js` | 缺失 |
-| 主页服务器状态 | `home-page.js`、`host.js` | 缺失 |
-| 公告 / 推荐 / 语录 | `home-page.js`、`community-pages.js` | 缺失 |
+| 主页服务器状态 | `home-page.js`、`host.js` | 已完成（自动查询、添加/编辑/删除） |
+| 公告 / 推荐 / 语录 | `home-page.js`、`community-pages.js` | 已完成文本展示（公告配图待接） |
 | 下载分类与搜索 | `resource-pages.js` | 已完成（五类 Modrinth 搜索） |
 | 资源详情 / 版本选择 / 安装 | `resource-pages.js`、`resource-picker.js` | 已完成基础流程（版本选择、实例安装/目录下载） |
 | 原版版本列表 / 安装 | `resource-pages.js` | 缺失 |
@@ -53,7 +53,8 @@
 3. **实例页（已完成第一版）**：实例切换、启动参数、模组启停/删除、克隆/导出/卸载/更新；
    分类与收藏等描述字段仍待接。
 4. **下载页（进行中）**：社区推荐、原版、模组/整合包/资源包/光影/数据包、详情、版本选择、安装、加载器、整合包导入。
-5. **主页与账号**：账号卡、皮肤/披风、MUA 档案、服务器、公告、推荐、语录、版本选择。
+5. **主页（已完成第一版）**：账号卡、实例列表/启动、服务器状态、公告/推荐/语录；账号皮肤与
+   MUA 档案仍待接。
 6. **外围工具**：任务、运行中游戏、收藏、目录、管理员发布。
 7. **删除 WebView 主界面**：删除 `Ui/`、`MainWindow`、`bridge.js`、Web 边界检查与 `WebUiChecks`；
    更新 `scripts/build.ps1`、CI 与文档；保留 `MicrosoftLoginWindow` 的 WebView2。

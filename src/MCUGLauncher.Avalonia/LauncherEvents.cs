@@ -341,3 +341,104 @@ internal sealed record CommunityPayload(IReadOnlyDictionary<string, string> Payl
         return new CommunityPayload(payload);
     }
 }
+
+internal sealed record AnnouncementInfo(
+    string Id,
+    string Title,
+    string Body,
+    string Tag,
+    string Author,
+    DateTimeOffset? PublishedAt,
+    string ImageUrl)
+{
+    public static AnnouncementInfo From(JsonElement element)
+    {
+        var date = JsonRead.String(element, "publishedAt");
+        if (date.Length == 0)
+            date = JsonRead.String(element, "date");
+        return new AnnouncementInfo(
+            JsonRead.String(element, "id"),
+            JsonRead.String(element, "title"),
+            JsonRead.String(element, "body") is { Length: > 0 } body ? body : JsonRead.String(element, "text"),
+            JsonRead.String(element, "tag") is { Length: > 0 } tag ? tag : "公告",
+            JsonRead.String(element, "author"),
+            DateTimeOffset.TryParse(date, out var published) ? published : null,
+            JsonRead.String(element, "imageUrl") is { Length: > 0 } image ? image : JsonRead.String(element, "image"));
+    }
+}
+
+internal sealed record RecommendationInfo(
+    string Id,
+    string Type,
+    string Name,
+    string Author,
+    string Description,
+    IReadOnlyList<string> Tags,
+    string Version,
+    string Size,
+    string Url)
+{
+    public static RecommendationInfo From(JsonElement element)
+    {
+        var type = JsonRead.String(element, "type");
+        return new RecommendationInfo(
+            JsonRead.String(element, "id"),
+            type is "server" or "material" or "shader" ? type : "server",
+            JsonRead.String(element, "name"),
+            JsonRead.String(element, "author"),
+            JsonRead.String(element, "description") is { Length: > 0 } description
+                ? description
+                : JsonRead.String(element, "desc"),
+            JsonRead.Strings(element, "tags"),
+            JsonRead.String(element, "version"),
+            JsonRead.String(element, "size"),
+            JsonRead.String(element, "url") is { Length: > 0 } url ? url : JsonRead.String(element, "address"));
+    }
+}
+
+internal sealed record QuoteInfo(
+    string Id,
+    string Type,
+    string Text,
+    string Author,
+    string Source,
+    string ImageUrl)
+{
+    public static QuoteInfo From(JsonElement element) => new(
+        JsonRead.String(element, "id"),
+        JsonRead.String(element, "type") is { Length: > 0 } type ? type : "text",
+        JsonRead.String(element, "text"),
+        JsonRead.String(element, "author"),
+        JsonRead.String(element, "source"),
+        JsonRead.String(element, "imageUrl"));
+}
+
+internal sealed record CommunityData(
+    IReadOnlyList<AnnouncementInfo> Announcements,
+    IReadOnlyList<RecommendationInfo> Recommendations,
+    IReadOnlyList<QuoteInfo> Quotes)
+{
+    public static CommunityData Empty { get; } = new([], [], []);
+
+    public static CommunityData From(CommunityPayload payload) => new(
+        Parse(payload, "announcements", AnnouncementInfo.From),
+        Parse(payload, "recommendations", RecommendationInfo.From),
+        Parse(payload, "quotes", QuoteInfo.From));
+
+    static IReadOnlyList<T> Parse<T>(CommunityPayload payload, string key, Func<JsonElement, T> map)
+    {
+        if (!payload.Payload.TryGetValue(key, out var json) || string.IsNullOrWhiteSpace(json))
+            return [];
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.ValueKind == JsonValueKind.Array
+                ? document.RootElement.EnumerateArray().Select(map).ToArray()
+                : [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+}

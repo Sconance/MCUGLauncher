@@ -33,6 +33,7 @@ internal sealed class LauncherFacade : IDisposable
     public event Action<TestResultInfo>? TestResultReceived;
     public event Action<KeyResultInfo>? KeyResultReceived;
     public event Action<CommunityPayload>? CommunityReceived;
+    public event Action<CommunityData>? CommunityChanged;
     public event Action<AvatarInfo>? AvatarReceived;
     public event Action<LoaderListInfo>? LoaderListReceived;
     public event Action<VanillaVersionInfo[]>? VanillaListReceived;
@@ -55,6 +56,7 @@ internal sealed class LauncherFacade : IDisposable
     public IReadOnlyList<GameInfo> Games { get; private set; } = Array.Empty<GameInfo>();
     public IReadOnlyList<JavaInfo> JavaList { get; private set; } = Array.Empty<JavaInfo>();
     public IReadOnlyList<SaveBackupInfo> SaveBackups { get; private set; } = Array.Empty<SaveBackupInfo>();
+    public CommunityData Community { get; private set; } = CommunityData.Empty;
 
     public LauncherFacade(IDesktopHost desktop)
     {
@@ -495,7 +497,10 @@ internal sealed class LauncherFacade : IDisposable
                 KeyResultReceived?.Invoke(KeyResultInfo.From(root));
                 break;
             case "community":
-                CommunityReceived?.Invoke(CommunityPayload.From(root));
+                var payload = CommunityPayload.From(root);
+                Community = CommunityData.From(payload);
+                CommunityChanged?.Invoke(Community);
+                CommunityReceived?.Invoke(payload);
                 break;
             case "avatar":
                 AvatarReceived?.Invoke(AvatarInfo.From(root));

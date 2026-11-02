@@ -15,6 +15,7 @@ public partial class ShellWindow : Window
     readonly ShellDesktopHost host;
     readonly SettingsView settingsView;
     readonly InstancesView instancesView;
+    readonly HomeView homeView;
     readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     StackPanel? pageContent;
     LauncherState? typed;
@@ -39,6 +40,8 @@ public partial class ShellWindow : Window
         facade = new LauncherFacade(host);
         settingsView = new SettingsView(facade);
         instancesView = new InstancesView(facade);
+        homeView = new HomeView(facade);
+        homeView.AccountRequested += () => Show("account");
         Width = Math.Clamp(facade.Config.WindowWidth, 900, 7680);
         Height = Math.Clamp(facade.Config.WindowHeight, 600, 4320);
         if (facade.Config.WindowMaximized)
@@ -62,7 +65,7 @@ public partial class ShellWindow : Window
         facade.StateChanged += snapshot =>
         {
             typed = snapshot;
-            if (page is "home" or "account")
+            if (page == "account")
                 Render();
         };
         facade.TasksChanged += list =>
@@ -111,6 +114,7 @@ public partial class ShellWindow : Window
         TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
         SettingsButton.Click += (_, _) => Show("settings");
         ClassicButton.Click += (_, _) => new MainWindow().Show();
+        Render();
         Opened += async (_, _) => await facade.StartAsync();
         Closed += (_, _) => facade.Dispose();
     }
@@ -139,6 +143,11 @@ public partial class ShellWindow : Window
             PageHost.Content = instancesView;
             return;
         }
+        if (page == "home")
+        {
+            PageHost.Content = homeView;
+            return;
+        }
         var panel = new StackPanel { Spacing = 12 };
         pageContent = panel;
         PageHost.Content = new ScrollViewer
@@ -152,19 +161,6 @@ public partial class ShellWindow : Window
             RenderAccount();
         else if (page == "tasks")
             RenderTasks();
-        else
-            RenderHome();
-    }
-
-    void RenderHome()
-    {
-        var view = new HomeView();
-        view.Render(typed);
-        view.LaunchRequested += name => _ = facade.LaunchAsync(name);
-        Add(view);
-        var refresh = new Button { Content = "刷新状态", HorizontalAlignment = HorizontalAlignment.Left };
-        refresh.Click += async (_, _) => await facade.RequestStateAsync();
-        Add(refresh);
     }
 
     void RenderDownload()
