@@ -3,13 +3,9 @@ using Avalonia.Controls;
 namespace MCUGLauncher.Avalonia.Views;
 internal static class MaintenanceDialogs
 {
-    public static async Task Uninstall(LauncherFacade session, Window owner, string version)
+    public static async Task Uninstall(ILauncherService session, UiContext ui, Window owner, string version)
     {
-        var result = await session.RequestAsync("uninstallPreview", new
-        {
-            type = "previewUninstall",
-            version
-        });
+        var result = await session.PreviewUninstallAsync(version: version);
         var content = Ui.Stack(
             Ui.Text(result.Notice)
         );
@@ -17,11 +13,7 @@ internal static class MaintenanceDialogs
             content.Children.Add(Ui.Text(path));
         var uninstall = Ui.Button("继续卸载", async () =>
                 {
-                    var queued = await session.RequestAsync("uninstallQueued", new
-                    {
-                        type = "applyUninstall",
-                        token = result.Token
-                    }, m => m.Token == result.Token);
+                    var queued = await session.ApplyUninstallAsync(token: result.Token);
                     if (!queued.Ok)
                         return;
                     (TopLevel.GetTopLevel(content) as Window)?.Close();
@@ -30,13 +22,9 @@ internal static class MaintenanceDialogs
         await Ui.Show(owner, "确认卸载范围", content, 680, 560, Ui.DialogActions(content, uninstall), "请检查文件列表。继续后还需确认删除。");
     }
 
-    public static async Task Updates(LauncherFacade session, Window owner, string version)
+    public static async Task Updates(ILauncherService session, UiContext ui, Window owner, string version)
     {
-        var result = await session.RequestAsync("contentUpdates", new
-        {
-            type = "checkContentUpdates",
-            version
-        });
+        var result = await session.CheckUpdatesAsync(version: version);
         var content = Ui.Stack(Ui.Muted("选择需要更新的内容，先查看文件变更，再确认应用。"));
         var selected = new List<(string Id, CheckBox Box)>();
         foreach (var item in result.Items)
@@ -52,22 +40,13 @@ internal static class MaintenanceDialogs
         var review = Ui.Button("预览所选更新", async () =>
                 {
                     var ids = selected.Where(i => i.Box.IsChecked == true).Select(i => i.Id).ToArray();
-                    var preview = await session.RequestAsync("contentUpdatePreview", new
-                    {
-                        type = "previewContentUpdates",
-                        token = result.Token,
-                        projects = ids
-                    });
+                    var preview = await session.PreviewUpdatesAsync(token: result.Token, projects: ids);
                     var plan = Ui.Stack(Ui.Muted("以下文件将按预览结果更新。"));
                     foreach (var change in preview.Changes)
                         plan.Children.Add(Ui.Text(change.Path + " · " + change.Before + " → " + change.After));
                     var apply = Ui.Button("应用更新", async () =>
                     {
-                        await session.RequestAsync("contentUpdateQueued", new
-                        {
-                            type = "applyContentUpdates",
-                            token = preview.Token
-                        }, m => m.Token == preview.Token);
+                        await session.ApplyUpdatesAsync(token: preview.Token);
                         (TopLevel.GetTopLevel(plan) as Window)?.Close();
                         (TopLevel.GetTopLevel(content) as Window)?.Close();
                     }, true);

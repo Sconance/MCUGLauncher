@@ -6,7 +6,7 @@ namespace MCUGLauncher.Avalonia.Views;
 // Only displays validated raster bytes; network access is delegated to the existing application policy.
 internal sealed class RemoteImage : UserControl
 {
-    readonly LauncherFacade session;
+    readonly ILauncherService session;
     readonly string url;
     readonly Image image = new()
     {
@@ -16,7 +16,7 @@ internal sealed class RemoteImage : UserControl
     readonly TextBlock status = Ui.Text("图片加载中…", 11);
     bool loaded;
     bool detached;
-    public RemoteImage(LauncherFacade session, string url, double size = 0)
+    public RemoteImage(ILauncherService session, UiContext ui, string url, double size = 0)
     {
         this.session = session;
         this.url = url;
@@ -49,16 +49,7 @@ internal sealed class RemoteImage : UserControl
                 bytes = Convert.FromBase64String(url[(url.IndexOf(',') + 1)..]);
             else
             {
-                var id = Guid.NewGuid().ToString("N");
-                var result = await session.RequestAsync("imageData", new
-                {
-                    type = "readImage",
-                    url,
-                    requestId = id
-                }, m => m.RequestId == id);
-                if (!result.Ok)
-                    throw new IOException("图片不可用");
-                bytes = Convert.FromBase64String(result.Image);
+                bytes = await session.DownloadImageAsync(url);
             }
 
             if (detached)

@@ -7,7 +7,8 @@ namespace MCUGLauncher.UseCases;
 internal sealed class BookmarkCommands(LauncherContext context)
 {
     ResourceBookmarkStore Store => new(context.Store.DataDirectory);
-    public object Snapshot() => Store.Read().Select(b => new { id = b.Project.Id, kind = b.Kind, name = b.Project.Title, description = b.Project.Description });
+    public Contracts.ResourceInfo[] Snapshot() => Store.Read().Select(b => new Contracts.ResourceInfo { Id = b.Project.Id, Kind = b.Kind, Name = b.Project.Title, Description = b.Project.Description, Author = b.Project.Author, Icon = b.Project.IconUrl, Downloads = b.Project.Downloads }).ToArray();
+
     public void Toggle(JsonElement root)
     {
         var id = ReadString(root, "id");

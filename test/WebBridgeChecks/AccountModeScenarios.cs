@@ -15,7 +15,7 @@ internal static class AccountModeScenarios
         var store = new ConfigStore(directory);
         store.Save(new AppConfig { Player = "OfflineName", OfflinePlayer = "OfflineName", Root = fixture });
         var messages = new List<JsonElement>();
-        using var context = new LauncherContext(value => messages.Add(JsonSerializer.SerializeToElement(value)), store);
+        using var context = new LauncherContext(value => messages.Add(FixtureMessages.Capture(value)), store);
         var restores = 0;
         var modes = new AccountModeCommands(context, kind =>
         {

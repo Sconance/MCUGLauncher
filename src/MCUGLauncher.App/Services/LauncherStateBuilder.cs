@@ -1,82 +1,57 @@
-using MCUGLauncher;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Models;
 
 namespace MCUGLauncher.Services;
 
-// Reads one local snapshot; message routing stays in LauncherApplication.
+/// <summary>Build one typed snapshot; mutable configuration never escapes to a View.</summary>
+/// <remarks>B: reads AppConfig fields, VersionCatalog.Load/ReadMods and supplied favorite snapshots. No UI or protocol parsing.</remarks>
 internal static class LauncherStateBuilder
 {
-    public static object Build(AppConfig config, object favorites)
+    public static LauncherState Build(AppConfig config, Contracts.ResourceInfo[] favorites)
     {
         var catalog = VersionCatalog.Load(config.Root, config.LastInstance);
         var selectedVersion = catalog.Groups.Count == 0 ? "" :
-            catalog.Instances.Any(item => item.Name.Equals(config.LastVersion, StringComparison.OrdinalIgnoreCase))
-                ? config.LastVersion : catalog.Selected;
-
-        var mods = VersionCatalog.ReadMods(config.Root, catalog.Selected);
-        var state = new
+            catalog.Instances.Any(item => item.Name.Equals(config.LastVersion, StringComparison.OrdinalIgnoreCase)) ? config.LastVersion : catalog.Selected;
+        var prefs = config.LegacyPreferences;
+        return new LauncherState
         {
-            type = "state",
-            appVersion = ProductInfo.Version,
-            player = config.Player,
-            accountType = config.AccountType,
-            accountLabel = config.AccountType switch
+            AppVersion = ProductInfo.Version,
+            Player = config.Player,
+            AccountType = config.AccountType,
+            Root = config.Root,
+            GameRoots = config.GameRoots.Append(config.Root).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+            Java = config.Java,
+            Width = config.Width,
+            Height = config.Height,
+            Ram = config.Ram,
+            AutoMemory = config.AutoMemory,
+            SelectedVersion = selectedVersion,
+            SelectedInstance = catalog.Selected,
+            Anonymous = config.Anonymous,
+            CommunityKey = !string.IsNullOrWhiteSpace(config.CommunityKey),
+            AdminKey = !string.IsNullOrWhiteSpace(config.AdminKey),
+            SkinStation = config.SkinStation,
+            Cape = config.Cape,
+            WriteEndpoint = config.WriteEndpoint,
+            Preferences = new PreferencesInfo
             {
-                "microsoft" => "正版账号 · 在线验证",
-                "mua" => "MUA 账号 · 外置登录",
-                _ => "离线账号 · 本地启动"
+                BackgroundPath = prefs.BackgroundPath,
+                BackgroundFit = prefs.BackgroundFit,
+                BackgroundOpacity = prefs.BackgroundOpacity,
+                SaveBackupCount = prefs.SaveBackupCount,
+                ResourceDownloadDirectory = prefs.ResourceDownloadDirectory,
+                Network = new NetworkSettingsInfo { DownloadSource = prefs.Network.DownloadSource, ProxyMode = prefs.Network.ProxyMode, ProxyAddress = prefs.Network.ProxyAddress, LimitKibPerSecond = prefs.Network.LimitKibPerSecond }
             },
-            root = config.Root,
-            gameRoots = config.GameRoots.Append(config.Root).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
-            java = config.Java,
-            width = config.Width,
-            height = config.Height,
-            selectedVersion,
-            selectedInstance = catalog.Selected,
-            ram = config.Ram,
-            autoMemory = config.AutoMemory,
-            preferences = config.LegacyPreferences,
-            anonymous = config.Anonymous,
-            communityKey = !string.IsNullOrWhiteSpace(config.CommunityKey),
-            adminKey = !string.IsNullOrWhiteSpace(config.AdminKey),
-            skinStation = config.SkinStation,
-            cape = config.Cape,
-            versionGroups = catalog.Groups,
-            instances = catalog.Instances,
-            mods = mods.Select(mod => new
-            {
-                id = mod.Id,
-                name = mod.Name,
-                author = "本地模组",
-                desc = mod.File,
-                tags = new[] { "本地" },
-                size = FormatSize(mod.Size),
-                downloads = "",
-                v = string.IsNullOrWhiteSpace(mod.Version) ? "—" : mod.Version,
-                color = mod.Enabled ? "green" : "slate",
-                ic = "box",
-                file = mod.File,
-                path = mod.Path,
-                enabled = mod.Enabled,
-                update = ""
-            }),
-            favorites = favorites,
-            servers = config.Servers,
-            dataSources = new
-            {
-                announcements = config.DataSources.Announcements,
-                servers = config.DataSources.Servers,
-                recommendations = config.DataSources.Recommendations,
-                quotes = config.DataSources.Quotes
-            },
-            defaultDataSources = new DataSourceConfig(),
-            customDataSources = config.CustomDataSources ?? config.DataSources,
-            dataSourceMode = config.EffectiveDataSourceMode,
-            writeEndpoint = config.WriteEndpoint
+            Instances = catalog.Instances.Select(i => new Contracts.InstanceInfo { Id = i.Name, Name = i.Name, DisplayName = i.DisplayName, Minecraft = i.Minecraft, Loader = i.Loader }).ToArray(),
+            Mods = VersionCatalog.ReadMods(config.Root, catalog.Selected).Select(m => new Contracts.ModInfo { Id = m.Id, Name = m.Name, File = m.File, Version = m.Version, Enabled = m.Enabled, Path = m.Path, Size = m.Size }).ToArray(),
+            VersionGroups = catalog.Groups.Select(g => new VersionGroupInfo(g.Label, g.Count, g.Versions)).ToArray(),
+            Favorites = favorites,
+            Servers = config.Servers.Select(s => new ServerInfo { Name = s.Name, Address = s.Address }).ToArray(),
+            DataSources = Sources(config.DataSources),
+            DefaultDataSources = Sources(new()),
+            CustomDataSources = Sources(config.CustomDataSources ?? config.DataSources),
+            DataSourceMode = config.EffectiveDataSourceMode
         };
-        return state;
     }
-    static string FormatSize(long bytes) => bytes <= 0 ? "—" : bytes < 1024 * 1024
-        ? $"{bytes / 1024.0:0.#} KB" : $"{bytes / 1024.0 / 1024.0:0.#} MB";
-
+    static DataSourceSet Sources(DataSourceConfig source) => new() { Announcements = source.Announcements, Servers = source.Servers, Recommendations = source.Recommendations, Quotes = source.Quotes };
 }

@@ -4,7 +4,7 @@ namespace MCUGLauncher.Avalonia.Views;
 
 internal sealed class NetworkSettingsPage : NativePage
 {
-    public NetworkSettingsPage(LauncherFacade session) : base(session)
+    public NetworkSettingsPage(ILauncherService session, UiContext ui) : base(session, ui)
     {
         Title("下载与网络", "管理游戏文件下载、速度限制和代理；社区内容地址在数据源中设置。");
         var settings = State.Preferences.Network;
@@ -29,18 +29,7 @@ internal sealed class NetworkSettingsPage : NativePage
         {
             if (!int.TryParse(limit.Text, out var speed))
                 throw new ArgumentException("速度上限必须是整数。");
-            await Send(new
-            {
-                type = "saveSettings",
-                network = new
-                {
-                    downloadSource = source.SelectedItem as string ?? "",
-                    proxyMode = proxy.SelectedItem as string ?? "",
-                    proxyAddress = address.Text ?? "",
-                    limitKibPerSecond = speed
-                },
-                resourceDownloadDirectory = directory.Text ?? ""
-            });
-        }, true), Ui.Action("社区数据源", () => Session.Navigate?.Invoke("sources"))));
+            await Session.SaveSettingsAsync(new AppSettingsPatch { Network = new NetworkSettingsInfo { DownloadSource = source.SelectedItem as string ?? "", ProxyMode = proxy.SelectedItem as string ?? "", ProxyAddress = address.Text ?? "", LimitKibPerSecond = speed }, ResourceDownloadDirectory = directory.Text ?? "" });
+        }, true), Ui.Action("社区数据源", () => UI.Navigate?.Invoke("sources"))));
     }
 }

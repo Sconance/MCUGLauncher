@@ -6,12 +6,15 @@ namespace MCUGLauncher.Avalonia.Views;
 internal sealed class HomeFeedPanel : NativePage
 {
     readonly string kind;
-    readonly Dictionary<string, NativeMessage> pings = [];
+    readonly Dictionary<string, ServerPingInfo> pings = [];
     int index;
     readonly HashSet<string> queried = [];
-    public HomeFeedPanel(LauncherFacade session, string kind) : base(session)
+    public HomeFeedPanel(ILauncherService session, UiContext ui, string kind) : base(session, ui)
     {
         this.kind = kind;
+        session.CommunityChanged += OnCommunity;
+        session.ServerPingReceived += OnPing;
+        UnsubscribeWith(() => { session.CommunityChanged -= OnCommunity; session.ServerPingReceived -= OnPing; });
         Draw();
         PingMissing();
     }
@@ -21,7 +24,7 @@ internal sealed class HomeFeedPanel : NativePage
             return;
         foreach (var server in State.Servers)
             if (queried.Add(server.Address))
-                global::Avalonia.Threading.Dispatcher.UIThread.Post(() => { _ = Send(new { type = "pingServer", address = server.Address, id = server.Address }); });
+                global::Avalonia.Threading.Dispatcher.UIThread.Post(() => { _ = Session.PingServerAsync(address: server.Address, id: server.Address); });
     }
     void Draw()
     {
@@ -60,14 +63,14 @@ internal sealed class HomeFeedPanel : NativePage
     Grid Servers()
     {
         var panel = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 10 };
-        var tools = Ui.Row(Link("‹", () => { index--; Draw(); }), Link("›", () => { index++; Draw(); }), Link("添加服务器", () => ServerDialog.Open(Session, Owner)));
+        var tools = Ui.Row(Link("‹", () => { index--; Draw(); }), Link("›", () => { index++; Draw(); }), Link("添加服务器", () => ServerDialog.Open(Session, UI, Owner)));
         panel.Children.Add(Header("正在开设的服务器", tools));
         var items = State.Servers;
         Control body;
         if (items.Length == 0)
         {
             var copy = Ui.Stack(Ui.Text("还没有添加服务器", 12), Ui.Muted("填入 host:port，就能在这里看到实时人数与延迟。"));
-            body = Ui.Beside(copy, Link("＋ 添加", () => ServerDialog.Open(Session, Owner)));
+            body = Ui.Beside(copy, Link("＋ 添加", () => ServerDialog.Open(Session, UI, Owner)));
             body.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
         }
         else
@@ -76,9 +79,9 @@ internal sealed class HomeFeedPanel : NativePage
             var status = pings.GetValueOrDefault(server.Address);
             body = Ui.Stack(Ui.Text(server.Name, 15), Ui.Muted(server.Address),
                 Ui.Text(status == null ? "正在查询状态…" : status.Online ? $"在线 · {status.Players}/{status.Max} 人 · {status.Ping} ms" : "离线或暂时无法连接", 11),
-                Ui.Row(Link("刷新状态", () => Send(new { type = "pingServer", address = server.Address, id = server.Address })),
-                    Link("编辑服务器", () => ServerDialog.Open(Session, Owner, server)),
-                    Link("移除", async () => { if (await Ui.Confirm(Owner, "移除服务器", "仅从收藏列表移除，不影响服务器本身。", "移除收藏", true)) await Send(new { type = "deleteServer", address = server.Address }); })));
+                Ui.Row(Link("刷新状态", () => Session.PingServerAsync(address: server.Address, id: server.Address)),
+                    Link("编辑服务器", () => ServerDialog.Open(Session, UI, Owner, server)),
+                    Link("移除", async () => { if (await Ui.Confirm(Owner, "移除服务器", "仅从收藏列表移除，不影响服务器本身。", "移除收藏", true)) await Session.DeleteServerAsync(address: server.Address); })));
         }
         Grid.SetRow(body, 1);
         panel.Children.Add(body);
@@ -88,7 +91,7 @@ internal sealed class HomeFeedPanel : NativePage
     Grid Announcements()
     {
         var panel = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 8 };
-        panel.Children.Add(Header("群公告", Link("查看全部", () => Ui.Show(Owner, "全部公告", new CommunityPage(Session, onlyFeed: "announcements")))));
+        panel.Children.Add(Header("群公告", Link("查看全部", () => Ui.Show(Owner, "全部公告", new CommunityPage(Session, UI, onlyFeed: "announcements")))));
         var items = Entries("announcements");
         Control body;
         if (items.Length == 0)
@@ -110,7 +113,7 @@ internal sealed class HomeFeedPanel : NativePage
             var row = Ui.Beside(copy, pager);
             if (entry.ImageUrl.Length > 0)
             {
-                var image = new RemoteImage(Session, entry.ImageUrl, 48);
+                var image = new RemoteImage(Session, UI, entry.ImageUrl, 48);
                 var illustrated = new Grid { ColumnDefinitions = new ColumnDefinitions("48,*"), ColumnSpacing = 10 };
                 illustrated.Children.Add(image);
                 Grid.SetColumn(row, 1);
@@ -127,14 +130,14 @@ internal sealed class HomeFeedPanel : NativePage
     Grid Recommendations()
     {
         var panel = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 10 };
-        panel.Children.Add(Header("群友推荐", Link("查看更多", () => Session.Navigate?.Invoke("community"))));
+        panel.Children.Add(Header("群友推荐", Link("查看更多", () => UI.Navigate?.Invoke("community"))));
         var rows = Ui.Stack();
         rows.Spacing = 6;
         foreach (var entry in Entries("recommendations").Take(3))
         {
             var copy = Ui.Stack(Ui.Text(entry.Name, 12), Ui.Muted("由 " + entry.Author + " 推荐", 10));
             copy.Spacing = 3;
-            var button = Ui.Button("", () => Recommendation(Session, Owner, entry));
+            var button = Ui.Button("", () => Recommendation(Session, UI, Owner, entry));
             button.Content = Ui.Beside(copy, Ui.Muted("›", 16));
             button.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
             button.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
@@ -164,7 +167,7 @@ internal sealed class HomeFeedPanel : NativePage
         if (entry?.ImageUrl.Length > 0)
         {
             var imageRow = new Grid { ColumnDefinitions = new ColumnDefinitions("136,*"), ColumnSpacing = 15 };
-            imageRow.Children.Add(new RemoteImage(Session, entry.ImageUrl, 70) { Width = 136 });
+            imageRow.Children.Add(new RemoteImage(Session, UI, entry.ImageUrl, 70) { Width = 136 });
             Grid.SetColumn(copy, 1);
             imageRow.Children.Add(copy);
             main = imageRow;
@@ -182,31 +185,36 @@ internal sealed class HomeFeedPanel : NativePage
         row.Children.Add(next);
         return row;
     }
-    internal static Task Recommendation(LauncherFacade session, Window owner, CommunityEntry entry)
+    internal static Task Recommendation(ILauncherService session, UiContext ui, Window owner, CommunityEntry entry)
     {
         if (entry.Type == "server")
-            return ServerDialog.Open(session, owner, new NativeItem { Name = entry.Name, Address = entry.Address.Length > 0 ? entry.Address : entry.Addr }, false);
-        session.PendingSearch = entry.Name;
-        session.Navigate?.Invoke(entry.Type == "shader" ? "shader" : "resourcepack");
+            return ServerDialog.Open(session, ui, owner, new ServerInfo { Name = entry.Name, Address = entry.Address.Length > 0 ? entry.Address : entry.Addr }, false);
+        ui.PendingSearch = entry.Name;
+        ui.Navigate?.Invoke(entry.Type == "shader" ? "shader" : "resourcepack");
         return Task.CompletedTask;
     }
-    protected override void Receive(NativeMessage message)
+    protected override void OnStateChanged()
     {
-        if (kind == "servers" && message.Type == "serverPing")
-        {
-            pings[message.Id] = message;
-            Draw();
-        }
-        if (message.Type is "state" or "community")
-        {
-            Draw();
-            PingMissing();
-        }
+        Draw();
+        PingMissing();
     }
+    void OnCommunity(IReadOnlyDictionary<string, CommunityEntry[]> entries)
+    {
+        Draw();
+        PingMissing();
+    }
+    void OnPing(ServerPingInfo info)
+    {
+        if (kind != "servers")
+            return;
+        pings[info.Id] = info;
+        Draw();
+    }
+
 }
 internal static class ServerDialog
 {
-    public static Task Open(LauncherFacade session, Window owner, NativeItem? server = null, bool editing = true)
+    public static Task Open(ILauncherService session, UiContext ui, Window owner, ServerInfo? server = null, bool editing = true)
     {
         var name = Ui.Input(server?.Name ?? "");
         var address = Ui.Input(server?.Address ?? "");
@@ -215,13 +223,7 @@ internal static class ServerDialog
         var content = Ui.Stack(Ui.Field("服务器名称", name), Ui.Field("服务器地址", address));
         var save = Ui.Button(editing && server != null ? "保存修改" : "添加服务器", async () =>
         {
-            var response = await session.RequestAsync("serverResult", new
-            {
-                type = "saveServer",
-                name = name.Text ?? "",
-                address = address.Text ?? "",
-                oldAddress = editing ? server?.Address ?? "" : ""
-            });
+            var response = await session.SaveServerAsync(name: name.Text ?? "", address: address.Text ?? "", oldAddress: editing ? server?.Address ?? "" : "");
             if (response.Ok)
                 (TopLevel.GetTopLevel(content) as Window)?.Close();
             else

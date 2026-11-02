@@ -1,3 +1,4 @@
+using MCUGLauncher.Contracts;
 using System.Text.Json;
 using MCUGLauncher;
 using MCUGLauncher.Models;
@@ -60,8 +61,8 @@ internal sealed class LauncherApplication : IDisposable
 
     public void RememberWindow(double width, double height, bool maximized)
     {
-        context.Config.WindowWidth = Math.Clamp(width, 960, 7680);
-        context.Config.WindowHeight = Math.Clamp(height, 640, 4320);
+        context.Config.WindowWidth = Math.Clamp(width, LaunchLimits.ShellWidthMin, LaunchLimits.ShellWidthMax);
+        context.Config.WindowHeight = Math.Clamp(height, LaunchLimits.ShellHeightMin, LaunchLimits.ShellHeightMax);
         context.Config.WindowMaximized = maximized;
         context.Store.Save(context.Config);
     }
@@ -95,7 +96,7 @@ internal sealed class LauncherApplication : IDisposable
                     maintenanceCommands.Export(root);
                     break;
                 case "pickSaveFile":
-                    desktop.PickSaveFile(ReadString(root, "target"));
+                    await PickPath(ReadString(root, "target"), desktop.PickSaveFileAsync(ReadString(root, "target")));
                     break;
                 case "previewUninstall":
                     await uninstallCommands.PreviewAsync(ReadString(root, "version"));
@@ -271,10 +272,10 @@ internal sealed class LauncherApplication : IDisposable
                     settingsCommands.SaveSettings(root);
                     break;
                 case "pickFolder":
-                    desktop.PickFolder(ReadString(root, "target"));
+                    await PickPath(ReadString(root, "target"), desktop.PickFolderAsync(ReadString(root, "target")));
                     break;
                 case "pickFile":
-                    desktop.PickFile(ReadString(root, "target"));
+                    await PickPath(ReadString(root, "target"), desktop.PickFileAsync(ReadString(root, "target")));
                     break;
                 case "scanJava":
                     await settingsCommands.ScanJavaAsync();
@@ -335,6 +336,18 @@ internal sealed class LauncherApplication : IDisposable
                 message = ex.Message
             });
         }
+    }
+
+    async Task PickPath(string target, Task<string?> choice)
+    {
+        var path = await choice;
+        if (path != null)
+            context.Send(new
+            {
+                type = "pickedPath",
+                target,
+                path
+            });
     }
 
     // Background completion refreshes are composed on the same thread as configuration edits.

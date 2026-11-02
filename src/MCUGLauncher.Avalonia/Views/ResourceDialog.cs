@@ -6,12 +6,12 @@ using MCUGLauncher.Avalonia.Presentation;
 namespace MCUGLauncher.Avalonia.Views;
 internal sealed class ResourceDialog : NativePage
 {
-    readonly NativeItem project;
+    readonly ResourceInfo project;
     readonly string category;
     readonly ComboBox instances;
     readonly TextBox game = Ui.Input("", "游戏版本（可留空）");
     readonly ComboBox loader = Ui.Select(new[] { "不限加载器", "vanilla", "fabric", "forge", "neoforge", "quilt" });
-    readonly ComboBox versions = Ui.Select(Array.Empty<NativeItem>());
+    readonly ComboBox versions = Ui.Select(Array.Empty<ResourceVersionInfo>());
     readonly ComboBox mode = Ui.Select(new[] { "安装到实例", "下载到自定义目录" });
     readonly TextBox destination = Ui.Input("", "下载目录");
     readonly TextBlock status = Ui.Text("选择目标并读取兼容版本后，再确认下载。");
@@ -19,14 +19,14 @@ internal sealed class ResourceDialog : NativePage
     readonly Control manualConditions;
     string token = "";
     int revision;
-    public ResourceDialog(LauncherFacade session, NativeItem project, string category) : base(session)
+    public ResourceDialog(ILauncherService session, UiContext ui, ResourceInfo project, string category) : base(session, ui)
     {
         destination.Text = State.Preferences.ResourceDownloadDirectory;
         this.project = project;
         this.category = category;
         var choices = new[]
         {
-            new NativeItem
+            new InstanceInfo
             {
                 Name = "不选择实例",
                 Id = ""
@@ -36,24 +36,17 @@ internal sealed class ResourceDialog : NativePage
         instances.SelectedItem = choices.FirstOrDefault(i => i.Id == State.SelectedInstance) ?? choices[0];
         var description = Ui.Stack(Ui.Heading(project.Title), Ui.Muted("作者：" + project.Author));
         var hero = new Grid { ColumnDefinitions = new ColumnDefinitions("80,*"), ColumnSpacing = 16 };
-        hero.Children.Add(new RemoteImage(Session, project.Icon, 80));
+        hero.Children.Add(new RemoteImage(Session, UI, project.Icon, 80));
         Grid.SetColumn(description, 1);
         hero.Children.Add(description);
         var details = Ui.Stack(hero, Ui.Text(project.Description), Ui.Action("在浏览器打开项目", () => Process.Start(new ProcessStartInfo("https://modrinth.com/project/" + Uri.EscapeDataString(project.Id)) { UseShellExecute = true })));
         details.Name = "ResourceDescription";
         confirm = Ui.Button("确认下载", async () =>
             {
-                if (versions.SelectedItem is not NativeItem version || token.Length == 0)
+                if (versions.SelectedItem is not ResourceVersionInfo version || token.Length == 0)
                     throw new ArgumentException("请读取并选择资源版本。");
                 var queuedToken = token;
-                await Session.RequestAsync("resourceQueued", new
-                {
-                    type = "queueContentVersion",
-                    token,
-                    versionId = version.Id,
-                    mode = mode.SelectedIndex == 1 ? "local" : "instance",
-                    path = destination.Text ?? ""
-                }, m => m.Token == queuedToken);
+                await Session.QueueContentVersionAsync(token: token, versionId: version.Id, mode: mode.SelectedIndex == 1 ? "local" : "instance", path: destination.Text ?? "");
                 (TopLevel.GetTopLevel(this) as Window)?.Close();
             }, true);
         var directory = Ui.Field("自定义下载目录", Ui.Beside(destination, Ui.Button("选择目录", async () => destination.Text = await FilePicker.Folder(Owner) ?? destination.Text)));
@@ -106,7 +99,7 @@ internal sealed class ResourceDialog : NativePage
         revision++;
         token = "";
         confirm.IsEnabled = false;
-        var selected = instances.SelectedItem as NativeItem;
+        var selected = instances.SelectedItem as InstanceInfo;
         manualConditions.IsVisible = selected?.Id.Length == 0;
         game.IsEnabled = loader.IsEnabled = selected?.Id.Length == 0;
     }
@@ -117,16 +110,7 @@ internal sealed class ResourceDialog : NativePage
         var generation = revision;
         status.Text = "正在读取版本…";
         var request = Guid.NewGuid().ToString("N");
-        var result = await Session.RequestAsync("resourceVersions", new
-        {
-            type = "listContentVersions",
-            id = project.Id,
-            category,
-            instance = (instances.SelectedItem as NativeItem)?.Id ?? "",
-            game = game.Text ?? "",
-            loader = loader.SelectedIndex > 0 ? loader.SelectedItem as string ?? "" : "",
-            requestId = request
-        }, m => m.RequestId == request);
+        var result = await Session.ListContentVersionsAsync(id: project.Id, category: category, instance: (instances.SelectedItem as InstanceInfo)?.Id ?? "", game: game.Text ?? "", loader: loader.SelectedIndex > 0 ? loader.SelectedItem as string ?? "" : "", requestId: request);
         if (generation != revision)
             return;
         versions.ItemsSource = result.Items;
@@ -136,15 +120,5 @@ internal sealed class ResourceDialog : NativePage
         status.Text = result.Items.Length > 0 ? $"找到 {result.Items.Length} 个版本 · {result.Game} / {result.Loader}" : "没有兼容版本，请更换实例或条件。";
     }
 
-    protected override void Receive(NativeMessage message)
-    {
-        if (message.Type == "resourceQueued" && message.Token == token)
-        {
-            status.Text = "已加入下载任务。";
-            confirm.IsEnabled = false;
-            token = "";
-        }
-    }
-
-    public static Task Open(LauncherFacade session, Window owner, NativeItem project, string category) => Ui.Show(owner, "资源详情与安装选项", new ResourceDialog(session, project, category), 1000, 740);
+    public static Task Open(ILauncherService session, UiContext ui, Window owner, ResourceInfo project, string category) => Ui.Show(owner, "资源详情与安装选项", new ResourceDialog(session, ui, project, category), 1000, 740);
 }

@@ -17,7 +17,7 @@ File.WriteAllText(Path.Combine(versionDir, "custom-fabric.json"), """{"id":"cust
 store.Save(new MCUGLauncher.Models.AppConfig { Root = gameRoot, Player = "Fixture", LastVersion = "custom-fabric", LastInstance = "custom-fabric" });
 var messages = new List<JsonElement>();
 var desktop = new FakeDesktop();
-using var application = new LauncherApplication(value => messages.Add(JsonSerializer.SerializeToElement(value)), desktop, store);
+using var application = new LauncherApplication(value => messages.Add(FixtureMessages.Capture(value)), desktop, store);
 bool Has(string type) => messages.Any(m => m.GetProperty("type").GetString() == type);
 void Check(bool value, string name) { if (!value) throw new Exception(name); Console.WriteLine("PASS " + name); }
 async Task Request(string json) { messages.Clear(); await application.HandleAsync(json); }
@@ -136,20 +136,14 @@ sealed class FakeDesktop : IDesktopHost
 {
     public Task<bool> ConfirmStopGameAsync() => Task.FromResult(false);
     public Task<bool> ConfirmUninstallAsync(string name) => Task.FromResult(false);
-    public void PickSaveFile(string target)
-    {
-    }
+    public Task<string?> PickSaveFileAsync(string target) => Task.FromResult<string?>(null);
     public string LastAction = "";
     public void Window(string action) => LastAction = action;
     public void Drag()
     {
     }
-    public void PickFolder(string target)
-    {
-    }
-    public void PickFile(string target)
-    {
-    }
+    public Task<string?> PickFolderAsync(string target) => Task.FromResult<string?>(null);
+    public Task<string?> PickFileAsync(string target) => Task.FromResult<string?>(null);
     public void ResetWindow()
     {
     }

@@ -6,10 +6,10 @@ namespace MCUGLauncher.Avalonia.Views;
 internal sealed class SettingsPage : NativePage
 {
     readonly LaunchOptionsPage editor;
-    public SettingsPage(LauncherFacade session) : base(session)
+    public SettingsPage(ILauncherService session, UiContext ui) : base(session, ui)
     {
         Title("启动设置", "全局设置作为默认值；实例可在版本设置中单独覆盖。");
-        editor = new LaunchOptionsPage(session);
+        editor = new LaunchOptionsPage(session, ui);
         editor.PrepareDialog();
         Body.Children.Add(editor);
         _ = Load();

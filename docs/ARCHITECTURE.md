@@ -5,12 +5,12 @@
 ```text
 ShellWindow（窗口和导航）
   → Views（原生控件和对话框）
-  → LauncherFacade（类型化状态、消息兼容适配）
+  → ILauncherService / UiContext（类型化状态、消息兼容适配）
   → MCUGLauncher.App / UseCases（流程）
   → Services / Authentication / MCUGLauncher.Core（实际业务）
 ```
 
-窗口不扫描 Java，不安装资源，不读写配置文件。页面不持有 LauncherContext，不创建网络客户端，不管理游戏进程。界面状态在 LauncherFacade，菜单在 Presentation/NavigationCatalog。临时表单由页面持有，后端状态刷新不覆盖正在编辑的表单。
+窗口不扫描 Java，不安装资源，不读写配置文件。页面不持有 LauncherContext，不创建网络客户端，不管理游戏进程。界面状态在 ILauncherService / UiContext，菜单在 Presentation/NavigationCatalog。临时表单由页面持有，后端状态刷新不覆盖正在编辑的表单。
 
 队列和运行游戏由 App/Core 管理，页面导航不取消后台业务。ShellDesktopHost 是异步确认和原生文件选择的适配器。微软授权是唯一保留的独立网页用途，业务页面不使用浏览器。
 

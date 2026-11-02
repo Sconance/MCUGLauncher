@@ -1,3 +1,4 @@
+using MCUGLauncher.Contracts;
 using System.Text.Json;
 using MCUGLauncher;
 using static MCUGLauncher.UseCases.ProtocolValues;
@@ -48,7 +49,7 @@ internal sealed class SettingsCommands(LauncherContext context)
         if (root.TryGetProperty("autoMemory", out var autoMemory))
             context.Config.AutoMemory = autoMemory.GetBoolean();
         if (root.TryGetProperty("ram", out var ram) && ram.TryGetInt32(out var ramValue))
-            context.Config.Ram = Math.Clamp(ramValue, 512, 65536);
+            context.Config.Ram = Math.Clamp(ramValue, LaunchLimits.RamMin, LaunchLimits.RamMax);
         if (requestedRoot.Length > 0)
         {
             if (!string.IsNullOrWhiteSpace(context.Config.Root))
@@ -66,9 +67,9 @@ internal sealed class SettingsCommands(LauncherContext context)
                 preferences.ExtraJavaPaths = preferences.ExtraJavaPaths.Append(context.Config.Java).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
         if (root.TryGetProperty("width", out var width) && width.TryGetInt32(out var widthValue))
-            context.Config.Width = Math.Clamp(widthValue, 640, 7680);
+            context.Config.Width = Math.Clamp(widthValue, LaunchLimits.WindowWidthMin, LaunchLimits.WindowWidthMax);
         if (root.TryGetProperty("height", out var height) && height.TryGetInt32(out var heightValue))
-            context.Config.Height = Math.Clamp(heightValue, 480, 4320);
+            context.Config.Height = Math.Clamp(heightValue, LaunchLimits.WindowHeightMin, LaunchLimits.WindowHeightMax);
         // Keep the network object used by the active HTTP policy; proxy handlers change after restart.
         var currentNetwork = context.Config.LegacyPreferences.Network;
         currentNetwork.DownloadSource = preferences.Network.DownloadSource;

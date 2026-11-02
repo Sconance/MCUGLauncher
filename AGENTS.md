@@ -2,14 +2,15 @@
 
 ## 架构
 
-- MainWindow 只管理 WebView2 生命周期、窗口和原生对话框，不新增账号、安装、下载、配置或社区业务。
-- 不用 partial MainWindow 分散业务，也不把窗口或控件传入 UseCases。
-- 新功能优先复用 Core；Services 负责适配，UseCases 负责流程，Ui 负责展示和事件。不能为了换界面另写一套下载器、依赖解析器或 Java 扫描。
-- 后台任务由 LauncherTaskQueue/OperationCoordinator 管理，不能绑定在页面的 fetch 或路由生命周期上。
-- 前端按功能增添模块，避免继续扩大 app.js/host.js；演示内容只在独立浏览器预览出现，宿主模式不能用假数据填空。
+- ShellWindow 只管理导航、窗口生命周期和原生对话框，不新增账号、安装、下载、配置或社区业务。
+- 业务页面放在 `Views/*View`，只通过 `Contracts.ILauncherService` 调用 UseCases；不要把窗口、控件或内部命令协议传入 UseCases。共享 DTO 位于 `App/Contracts`。
+- 新功能优先复用 Core；Services 负责适配，UseCases 负责流程，Views 负责展示和事件。不能为了换界面另写一套下载器、依赖解析器或 Java 扫描。
+- 后台任务由 LauncherTaskQueue/OperationCoordinator 管理，不能绑定在页面导航或视图生命周期上。
+- WebView2 只用于微软 OAuth 登录窗口；不要在启动器主界面重新引入 Web UI、`Ui/` 资源或浏览器消息桥。
 - 菜单必须提供实际入口；尚未接通的功能明确标注，不把有按钮当成功能完成。
 - 不以行数作为唯一标准。一个模块负责一件事，依赖应明确；避免过度抽象和仅转发调用的无意义文件。
 - 后端组件分级、依赖声明与 Core 下沉规则见 [后端开发规范](BACKEND_DEVELOPMENT.md)：新组件优先做成完全独立组件，依赖现有组件的必须逐成员声明。
+- UI 开发遵循 [UI 开发指南](docs/UI_DEVELOPMENT.md)：UI 任务只修改 `src/MCUGLauncher.Avalonia/`；禁止自动修改 `App`/`Core`/`Contracts`/测试；需要业务变更必须先向用户说明并等待确认。
 
 ## 兼容性
 
@@ -21,30 +22,18 @@
 
 ## 提交前
 
-运行布局、版本、C# SourceFormatter、JavaScript Prettier、Web 边界检查及受影响的 test/*Checks。修改页面需运行 WebUiChecks 并查看截图。修改任务需验证排队、取消和恢复。
+运行布局、版本、C# SourceFormatter、原生 UI 边界检查及受影响的 test/*Checks。修改页面需实际启动并查看截图/控件状态。修改任务需验证排队、取消和恢复。
 
-测试进程、假 HTTP 和浏览器模拟桥接不能代替真实账号、游戏和 WebView2 验收；提交说明须说明验证范围和剩余缺口。
+测试进程、假 HTTP 和模拟对话框不能代替真实账号、游戏和 WebView2（微软登录）验收；提交说明须说明验证范围和剩余缺口。
 
 只推送用户指定分支。发布 Release、移动标签或覆盖正式程序须有相应用户指示。
 
-前端 app.js 只保留路由，页面不要放回入口；原生模式不能直接加载 preview-data.js。服务层不反向依赖 UseCases。卸载必须经过路径预览与原生确认，恢复排队卸载也必须确认。
+Views 通过 `ILauncherService` 调用业务，不得直接接触 `LauncherService` 内部协议或 `AppConfig`；服务层不反向依赖 UseCases。卸载必须经过路径预览与原生确认，恢复排队卸载也必须确认。WebView2 仅用于微软登录，不得恢复主界面 Web UI。
 
 
 ## 0.24.0-codex 执行说明
 
-上述开发约定以 `0.22.3-Avalonia` 的 `7f1dc70f4ca062218ec546caa50cec6d3019f712` 为来源。除用户明确提出额外需求外，每次开发都必须执行；不能以本分支是 AI 实验为由降低架构、依赖声明或验证要求。
-
-### 用户已授权的框架对应关系
-
-用户已明确要求把主界面迁移到 Avalonia。这是对上文 WPF/WebView 主界面技术条目的具体替代，不改变职责边界：
-
-- `ShellWindow` 对应原 `MainWindow` 壳，只组装窗口、导航与宿主适配，不承载业务算法，不用 partial 隐藏业务。
-- `Views` 对应原 `Ui` 展示层；按功能拆分原生控件，不创建下载器、认证服务、配置存储或任务队列。
-- `Presentation` 与 `LauncherFacade` 处理类型化界面状态与协议兼容适配；App/Core 不得反向引用视图。
-- 后端当前路径为 `src/MCUGLauncher.App`，原规范中的 `src/MCUGLauncher` 后端路径按此对应。
-- 页面验证运行 `NativeUiChecks` 并查看 Skia 截图。旧 JavaScript 已移除，因此本分支不虚报 Prettier/WebUiChecks 通过；若以后新增 JavaScript，应恢复相应检查。
-- `scripts/check-web-boundaries.py` 已检查原生壳、App/Core 边界及命令对应关系；文件名保留不代表仍使用网页主界面。
-- 微软官方授权网页是独立认证适配，不得以此重新加入网页业务页面回退。
+本轮经用户授权同步迁移 UI、Contracts、App 与测试，参考提交 08f2d847fef0a85d70e838682335a24b175d647a；未改写其他分支。后续纯 UI 任务仍遵循上面的修改范围限制。UiContext 只保存导航、头像等展示状态；业务只通过 ILauncherService。
 
 ### 每次变更的交付流程
 

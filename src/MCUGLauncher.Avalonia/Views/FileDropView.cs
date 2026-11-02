@@ -9,12 +9,14 @@ namespace MCUGLauncher.Avalonia.Views;
 // Native file gesture and confirmation only; classification and installation remain in App/Core.
 internal sealed class FileDropView : Border, IDisposable
 {
-    readonly LauncherFacade session;
+    readonly ILauncherService session;
+    readonly UiContext ui;
     readonly Window owner;
     bool busy;
-    public FileDropView(LauncherFacade session, Window owner)
+    public FileDropView(ILauncherService session, UiContext ui, Window owner)
     {
         this.session = session;
+        this.ui = ui;
         this.owner = owner;
         IsVisible = false;
         IsHitTestVisible = false;
@@ -57,19 +59,11 @@ internal sealed class FileDropView : Border, IDisposable
             {
                 try
                 {
-                    var preview = await session.RequestAsync("localImportPreview", new
-                    {
-                        type = "previewLocalImport",
-                        path
-                    });
+                    var preview = await session.PreviewLocalImportAsync(path: path);
                     if (preview.Kind == "modpack")
-                        await InstallDialogs.ImportPath(session, owner, preview.Path);
+                        await InstallDialogs.ImportPath(session, ui, owner, preview.Path);
                     else if (await Ui.Confirm(owner, "确认导入", Path.GetFileName(path) + "\n目标实例：" + preview.Name + "\n目录：" + preview.Target + "\n同名文件不会覆盖", "开始导入"))
-                        await session.RequestAsync("localImportQueued", new
-                        {
-                            type = "confirmLocalImport",
-                            token = preview.Token
-                        }, m => m.Token == preview.Token);
+                        await session.ConfirmLocalImportAsync(token: preview.Token);
                 }
                 catch (Exception error) { await Ui.Error(owner, error.Message); }
             }

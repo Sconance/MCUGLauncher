@@ -3,21 +3,17 @@ using Avalonia.Controls;
 namespace MCUGLauncher.Avalonia.Views;
 internal static class InstallDialogs
 {
-    public static async Task Import(LauncherFacade session, Window owner)
+    public static async Task Import(ILauncherService session, UiContext ui, Window owner)
     {
         var path = await FilePicker.Open(owner, "整合包", "*.zip", "*.mrpack");
         if (path == null)
             return;
-        await ImportPath(session, owner, path);
+        await ImportPath(session, ui, owner, path);
     }
 
-    public static async Task ImportPath(LauncherFacade session, Window owner, string path)
+    public static async Task ImportPath(ILauncherService session, UiContext ui, Window owner, string path)
     {
-        var result = await session.RequestAsync("packPreview", new
-        {
-            type = "previewPack",
-            path
-        });
+        var result = await session.PreviewPackAsync(path: path);
         var name = Ui.Input(result.Name);
         var directory = Ui.Input(result.Root);
         var content = Ui.Stack(
@@ -28,19 +24,13 @@ internal static class InstallDialogs
         );
         var confirm = Ui.Button("开始导入", async () =>
                 {
-                    await session.RequestAsync("packQueued", new
-                    {
-                        type = "confirmPack",
-                        token = result.Token,
-                        name = name.Text ?? "",
-                        directory = directory.Text ?? ""
-                    }, m => m.Token == result.Token);
+                    await session.ConfirmPackAsync(token: result.Token, name: name.Text ?? "", directory: directory.Text ?? "");
                     (TopLevel.GetTopLevel(name) as Window)?.Close();
                 }, true);
         await Ui.Show(owner, "导入整合包", content, 600, 430, Ui.DialogActions(content, confirm), "确认名称与目标目录后开始导入。");
     }
 
-    public static async Task Loader(LauncherFacade session, Window owner, string version)
+    public static async Task Loader(ILauncherService session, UiContext ui, Window owner, string version)
     {
         var loader = Ui.Select(new[] { "fabric", "quilt", "forge", "neoforge" });
         var releases = Ui.Select(Array.Empty<string>());
@@ -49,13 +39,7 @@ internal static class InstallDialogs
             {
                 if (releases.SelectedItem is not string selected)
                     throw new ArgumentException("请先读取加载器版本。");
-                await session.RequestAsync("loaderQueued", new
-                {
-                    type = "installLoader",
-                    version,
-                    loader = loader.SelectedItem as string ?? "",
-                    loaderVersion = selected
-                });
+                await session.InstallLoaderAsync(version: version, loader: loader.SelectedItem as string ?? "", loaderVersion: selected);
                 (TopLevel.GetTopLevel(releases) as Window)?.Close();
             }, true);
         var revision = 0;
@@ -69,13 +53,7 @@ internal static class InstallDialogs
             try
             {
                 var request = Guid.NewGuid().ToString("N");
-                var result = await session.RequestAsync("loaderList", new
-                {
-                    type = "listLoaders",
-                    version,
-                    loader = kind,
-                    requestId = request
-                }, m => m.Version == version && m.Loader == kind && m.RequestId == request);
+                var result = await session.ListLoadersAsync(version: version, loader: kind, requestId: request);
                 if (generation != revision)
                     return;
                 releases.ItemsSource = result.Versions;

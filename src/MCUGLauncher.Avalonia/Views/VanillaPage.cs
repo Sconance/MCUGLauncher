@@ -10,10 +10,10 @@ internal sealed class VanillaPage : NativePage
     readonly TextBox query = Ui.Input("", "搜索 Minecraft 版本");
     readonly StackPanel results = Ui.Stack();
     readonly Dictionary<string, Button> tabs = [];
-    NativeItem[] versions = [];
+    VanillaVersionInfo[] versions = [];
     string category = "release";
     int page;
-    public VanillaPage(LauncherFacade session) : base(session)
+    public VanillaPage(ILauncherService session, UiContext ui) : base(session, ui)
     {
         Title("原版游戏", "选择正式版、快照或远古版本；也可配置兼容的模组加载器。");
         query.MinWidth = 0;
@@ -36,10 +36,7 @@ internal sealed class VanillaPage : NativePage
         results.Children.Add(Ui.Text("正在读取版本清单…"));
         try
         {
-            versions = (await Session.RequestAsync("vanillaList", new
-            {
-                type = "vanillaVersions"
-            })).Items;
+            versions = (await Session.ListVanillaVersionsAsync()).Items;
             page = 0;
             Draw();
         }
@@ -60,8 +57,8 @@ internal sealed class VanillaPage : NativePage
         page = Math.Clamp(page, 0, pages - 1);
         foreach (var version in filtered.Skip(page * PageSize).Take(PageSize))
         {
-            var actions = Ui.Row(Ui.Button("配置加载器", () => InstallDialogs.Loader(Session, Owner, version.Id)),
-                Ui.Button("安装", () => Send(new { type = "installVanilla", version = version.Id }), true));
+            var actions = Ui.Row(Ui.Button("配置加载器", () => InstallDialogs.Loader(Session, UI, Owner, version.Id)),
+                Ui.Button("安装", () => Session.InstallVanillaAsync(version: version.Id), true));
             results.Children.Add(Ui.Card(Ui.Beside(Ui.Stack(Ui.Text(version.Id, 14), Ui.Muted(version.Released)), actions)));
         }
         if (filtered.Length == 0)

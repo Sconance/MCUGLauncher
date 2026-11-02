@@ -5,15 +5,14 @@ namespace MCUGLauncher.Avalonia.Views;
 internal sealed class TasksPage : NativePage
 {
     readonly StackPanel list = Ui.Stack();
-    public TasksPage(LauncherFacade session) : base(session)
+    public TasksPage(ILauncherService session, UiContext ui) : base(session, ui)
     {
+        session.TasksChanged += OnTasks;
+        UnsubscribeWith(() => session.TasksChanged -= OnTasks);
         Title("下载任务", "任务独立于页面运行；取消保留已校验缓存，删除只清理历史记录。");
         Body.Children.Add(list);
         Draw();
-        _ = Send(new
-        {
-            type = "requestTasks"
-        });
+        _ = Session.RequestTasksAsync();
     }
 
     void Draw()
@@ -46,7 +45,7 @@ internal sealed class TasksPage : NativePage
                 }
             };
             foreach (var (label, action) in allowed)
-                actions.Children.Add(Ui.Button(label, () => Send(new { type = "taskAction", id = task.Id, action })));
+                actions.Children.Add(Ui.Button(label, () => Session.TaskActionAsync(id: task.Id, action: action)));
             list.Children.Add(Ui.Card(Ui.Stack(
                         Ui.Text(task.Name + " · " + StateLabel(task.State), 16),
                         Ui.Text(task.Message),
@@ -74,25 +73,20 @@ internal sealed class TasksPage : NativePage
         _ => state
     };
 
-    protected override void Receive(NativeMessage message)
-    {
-        if (message.Type == "tasks")
-            Draw();
-    }
+    void OnTasks(TaskInfo[] value) => Draw();
 }
 
 internal sealed class GamesPage : NativePage
 {
     readonly StackPanel list = Ui.Stack();
-    public GamesPage(LauncherFacade session) : base(session)
+    public GamesPage(ILauncherService session, UiContext ui) : base(session, ui)
     {
+        session.GamesChanged += OnGames;
+        UnsubscribeWith(() => session.GamesChanged -= OnGames);
         Title("运行中的游戏", "每个游戏独立管理。关闭前会确认，关闭启动器不关闭游戏。");
         Body.Children.Add(list);
         Draw();
-        _ = Send(new
-        {
-            type = "requestGames"
-        });
+        _ = Session.RequestGamesAsync();
     }
 
     void Draw()
@@ -101,15 +95,11 @@ internal sealed class GamesPage : NativePage
         foreach (var game in Session.Games)
             list.Children.Add(Ui.Card(Ui.Row(
                         Ui.Text(game.Version + " · " + game.Player),
-                        Ui.Button("关闭这个游戏", () => Send(new { type = "stopGame", id = game.Id }))
+                        Ui.Button("关闭这个游戏", () => Session.StopGameAsync(id: game.Id))
             )));
         if (list.Children.Count == 0)
             list.Children.Add(Ui.Text("没有正在运行的游戏。"));
     }
 
-    protected override void Receive(NativeMessage message)
-    {
-        if (message.Type == "games")
-            Draw();
-    }
+    void OnGames(GameInfo[] value) => Draw();
 }

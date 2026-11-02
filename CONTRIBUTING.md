@@ -7,7 +7,7 @@ Issue 请说明版本、系统、复现步骤、预期与实际结果，日志�
 当前开发分支为 `0.24.0-codex`，属于 AI 迁移框架尝试。主界面为 Avalonia 原生控件；WebView2 仅用于微软官方授权页面。
 
 - `src/MCUGLauncher.Avalonia/Views`：页面和弹窗展示、事件。
-- `Presentation` 与 `LauncherFacade`：界面状态与消息适配。
+- `Presentation` 与 `ILauncherService / UiContext`：界面状态与消息适配。
 - `src/MCUGLauncher.App/UseCases`：校验、预览、确认和入队。
 - App 的 Services/Authentication：运行环境适配。
 - `src/MCUGLauncher.Core`：可复用的启动、安装、解析、事务和存储能力。

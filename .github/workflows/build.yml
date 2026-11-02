@@ -17,7 +17,7 @@ jobs:
       - name: Validate repository layout
         run: python scripts/check-layout.py
       - name: Check native UI boundaries
-        run: python scripts/check-web-boundaries.py
+        run: python scripts/check-native-boundaries.py
       - name: Check version metadata
         run: python scripts/check-version.py
       - name: Check source formatting
@@ -26,7 +26,7 @@ jobs:
         run: ./scripts/build.ps1
 
       - name: Run isolated regression checks
-        run: ./scripts/run-checks.ps1 -Name MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks,WebBridgeChecks
+        run: ./scripts/run-checks.ps1 -Name LauncherChecks,MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks,WebBridgeChecks
 
       - name: Native Avalonia interaction and Skia layout checks
         run: ./scripts/run-checks.ps1 -Name NativeUiChecks

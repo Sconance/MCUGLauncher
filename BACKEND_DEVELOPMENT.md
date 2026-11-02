@@ -2,14 +2,18 @@
 
 ## 1. 目的
 
-本规范约束 `src/MCUGLauncher` 后端（UseCases、Services、Authentication、Models）的新增与修改，目标是：
+本规范约束 `src/MCUGLauncher.App` 后端（Contracts、UseCases、Services、Authentication、Models）的新增与修改，目标是：
 
 1. 让新组件尽可能只依赖 `MCUGLauncher.Core`，为后续插件化铺路；
 2. 让不得不依赖现有组件的组件，把依赖面**显式、完整、可审查**地写清楚；
 3. 修改现有组件时优先归纳逻辑，而不是不断堆叠新组件；
-4. 当共用逻辑的成本足够大时，把逻辑沉淀到 Core，而不是复制到更多组件。
+4. 当共用逻辑的成本足够大时，把逻辑沉淀到 Core，而不是复制到更多组件；
+5. 保持 `Contracts.ILauncherService` 是 UI 唯一入口，业务状态、事件和请求使用共享强类型契约。
 
-前端 Ui、MainWindow 与协议入口不属于“组件”，不在本规范的分级范围内，但仍受《AGENTS.md》约束。
+原生页面 `Views/*View`、`ShellWindow` 属于 UI 层，不在本规范的分级范围内，但仍受
+[UI 开发指南](docs/UI_DEVELOPMENT.md) 与《AGENTS.md》约束。
+
+后端任务不得顺手修改 Avalonia 页面或样式。若契约/接口变更会导致 UI 必须调整，按第 9 节说明并请求确认，不能静默改 UI。
 
 ## 2. 术语
 
@@ -19,14 +23,15 @@
 | **组件** | 一个承担单一职责的类或一组强内聚类，例如 `SaveCommands`、`LauncherTaskQueue` |
 | **完全独立组件（A）** | 除 Core/BCL/NuGet 外，不依赖仓库内任何已有 CS 类 |
 | **不完全独立组件（B）** | 除 Core 外，还依赖仓库内已有组件（如 `LauncherContext`、`LauncherTaskQueue`） |
-| **集成层（C）** | `LauncherApplication`、`MainWindow` 等只做装配/转发的入口，不承载业务 |
+| **契约层** | `src/MCUGLauncher.App/Contracts`：`ILauncherService`、`LauncherState`、事件 DTO、请求补丁、`LaunchLimits`、`WindowPlacement`；UI 与业务共享，不能放业务实现 |
+| **集成层（C）** | `LauncherService`、`LauncherApplication`、`IDesktopHost` 等只做装配、协议转发、线程调度的入口，不承载业务算法 |
 | **依赖面** | 组件实际使用的类型成员集合（方法、属性、事件），不是“引用到的整个类型” |
 
 ## 3. 组件分级与硬性规则
 
 ### 3.1 A 类：完全独立组件
 
-定义：只依赖 Core、BCL、NuGet；不引用 `LauncherContext`、`Services/*`、`Authentication/*`、`UseCases/*`、`Models/*`、WPF/WebView2。
+定义：只依赖 Core、BCL、NuGet；不引用 `LauncherContext`、`Services/*`、`Authentication/*`、`UseCases/*`、`Models/*`、Avalonia/WebView2。
 
 规则：
 
@@ -45,18 +50,45 @@
 
 - **必须在组件文档中声明依赖的全部类与成员**（方法签名、属性、事件），见第 4 节；
 - 依赖面只写实际使用的成员，不允许用“依赖 LauncherContext”这种笼统表述；
-- 不得依赖 `MainWindow`、`Ui/*`、WebView2、WPF 控件；
-- 不得反向依赖集成层（`LauncherApplication`）或其他 B 组件的**实现细节**；只允许依赖其公开契约/方法；
+- 不得依赖 `ShellWindow`、`Views/*`、WebView2、Avalonia 控件；
+- 不得反向依赖集成层（`LauncherService`、`LauncherApplication`）或其他 B 组件的**实现细节**；只允许依赖其公开契约/方法；
+- 可以使用 `Contracts` 中的状态/事件 DTO，但不得依赖 `ILauncherService` 的 UI 调用路径；
 - 新增依赖必须在同一提交更新依赖声明与登记表；
 - B 组件如果依赖超过 5 个成员，应评估拆分或上移 Core。
 
 ### 3.3 C 类：集成层
 
-`LauncherApplication`、`MainWindow`、`LauncherContext` 的构造与注册属于集成层：
+当前 C 类组件：
 
-- 只做装配、协议分发、窗口适配；
-- 不写业务算法；
-- 不把 C 层作为 B 组件的依赖（B 不得 `using` 集成层）。
+- `LauncherService`：实现 `Contracts.ILauncherService`，负责 UI 线程调度、事件解码和状态缓存；
+- `LauncherApplication`：命令协议入口与命令分发；
+- `IDesktopHost`：原生窗口/文件对话框契约，由 Avalonia 的 `ShellDesktopHost` 实现。
+
+规则：
+
+- 只做装配、协议分发、线程调度、窗口/桌面适配；
+- 不写账号、下载、安装、启动、实例维护等业务算法；
+- 不把 C 层作为 B 组件的依赖；B 组件不得 `using`/调用 `LauncherService` 或 `LauncherApplication`；
+- `LauncherService` 的 JSON/命令协议只能作为内部实现，不得暴露给 View；
+- `LauncherApplication` 现有 68 条字符串命令是过渡实现；新增业务应落在 Commands/Services/Core，不要继续把业务塞进 `LauncherApplication`；
+- `IDesktopHost` 的文件选择方法返回路径，由 App 侧产生类型化 `PathPicked`，不允许 UI 直接发送原始消息。
+
+`LauncherContext` 是共享运行时上下文（B 类），不是新的业务入口；Commands 依赖它时应按第 4 节声明成员。
+
+### 3.4 契约层：`App/Contracts`
+
+`Contracts` 是 UI 与业务共享的强类型边界，不是 UI 项目，也不是业务实现目录。
+
+规则：
+
+- `ILauncherService` 是 View 唯一业务入口；不得恢复 `LauncherFacade`、`MessageReceived`、`AppConfig` 暴露或命令字符串入口；
+- `LauncherState`、事件 DTO、`AppSettingsPatch`、`LaunchOptionsSettings`、`LaunchLimits`、`WindowPlacement` 属于共享契约；
+- 契约只表达**语义数据**，不生成 UI 文案、颜色、图标或控件状态；账号标签、占位状态等由 UI 映射；
+- `LauncherStateBuilder` 直接返回 `LauncherState`，不得重新引入匿名对象 + JSON 的第二份 schema；
+- 数值范围统一使用 `LaunchLimits`，后端仍必须校验/钳制，不能依赖 UI 预校验；
+- 占位实例使用 `InstanceInfo.IsPlaceholder`，不得用中文展示字符串做业务过滤；
+- 契约中不得出现 Avalonia、WebView2、`Window`、`Control`、`AppConfig` 等 UI/可变配置类型；
+- 修改 `ILauncherService`、状态 DTO 或事件 DTO 属于 API 变更，必须同时评估所有 View 消费者、`LauncherChecks` 和边界检查。
 
 ## 4. 依赖声明规范（B 类）
 
@@ -77,7 +109,7 @@
 /// - <see cref="LauncherContext.Store"/>.<see cref="ConfigStore.Save"/>：保存实例选择；
 /// - <see cref="LauncherContext.Games"/>.<see cref="RunningGameRegistry.UsesDirectory"/>：禁止恢复运行中的实例；
 /// - <see cref="LauncherContext.Send"/>：回推 saveList/saveRestored 消息。
-/// 不依赖：Ui、MainWindow、WebView2、LauncherApplication、其他 *Commands。
+/// 不依赖：Views、ShellWindow、WebView2、LauncherApplication、其他 *Commands。
 /// </remarks>
 ```
 
@@ -108,7 +140,7 @@
    - 同一组件内重复 ≥2 次：抽为该类的私有/内部方法；
    - 跨 ≥2 个组件重复：先评估是否属于 Core 能力，满足第 6 节标准则下沉 Core；
    - 不允许复制粘贴到第三个组件。
-4. **保持契约稳定**：已有公开方法签名变更需检查所有调用方与 `test/*Checks`，并在提交说明列出影响面。
+4. **保持契约稳定**：已有公开方法签名变更需检查所有调用方、`ILauncherService` 契约、View 消费方与 `test/*Checks`，并在提交说明列出影响面；UI 修改需按第 9 节另行确认。
 5. **不为修改而重构**：修改现有组件时，重构范围应限于本次目标；大范围重命名/移动另开提交。
 
 ## 6. 共有逻辑下沉 Core 的标准
@@ -137,12 +169,13 @@
    - 新接口放在使用方同目录的 `Contracts/` 或 Core 的公共契约区。
 3. **构造函数注入**：依赖从参数进入，禁止组件内部 `new` 服务、`new HttpClient`、静态单例。
 4. **只注册，不互相查找**：由 `LauncherApplication`/`LauncherContext` 装配；组件内部不得反向解析容器。
-5. **协议与 UI 解耦**：组件只处理 `JsonElement`/领域对象，返回结果通过 `Send` 回调；不直接操作 DOM/窗口。
+5. **协议与 UI 解耦**：组件只处理领域对象/内部命令；面向 UI 的结果必须通过 `Contracts` DTO 和 `LauncherService` 事件返回，不直接操作 View/窗口。
 6. **补测试与边界**：
    - A 类：纯单元测试；
-   - B 类：`WebBridgeChecks` 场景 + 受影响检查；
-   - 新协议：更新 `ProtocolValues` 字段表与 `check-web-boundaries.py`。
-7. **更新文档**：`ARCHITECTURE.md`（模块职责）与本文登记表。
+   - B 类：`LauncherChecks` 场景 + 受影响检查；
+   - 新增/修改 UI 契约：更新 `ILauncherService`、`LauncherStateBuilder`、View 消费方、`LauncherChecks` 与 `check-native-boundaries.py`；
+   - 内部命令：更新 `ProtocolValues` 字段表。
+7. **更新文档**：`ARCHITECTURE.md`（模块职责）、本文登记表与必要的 UI 开发说明。
 
 ### 7.1 插件化目标形态
 
@@ -154,28 +187,35 @@ B 组件（显式声明依赖）
    ▲
    │ 由集成层装配
 LauncherApplication / LauncherContext
+   ▲
+   │ 实现 Contracts.ILauncherService
+LauncherService（C）
+   ▲
+   │ 仅类型化调用
+Views（UI，不属于后端）
 ```
 
 - 新能力优先做成 A 组件 + 接口，再由 B 组件或集成层组合；
 - 不允许“每个功能一个 Service + 一个 Manager + 一个 Helper”；
-- 不允许 Core 反向依赖 App。
+- 不允许 Core 反向依赖 App；
+- 不允许 View 反向依赖 B/C 组件，只能通过 `ILauncherService`。
 
 ## 8. 当前组件类别划分
 
-统计范围：`src/MCUGLauncher` 的后端组件（UseCases、Services、Authentication、Models），不含 `MainWindow` 与 Core。共 **45 个**：A 类 13 个、B 类 28 个、C 类 4 个。
+统计范围：`src/MCUGLauncher.App` 的后端组件（Contracts 除外，UseCases、Services、Authentication、Models），不含 `ShellWindow` 与 Core。共 **43 个**：A 类 14 个、B 类 26 个、C 类 3 个。
 
-### 8.1 C 类（集成层，4 个）
+### 8.1 C 类（集成层，3 个）
 
 | 组件 | 位置 | 说明 |
 | --- | --- | --- |
-| `LauncherApplication` | `UseCases/LauncherApplication.cs` | 协议入口、命令注册、启动恢复与状态回推；只装配，不写业务 |
-| `IDesktopHost` | `UseCases/IDesktopHost.cs` | 原生窗口/对话框契约，由 `MainWindow` 实现 |
-| `MicrosoftLoginWebUi` | `Authentication/MicrosoftLoginWebUi.cs` | `IWebUI` 适配器，桥接 WPF 登录窗口 |
-| `MicrosoftLoginWindow` | `Authentication/MicrosoftLoginWindow.cs` | WPF + WebView2 授权窗口，属于 UI 边界 |
+| `LauncherService` | `UseCases/LauncherService.cs` | 实现 `ILauncherService`，统一 UI 入口、线程调度、状态缓存与事件解码；只装配，不写业务算法 |
+| `LauncherApplication` | `UseCases/LauncherApplication.cs` | 内部命令协议入口、命令分发、启动恢复与状态回推；只装配，不写业务 |
+| `IDesktopHost` | `UseCases/IDesktopHost.cs` | 原生窗口/文件对话框契约，由 Avalonia 的 `ShellDesktopHost` 实现；选择方法返回路径 |
 
-> `MainWindow` 是宿主壳，不计入后端组件；它只依赖 `LauncherApplication` 与 `IDesktopHost`。
+> `ShellWindow` 是宿主壳，不计入后端组件；它只依赖 `ILauncherService` 与 `IDesktopHost`。
+> `MicrosoftLoginWindow` / `MicrosoftLoginWebUi` 是 UI 侧 OAuth 适配，不计入后端组件。
 
-### 8.2 B 类（28 个）
+### 8.2 B 类（26 个）
 
 #### 8.2.1 UseCases（19 个）
 
@@ -190,7 +230,7 @@ LauncherApplication / LauncherContext
 | `DiagnosticCommands` | 日志读取与系统信息 | `LauncherContext.Config/Send/Store` |
 | `GameCommands` | 启动/停止游戏、进程观察 | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |
 | `InstallationCommands` | 加载器列表/安装、整合包预览/导入 | `LauncherContext.Config/Http/Send/Tasks/Token` |
-| `InstanceCommands` | 目录打开、模组启停/删除 | `LauncherContext.Config/IsInstanceInUse(string)/RefreshState`；VersionCatalog 模组适配，见 docs/components/InstanceCommands.md |
+| `InstanceCommands` | 目录打开、模组启停/删除 | `LauncherContext.Config/RefreshState` |
 | `InstanceMaintenanceCommands` | 实例克隆与导出 | `LauncherContext.Config/Tasks` |
 | `LaunchOptionsCommands` | 启动选项读写 | `LauncherContext.Config/RefreshState/Send/Store` |
 | `LauncherContext` | 共享运行时（配置、HTTP、队列、会话、状态回推） | `ConfigStore`、`NetworkPolicyHandler`、`CommunityService`、`DownloadExecutor`、`LauncherTaskQueue`、`RunningGameRegistry`、`AccountSessionCache`、`MicrosoftAccountService`、`MuaAccountService` |
@@ -201,18 +241,17 @@ LauncherApplication / LauncherContext
 | `SettingsCommands` | 设置、Java 扫描、数据源保存/启用 | `LauncherContext.Config/RefreshState/Send/Store/Token` |
 | `UninstallCommands` | 卸载预览与应用 | `LauncherContext.Config/Games/Send/Tasks/Token` |
 
-#### 8.2.2 Services（6 个）
+#### 8.2.2 Services（5 个）
 
 | 组件 | 说明 | 依赖面 |
 | --- | --- | --- |
-| `AvatarImage` | 把皮肤字节编码为 PNG Data URI | `AvatarRenderer`（WPF 渲染）、`PngBitmapEncoder` |
-| `ConfigStore` | `config.json` 读取、补全、保存 | `AppConfig` 字段；Core AtomicFile.ReadJson/WriteJson，详见组件文档 |
+| `ConfigStore` | `config.json` 读取、迁移、保存 | `AppConfig`（Models） |
 | `DownloadExecutor` | 按任务类型执行下载/安装/维护 | `InstanceOperationExecutor` 与 Core 的 `OperationRecord`/`OperationContext` |
-| `InstanceSnapshot` | 捕获实例根目录、名称、要求与启动设置 | AppConfig 全局默认字段、InstanceRequirements.Read；Core Copy/实例类型，见 docs/components/InstanceSnapshot.md |
-| `LauncherStateBuilder` | 组装前端 `state` 快照 | `AppConfig`、`VersionCatalog`、收藏快照参数（由调用方传入） |
-| `VersionCatalog` | 版本目录扫描、实例与模组适配 | Models 值对象；Core ProfileInspector.Read、ContentService.Toggle/MoveToBackup，见 docs/components/VersionCatalog.md |
+| `InstanceSnapshot` | 捕获实例根目录、名称、要求与启动设置 | `AppConfig`、Core 实例/包类型 |
+| `LauncherStateBuilder` | 直接组装强类型 `LauncherState`，不生成匿名 JSON schema | `AppConfig`、`VersionCatalog`、`FavoriteInfo`（由调用方传入）、`Contracts` DTO |
+| `VersionCatalog` | 版本目录扫描、实例与模组读取 | `AppConfig`、`ModInfo`/`VersionDetails` 等 Models；占位实例带 `IsPlaceholder` |
 
-#### 8.2.3 Authentication（3 个）
+#### 8.2.3 Authentication（2 个）
 
 | 组件 | 说明 | 依赖面 |
 | --- | --- | --- |
@@ -220,7 +259,7 @@ LauncherApplication / LauncherContext
 | `MicrosoftAccountService` | 微软登录、会话刷新、令牌存储 | `ProtectedAccountStorage`、`MinecraftOwnershipGuard`、`AuthenticationCheckpoint`、`IWebUI`、`HttpClient` |
 | `MuaAccountService` | MUA 登录、角色、元数据 | `ProtectedAccountStorage`、`HttpClient` |
 
-### 8.3 A 类（13 个）
+### 8.3 A 类（14 个）
 
 | 组件 | 位置 | 说明 |
 | --- | --- | --- |
@@ -232,7 +271,8 @@ LauncherApplication / LauncherContext
 | `InstanceRequirements` | `Services/InstanceRequirements.cs` | 读取实例安装元数据；只依赖 Core 的类型与 JSON |
 | `LauncherTaskQueue` | `Services/LauncherTaskQueue.cs` | 持久任务队列；只依赖 Core `OperationCoordinator` 与注入的执行委托 |
 | `PreviewCache<T>` | `Services/PreviewCache.cs` | 通用、带过期的预览缓存 |
-| `ServerPingService` | `Services/ServerPingService.cs` | Core ServerFavorites.Ping 的结果/错误适配；仅 Core/BCL |
+| `ServerPingService` | `Services/ServerPingService.cs` | Minecraft SLP 查询；只依赖 BCL 网络/JSON |
+| `SkinAssets` | `Services/SkinAssets.cs` | 皮肤地址校验与有界下载；只依赖 BCL 网络/加密 |
 | `AuthenticationCheckpoint` | `Authentication/AuthenticationCheckpoint.cs` | 认证阶段日志钩子；只依赖 XboxAuthNet 接口 |
 | `MinecraftOwnershipGuard` | `Authentication/MinecraftOwnershipGuard.cs` | 正版资格校验；依赖 CmlLib 认证上下文 |
 | `ProtectedAccountStorage` | `Authentication/ProtectedAccountStorage.cs` | DPAPI 账号存储；依赖 `IJsonStorage` 与 BCL 加密 |
@@ -307,24 +347,116 @@ MuaAccountService.Session(MuaCredential credential) : MSession
 AccountModeCommands.Apply(LauncherContext context, string mode, MSession? session, bool verified = true) : void
 ```
 
-## 9. 审查清单（提交前）
+## 9. 后端与 UI 的协同边界
+
+### 9.1 文件权限
+
+后端任务默认只修改：
+
+```text
+src/MCUGLauncher.App/**
+src/MCUGLauncher.Core/**
+test/**
+scripts/check-*.py
+docs/**（仅后端/架构文档）
+```
+
+后端任务不得：
+
+- 修改 `src/MCUGLauncher.Avalonia/` 的 View、样式、资源或窗口视觉；
+- 以“顺手修一下”为由调整页面布局；
+- 通过修改 UI 来掩盖后端契约变更；
+- 把 `AppConfig`、JSON、`LauncherApplication` 直接暴露给 View。
+
+如果后端契约变更导致 UI 编译失败或行为不匹配：
+
+1. 先完成并验证后端/契约变更；
+2. 在提交说明列出需要 UI 跟进的文件、API 和预期行为；
+3. 由用户确认是否授权同步修改 UI，或另开 UI 任务；
+4. 不要在未确认时静默修改 View。
+
+说明模板：
+
+```text
+后端契约变更需要 UI 跟进
+
+变更内容：
+- ...
+
+影响页面：
+- ...
+
+需要 UI 修改：
+- ...
+
+是否同步修改 UI：
+- [ ] 授权本次一并修改
+- [ ] 另开 UI 任务
+- [ ] 暂不修改，先保留后端变更
+```
+
+### 9.2 契约变更必须成套更新
+
+修改 `ILauncherService`、`LauncherState`、事件 DTO 或请求 DTO 时，至少检查：
+
+- `App/Contracts` 的接口/DTO；
+- `LauncherService` 的实现与事件映射；
+- 相关 Commands/Services；
+- `LauncherStateBuilder`；
+- 所有 View 消费方（若获授权）；
+- `test/LauncherChecks` 与协议/边界检查；
+- `docs/ARCHITECTURE.md`、本指南的组件登记。
+
+只改接口而不改实现/测试，或只改实现而留下过期契约，视为未完成。
+
+### 9.3 展示职责
+
+- 后端返回语义数据：账号类型、占位标志、启用状态、限制范围；
+- UI 负责中文标签、颜色、图标、空态、布局和动画；
+- 不在 `Contracts` 中新增 `accountLabel`、`color`、`icon` 这类展示字段；
+- 用户提示目前仍有部分由后端生成（`Toast`/错误文案）；新增业务提示优先使用领域语义，由 UI 映射；至少不得包含布局/控件指令；
+- 后端是校验和钳制的最终权威；UI 预校验只能使用 `LaunchLimits`，不能替代后端校验。
+
+### 9.4 状态构建
+
+- `LauncherStateBuilder` 必须直接构建 `LauncherState`；
+- 不得恢复匿名对象 → JSON → UI 解析的第二份 schema；
+- 新增状态字段时同步更新契约、builder、View（获授权）和 typed service 测试；
+- 占位实例使用 `InstanceInfo.IsPlaceholder`，不得恢复显示字符串判断；
+- 状态构建的目录扫描不要新增到 UI 线程路径；当前构建仍可能由命令触发，后续应继续下沉/异步化。
+
+### 9.5 内部协议
+
+`LauncherApplication` 当前仍使用字符串命令和 JSON 事件作为内部实现。规则：
+
+- 不得把内部协议暴露成新的 UI API；
+- 新增业务优先使用现有 Commands + `LauncherService` 类型化方法；
+- 不要把新逻辑写进 `LauncherService` 的 JSON 解码分支；
+- 逐步把内部命令改为类型化记录；在此之前，UI 仍只依赖 `ILauncherService`。
+
+## 10. 审查清单（提交前）
 
 - [ ] 组件级别（A/B/C）已在 `<remarks>` 或提交说明中写明；
 - [ ] B 组件依赖清单完整到“类.成员（含参数）”，并与代码一致；
-- [ ] 没有依赖 `Ui/*`、`MainWindow`、WebView2、`LauncherApplication`；
+- [ ] B 组件没有依赖 `Views/*`、`ShellWindow`、WebView2、`LauncherService`、`LauncherApplication`；
 - [ ] 修改现有组件时没有新增组件/新增依赖（有则说明理由）；
 - [ ] 共用逻辑先就地归纳；下沉 Core 满足第 6 节全部条件；
 - [ ] 没有新增 `HttpClient`、下载器、任务队列、Java 扫描器等重复能力；
-- [ ] 新协议字段已更新 `ProtocolValues`、边界检查与 `WebBridgeChecks`；
+- [ ] 没有在 UI 任务中修改 App/Core/Contracts；也没有在后端任务中静默修改 UI；
+- [ ] 新增/修改 UI 契约已同步 `Contracts`、`LauncherService`、View 消费方（获授权）、`LauncherChecks` 与边界检查；
+- [ ] `LauncherStateBuilder` 仍直接构建 `LauncherState`，没有恢复匿名 JSON schema；
+- [ ] 数值范围使用 `LaunchLimits`，占位实例使用 `IsPlaceholder`；
+- [ ] 契约没有新增 `accountLabel`/`color`/`icon` 等展示字段；
+- [ ] 新协议字段已更新 `ProtocolValues`、边界检查与 `LauncherChecks`；
 - [ ] 文档（ARCHITECTURE、登记表）与代码同提交更新。
 
-## 10. 迁移与例外
+## 11. 迁移与例外
 
 - 现有 B 组件在**下一次被修改时**补齐依赖声明与登记表，不要求一次性重写；
 - 例外（必须新增 B 组件或新增依赖）需在提交说明中写明：为什么 A 类不可行、为什么不能复用现有组件、退出条件；
 - 例外不得成为惯例；连续两个功能以“例外”方式新增依赖，应在评审中要求先重构。
 
-## 11. 示例
+## 12. 示例
 
 ### A 类（合格）
 
@@ -341,7 +473,7 @@ AccountModeCommands.Apply(LauncherContext context, string mode, MSession? sessio
 /// - LauncherContext.Store.Save(AppConfig)：保存选择；
 /// - LauncherContext.Games.UsesDirectory(string)：拒绝运行中的实例；
 /// - LauncherContext.Send：回推 saveList/saveRestored。
-/// 不依赖：Ui、MainWindow、WebView2、其他 *Commands。
+/// 不依赖：Views、ShellWindow、WebView2、其他 *Commands。
 /// </remarks>
 internal sealed class SaveCommands(LauncherContext context)
 ```
@@ -357,48 +489,6 @@ internal sealed class SaveCommands(LauncherContext context)
 | 在三个组件里复制“实例目录解析” | 应归纳后下沉 Core |
 
 
-## 0.24.0-codex 原生迁移依赖变动
+## codex 分支补充
 
-后端项目现位于 `src/MCUGLauncher.App`，旧路径只保留为历史说明。
-
-- ResourceCommands（B）：继续依赖 LauncherContext.Config.Root/LastInstance/Java、Http、Token、Store.DataDirectory、Tasks.Enqueue(string,string,string,DownloadRequest)、Send(object)，VersionCatalog.Load/ReadDetails/InstanceDirectory；新增图片读取复用 SkinAssets.Download(HttpClient,Uri,CancellationToken)。readImage 为原生图片控件提供受限 HTTPS、有界字节结果，不引用图片解码器或控件。它属于已有资源用例，不新增下载器。
-- DiagnosticCommands（B）：LauncherContext.Store.DataDirectory、Config.Root、Send(object)。移除 WebView2 版本探测，系统信息不依赖界面框架。
-- CommunityCommands（B）：既有 LauncherContext.Community.ReadAsync/TestAsync、Config.DataSources/Servers/Player/CommunityKey/AdminKey/WriteEndpoint、Store.DataDirectory/Save(AppConfig)、Http、Token、Send(object)、RefreshState()，以及 ServerPingService.PingAsync。仅将既有 Servers 数据源纳入同一读取流程，未增加组件依赖或新网络客户端。
-- ShellWindow、ShellDesktopHost、LauncherFacade（C）：装配、原生窗口操作和协议适配；Views 为前端视图，不列入后端 B 组件。
-
-IDesktopHost 确认契约变更：ConfirmStopGameAsync() / ConfirmUninstallAsync(string) 返回 Task<bool>；LauncherApplication 在关闭、卸载及恢复排队卸载前 await 结果。测试替身与 ShellDesktopHost 同步更新，取消不执行操作。
-
-空目录/源边界修正：VersionCatalog（B）仍只构造 Models.VersionGroup/InstanceInfo/ModInfo、读取 InstanceInfo.Name，复用 Core InstanceCatalog.MetadataDirectory/DirectoryFor、AtomicFile.ReadJson、ContentService.SafeFile；未增加依赖，空目录返回空列表。CommunityService 只依赖注入的 HttpClient 与 BCL，先验证 URL 再请求，空/无效源返回 null。
-
-
-### 0.24.0-codex 原版清单修订
-
-ResourceCommands（B）保持既有依赖：LauncherContext.Http / Token 读取 Mojang manifest，LauncherContext.Send(object) 回推结果。ManifestEntries(JsonElement) 只是该用例内的纯协议映射，无新增组件或外部依赖；移除 release-only 过滤及 24 项上限，保留 type。SendVanillaVersionsAsync(string requestId) 在成功与失败回推 requestId，LauncherApplication（C）只透传现有字段。分类、搜索、分页由 VanillaPage 展示层完成；安装仍使用原队列与 Core。WebBridgeChecks 用含 30 个正式版、快照和历史版本的隔离清单验证完整性。
-
-
-### 本轮设置与语言修订
-
-GameCommands、SettingsCommands、LaunchOptionsCommands 仍为 B 类，完整成员依赖见 docs/components 下同名文档和类 remarks。GameCommands 复用 Core GameDefaults，不引入视图依赖；SettingsCommands 扩展既有偏好保存，不新建服务；LaunchOptionsCommands 统一全局/实例的 AutoChinese。LauncherStateBuilder 只将 AppConfig.LegacyPreferences 加入状态快照，UI 不获得存储器或认证对象。
-
-
-### 重复逻辑归并复查
-
-InstanceRequirements（A）保留整合包安装记录优先级，其余直接调用 Core ProfileInspector.Read。InstanceSnapshot（B）统一合并全局启动默认，LaunchOptionsCommands（B）复用它并直接传根目录；不再克隆整个 AppConfig。LaunchSettings.Copy（Core）由两者使用；仅支持现有值类型/字符串字段，可变字段由回归检查阻止静默浅复制。VersionCatalog（B）不再自己猜加载器或重写继承算法；旧模组入口复用 Core 内容事务。详见 docs/ARCHITECTURE_REVIEW_2026-11-02.md。
-
-
-### Core 复用复查
-
-ServerPingService 为 A 类适配，移除 App 自写 SLP 编码/拆包，统一 Core ServerFavorites.Ping。ConfigStore、CommunityCommands 复用 AtomicFile 存储。SettingsCommands 使用 Preferences.Copy 和 DataSourceConfig.Copy；不再用 JSON 序列化复制编辑草稿或比较来源。依赖面没有新增服务，详见 docs/CORE_REUSE_AUDIT.md。
-
-
-### 原生交互修复登记
-
-| 组件 | 级别 | 依赖与变更 |
-| --- | --- | --- |
-| LocalImportCommands | B | Config.Root/LastInstance、Token、Games.UsesDirectory、Tasks.RequireLaunchAvailable/Enqueue、Send、InstanceSnapshot.Capture、PreviewCache.Add/Get；详见同名组件文档 |
-| InstallationCommands | B | 原成员依赖不变，loaderList 增加 requestId，新增 loaderQueued 成功回执；详见同名组件文档 |
-| ContentUpdateCommands | B | 原成员依赖不变，新增 contentUpdateQueued 成功回执；详见同名组件文档 |
-| DownloadExecutor | B | 继续使用 InstallationProgress.Message/Advance、InstanceOperationExecutor.ExecuteAsync、VersionCatalog.InstanceDirectory；本地复制和存档导入复用 Core，不新增服务 |
-| LauncherTaskQueue | A | 仅 Core/BCL，运行中的 local 请求加入实例启动互斥范围 |
-
-LocalImportCommands 有明确的预览/确认职责，不把文件识别和复制放进 ShellWindow，也不重写 Core 安装算法。
+本分支保留已实现的自动简体中文、安装回执、来源切换、网络外观设置和拖拽导入。新增契约及依赖登记见 [类型化迁移记录](docs/typed-contract-migration.md)。此前组件补充登记保留于 [历史登记](docs/architecture-backend-before-typed-contract.md)，其中旧前端描述已被本规范及迁移记录替代。

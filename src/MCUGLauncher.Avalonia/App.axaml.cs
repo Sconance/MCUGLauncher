@@ -10,8 +10,10 @@ public partial class App : Application
     {
         get; set;
     }
-    internal static LauncherFacade CreateSession(MCUGLauncher.UseCases.IDesktopHost host)
-        => new(host, DataDirectory is null ? null : new MCUGLauncher.Services.ConfigStore(DataDirectory));
+    internal static ILauncherService CreateSession(MCUGLauncher.UseCases.IDesktopHost host)
+        => new MCUGLauncher.UseCases.LauncherService(host, action => global::Avalonia.Threading.Dispatcher.UIThread.Post(action),
+            _ => new MicrosoftLoginWebUi(), AvaloniaAvatarImage.Encode,
+            DataDirectory is null ? null : new MCUGLauncher.Services.ConfigStore(DataDirectory));
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()

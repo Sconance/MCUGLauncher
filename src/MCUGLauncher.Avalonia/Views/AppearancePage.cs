@@ -5,7 +5,7 @@ namespace MCUGLauncher.Avalonia.Views;
 
 internal sealed class AppearancePage : NativePage
 {
-    public AppearancePage(LauncherFacade session) : base(session)
+    public AppearancePage(ILauncherService session, UiContext ui) : base(session, ui)
     {
         Title("界面与背景", "保留蓝白主题，可设置本地背景；保存后立即应用。");
         var preferences = State.Preferences;
@@ -26,19 +26,10 @@ internal sealed class AppearancePage : NativePage
             {
                 using var image = new global::Avalonia.Media.Imaging.Bitmap(value);
             }
-            await Send(new
-            {
-                type = "saveSettings",
-                appearance = new
-                {
-                    path = value,
-                    opacity = opacity.Value / 100,
-                    fit = fit.SelectedItem as string ?? "裁剪填充"
-                }
-            });
+            await Session.SaveSettingsAsync(new AppSettingsPatch { Appearance = new AppearancePatch { Path = value, Opacity = opacity.Value / 100, Fit = fit.SelectedItem as string ?? "裁剪填充" } });
         }
         Body.Children.Add(Ui.Row(Ui.Button("保存外观设置", () => Save(path.Text ?? ""), true),
             Ui.Button("清除背景", async () => { await Save(""); path.Text = ""; })));
-        Body.Children.Add(Ui.SettingsCard("窗口显示", Ui.Text("恢复默认大小不会修改游戏窗口尺寸。"), Ui.Button("恢复默认窗口尺寸", () => Send(new { type = "resetWindow" }))));
+        Body.Children.Add(Ui.SettingsCard("窗口显示", Ui.Text("恢复默认大小不会修改游戏窗口尺寸。"), Ui.Button("恢复默认窗口尺寸", () => Session.ResetWindowAsync())));
     }
 }

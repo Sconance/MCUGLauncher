@@ -10,18 +10,14 @@ internal sealed class InstancePickerView : NativePage
     readonly TextBox search = Ui.Input("", "点此处搜索实例");
     readonly StackPanel list = Ui.Stack();
     bool updating;
-    public InstancePickerView(LauncherFacade session, Action close) : base(session)
+    public InstancePickerView(ILauncherService session, UiContext ui, Action close) : base(session, ui)
     {
-        Body.Children.Add(Ui.Beside(Ui.Stack(Ui.Heading("游戏目录"), Ui.Muted("选择实例后可直接启动，或进入版本设置。")), Ui.Row(Ui.Button("导入整合包", () => InstallDialogs.Import(Session, Owner)), Ui.Button("刷新版本", () => Send(new { type = "requestState" })), Ui.Action("收起", close))));
+        Body.Children.Add(Ui.Beside(Ui.Stack(Ui.Heading("游戏目录"), Ui.Muted("选择实例后可直接启动，或进入版本设置。")), Ui.Row(Ui.Button("导入整合包", () => InstallDialogs.Import(Session, UI, Owner)), Ui.Button("刷新版本", () => Session.RequestStateAsync()), Ui.Action("收起", close))));
         Body.Children.Add(Ui.Beside(roots, Ui.Button("+", async () =>
         {
             var path = await FilePicker.Folder(Owner);
             if (path != null)
-                await Send(new
-                {
-                    type = "saveSettings",
-                    root = path
-                });
+                await Session.SaveSettingsAsync(new AppSettingsPatch { Root = path });
         })));
         Body.Children.Add(search);
         Body.Children.Add(list);
@@ -32,11 +28,7 @@ internal sealed class InstancePickerView : NativePage
         roots.SelectionChanged += async (_, _) =>
         {
             if (!updating && roots.SelectedItem is string root && root != State.Root)
-                await Send(new
-                {
-                    type = "saveSettings",
-                    root
-                });
+                await Session.SaveSettingsAsync(new AppSettingsPatch { Root = root });
         };
         search.TextChanged += (_, _) => DrawList();
         Draw();
@@ -64,10 +56,10 @@ internal sealed class InstancePickerView : NativePage
                 selection.Classes.Set("instance-selected", item.Name == State.SelectedVersion);
                 var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,40,40"), ColumnSpacing = 5 };
                 row.Children.Add(selection);
-                var start = Ui.Button("▷", () => Send(new { type = "launch", version = item.Name }));
+                var start = Ui.Button("▷", () => Session.LaunchAsync(version: item.Name));
                 Grid.SetColumn(start, 1);
                 row.Children.Add(start);
-                var settings = Ui.Button("⚙", async () => { await Select(item); Session.Navigate?.Invoke("version"); });
+                var settings = Ui.Button("⚙", async () => { await Select(item); UI.Navigate?.Invoke("version"); });
                 Grid.SetColumn(settings, 2);
                 row.Children.Add(settings);
                 rows.Children.Add(row);
@@ -90,22 +82,13 @@ internal sealed class InstancePickerView : NativePage
         if (list.Children.Count == 0)
             list.Children.Add(Ui.Text("当前目录没有匹配的实例。"));
     }
-    async Task Select(NativeItem item)
+    async Task Select(InstanceInfo item)
     {
-        await Send(new
-        {
-            type = "selectVersion",
-            version = item.Name
-        });
-        await Send(new
-        {
-            type = "selectInstance",
-            instance = item.Name
-        });
+        await Session.SelectVersionAsync(version: item.Name);
+        await Session.SelectInstanceAsync(instance: item.Name);
     }
-    protected override void Receive(NativeMessage message)
+    protected override void OnStateChanged()
     {
-        if (message.Type == "state")
-            Draw();
+        Draw();
     }
 }

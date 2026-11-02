@@ -65,7 +65,7 @@ internal static class MaintenanceScenarios
         var store = new ConfigStore(Path.Combine(fixture, "maintenance-config"));
         store.Save(config);
         var messages = new List<JsonElement>();
-        using (var app = new LauncherApplication(value => messages.Add(JsonSerializer.SerializeToElement(value)), new FakeDesktop(), store))
+        using (var app = new LauncherApplication(value => messages.Add(FixtureMessages.Capture(value)), new FakeDesktop(), store))
         {
             await app.HandleAsync(JsonSerializer.Serialize(new
             {
@@ -100,7 +100,7 @@ internal static class MaintenanceScenarios
         var original = new ManagedContent { ProjectId = "fixture-project", VersionId = "old", Name = "Fixture", RelativePath = "mods/fixture.jar", Sha512 = new string('b', 128) };
         File.WriteAllText(Path.Combine(source, ".mcuglauncher-content.json"), JsonSerializer.Serialize(new[] { original }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower }));
         var messages = new List<JsonElement>();
-        using var context = new LauncherContext(value => messages.Add(JsonSerializer.SerializeToElement(value)), store);
+        using var context = new LauncherContext(value => messages.Add(FixtureMessages.Capture(value)), store);
         var commands = new ContentUpdateCommands(context, _ => new FakeUpdates());
         await commands.CheckAsync("fabric-fixture");
         var check = messages.Last();

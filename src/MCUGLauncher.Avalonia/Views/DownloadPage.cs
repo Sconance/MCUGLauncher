@@ -12,12 +12,12 @@ internal sealed class DownloadPage : NativePage
     readonly StackPanel results = Ui.Stack();
     readonly Dictionary<string, Button> bookmarkButtons = [];
     readonly global::Avalonia.Controls.Primitives.UniformGrid cards = new() { Columns = 1 };
-    public DownloadPage(LauncherFacade session, string category) : base(session)
+    public DownloadPage(ILauncherService session, UiContext ui, string category) : base(session, ui)
     {
         this.category = category;
         SizeChanged += (_, _) => cards.Columns = Math.Max(1, (int)(Bounds.Width / 270));
-        query.Text = session.PendingSearch;
-        session.PendingSearch = "";
+        query.Text = ui.PendingSearch;
+        ui.PendingSearch = "";
         var label = category switch
         {
             "mod" => "模组",
@@ -49,30 +49,22 @@ internal sealed class DownloadPage : NativePage
         try
         {
             var request = Guid.NewGuid().ToString("N");
-            var response = await Session.RequestAsync("contentList", new
-            {
-                type = "searchContent",
-                category,
-                query = query.Text ?? "",
-                game = game.Text ?? "",
-                loader = (category is "mod" or "modpack") && loader.SelectedIndex > 0 ? loader.SelectedItem as string ?? "" : "",
-                requestId = request
-            }, m => m.RequestId == request);
+            var response = await Session.SearchContentAsync(category: category, query: query.Text ?? "", game: game.Text ?? "", loader: (category is "mod" or "modpack") && loader.SelectedIndex > 0 ? loader.SelectedItem as string ?? "" : "", requestId: request);
             results.Children.Clear();
             cards.Children.Clear();
             bookmarkButtons.Clear();
             foreach (var item in response.Items)
             {
-                var bookmark = Ui.Button("♡", () => Send(new { type = "toggleBookmark", id = item.Id, name = item.Name, description = item.Description, author = item.Author, kind = category }));
+                var bookmark = Ui.Button("♡", () => Session.ToggleBookmarkAsync(id: item.Id, name: item.Name, description: item.Description, author: item.Author, kind: category));
                 bookmark.Classes.Add("bookmark");
                 bookmarkButtons[item.Id] = bookmark;
                 var buttons = Ui.Row(
-                    Ui.Button(category == "modpack" ? "下载整合包" : "下载", () => ResourceDialog.Open(Session, Owner, item, category), true),
+                    Ui.Button(category == "modpack" ? "下载整合包" : "下载", () => ResourceDialog.Open(Session, UI, Owner, item, category), true),
                     bookmark
                 );
                 var card = Ui.Card(Ui.Stack(
                             Ui.Row(
-                                new RemoteImage(Session, item.Icon, 48),
+                                new RemoteImage(Session, UI, item.Icon, 48),
                                 Ui.Text(item.Title, 17)
                             ),
                             Ui.Text(item.Description),
@@ -89,7 +81,7 @@ internal sealed class DownloadPage : NativePage
                     e.Handled = true;
                     try
                     {
-                        await ResourceDialog.Open(Session, Owner, item, category);
+                        await ResourceDialog.Open(Session, UI, Owner, item, category);
                     }
                     catch (Exception error) { await Ui.Error(this, error.Message); }
                 };
@@ -118,9 +110,8 @@ internal sealed class DownloadPage : NativePage
             global::Avalonia.Automation.AutomationProperties.SetName(button, active ? "取消收藏" : "添加收藏");
         }
     }
-    protected override void Receive(NativeMessage message)
+    protected override void OnStateChanged()
     {
-        if (message.Type == "state")
-            RefreshBookmarks();
+        RefreshBookmarks();
     }
 }

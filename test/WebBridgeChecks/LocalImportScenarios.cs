@@ -25,7 +25,7 @@ internal static class LocalImportScenarios
         var store = new ConfigStore(data);
         store.Save(new AppConfig { Root = root, LastInstance = "1.21.1" });
         var messages = new List<JsonElement>();
-        using var context = new LauncherContext(value => messages.Add(JsonSerializer.SerializeToElement(value)), store);
+        using var context = new LauncherContext(value => messages.Add(FixtureMessages.Capture(value)), store);
         var coordinator = new OperationCoordinator(Path.Combine(data, "execution"));
         var commands = new LocalImportCommands(context, (name, gameRoot, directory, request) => coordinator.Enqueue(name, gameRoot, directory, request));
         var file = Path.Combine(data, "fixture.jar");

@@ -18,13 +18,13 @@ internal sealed class HomePage : NativePage
     readonly Grid layout;
     readonly Border accountCard;
     bool expanded;
-    public HomePage(LauncherFacade session) : base(session)
+    public HomePage(ILauncherService session, UiContext ui) : base(session, ui)
     {
-        picker = new InstancePickerView(session, () => Toggle(false));
-        servers = new HomeFeedPanel(session, "servers");
-        announcements = new HomeFeedPanel(session, "announcements");
-        recommendations = new HomeFeedPanel(session, "recommendations");
-        quotes = new HomeFeedPanel(session, "quotes");
+        picker = new InstancePickerView(session, ui, () => Toggle(false));
+        servers = new HomeFeedPanel(session, ui, "servers");
+        announcements = new HomeFeedPanel(session, ui, "announcements");
+        recommendations = new HomeFeedPanel(session, ui, "recommendations");
+        quotes = new HomeFeedPanel(session, ui, "quotes");
         feeds = new Grid { RowDefinitions = new RowDefinitions("*,112,*"), RowSpacing = 14 };
         feeds.Children.Add(servers);
         Grid.SetRow(announcements, 1);
@@ -47,13 +47,16 @@ internal sealed class HomePage : NativePage
         Body.Spacing = 14;
         SizeChanged += (_, _) => UpdateDimensions();
         AttachedToVisualTree += (_, _) => UpdateDimensions();
-        Toggle(session.HomeInstancePanelOpen);
+        Toggle(ui.HomeInstancePanelOpen);
+        session.GamesChanged += OnGames;
+        ui.AvatarChanged += DrawAccount;
+        UnsubscribeWith(() => { session.GamesChanged -= OnGames; ui.AvatarChanged -= DrawAccount; });
         DrawAccount();
     }
     void Toggle(bool value)
     {
         expanded = value;
-        Session.HomeInstancePanelOpen = value;
+        UI.HomeInstancePanelOpen = value;
         right.Content = expanded ? picker : feeds;
         quotes.IsVisible = !expanded;
         DrawLaunch();
@@ -77,7 +80,7 @@ internal sealed class HomePage : NativePage
         var column = 0;
         foreach (var (label, mode) in new[] { ("正版", "microsoft"), ("离线", "offline"), ("MUA 登录", "mua") })
         {
-            var tab = Ui.Button(label, () => Send(new { type = "switchAccountMode", account = mode }));
+            var tab = Ui.Button(label, () => Session.SwitchAccountModeAsync(account: mode));
             tab.Classes.Add("account-tab");
             tab.Height = 25;
             tab.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
@@ -86,8 +89,8 @@ internal sealed class HomePage : NativePage
             tabs.Children.Add(tab);
         }
         details.Children.Add(new Border { Child = tabs, Background = global::Avalonia.Media.Brush.Parse("#E8F0F7"), CornerRadius = new CornerRadius(7), Padding = new Thickness(2) });
-        var avatar = Ui.Button("", () => AccountDialogs.Skin(Session, Owner));
-        avatar.Content = Ui.Avatar(Session.Avatar, 94);
+        var avatar = Ui.Button("", () => AccountDialogs.Skin(Session, UI, Owner));
+        avatar.Content = Ui.Avatar(UI.Avatar, 94);
         avatar.Padding = new Thickness(3);
         avatar.Width = avatar.Height = 100;
         avatar.Margin = new Thickness(0, 13, 0, 0);
@@ -98,18 +101,18 @@ internal sealed class HomePage : NativePage
         name.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         name.Margin = new Thickness(0, 10, 0, 0);
         details.Children.Add(name);
-        var identity = Ui.Muted(State.AccountLabel, 10.5);
+        var identity = Ui.Muted(Ui.AccountLabel(State.AccountType), 10.5);
         identity.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         identity.Margin = new Thickness(0, 3, 0, 0);
         details.Children.Add(identity);
-        var change = Ui.Button(State.AccountType == "offline" ? "切换本地账号" : "切换账号", () => AccountDialogs.Open(Session, Owner, State.AccountType));
+        var change = Ui.Button(State.AccountType == "offline" ? "切换本地账号" : "切换账号", () => AccountDialogs.Open(Session, UI, Owner, State.AccountType));
         change.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
         change.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         change.Classes.Add("soft");
         change.Height = 36;
         change.Margin = new Thickness(0, 14, 0, 0);
         details.Children.Add(change);
-        var settings = Ui.Action("账号设置", () => Session.Navigate?.Invoke("options"));
+        var settings = Ui.Action("账号设置", () => UI.Navigate?.Invoke("options"));
         settings.Classes.Add("link");
         settings.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         settings.Margin = new Thickness(0, 7, 0, 0);
@@ -129,7 +132,7 @@ internal sealed class HomePage : NativePage
     void DrawLaunch()
     {
         launch.Children.Clear();
-        var button = Ui.Button("启动游戏", () => Send(new { type = "launch", version = State.SelectedVersion }), true);
+        var button = Ui.Button("启动游戏", () => Session.LaunchAsync(version: State.SelectedVersion), true);
         var title = Ui.Text("启动游戏", 17);
         title.FontWeight = global::Avalonia.Media.FontWeight.Bold;
         var detail = Ui.Text((State.SelectedVersion.Length > 0 ? State.SelectedVersion : "未选择实例") + " · " + (State.AutoMemory ? "自动内存" : State.Ram + " MB"), 9.5);
@@ -170,7 +173,7 @@ internal sealed class HomePage : NativePage
         button.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,40"), ColumnSpacing = 8 };
         row.Children.Add(button);
-        var actions = Ui.Stack(Ui.Action(expanded ? "‹" : "›", () => Toggle(!expanded)), Ui.Action("⚙", () => Session.Navigate?.Invoke("manage")));
+        var actions = Ui.Stack(Ui.Action(expanded ? "‹" : "›", () => Toggle(!expanded)), Ui.Action("⚙", () => UI.Navigate?.Invoke("manage")));
         actions.Spacing = 6;
         foreach (var action in actions.Children.OfType<Button>())
         {
@@ -183,19 +186,18 @@ internal sealed class HomePage : NativePage
         Grid.SetColumn(actions, 1);
         row.Children.Add(actions);
         launch.Children.Add(row);
-        var games = Ui.Action("运行中的游戏（" + Session.Games.Length + "）", () => Session.Navigate?.Invoke("games"));
+        var games = Ui.Action("运行中的游戏（" + Session.Games.Length + "）", () => UI.Navigate?.Invoke("games"));
         games.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
         games.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         games.Height = 32;
         launch.Children.Add(games);
     }
-    protected override void Receive(NativeMessage message)
+    protected override void OnStateChanged()
     {
-        if (message.Type is "state" or "accountState" or "avatar")
-            DrawAccount();
-        if (message.Type is "state" or "games")
-            DrawLaunch();
+        DrawAccount();
+        DrawLaunch();
     }
+    void OnGames(GameInfo[] value) => DrawLaunch();
     public override void Dispose()
     {
         picker.Dispose();

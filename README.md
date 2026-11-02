@@ -39,7 +39,7 @@ dotnet run --project tools/SourceFormatter
 - `src/MCUGLauncher.App`：无 WPF/Avalonia 控件的应用用例、认证和配置服务。
 - `src/MCUGLauncher.Avalonia/Presentation`：类型化界面契约和菜单注册。
 - `src/MCUGLauncher.Avalonia/Views`：分功能原生视图与对话框。
-- `LauncherFacade`：原生状态与现有用例之间的适配；内部保留 JSON 命令兼容层。
+- `ILauncherService / UiContext`：原生状态与现有用例之间的适配；内部保留 JSON 命令兼容层。
 - `test/NativeUiChecks`：原生控件交互与渲染检查。
 
 详细范围、限制与验证见 [迁移说明](docs/MIGRATION_0.24.0-codex.md)。

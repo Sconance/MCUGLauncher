@@ -4,7 +4,7 @@ using MCUGLauncher.Avalonia.Presentation;
 namespace MCUGLauncher.Avalonia.Views;
 internal sealed class LaunchOptionsPage : NativePage
 {
-    public LaunchOptionsPage(LauncherFacade session) : base(session)
+    public LaunchOptionsPage(ILauncherService session, UiContext ui) : base(session, ui)
     {
         Title("启动参数");
     }
@@ -12,12 +12,7 @@ internal sealed class LaunchOptionsPage : NativePage
     public async Task Load(string version, bool inline = false)
     {
         var id = Guid.NewGuid().ToString("N");
-        var result = await Session.RequestAsync("launchOptions", new
-        {
-            type = "readLaunchOptions",
-            version,
-            requestId = id
-        }, m => m.RequestId == id);
+        var result = await Session.ReadLaunchOptionsAsync(version: version, requestId: id);
         var options = result.Settings;
         var name = Ui.Input(result.Name);
         var inherit = Ui.Check("继承全局启动设置", result.Inherited);
@@ -33,7 +28,7 @@ internal sealed class LaunchOptionsPage : NativePage
         var server = Ui.Input(options.Server);
         Control javaEditor = version.Length > 0
             ? Ui.Stack(Ui.Field("Java（留空自动）", java), Ui.Button("选择 Java", async () => java.Text = await FilePicker.Open(Owner, "Java", "java.exe", "javaw.exe") ?? java.Text))
-            : Ui.Setting("Java 运行环境", "由 Java 管理统一选择，默认自动匹配游戏版本", Ui.Action("Java 管理", () => Session.Navigate?.Invoke("java")));
+            : Ui.Setting("Java 运行环境", "由 Java 管理统一选择，默认自动匹配游戏版本", Ui.Action("Java 管理", () => UI.Navigate?.Invoke("java")));
         var fields = Ui.Stack(
             Ui.Text("运行环境与内存", 16), javaEditor, auto,
             Ui.Field("内存 MB", ram),
@@ -68,26 +63,7 @@ internal sealed class LaunchOptionsPage : NativePage
                 {
                     if (!int.TryParse(ram.Text, out var memory) || !int.TryParse(width.Text, out var w) || !int.TryParse(height.Text, out var h))
                         throw new ArgumentException("内存和窗口尺寸必须是整数。");
-                    await Session.RequestAsync("launchOptionsSaved", new
-                    {
-                        type = "saveLaunchOptions",
-                        token = result.Token,
-                        name = name.Text ?? "",
-                        inherit = inherit.IsChecked == true,
-                        settings = new
-                        {
-                            autoMemory = auto.IsChecked == true,
-                            autoChinese = chinese.IsChecked == true,
-                            java = java.Text ?? "",
-                            ramMb = memory,
-                            width = w,
-                            height = h,
-                            fullScreen = full.IsChecked == true,
-                            jvmArguments = args.Text ?? "",
-                            windowTitle = title.Text ?? "",
-                            server = server.Text ?? ""
-                        }
-                    });
+                    await Session.SaveLaunchOptionsAsync(token: result.Token, name: name.Text ?? "", inherit: inherit.IsChecked == true, settings: new LaunchOptionsSettings { AutoMemory = auto.IsChecked == true, AutoChinese = chinese.IsChecked == true, Java = java.Text ?? "", RamMb = memory, Width = w, Height = h, FullScreen = full.IsChecked == true, JvmArguments = args.Text ?? "", WindowTitle = title.Text ?? "", Server = server.Text ?? "" });
                     if (!inline)
                         (TopLevel.GetTopLevel(this) as Window)?.Close();
                 }, true);
@@ -97,9 +73,9 @@ internal sealed class LaunchOptionsPage : NativePage
             DialogActions = Ui.DialogActions(this, save);
     }
 
-    public static async Task Open(LauncherFacade session, Window owner, string version = "")
+    public static async Task Open(ILauncherService session, UiContext ui, Window owner, string version = "")
     {
-        var view = new LaunchOptionsPage(session);
+        var view = new LaunchOptionsPage(session, ui);
         await view.Load(version);
         await Ui.Show(owner, version.Length > 0 ? "单实例启动设置" : "全局启动设置", view);
     }

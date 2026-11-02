@@ -9,12 +9,15 @@ using MCUGLauncher.Avalonia;
 using MCUGLauncher.Avalonia.Presentation;
 using MCUGLauncher.Avalonia.Views;
 using MCUGLauncher.Models;
+using MCUGLauncher.Contracts;
+using MCUGLauncher.UseCases;
 
 internal static class Program
 {
     static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     static readonly List<JsonElement> Sent = [];
-    static LauncherFacade Session = null!;
+    static LauncherService Session = null!;
+    static UiContext UI = null!;
     static int code;
     static bool rejectNextAuth;
     [STAThread]
@@ -180,7 +183,8 @@ internal static class Program
     }
     static async Task Run()
     {
-        Session = new LauncherFacade(Send);
+        Session = new LauncherService(Send);
+        UI = new UiContext(Session);
         var sources = new DataSourceConfig();
         Deliver(new
         {
@@ -236,7 +240,7 @@ internal static class Program
                 accountType = "mua",
                 player = "AvatarB"
             });
-            Check(Session.Avatar != blue, "avatar is isolated between account modes");
+            Check(UI.Avatar != blue, "avatar is isolated between account modes");
             Deliver(new
             {
                 type = "avatar",
@@ -244,14 +248,14 @@ internal static class Program
                 player = "AvatarA",
                 image = blue
             });
-            Check(Session.Avatar != blue, "late avatar from previous account ignored");
+            Check(UI.Avatar != blue, "late avatar from previous account ignored");
             Deliver(new
             {
                 type = "accountState",
                 accountType = "microsoft",
                 player = "AvatarA"
             });
-            Check(Session.Avatar == blue, "switching back restores cached avatar immediately");
+            Check(UI.Avatar == blue, "switching back restores cached avatar immediately");
             Deliver(new
             {
                 type = "avatar",
@@ -260,7 +264,7 @@ internal static class Program
                 image = AvaloniaAvatarImage.Encode(null),
                 fallback = true
             });
-            Check(Session.Avatar == blue, "failed refresh does not replace cached online skin");
+            Check(UI.Avatar == blue, "failed refresh does not replace cached online skin");
             Deliver(new
             {
                 type = "accountState",
@@ -268,11 +272,8 @@ internal static class Program
                 player = "Steve"
             });
         }
-        var unrelated = Session.RequestAsync("probeResult", new
-        {
-            type = "probe",
-            requestId = "probe-request"
-        });
+        var unrelated = Session.ReadLogAsync();
+        var probeId = Sent.Last().GetProperty("requestId").GetString();
         Deliver(new
         {
             type = "error",
@@ -282,11 +283,11 @@ internal static class Program
         Check(!unrelated.IsCompleted, "an unrelated command error does not cancel another page request");
         Deliver(new
         {
-            type = "probeResult",
-            requestId = "probe-request"
+            type = "logText",
+            requestId = probeId
         });
         await unrelated;
-        var window = new ShellWindow(Session);
+        var window = new ShellWindow(Session, UI);
         window.Show();
         Directory.CreateDirectory("work/native-ui");
         foreach (var entry in NavigationCatalog.All)
@@ -319,7 +320,7 @@ internal static class Program
         await Task.Delay(10);
         await Click(Find(window, "MUA 登录"));
         Check(Sent.Last().GetProperty("account").GetString() == "mua", "native account mode switch");
-        var dialog = ResourceDialog.Open(Session, window, new NativeItem { Id = "sodium", Name = "Sodium" }, "mod");
+        var dialog = ResourceDialog.Open(Session, UI, window, new ResourceInfo { Id = "sodium", Name = "Sodium" }, "mod");
         await Task.Delay(30);
         // Owned modal windows form their own visual root.
         var owned = window.OwnedWindows.Last();
@@ -354,7 +355,7 @@ internal static class Program
         await Task.Delay(20);
         await Click(Find(window.OwnedWindows.Last(), "取消"));
         Check(!await confirmation, "native secondary confirmation cancellation preserves the operation");
-        Session.Report("AI 迁移框架尝试 · 原生布局检查（模拟数据）");
+        UI.Report("AI 迁移框架尝试 · 原生布局检查（模拟数据）");
         foreach (var (size, name) in new[] { ((960, 640), "small"), ((1280, 800), "medium"), ((1920, 1080), "large") })
         {
             window.Width = size.Item1;
@@ -379,7 +380,7 @@ internal static class Program
         Check(Sent.Last().GetProperty("type").GetString() == "toggleBookmark", "heart button preserves the existing bookmark command");
         var snapshot = JsonSerializer.SerializeToNode(Session.State with
         {
-            Favorites = [new NativeItem { Id = "sodium", Kind = "mod", Name = "Sodium" }]
+            Favorites = [new ResourceInfo { Id = "sodium", Kind = "mod", Name = "Sodium" }]
         }, Json)!;
         snapshot["type"] = "state";
         Session.Receive(snapshot.ToJsonString());
@@ -423,7 +424,7 @@ internal static class Program
             Check(!window.OwnedWindows.Contains(dialog), "confirmed queue result closes resource dialog: " + route);
         }
         rejectNextAuth = true;
-        var login = AccountDialogs.Open(Session, window, "mua");
+        var login = AccountDialogs.Open(Session, UI, window, "mua");
         await Task.Delay(20);
         var account = window.OwnedWindows.Last();
         await Click(Find(account, "登录 MUA"));
@@ -434,7 +435,7 @@ internal static class Program
         await Click(Find(account, "登录 MUA"));
         await login;
         Check(!window.OwnedWindows.Contains(account), "successful MUA login closes its dialog after final result");
-        var form = LaunchOptionsPage.Open(Session, window, "fixture");
+        var form = LaunchOptionsPage.Open(Session, UI, window, "fixture");
         await Task.Delay(20);
         var launch = window.OwnedWindows.Last();
         await Click(Find(launch, "保存设置"));
@@ -516,7 +517,7 @@ internal static class Program
         Check(Find(window, "正在使用").IsEnabled == false, "active directory cannot be removed or switched redundantly");
         using (var frame = window.CaptureRenderedFrame())
             frame!.Save("work/native-ui/settings-directories.png");
-        Session.Report("社区内容已刷新。");
+        UI.Report("社区内容已刷新。");
         await Task.Delay(25);
         var notice = Controls<NotificationView>(window).Single();
         var text = Controls<TextBlock>(notice).Single(t => t.Name == "NotificationText");
@@ -558,7 +559,7 @@ internal static class Program
         foreach (var (mode, label) in new[] { ("microsoft", "打开登录窗口"), ("mua", "登录 MUA"), ("offline", "保存并切换") })
         {
             var sentBefore = Sent.Count;
-            var pending = AccountDialogs.Open(Session, window, mode);
+            var pending = AccountDialogs.Open(Session, UI, window, mode);
             await Task.Delay(30);
             var dialog = window.OwnedWindows.Last();
             CheckDialogFooter(dialog, label);
@@ -568,14 +569,14 @@ internal static class Program
             await pending;
             Check(Sent.Count == sentBefore, "canceling account dialog does not submit: " + mode);
         }
-        var profiles = AccountDialogs.SelectProfile(Session, window, new NativeMessage { Type = "muaProfiles", Token = "dialog-profile", Items = [new NativeItem { Id = "profile", Name = "测试角色" }] });
+        var profiles = AccountDialogs.SelectProfile(Session, UI, window, new MuaProfilesInfo { Token = "dialog-profile", Items = [new ProfileInfo { Id = "profile", Name = "测试角色" }] });
         await Task.Delay(25);
         var profileDialog = window.OwnedWindows.Last();
         CheckDialogFooter(profileDialog, "使用选中角色");
         await Click(Find(profileDialog, "取消"));
         await profiles;
         Check(Sent.Last().GetProperty("type").GetString() == "selectMuaProfile" && Sent.Last().GetProperty("profileId").GetString() == "", "profile cancellation preserves explicit login cancellation");
-        var server = ServerDialog.Open(Session, window);
+        var server = ServerDialog.Open(Session, UI, window);
         await Task.Delay(25);
         var serverDialog = window.OwnedWindows.Last();
         CheckDialogFooter(serverDialog, "添加服务器");
@@ -583,7 +584,7 @@ internal static class Program
             frame!.Save("work/native-ui/dialog-server.png");
         await Click(Find(serverDialog, "取消"));
         await server;
-        var skin = AccountDialogs.Skin(Session, window);
+        var skin = AccountDialogs.Skin(Session, UI, window);
         await Task.Delay(25);
         var skinDialog = window.OwnedWindows.Last();
         skinDialog.Width = skinDialog.MinWidth;
@@ -593,7 +594,7 @@ internal static class Program
         CheckDialogFooter(skinDialog, "选择本地 PNG 皮肤");
         await Click(Find(skinDialog, "取消"));
         await skin;
-        var launch = LaunchOptionsPage.Open(Session, window, "fixture");
+        var launch = LaunchOptionsPage.Open(Session, UI, window, "fixture");
         await Task.Delay(30);
         var launchDialog = window.OwnedWindows.Last();
         launchDialog.Height = 400;
@@ -609,8 +610,8 @@ internal static class Program
         await launch;
         foreach (var (label, page) in new (string, NativePage)[]
         {
-            ("提交公告", new EditorPage(Session, "publish")),
-            ("确认下载", new ResourceDialog(Session, new NativeItem { Id = "fixture", Name = "资源详情", Description = string.Join("\n", Enumerable.Repeat("较长的介绍内容，用于验证完整滚动范围", 24)) }, "mod"))
+            ("提交公告", new EditorPage(Session, UI, "publish")),
+            ("确认下载", new ResourceDialog(Session, UI, new ResourceInfo { Id = "fixture", Name = "资源详情", Description = string.Join("\n", Enumerable.Repeat("较长的介绍内容，用于验证完整滚动范围", 24)) }, "mod"))
         })
         {
             var pending = Ui.Show(window, label, page, 1000, 400);
@@ -644,7 +645,7 @@ internal static class Program
     {
         Check(window.SystemDecorations == SystemDecorations.BorderOnly && window.ExtendClientAreaToDecorationsHint, "custom shell requests border-only chrome with integrated titlebar");
         Check(!Controls<TextBlock>(window).Any(t => t.Name == "StatusText"), "persistent footer text removed");
-        Session.Report("操作提示测试");
+        UI.Report("操作提示测试");
         await Task.Delay(20);
         var notice = Controls<NotificationView>(window).Single();
         Check(notice.IsVisible, "backend feedback remains visible as a temporary notification");
@@ -737,7 +738,7 @@ internal static class Program
     {
         var expected = new[] { "启动设置", "Java 管理", "游戏目录", "实例维护", "存档保护", "界面与背景", "下载与网络", "安装与导入", "维护与恢复", "账号与社区", "数据源", "服务器收藏", "我的收藏", "管理员", "下载任务", "运行中的游戏", "运行日志", "诊断与反馈", "关于" };
         Check(NavigationCatalog.All.Where(i => i.Group == "settings" && i.Visible).Select(i => i.Label).SequenceEqual(expected), "settings retain all functions with user-approved category grouping");
-        Session.HomeInstancePanelOpen = false;
+        UI.HomeInstancePanelOpen = false;
         window.Navigate("home");
         await Task.Delay(25);
         Check(!Controls<InstancePickerView>(window).Any(), "home defaults to dashboard, not permanent instance list");

@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using MCUGLauncher.Models;
 using MCUGLauncher.Avalonia.Presentation;
 
 namespace MCUGLauncher.Avalonia.Views;
@@ -15,11 +14,13 @@ internal sealed class SourcesPage : NativePage
     readonly Button defaultTab;
     readonly Button customTab;
     string mode = "default";
-    public SourcesPage(LauncherFacade session) : base(session)
+    public SourcesPage(ILauncherService session, UiContext ui) : base(session, ui)
     {
+        session.TestResultReceived += OnTest;
+        UnsubscribeWith(() => session.TestResultReceived -= OnTest);
         draft = Values(State.CustomDataSources);
         Title("数据源设置", "进入页面或切换页签自动测试，也可逐项手动测试。保存与使用分开。");
-        use = Ui.Button("使用默认源", () => Send(new { type = "useDataSources", mode }), true);
+        use = Ui.Button("使用默认源", () => Session.UseDataSourcesAsync(mode: mode), true);
         defaultTab = Ui.Action("默认源", () => Switch("default"));
         customTab = Ui.Action("自定义源", () => Switch("custom"));
         Body.Children.Add(Ui.Row(defaultTab, customTab));
@@ -27,7 +28,7 @@ internal sealed class SourcesPage : NativePage
         Switch(mode);
     }
 
-    static Dictionary<string, string> Values(DataSourceConfig source) => new()
+    static Dictionary<string, string> Values(DataSourceSet source) => new()
     {
         ["announcements"] = source.Announcements,
         ["servers"] = source.Servers,
@@ -82,7 +83,7 @@ internal sealed class SourcesPage : NativePage
 
         var actions = Ui.Row();
         if (mode == "custom")
-            actions.Children.Add(Ui.Button("保存自定义源", () => Send(new { type = "saveCustomSources", dataSources = new { announcements = draft["announcements"], servers = draft["servers"], recommendations = draft["recommendations"], quotes = draft["quotes"] } })));
+            actions.Children.Add(Ui.Button("保存自定义源", () => Session.SaveCustomSourcesAsync(dataSources: new DataSourceSet { Announcements = draft["announcements"], Servers = draft["servers"], Recommendations = draft["recommendations"], Quotes = draft["quotes"] })));
         actions.Children.Add(use);
         rows.Children.Add(Ui.Text(mode == "custom" ? "使用自定义源会应用已保存的地址，未保存的修改不会生效。" : "默认地址只读，测试不会切换当前使用的源。"));
         rows.Children.Add(actions);
@@ -94,13 +95,7 @@ internal sealed class SourcesPage : NativePage
         var id = Guid.NewGuid().ToString("N");
         requests[name] = (id, url);
         results[name].Text = url.Length == 0 ? "未填写地址" : "测试中…";
-        return url.Length == 0 ? Task.CompletedTask : Send(new
-        {
-            type = "testSource",
-            name,
-            url,
-            requestId = id
-        });
+        return url.Length == 0 ? Task.CompletedTask : Session.TestSourceAsync(name: name, url: url, requestId: id);
     }
 
     void Status()
@@ -110,11 +105,10 @@ internal sealed class SourcesPage : NativePage
         use.IsEnabled = !applied;
     }
 
-    protected override void Receive(NativeMessage message)
+    protected override void OnStateChanged() => Status();
+    void OnTest(TestResultInfo message)
     {
-        if (message.Type == "state")
-            Status();
-        if (message.Type == "testResult" && requests.TryGetValue(message.Name, out var pending) && pending.Id == message.RequestId && pending.Url == message.Url && (mode != "custom" || draft[message.Name] == message.Url))
+        if (requests.TryGetValue(message.Name, out var pending) && pending.Id == message.RequestId && pending.Url == message.Url && (mode != "custom" || draft[message.Name] == message.Url))
             results[message.Name].Text = message.Ok ? $"连接正常 · {message.Ms} ms" : message.Message;
     }
 }

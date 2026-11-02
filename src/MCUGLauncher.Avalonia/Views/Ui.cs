@@ -8,6 +8,8 @@ using Avalonia.Platform;
 namespace MCUGLauncher.Avalonia.Views;
 internal static class Ui
 {
+    public static string AccountLabel(string mode) => mode switch { "microsoft" => "正版账号 · 在线验证", "mua" => "MUA 账号 · 外置登录", _ => "离线账号 · 本地启动" };
+    public static string FileSize(long bytes) => bytes <= 0 ? "—" : bytes < 1048576 ? $"{bytes / 1024.0:0.#} KB" : $"{bytes / 1048576.0:0.#} MB";
     public static TextBlock Text(string text, double size = 13) => new()
     {
         Text = text,
