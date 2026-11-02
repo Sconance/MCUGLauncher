@@ -126,6 +126,21 @@ internal sealed class LauncherFacade : IDisposable
             version
         }, Options));
 
+    public Task PreviewUpdatesAsync(string token, IReadOnlyList<string> projects) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "previewContentUpdates",
+            token,
+            projects
+        }, Options));
+
+    public Task ApplyUpdatesAsync(string token) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "applyContentUpdates",
+            token
+        }, Options));
+
     public Task ExportInstanceAsync(string version, string path, bool servers, bool saves) =>
         application.HandleAsync(JsonSerializer.Serialize(new
         {

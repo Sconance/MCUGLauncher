@@ -18,6 +18,8 @@ public partial class ShellWindow : Window
     IReadOnlyList<TaskInfo> tasks = Array.Empty<TaskInfo>();
     IReadOnlyList<ContentItem> contentItems = Array.Empty<ContentItem>();
     JsonElement uninstallPreview;
+    JsonElement updates;
+    JsonElement updatePreview;
     string page = "home";
 
     public ShellWindow()
@@ -234,6 +236,39 @@ public partial class ShellWindow : Window
         else
         {
             Add("选择实例后可克隆或预览卸载。卸载预览必须先查看路径。");
+        }
+
+        if (updates.ValueKind == JsonValueKind.Object
+            && updates.TryGetProperty("items", out var updateItems) && updateItems.ValueKind == JsonValueKind.Array)
+        {
+            AddHeading("内容更新");
+            var projects = new List<string>();
+            foreach (var item in updateItems.EnumerateArray())
+            {
+                var available = item.TryGetProperty("available", out var flag) && flag.ValueKind == JsonValueKind.True;
+                Add(ReadString(item, "name") + "  " + ReadString(item, "before") + " → " + ReadString(item, "after"));
+                if (available)
+                    projects.Add(ReadString(item, "id"));
+            }
+            if (projects.Count > 0 && updates.TryGetProperty("token", out var checkToken) && checkToken.GetString() is { Length: > 0 } updateToken)
+            {
+                var preview = new Button { Content = "预览全部更新", HorizontalAlignment = HorizontalAlignment.Left };
+                preview.Click += async (_, _) =>
+                {
+                    await facade.PreviewUpdatesAsync(updateToken, projects);
+                    await facade.RequestStateAsync();
+                };
+                Content.Children.Add(preview);
+            }
+        }
+        if (updatePreview.ValueKind == JsonValueKind.Object
+            && updatePreview.TryGetProperty("token", out var previewToken) && previewToken.GetString() is { Length: > 0 } applyToken)
+        {
+            AddHeading("更新预览");
+            Add("预计下载：" + (updatePreview.TryGetProperty("bytes", out var bytes) && bytes.TryGetInt64(out var size) ? size / 1024 + " KB" : "未知"));
+            var apply = new Button { Content = "应用更新", HorizontalAlignment = HorizontalAlignment.Left };
+            apply.Click += async (_, _) => { await facade.ApplyUpdatesAsync(applyToken); await facade.RequestStateAsync(); };
+            Content.Children.Add(apply);
         }
     }
 
