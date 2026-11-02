@@ -17,6 +17,7 @@ internal sealed class InstanceCommands(LauncherContext context)
             "saves" => Path.Combine(instance, "saves"),
             "screenshots" => Path.Combine(instance, "screenshots"),
             "version" => instance,
+            "config" => context.Store.DataDirectory,
             _ => context.Config.Root
         };
         Directory.CreateDirectory(path);

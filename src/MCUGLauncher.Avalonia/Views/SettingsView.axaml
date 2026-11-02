@@ -1,0 +1,240 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MCUGLauncher.Avalonia.Views.SettingsView">
+  <Grid ColumnDefinitions="190,*">
+    <Border Background="{StaticResource AppSide}" CornerRadius="12" Padding="8" VerticalAlignment="Stretch">
+      <StackPanel Spacing="4">
+        <TextBlock Text="设置" FontSize="18" FontWeight="Bold" Margin="8,6,8,10" />
+        <ListBox x:Name="Nav" Background="Transparent" BorderThickness="0" SelectionChanged="OnNavSelectionChanged">
+          <ListBoxItem Content="启动设置" Tag="launch" />
+          <ListBoxItem Content="Java 管理" Tag="java" />
+          <ListBoxItem Content="数据源" Tag="datasources" />
+          <ListBoxItem Content="界面与背景" Tag="appearance" />
+          <ListBoxItem Content="服务器收藏" Tag="servers" />
+          <ListBoxItem Content="存档保护" Tag="saves" />
+          <ListBoxItem Content="任务与恢复" Tag="recovery" />
+          <ListBoxItem Content="运行日志" Tag="logs" />
+          <ListBoxItem Content="诊断与反馈" Tag="diagnose" />
+          <ListBoxItem Content="社区身份" Tag="community" />
+          <ListBoxItem Content="关于与许可" Tag="about" />
+        </ListBox>
+      </StackPanel>
+    </Border>
+
+    <ScrollViewer Grid.Column="1" Margin="18,0,0,0" VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="14">
+        <Border x:Name="LaunchPanel" Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="启动设置" Classes="h2" />
+            <TextBlock Text="修改后写入本机配置，下次启动生效。" Classes="muted" />
+            <TextBlock Text="游戏目录" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="RootBox" Watermark="游戏根目录" />
+              <Button x:Name="BrowseRootButton" Grid.Column="1" Content="选择" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <TextBlock Text="Java 路径（留空自动选择）" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <TextBox x:Name="JavaBox" Watermark="留空时由启动核心选择" />
+              <Button x:Name="BrowseJavaButton" Grid.Column="1" Content="选择" Classes="ghost" Margin="8,0,0,0" />
+              <Button x:Name="ScanJavaButton" Grid.Column="2" Content="扫描" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*,*,*">
+              <CheckBox x:Name="AutoMemoryBox" Content="自动分配内存" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Spacing="4" Margin="16,0,0,0">
+                <TextBlock Text="最大内存 MB" Classes="muted" />
+                <TextBox x:Name="RamBox" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="4" Margin="12,0,0,0">
+                <TextBlock Text="游戏窗口宽" Classes="muted" />
+                <TextBox x:Name="WidthBox" />
+              </StackPanel>
+              <StackPanel Grid.Column="3" Spacing="4" Margin="12,0,0,0">
+                <TextBlock Text="游戏窗口高" Classes="muted" />
+                <TextBox x:Name="HeightBox" />
+              </StackPanel>
+            </Grid>
+            <TextBlock x:Name="PlayerLabel" Text="离线玩家名" FontWeight="SemiBold" />
+            <TextBox x:Name="PlayerBox" Watermark="仅离线账号可修改" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button x:Name="SaveLaunchButton" Content="保存设置" Classes="primary" />
+              <TextBlock x:Name="LaunchStatus" Classes="status" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="JavaPanel" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Java 管理" Classes="h2" />
+            <TextBlock Text="扫描本机常见位置中的 java.exe；指定后优先使用该路径。" Classes="muted" />
+            <TextBlock Text="当前 Java 路径" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <TextBox x:Name="JavaPathBox" Watermark="留空自动选择" />
+              <Button x:Name="BrowseJavaPathButton" Grid.Column="1" Content="选择" Classes="ghost" Margin="8,0,0,0" />
+              <Button x:Name="ScanJavaListButton" Grid.Column="2" Content="扫描本机 Java" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button x:Name="SaveJavaButton" Content="保存 Java 设置" Classes="primary" />
+              <TextBlock x:Name="JavaStatus" Classes="status" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="扫描结果" FontWeight="SemiBold" />
+            <StackPanel x:Name="JavaListPanel" Spacing="6" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="DataSourcesPanel" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="数据源" Classes="h2" />
+            <TextBlock Text="公告、服务器、推荐、语录分别读取独立 JSON；保存自定义地址后可切换默认与自定义。" Classes="muted" />
+            <TextBlock Text="公告地址" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="SourceAnnouncementsBox" />
+              <Button x:Name="TestAnnouncementsButton" Grid.Column="1" Content="测试" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <TextBlock Text="服务器地址" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="SourceServersBox" />
+              <Button x:Name="TestServersButton" Grid.Column="1" Content="测试" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <TextBlock Text="推荐地址" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="SourceRecommendationsBox" />
+              <Button x:Name="TestRecommendationsButton" Grid.Column="1" Content="测试" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <TextBlock Text="语录地址" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="SourceQuotesBox" />
+              <Button x:Name="TestQuotesButton" Grid.Column="1" Content="测试" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <TextBlock Text="社区写入接口（可选）" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="WriteEndpointBox" Watermark="留空时公告只保存到本机" />
+              <Button x:Name="SaveWriteEndpointButton" Grid.Column="1" Content="保存" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="SaveSourcesButton" Content="保存自定义" Classes="primary" />
+              <Button x:Name="UseCustomSourcesButton" Content="使用自定义" Classes="ghost" />
+              <Button x:Name="UseDefaultSourcesButton" Content="使用默认" Classes="ghost" />
+            </StackPanel>
+            <TextBlock x:Name="DataSourceStatus" Classes="status" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="AppearancePanel" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="界面与背景" Classes="h2" />
+            <TextBlock Text="固定蓝白主题；可恢复默认窗口尺寸。" Classes="muted" />
+            <Border Background="{StaticResource AppBg}" CornerRadius="8" Padding="14">
+              <StackPanel Spacing="4">
+                <TextBlock Text="蓝白 · 默认" FontWeight="Bold" />
+                <TextBlock Text="#006DB8 强调色 / #F3F7F9 页面底色" Classes="muted" />
+              </StackPanel>
+            </Border>
+            <Button x:Name="ResetWindowButton" Content="恢复默认窗口 1200 × 780" Classes="ghost" HorizontalAlignment="Left" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="ServersPanel" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="服务器收藏" Classes="h2" />
+            <TextBlock Text="收藏的服务器会出现在主页；状态由服务器列表协议实时查询。" Classes="muted" />
+            <Grid ColumnDefinitions="*,*,Auto">
+              <TextBox x:Name="ServerNameBox" Watermark="名称（可留空）" />
+              <TextBox x:Name="ServerAddressBox" Grid.Column="1" Watermark="地址，例如 play.example.com" Margin="8,0,0,0" />
+              <Button x:Name="SaveServerButton" Grid.Column="2" Content="添加" Classes="primary" Margin="8,0,0,0" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="CancelServerEditButton" Content="取消编辑" Classes="ghost" IsVisible="False" />
+              <TextBlock x:Name="ServerStatus" Classes="status" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel x:Name="ServerListPanel" Spacing="8" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="SavesPanel" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="存档保护" Classes="h2" />
+            <TextBlock Text="备份写到本地数据目录的 backups 文件夹，不修改原存档；恢复会创建新存档。" Classes="muted" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="BackupSavesButton" Content="立即备份" Classes="primary" />
+              <Button x:Name="OpenSavesFolderButton" Content="打开存档文件夹" Classes="ghost" />
+              <TextBlock x:Name="SaveStatus" Classes="status" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel x:Name="SaveListPanel" Spacing="8" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="RecoveryPanel" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="任务与恢复" Classes="h2" />
+            <TextBlock Text="窗口尺寸异常时可恢复；打开配置目录查看账号与队列数据。" Classes="muted" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="ResetWindowRecoveryButton" Content="恢复窗口尺寸" Classes="ghost" />
+              <Button x:Name="OpenConfigButton" Content="打开配置目录" Classes="ghost" />
+              <Button x:Name="OpenRootButton" Content="打开游戏目录" Classes="ghost" />
+            </StackPanel>
+            <TextBlock x:Name="RecoveryStatus" Classes="status" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="LogsPanel" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="运行日志" Classes="h2" />
+            <TextBlock Text="最近 400 行启动与启动游戏记录。" Classes="muted" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="ReadLogButton" Content="刷新日志" Classes="primary" />
+              <Button x:Name="OpenLogFolderButton" Content="打开日志目录" Classes="ghost" />
+            </StackPanel>
+            <TextBox x:Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                     FontFamily="Consolas, Microsoft YaHei UI" MinHeight="260" MaxHeight="420" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="DiagnosePanel" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="诊断与反馈" Classes="h2" />
+            <TextBlock Text="反馈问题时请附上运行环境信息。" Classes="muted" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button x:Name="ReadSystemInfoButton" Content="读取系统信息" Classes="primary" />
+              <Button x:Name="CopyDiagnosticsButton" Content="复制" Classes="ghost" />
+              <TextBlock x:Name="DiagnoseStatus" Classes="status" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBox x:Name="DiagnosticsBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                     FontFamily="Consolas, Microsoft YaHei UI" MinHeight="180" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="CommunityPanel" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="社区身份" Classes="h2" />
+            <TextBlock Text="匿名模式影响主页身份展示；密钥只保存在本机。" Classes="muted" />
+            <CheckBox x:Name="AnonymousBox" Content="匿名模式" />
+            <Button x:Name="SaveAnonymousButton" Content="保存匿名设置" Classes="ghost" HorizontalAlignment="Left" />
+            <TextBlock Text="社区身份密钥" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="CommunityKeyBox" PasswordChar="●" Watermark="向群管理员获取" />
+              <Button x:Name="VerifyCommunityKeyButton" Grid.Column="1" Content="验证" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <TextBlock Text="管理员密钥" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="AdminKeyBox" PasswordChar="●" Watermark="首次输入即设置本机管理员密钥" />
+              <Button x:Name="VerifyAdminKeyButton" Grid.Column="1" Content="验证" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <TextBlock x:Name="CommunityStatus" Classes="status" />
+          </StackPanel>
+        </Border>
+
+        <Border x:Name="AboutPanel" Classes="card" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="关于与许可" Classes="h2" />
+            <TextBlock x:Name="AboutVersion" FontWeight="Bold" />
+            <TextBlock Text="面向 Windows 的 Minecraft Java 版启动器。" Classes="muted" />
+            <TextBlock Text="社区数据仓库：https://github.com/waibibabu1239/MCUGL-storage" Classes="muted" />
+            <TextBlock Text="界面：Avalonia 原生控件；微软登录仍使用 WebView2 完成 OAuth。" Classes="muted" />
+            <TextBlock Text="许可：沿用 MCUG Launcher 原仓库策略。" Classes="muted" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

@@ -22,9 +22,20 @@
       </StackPanel>
     </Border>
     <Border Grid.Column="1" Background="{StaticResource AppCard}" CornerRadius="16" Margin="18" Padding="20">
-      <ScrollViewer>
-        <StackPanel x:Name="Content" Spacing="12" />
-      </ScrollViewer>
+      <ContentControl x:Name="PageHost"
+                      HorizontalContentAlignment="Stretch"
+                      VerticalContentAlignment="Stretch" />
+    </Border>
+    <Border x:Name="ToastLayer"
+            Grid.ColumnSpan="2"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="24"
+            Padding="14,10"
+            CornerRadius="10"
+            Background="{StaticResource AppSidebar}"
+            IsVisible="False">
+      <TextBlock x:Name="ToastText" Foreground="White" TextWrapping="Wrap" MaxWidth="420" />
     </Border>
   </Grid>
 </Window>
