@@ -287,6 +287,48 @@ internal sealed record PickedPathInfo(string Target, string Path)
         JsonRead.String(element, "path"));
 }
 
+internal sealed record LaunchSettingsInfo(
+    bool AutoMemory,
+    bool FullScreen,
+    int RamMb,
+    int Width,
+    int Height,
+    string Java,
+    string JvmArguments,
+    string WindowTitle,
+    string Server)
+{
+    public static LaunchSettingsInfo From(JsonElement element) => new(
+        element.ValueKind == JsonValueKind.Object ? JsonRead.Bool(element, "autoMemory") : true,
+        element.ValueKind == JsonValueKind.Object && JsonRead.Bool(element, "fullScreen"),
+        element.ValueKind == JsonValueKind.Object ? JsonRead.Int(element, "ramMb", 4096) : 4096,
+        element.ValueKind == JsonValueKind.Object ? JsonRead.Int(element, "width", 1280) : 1280,
+        element.ValueKind == JsonValueKind.Object ? JsonRead.Int(element, "height", 720) : 720,
+        JsonRead.String(element, "java"),
+        JsonRead.String(element, "jvmArguments"),
+        JsonRead.String(element, "windowTitle"),
+        JsonRead.String(element, "server"));
+}
+
+internal sealed record LaunchOptionsInfo(
+    string RequestId,
+    string Token,
+    string Version,
+    string Name,
+    bool Inherited,
+    LaunchSettingsInfo Settings)
+{
+    public static LaunchOptionsInfo From(JsonElement element) => new(
+        JsonRead.String(element, "requestId"),
+        JsonRead.String(element, "token"),
+        JsonRead.String(element, "version"),
+        JsonRead.String(element, "name"),
+        JsonRead.Bool(element, "inherited"),
+        element.TryGetProperty("settings", out var settings)
+            ? LaunchSettingsInfo.From(settings)
+            : LaunchSettingsInfo.From(default));
+}
+
 internal sealed record CommunityPayload(IReadOnlyDictionary<string, string> Payload)
 {
     public static CommunityPayload From(JsonElement element)

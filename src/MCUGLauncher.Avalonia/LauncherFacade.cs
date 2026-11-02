@@ -40,6 +40,8 @@ internal sealed class LauncherFacade : IDisposable
     public event Action<PackPreviewInfo>? PackPreviewReceived;
     public event Action<ContentErrorInfo>? ContentErrorReceived;
     public event Action<MuaProfilesInfo>? MuaProfilesReceived;
+    public event Action<LaunchOptionsInfo>? LaunchOptionsReceived;
+    public event Action? LaunchOptionsSaved;
     public event Action? SettingsSaved;
 
     public MCUGLauncher.Models.AppConfig Config => application.Config;
@@ -515,6 +517,12 @@ internal sealed class LauncherFacade : IDisposable
                 break;
             case "muaProfiles":
                 MuaProfilesReceived?.Invoke(MuaProfilesInfo.From(root));
+                break;
+            case "launchOptions":
+                LaunchOptionsReceived?.Invoke(LaunchOptionsInfo.From(root));
+                break;
+            case "launchOptionsSaved":
+                LaunchOptionsSaved?.Invoke();
                 break;
             case "settingsSaved":
                 SettingsSaved?.Invoke();

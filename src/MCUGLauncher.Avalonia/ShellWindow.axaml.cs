@@ -14,9 +14,9 @@ public partial class ShellWindow : Window
     LauncherFacade facade = null!;
     readonly ShellDesktopHost host;
     readonly SettingsView settingsView;
+    readonly InstancesView instancesView;
     readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     StackPanel? pageContent;
-    string exportVersion = "";
     LauncherState? typed;
     IReadOnlyList<TaskInfo> tasks = [];
     IReadOnlyList<ContentItem> contentItems = [];
@@ -25,9 +25,6 @@ public partial class ShellWindow : Window
     string versionRequest = "";
     string downloadCategory = "mod";
     string pendingLocalVersion = "";
-    UninstallPreviewInfo? uninstallPreview;
-    ContentUpdatesInfo? updates;
-    ContentUpdatePreviewInfo? updatePreview;
     string page = "home";
 
     public ShellWindow()
@@ -41,6 +38,7 @@ public partial class ShellWindow : Window
             ResetWindow);
         facade = new LauncherFacade(host);
         settingsView = new SettingsView(facade);
+        instancesView = new InstancesView(facade);
         Width = Math.Clamp(facade.Config.WindowWidth, 900, 7680);
         Height = Math.Clamp(facade.Config.WindowHeight, 600, 4320);
         if (facade.Config.WindowMaximized)
@@ -64,7 +62,7 @@ public partial class ShellWindow : Window
         facade.StateChanged += snapshot =>
         {
             typed = snapshot;
-            if (page is "home" or "mods" or "maintenance" or "account")
+            if (page is "home" or "account")
                 Render();
         };
         facade.TasksChanged += list =>
@@ -88,34 +86,9 @@ public partial class ShellWindow : Window
                     Render();
             }
         };
-        facade.UninstallPreviewReceived += info =>
-        {
-            uninstallPreview = info;
-            if (page == "maintenance")
-                Render();
-        };
-        facade.ContentUpdatesReceived += info =>
-        {
-            updates = info;
-            if (page == "maintenance")
-                Render();
-        };
-        facade.ContentUpdatePreviewReceived += info =>
-        {
-            updatePreview = info;
-            if (page == "maintenance")
-                Render();
-        };
         facade.PathPicked += info =>
         {
-            if (info.Target == "export" && exportVersion.Length > 0)
-            {
-                var version = exportVersion;
-                exportVersion = "";
-                _ = facade.ExportInstanceAsync(version, info.Path, false, false);
-                ShowToast("导出请求已提交，请查看任务列表。");
-            }
-            else if (info.Target == "download" && pendingLocalVersion.Length > 0)
+            if (info.Target == "download" && pendingLocalVersion.Length > 0)
             {
                 var versionId = pendingLocalVersion;
                 pendingLocalVersion = "";
@@ -133,10 +106,9 @@ public partial class ShellWindow : Window
         facade.ToastReceived += info => ShowToast(info.Message);
         HomeButton.Click += (_, _) => Show("home");
         DownloadButton.Click += (_, _) => Show("download");
-        MaintenanceButton.Click += (_, _) => Show("maintenance");
+        MaintenanceButton.Click += (_, _) => Show("instances");
         AccountButton.Click += (_, _) => Show("account");
         TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
-        ModsButton.Click += (_, _) => Show("mods");
         SettingsButton.Click += (_, _) => Show("settings");
         ClassicButton.Click += (_, _) => new MainWindow().Show();
         Opened += async (_, _) => await facade.StartAsync();
@@ -162,6 +134,11 @@ public partial class ShellWindow : Window
             PageHost.Content = settingsView;
             return;
         }
+        if (page == "instances")
+        {
+            PageHost.Content = instancesView;
+            return;
+        }
         var panel = new StackPanel { Spacing = 12 };
         pageContent = panel;
         PageHost.Content = new ScrollViewer
@@ -169,11 +146,7 @@ public partial class ShellWindow : Window
             Content = panel,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
-        if (page == "mods")
-            RenderMods();
-        else if (page == "maintenance")
-            RenderMaintenance();
-        else if (page == "download")
+        if (page == "download")
             RenderDownload();
         else if (page == "account")
             RenderAccount();
@@ -192,154 +165,6 @@ public partial class ShellWindow : Window
         var refresh = new Button { Content = "刷新状态", HorizontalAlignment = HorizontalAlignment.Left };
         refresh.Click += async (_, _) => await facade.RequestStateAsync();
         Add(refresh);
-    }
-
-    void RenderMods()
-    {
-        var snapshot = typed;
-        AddHeading("模组");
-        Add("当前实例：" + (snapshot?.SelectedVersion ?? ""));
-        if (snapshot is not { Mods.Count: > 0 })
-        {
-            Add("当前实例没有可管理的模组。");
-            return;
-        }
-        foreach (var mod in snapshot.Mods)
-        {
-            var check = new CheckBox { Content = mod.Name, IsChecked = mod.Enabled };
-            var file = mod.File;
-            var enabled = mod.Enabled;
-            check.Click += async (_, _) =>
-            {
-                await facade.ToggleModAsync(file, !enabled);
-                await facade.RequestStateAsync();
-            };
-            Add(check);
-        }
-        Add("切换后会自动刷新模组状态。");
-    }
-
-    void RenderMaintenance()
-    {
-        var snapshot = typed;
-        AddHeading("实例维护");
-        if (snapshot is not { Instances.Count: > 0 })
-        {
-            Add("尚未找到已安装实例。");
-            return;
-        }
-        var cloneName = new TextBox { Watermark = "新实例名称", Width = 260, HorizontalAlignment = HorizontalAlignment.Left };
-        Add(cloneName);
-        foreach (var instance in snapshot.Instances)
-        {
-            if (instance.Name.Length == 0 || instance.Loader == "请安装版本")
-                continue;
-            Add(instance.DisplayName + (instance.Minecraft.Length > 0 ? " · " + instance.Minecraft : ""));
-            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            var clone = new Button { Content = "克隆" };
-            clone.Click += async (_, _) =>
-            {
-                var name = cloneName.Text?.Trim() ?? "";
-                if (name.Length == 0)
-                {
-                    ShowToast("请先填写新实例名称。");
-                    return;
-                }
-                await facade.CloneInstanceAsync(instance.Name, name);
-                ShowToast("克隆请求已提交，请查看任务列表。");
-            };
-            var export = new Button { Content = "导出" };
-            export.Click += (_, _) => { exportVersion = instance.Name; host.PickSaveFile("export"); };
-            var check = new Button { Content = "检查更新" };
-            check.Click += async (_, _) =>
-            {
-                ShowToast("正在检查内容更新…");
-                await facade.CheckUpdatesAsync(instance.Name);
-            };
-            var uninstall = new Button { Content = "卸载预览" };
-            uninstall.Click += async (_, _) => await facade.PreviewUninstallAsync(instance.Name);
-            var delete = new Button { Content = "删除版本" };
-            delete.Click += async (_, _) => await facade.PreviewDeleteVersionAsync(instance.Name);
-            row.Children.Add(clone);
-            row.Children.Add(export);
-            row.Children.Add(check);
-            row.Children.Add(uninstall);
-            row.Children.Add(delete);
-            Add(row);
-        }
-
-        if (uninstallPreview is { Paths.Count: > 0 } preview)
-        {
-            AddHeading("卸载预览 · " + preview.Name);
-            Add(preview.Notice);
-            foreach (var path in preview.Paths)
-                Add("· " + path);
-            var confirm = new CheckBox { Content = "我已检查删除范围并确认备份" };
-            var apply = new Button { Content = "确认卸载", IsEnabled = false, HorizontalAlignment = HorizontalAlignment.Left };
-            confirm.Click += (_, _) => apply.IsEnabled = confirm.IsChecked == true;
-            apply.Click += async (_, _) =>
-            {
-                var token = preview.Token;
-                uninstallPreview = null;
-                await facade.ApplyUninstallAsync(token);
-                ShowToast("卸载请求已提交，请在系统确认框核对。");
-                Render();
-            };
-            Add(confirm);
-            Add(apply);
-        }
-        else
-        {
-            Add("选择实例后可克隆、导出或预览卸载范围。卸载必须先查看路径。");
-        }
-
-        if (updates is { Items.Count: > 0 } checkedUpdates)
-        {
-            AddHeading("内容更新");
-            var selected = new List<(string Id, CheckBox Box)>();
-            foreach (var item in checkedUpdates.Items)
-            {
-                var box = new CheckBox
-                {
-                    Content = item.Name + " · " + item.Before + " → " + (item.After.Length > 0 ? item.After : item.Error),
-                    IsEnabled = item.Available,
-                    IsChecked = item.Available
-                };
-                selected.Add((item.Id, box));
-                Add(box);
-            }
-            var previewButton = new Button { Content = "生成所选更新预览", HorizontalAlignment = HorizontalAlignment.Left };
-            previewButton.Click += async (_, _) =>
-            {
-                var projects = selected.Where(pair => pair.Box.IsChecked == true).Select(pair => pair.Id).ToArray();
-                if (projects.Length == 0)
-                {
-                    ShowToast("请先选择更新项目。");
-                    return;
-                }
-                updatePreview = null;
-                ShowToast("正在解析更新及必需依赖…");
-                await facade.PreviewUpdatesAsync(checkedUpdates.Token, projects);
-            };
-            Add(previewButton);
-        }
-
-        if (updatePreview is { Changes.Count: > 0 } previewUpdate)
-        {
-            AddHeading("更新预览 · " + (previewUpdate.Bytes / 1048576.0).ToString("0.00") + " MiB");
-            foreach (var change in previewUpdate.Changes)
-                Add($"{change.Project}: {change.Before} → {change.After}\n{change.Path}");
-            var apply = new Button { Content = "按预览加入更新队列", HorizontalAlignment = HorizontalAlignment.Left };
-            apply.Click += async (_, _) =>
-            {
-                var token = previewUpdate.Token;
-                updatePreview = null;
-                await facade.ApplyUpdatesAsync(token);
-                ShowToast("更新请求已提交，请查看任务列表。");
-                Render();
-            };
-            Add(apply);
-        }
     }
 
     void RenderDownload()

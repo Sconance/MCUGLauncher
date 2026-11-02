@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MCUGLauncher.Avalonia.Views.InstancesView">
+  <Grid RowDefinitions="Auto,*">
+    <StackPanel Spacing="8">
+      <TextBlock Text="实例" Classes="h2" />
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+        <ComboBox x:Name="InstanceSelector" />
+        <Button x:Name="LaunchButton" Grid.Column="1" Content="启动" Classes="primary" Margin="8,0,0,0" />
+        <Button x:Name="OpenVersionFolderButton" Grid.Column="2" Content="版本文件夹" Classes="ghost" Margin="8,0,0,0" />
+        <Button x:Name="RefreshButton" Grid.Column="3" Content="刷新" Classes="ghost" Margin="8,0,0,0" />
+      </Grid>
+      <TextBlock x:Name="Summary" Classes="muted" />
+    </StackPanel>
+
+    <TabControl Grid.Row="1" Margin="0,12,0,0">
+      <TabItem Header="内容">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="8" Margin="0,8,0,0">
+            <TextBlock x:Name="ContentSummary" Classes="muted" />
+            <StackPanel x:Name="ModsPanel" Spacing="6" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="启动设置">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="10" Margin="0,8,0,0">
+            <TextBlock Text="实例显示名" FontWeight="SemiBold" />
+            <TextBox x:Name="DisplayNameBox" Watermark="1–120 个字符" />
+            <CheckBox x:Name="InheritCheck" Content="继承全局启动设置" />
+            <TextBlock x:Name="InheritHint" Classes="muted" />
+            <TextBlock Text="Java 路径（留空自动选择）" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="JavaBox" Watermark="留空自动选择" />
+              <Button x:Name="BrowseJavaButton" Grid.Column="1" Content="选择" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*,*,*">
+              <CheckBox x:Name="AutoMemoryCheck" Content="自动分配内存" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Spacing="4" Margin="16,0,0,0">
+                <TextBlock Text="内存 MB" Classes="muted" />
+                <TextBox x:Name="RamBox" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="4" Margin="12,0,0,0">
+                <TextBlock Text="游戏窗口宽" Classes="muted" />
+                <TextBox x:Name="WidthBox" />
+              </StackPanel>
+              <StackPanel Grid.Column="3" Spacing="4" Margin="12,0,0,0">
+                <TextBlock Text="游戏窗口高" Classes="muted" />
+                <TextBox x:Name="HeightBox" />
+              </StackPanel>
+            </Grid>
+            <CheckBox x:Name="FullScreenCheck" Content="全屏启动" />
+            <TextBlock Text="窗口标题" FontWeight="SemiBold" />
+            <TextBox x:Name="WindowTitleBox" Watermark="可留空" />
+            <TextBlock Text="自动进入服务器" FontWeight="SemiBold" />
+            <TextBox x:Name="ServerBox" Watermark="可留空，例如 play.example.com" />
+            <TextBlock Text="额外 JVM 参数" FontWeight="SemiBold" />
+            <TextBox x:Name="JvmArgumentsBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70"
+                     Watermark="只接受 - 开头的参数；内存请使用上方设置" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button x:Name="SaveOptionsButton" Content="保存此实例设置" Classes="primary" />
+              <Button x:Name="LoadOptionsButton" Content="重新读取" Classes="ghost" />
+              <TextBlock x:Name="OptionsStatus" Classes="status" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="维护">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="10" Margin="0,8,0,0">
+            <TextBlock Text="克隆为独立实例" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox x:Name="CloneNameBox" Watermark="新实例名称" />
+              <Button x:Name="CloneButton" Grid.Column="1" Content="克隆" Classes="primary" Margin="8,0,0,0" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <CheckBox x:Name="CloneSavesCheck" Content="包含存档" />
+              <CheckBox x:Name="CloneServersCheck" Content="包含服务器列表" />
+            </StackPanel>
+            <TextBlock Text="导出整合包 ZIP" FontWeight="SemiBold" />
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <CheckBox x:Name="ExportSavesCheck" Content="包含存档" />
+              <CheckBox x:Name="ExportServersCheck" Content="包含服务器列表" />
+              <Button x:Name="ExportButton" Content="选择导出位置" Classes="ghost" />
+            </StackPanel>
+            <TextBlock Text="卸载 / 删除版本" FontWeight="SemiBold" />
+            <TextBlock Text="删除前会列出完整路径，再由原生确认框确认；默认保留共享根目录数据。" Classes="muted" />
+            <Button x:Name="PreviewUninstallButton" Content="预览卸载范围" Classes="ghost" HorizontalAlignment="Left" />
+            <StackPanel x:Name="UninstallPanel" Spacing="6" />
+            <TextBlock Text="内容更新" FontWeight="SemiBold" />
+            <TextBlock Text="只检查通过启动器管理的内容；执行前会再次核对本地指纹。" Classes="muted" />
+            <Button x:Name="CheckUpdatesButton" Content="检查内容更新" Classes="ghost" HorizontalAlignment="Left" />
+            <StackPanel x:Name="UpdatesPanel" Spacing="6" />
+            <StackPanel x:Name="UpdatePreviewPanel" Spacing="6" />
+            <TextBlock x:Name="MaintenanceStatus" Classes="status" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</UserControl>
