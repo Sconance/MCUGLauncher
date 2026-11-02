@@ -19,6 +19,7 @@ public partial class ShellWindow : Window
     LauncherState? typed;
     IReadOnlyList<TaskInfo> tasks = Array.Empty<TaskInfo>();
     IReadOnlyList<ContentItem> contentItems = Array.Empty<ContentItem>();
+    ContentItem? selectedContent;
     JsonElement uninstallPreview;
     JsonElement updates;
     JsonElement updatePreview;
@@ -336,6 +337,24 @@ public partial class ShellWindow : Window
             await facade.SearchContentAsync(category.SelectedItem as string ?? "mod", query.Text?.Trim() ?? "");
         Content.Children.Add(search);
 
+        if (selectedContent is { } selected)
+        {
+            AddHeading(selected.Name);
+            Add(selected.Description);
+            Add("项目 ID：" + selected.Id);
+            var back = new Button { Content = "返回搜索结果", HorizontalAlignment = HorizontalAlignment.Left };
+            back.Click += (_, _) => { selectedContent = null; Render(); };
+            Content.Children.Add(back);
+            var type = category.SelectedItem as string ?? "mod";
+            var install = new Button { Content = "安装 " + selected.Name, HorizontalAlignment = HorizontalAlignment.Left };
+            install.Click += async (_, _) =>
+            {
+                await facade.InstallContentAsync(selected.Id, type);
+                await facade.RequestStateAsync();
+            };
+            Content.Children.Add(install);
+            return;
+        }
         if (contentItems.Count > 0)
         {
             foreach (var item in contentItems)
@@ -343,6 +362,10 @@ public partial class ShellWindow : Window
                 var name = item.Name;
                 var desc = item.Description;
                 Add(name + (desc.Length > 0 ? "  ·  " + desc : ""));
+                var detail = new Button { Content = "详情", HorizontalAlignment = HorizontalAlignment.Left };
+                var current = item;
+                detail.Click += (_, _) => { selectedContent = current; Render(); };
+                Content.Children.Add(detail);
                 var install = new Button { Content = "安装 " + name, HorizontalAlignment = HorizontalAlignment.Left };
                 var projectId = item.Id;
                 var type = category.SelectedItem as string ?? "mod";
