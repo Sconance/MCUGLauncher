@@ -16,6 +16,7 @@ internal sealed class ResourceDialog : NativePage
     readonly TextBox destination = Ui.Input("", "下载目录");
     readonly TextBlock status = Ui.Text("选择目标并读取兼容版本后，再确认下载。");
     readonly Button confirm;
+    readonly Control manualConditions;
     string token = "";
     int revision;
     public ResourceDialog(LauncherFacade session, NativeItem project, string category) : base(session)
@@ -54,19 +55,18 @@ internal sealed class ResourceDialog : NativePage
             }, true);
         var directory = Ui.Field("自定义下载目录", Ui.Beside(destination, Ui.Button("选择目录", async () => destination.Text = await FilePicker.Folder(Owner) ?? destination.Text)));
         destination.MinWidth = 0;
+        manualConditions = Ui.Stack(Ui.Field("游戏版本", game), Ui.Field("加载器", loader));
         var options = Ui.Stack(Ui.Text("下载选项", 16),
                     Ui.Field("目标实例", instances),
-                    Ui.Field("游戏版本", game),
-                    Ui.Field("加载器", loader),
+                    manualConditions,
                     Ui.Button("读取兼容资源版本", Load),
                     Ui.Field("资源版本", versions),
                     Ui.Field("安装方式", mode),
                     directory,
-                    status,
-                    confirm
+                    status
         );
         options.Name = "ResourceInstallOptions";
-        confirm.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
+        DialogActions = Ui.DialogActions(this, confirm);
         confirm.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("*,310"), ColumnSpacing = 22 };
         layout.Children.Add(details);
@@ -104,6 +104,7 @@ internal sealed class ResourceDialog : NativePage
         token = "";
         confirm.IsEnabled = false;
         var selected = instances.SelectedItem as NativeItem;
+        manualConditions.IsVisible = selected?.Id.Length == 0;
         game.IsEnabled = loader.IsEnabled = selected?.Id.Length == 0;
     }
 

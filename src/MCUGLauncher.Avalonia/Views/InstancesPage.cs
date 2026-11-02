@@ -98,7 +98,7 @@ internal sealed class InstancesPage : NativePage
                             Ui.Button(mod.Enabled ? "禁用" : "启用", () => Send(new { type = "toggleMod", file = mod.File, enabled = !mod.Enabled })),
                             Ui.Button("删除", async () =>
                                 {
-                                    if (await Ui.Confirm(Owner, "删除模组", "删除模组 " + mod.File + "？"))
+                                    if (await Ui.Confirm(Owner, "删除模组", "将删除模组文件「" + mod.File + "」。该操作不能撤销。", "删除模组", true))
                                         await Send(new
                                         {
                                             type = "deleteMod",

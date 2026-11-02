@@ -32,6 +32,7 @@
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="HorizontalContentAlignment" Value="Center"/>
     <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="HorizontalAlignment" Value="Left"/>
   </Style>
   <Style Selector="Button:pointerover">
     <Setter Property="Background" Value="#F3F8FC"/>
@@ -233,4 +234,8 @@
   </Style>
   <Style Selector="Button.window-control:pointerover"><Setter Property="Background" Value="#E8F2F8"/></Style>
   <Style Selector="Button.close-window:pointerover"><Setter Property="Background" Value="#C42B1C"/><Setter Property="Foreground" Value="White"/></Style>
+  <Style Selector="Button.danger-primary"><Setter Property="Background" Value="#BF443B"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="Transparent"/></Style>
+  <Style Selector="Button.danger-primary:pointerover"><Setter Property="Background" Value="#A7372F"/></Style>
+  <Style Selector="Button.danger-primary:pressed"><Setter Property="Background" Value="#8F302A"/></Style>
+  <Style Selector="Button.danger-primary:disabled"><Setter Property="Background" Value="#D7A5A1"/><Setter Property="Foreground" Value="White"/></Style>
 </Styles>

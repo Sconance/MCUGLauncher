@@ -98,7 +98,7 @@ internal sealed class CommunityOptionsPage : NativePage
         var status = Ui.Text(State.CommunityKey ? "已保存在本机" : "尚未保存");
         Body.Children.Add(Ui.Card(Ui.Stack(Ui.Heading("社区密钥"), status, key, Ui.Button("保存密钥", async () => { var result = await Session.RequestAsync("keyResult", new { type = "verifyKey", role = "community", key = key.Text ?? "" }); key.Text = ""; status.Text = result.Message; }))));
     }
-    Button Forget(string label, string account) => Ui.Button(label, async () => { if (await Ui.Confirm(Owner, "移除账号", "移除本机保存的账号？")) await Send(new { type = "forgetAccount", account }); });
+    Button Forget(string label, string account) => Ui.Button(label, async () => { if (await Ui.Confirm(Owner, "移除账号", "仅移除本机登录缓存。下次使用此账号时需要重新登录。", "移除账号", true)) await Send(new { type = "forgetAccount", account }); });
 }
 internal sealed class VersionOverviewPage : NativePage
 {

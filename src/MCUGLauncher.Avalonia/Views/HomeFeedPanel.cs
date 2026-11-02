@@ -78,7 +78,7 @@ internal sealed class HomeFeedPanel : NativePage
                 Ui.Text(status == null ? "正在查询状态…" : status.Online ? $"在线 · {status.Players}/{status.Max} 人 · {status.Ping} ms" : "离线或暂时无法连接", 11),
                 Ui.Row(Link("刷新状态", () => Send(new { type = "pingServer", address = server.Address, id = server.Address })),
                     Link("编辑服务器", () => ServerDialog.Open(Session, Owner, server)),
-                    Link("移除", async () => { if (await Ui.Confirm(Owner, "移除服务器", "移除这个收藏的服务器？")) await Send(new { type = "deleteServer", address = server.Address }); })));
+                    Link("移除", async () => { if (await Ui.Confirm(Owner, "移除服务器", "仅从收藏列表移除，不影响服务器本身。", "移除收藏", true)) await Send(new { type = "deleteServer", address = server.Address }); })));
         }
         Grid.SetRow(body, 1);
         panel.Children.Add(body);
@@ -210,8 +210,10 @@ internal static class ServerDialog
     {
         var name = Ui.Input(server?.Name ?? "");
         var address = Ui.Input(server?.Address ?? "");
-        var content = Ui.Stack(Ui.Heading(server == null ? "添加服务器" : "编辑服务器"), Ui.Field("名称", name), Ui.Field("地址", address));
-        content.Children.Add(Ui.Button("保存服务器", async () =>
+        var title = server != null && editing ? "编辑服务器" : "添加服务器";
+        address.Watermark = "例如：play.example.org:25565";
+        var content = Ui.Stack(Ui.Field("服务器名称", name), Ui.Field("服务器地址", address));
+        var save = Ui.Button(editing && server != null ? "保存修改" : "添加服务器", async () =>
         {
             var response = await session.RequestAsync("serverResult", new
             {
@@ -224,7 +226,7 @@ internal static class ServerDialog
                 (TopLevel.GetTopLevel(content) as Window)?.Close();
             else
                 throw new ArgumentException(response.Message);
-        }, true));
-        return Ui.Show(owner, server == null ? "添加服务器" : "服务器", content, 520, 420);
+        }, true);
+        return Ui.Show(owner, title, content, 520, 370, Ui.DialogActions(content, save), "保存后可查看服务器人数与连接状态。");
     }
 }

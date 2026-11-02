@@ -11,6 +11,10 @@ internal abstract class NativePage : UserControl, IDisposable
         Spacing = 12
     };
     protected LauncherState State => Session.State;
+    public Control? DialogActions
+    {
+        get; protected set;
+    }
 
     protected NativePage(LauncherFacade session)
     {
@@ -25,9 +29,18 @@ internal abstract class NativePage : UserControl, IDisposable
 
     protected void Title(string title, string detail = "")
     {
-        Body.Children.Add(Ui.Heading(title));
+        var heading = Ui.Heading(title);
+        heading.Classes.Add("page-heading");
+        Body.Children.Add(heading);
         if (detail.Length > 0)
             Body.Children.Add(Ui.Text(detail));
+    }
+
+    internal void PrepareDialog()
+    {
+        var heading = Body.Children.FirstOrDefault(c => c.Classes.Contains("page-heading"));
+        if (heading != null)
+            Body.Children.Remove(heading);
     }
 
     protected Task Send(object value) => Session.SendAsync(value);

@@ -45,14 +45,13 @@ internal sealed class EditorPage : NativePage
             var body = Ui.Input();
             body.AcceptsReturn = true;
             body.MinHeight = 120;
-            var expires = Ui.Input("", "到期时间，可留空");
+            var expires = Ui.Input("", "YYYY-MM-DD HH:mm，可留空");
             var image = "";
             var imageLabel = Ui.Text("未选择配图");
             Body.Children.Add(Ui.Card(Ui.Stack(
-                        Ui.Heading("发布公告"),
                         Ui.Field("标题", title),
                         Ui.Field("正文", body),
-                        Ui.Field("到期时间", expires),
+                        Ui.Field("到期时间（可选）", expires),
                         imageLabel,
                         Ui.Button("选择配图", async () =>
                             {
@@ -65,29 +64,25 @@ internal sealed class EditorPage : NativePage
                                 image = "data:image/" + (Path.GetExtension(path).ToLowerInvariant() == ".png" ? "png" : "jpeg") + ";base64," + Convert.ToBase64String(await File.ReadAllBytesAsync(path));
                                 imageLabel.Text = Path.GetFileName(path);
                             }),
-                        Ui.Button("发布 / 保存为待发布", () => Send(new { type = "publish", title = title.Text ?? "", body = body.Text ?? "", expiresAt = expires.Text ?? "", imageData = image }), true)
+                        Ui.Muted("提交后按当前配置发布，或保存为本地待发布内容。")
             )));
+            DialogActions = Ui.DialogActions(this, Ui.Button("提交公告", () => Send(new { type = "publish", title = title.Text ?? "", body = body.Text ?? "", expiresAt = expires.Text ?? "", imageData = image }), true));
         }
         if (mode == "recommendations")
         {
             var name = Ui.Input();
             var desc = Ui.Input();
             var url = Ui.Input();
-            Body.Children.Add(Ui.Card(Ui.Stack(
-                        Ui.Heading("添加群友推荐"),
-                        Ui.Field("名称", name),
-                        Ui.Field("简介", desc),
-                        Ui.Field("链接", url),
-                        Ui.Button("保存本地推荐", () =>
-                            {
-                                var items = (Session.Community.GetValueOrDefault("recommendations") ?? []).Append(new CommunityEntry { Id = Guid.NewGuid().ToString("N"), Name = name.Text ?? "", Description = desc.Text ?? "", Url = url.Text ?? "", Author = State.Player }).ToArray();
-                                return Send(new
-                                {
-                                    type = "saveRecommendations",
-                                    items
-                                });
-                            })
-            )));
+            Body.Children.Add(Ui.Card(Ui.Stack(Ui.Field("推荐名称", name), Ui.Field("简介", desc), Ui.Field("资源或服务器链接", url))));
+            DialogActions = Ui.DialogActions(this, Ui.Button("保存本地推荐", () =>
+            {
+                var items = (Session.Community.GetValueOrDefault("recommendations") ?? []).Append(new CommunityEntry { Id = Guid.NewGuid().ToString("N"), Name = name.Text ?? "", Description = desc.Text ?? "", Url = url.Text ?? "", Author = State.Player }).ToArray();
+                return Send(new
+                {
+                    type = "saveRecommendations",
+                    items
+                });
+            }, true));
         }
         Body.Children.Add(existing);
         Draw();
@@ -106,7 +101,7 @@ internal sealed class EditorPage : NativePage
                             Ui.Text(item.Title.Length > 0 ? item.Title : item.Name),
                             Ui.Button("删除本地条目", async () =>
                                 {
-                                    if (!await Ui.Confirm(Owner, "删除内容", "删除这条本地内容？"))
+                                    if (!await Ui.Confirm(Owner, "删除内容", "将从本地列表删除这条内容。该操作不能撤销。", "删除内容", true))
                                         return;
                                     var items = (Session.Community.GetValueOrDefault(key) ?? []).Where(i => i.Id != item.Id).ToArray();
                                     await Send(new

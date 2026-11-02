@@ -1,4 +1,5 @@
 using Avalonia;
+using MCUGLauncher.Avalonia.Views;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -10,7 +11,7 @@ using XboxAuthNet.OAuth.CodeFlow;
 namespace MCUGLauncher.Avalonia;
 
 /// <summary>Avalonia 微软登录窗口，拦截授权回调 URL。</summary>
-internal sealed class MicrosoftLoginWindow : Window
+internal sealed class MicrosoftLoginWindow : DialogWindow
 {
     readonly Uri loginUri;
     readonly ICodeFlowUrlChecker? checker;
@@ -33,7 +34,9 @@ internal sealed class MicrosoftLoginWindow : Window
         MinHeight = 500;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = Brushes.White;
-        Content = Layout();
+        ShowInTaskbar = true;
+        SetBody("Microsoft 账号登录", Layout(), "请仅在下方 Microsoft 官方页面输入账号信息。", scrollable: false);
+        SetActions(DialogWindow.Actions(Ui.Action("取消登录", () => Close())));
         Closed += OnClosed;
         retry.Click += (_, _) => Reload();
     }

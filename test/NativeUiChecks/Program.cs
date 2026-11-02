@@ -242,6 +242,7 @@ internal static class Program
             Check(window.GetVisualDescendants().OfType<NativePage>().Any(), "native route " + entry.Id);
         }
         await CodexParity(window);
+        await DialogParity(window);
         await WindowAndVanillaParity(window);
         await ButtonAppearance();
         window.Navigate("sources");
@@ -341,6 +342,90 @@ internal static class Program
         window.Close();
         Console.WriteLine("ALL_NATIVE_UI_CHECKS_PASSED (headless native controls and simulated application responses; no live account/game)");
     }
+    static void CheckDialogFooter(Window dialog, string primaryLabel)
+    {
+        Check(dialog is DialogWindow && dialog.SystemDecorations == SystemDecorations.BorderOnly, "shared native dialog shell: " + dialog.Title);
+        var footer = Controls<Border>(dialog).Single(c => c.Name == "DialogFooter");
+        var body = Controls<ContentControl>(dialog).Single(c => c.Name == "DialogBody");
+        foreach (var text in Controls<TextBlock>(body))
+            Check(text.Bounds.Width <= dialog.ClientSize.Width - 43, "dialog body text stays within the content width: " + text.Text + " / " + text.Bounds.Width + " / " + dialog.ClientSize.Width);
+        var primary = Find(footer, primaryLabel);
+        var cancel = Find(footer, "取消");
+        Check(primary.TranslatePoint(default, dialog)!.Value.X > cancel.TranslatePoint(default, dialog)!.Value.X, "cancel precedes main action: " + dialog.Title);
+        foreach (var button in Controls<Button>(footer))
+        {
+            var point = button.TranslatePoint(default, dialog)!.Value;
+            Check(point.X >= 0 && point.X + button.Bounds.Width <= dialog.ClientSize.Width + 1 && point.Y + button.Bounds.Height <= dialog.ClientSize.Height + 1, "footer action stays inside dialog: " + button.Content);
+        }
+    }
+    static async Task DialogParity(ShellWindow window)
+    {
+        foreach (var (mode, label) in new[] { ("microsoft", "打开登录窗口"), ("mua", "登录 MUA"), ("offline", "保存并切换") })
+        {
+            var sentBefore = Sent.Count;
+            var pending = AccountDialogs.Open(Session, window, mode);
+            await Task.Delay(30);
+            var dialog = window.OwnedWindows.Last();
+            CheckDialogFooter(dialog, label);
+            using (var frame = dialog.CaptureRenderedFrame())
+                frame!.Save("work/native-ui/dialog-" + mode + ".png");
+            await Click(Find(dialog, "取消"));
+            await pending;
+            Check(Sent.Count == sentBefore, "canceling account dialog does not submit: " + mode);
+        }
+        var profiles = AccountDialogs.SelectProfile(Session, window, new NativeMessage { Type = "muaProfiles", Token = "dialog-profile", Items = [new NativeItem { Id = "profile", Name = "测试角色" }] });
+        await Task.Delay(25);
+        var profileDialog = window.OwnedWindows.Last();
+        CheckDialogFooter(profileDialog, "使用选中角色");
+        await Click(Find(profileDialog, "取消"));
+        await profiles;
+        Check(Sent.Last().GetProperty("type").GetString() == "selectMuaProfile" && Sent.Last().GetProperty("profileId").GetString() == "", "profile cancellation preserves explicit login cancellation");
+        var server = ServerDialog.Open(Session, window);
+        await Task.Delay(25);
+        var serverDialog = window.OwnedWindows.Last();
+        CheckDialogFooter(serverDialog, "添加服务器");
+        using (var frame = serverDialog.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/dialog-server.png");
+        await Click(Find(serverDialog, "取消"));
+        await server;
+        var skin = AccountDialogs.Skin(Session, window);
+        await Task.Delay(25);
+        var skinDialog = window.OwnedWindows.Last();
+        skinDialog.Width = skinDialog.MinWidth;
+        await Task.Delay(25);
+        using (var frame = skinDialog.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/dialog-skin.png");
+        CheckDialogFooter(skinDialog, "选择本地 PNG 皮肤");
+        await Click(Find(skinDialog, "取消"));
+        await skin;
+        var launch = LaunchOptionsPage.Open(Session, window, "fixture");
+        await Task.Delay(30);
+        var launchDialog = window.OwnedWindows.Last();
+        launchDialog.Height = 400;
+        await Task.Delay(25);
+        CheckDialogFooter(launchDialog, "保存设置");
+        Check(Controls<ScrollViewer>(launchDialog).Any(), "long launch form scrolls independently of its footer");
+        using (var frame = launchDialog.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/dialog-launch-options.png");
+        await Click(Find(launchDialog, "取消"));
+        await launch;
+        var confirmation = Ui.Confirm(window, "关闭游戏", "关闭后未保存的进度会丢失。", "关闭游戏", true);
+        await Task.Delay(25);
+        var confirmDialog = window.OwnedWindows.Last();
+        CheckDialogFooter(confirmDialog, "关闭游戏");
+        Check(Find(confirmDialog, "关闭游戏").Classes.Contains("danger-primary"), "destructive confirmation has a distinct action role");
+        using (var frame = confirmDialog.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/dialog-confirm.png");
+        await Click(Find(confirmDialog, "取消"));
+        Check(!await confirmation, "destructive dialog cancel does not approve the operation");
+        var escape = Ui.Show(window, "阅读提示", Ui.Text("按 Esc 关闭。"), 460, 300);
+        await Task.Delay(25);
+        var escapeDialog = window.OwnedWindows.Last();
+        escapeDialog.KeyPress(global::Avalonia.Input.Key.Escape, global::Avalonia.Input.RawInputModifiers.None);
+        await escape;
+        Check(!window.OwnedWindows.Contains(escapeDialog), "escape dismisses the shared dialog without submission");
+    }
+
     static async Task WindowAndVanillaParity(ShellWindow window)
     {
         Check(window.SystemDecorations == SystemDecorations.BorderOnly && window.ExtendClientAreaToDecorationsHint, "custom shell requests border-only chrome with integrated titlebar");

@@ -168,66 +168,39 @@ internal static class Ui
         Width = size,
         Height = size
     };
+    public static Button Dismiss(Control content, string label = "取消") => Action(label, () => (TopLevel.GetTopLevel(content) as Window)?.Close());
+    public static Control DialogActions(Control content, params Control[] actions) => DialogWindow.Actions([Dismiss(content), .. actions]);
+
     public static async Task Error(Control control, string text)
     {
-        if (TopLevel.GetTopLevel(control) is Window owner)
-        {
-            var dialog = new Window
-            {
-                Title = "操作提示",
-                Width = 460,
-                Height = 230,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-            dialog.Content = new Border
-            {
-                Padding = new(24),
-                Child = Stack(Text(text), Action("知道了", () => dialog.Close()))
-            };
-            await dialog.ShowDialog(owner);
-        }
+        if (TopLevel.GetTopLevel(control) is not Window owner)
+            return;
+        var dialog = new DialogWindow { Width = 480, Height = 260, MinWidth = 360, MinHeight = 220 };
+        dialog.SetBody("操作未完成", Text(text), "请检查提示后重试。");
+        dialog.SetActions(DialogWindow.Actions(Action("知道了", () => dialog.Close(), true)));
+        await dialog.ShowDialog(owner);
     }
-
-    public static Task<bool> Confirm(Window owner, string title, string text)
+    public static Task<bool> Confirm(Window owner, string title, string text, string confirmLabel = "确认", bool destructive = false)
     {
-        var dialog = new Window
-        {
-            Title = title,
-            Width = 460,
-            Height = 250,
-            MinWidth = 360,
-            MinHeight = 200,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
-        };
-        dialog.Content = new Border
-        {
-            Padding = new(24),
-            Child = Stack(Text(text), Row(Action("取消", () => dialog.Close(false)), Action("确认", () => dialog.Close(true), true)))
-        };
+        var dialog = new DialogWindow { Width = 480, Height = 280, MinWidth = 360, MinHeight = 240, CanResize = false };
+        var confirm = Action(confirmLabel, () => dialog.Close(true), !destructive);
+        if (destructive)
+            confirm.Classes.Add("danger-primary");
+        dialog.SetBody(title, Text(text));
+        dialog.SetActions(DialogWindow.Actions(Action("取消", () => dialog.Close(false)), confirm));
         return dialog.ShowDialog<bool>(owner);
     }
-
-    public static async Task Show(Window owner, string title, Control content, double width = 680, double height = 650)
+    public static async Task Show(Window owner, string title, Control content, double width = 680, double height = 650, Control? actions = null, string detail = "")
     {
-        var dialog = new Window
+        var dialog = new DialogWindow { Width = width, Height = height, MinWidth = Math.Min(440, width), MinHeight = Math.Min(340, height) };
+        if (content is NativePage page)
+            page.PrepareDialog();
+        dialog.SetBody(title, content, detail);
+        dialog.SetActions(actions ?? (content as NativePage)?.DialogActions ?? DialogWindow.Actions(Dismiss(content, "关闭")));
+        try
         {
-            Title = title,
-            Width = width,
-            Height = height,
-            MinWidth = Math.Min(440, width),
-            MinHeight = Math.Min(340, height),
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
-        };
-        dialog.Content = new ScrollViewer
-        {
-            Content = new Border
-            {
-                Padding = new(22),
-                Child = content
-            }
-        };
-        await dialog.ShowDialog(owner);
-        if (content is IDisposable disposable)
-            disposable.Dispose();
+            await dialog.ShowDialog(owner);
+        }
+        finally { if (content is IDisposable disposable) disposable.Dispose(); }
     }
 }

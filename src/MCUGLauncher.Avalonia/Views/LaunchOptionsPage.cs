@@ -63,7 +63,7 @@ internal sealed class LaunchOptionsPage : NativePage
 
         Body.Children.Add(Ui.Card(fields));
         Enabled();
-        Body.Children.Add(Ui.Button("保存启动参数", async () =>
+        var save = Ui.Button("保存设置", async () =>
                 {
                     if (!int.TryParse(ram.Text, out var memory) || !int.TryParse(width.Text, out var w) || !int.TryParse(height.Text, out var h))
                         throw new ArgumentException("内存和窗口尺寸必须是整数。");
@@ -86,7 +86,8 @@ internal sealed class LaunchOptionsPage : NativePage
                             server = server.Text ?? ""
                         }
                     });
-                }, true));
+                }, true);
+        DialogActions = Ui.DialogActions(this, save);
     }
 
     public static async Task Open(LauncherFacade session, Window owner, string version = "")

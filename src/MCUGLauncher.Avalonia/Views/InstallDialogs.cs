@@ -16,13 +16,12 @@ internal static class InstallDialogs
         var name = Ui.Input(result.Name);
         var directory = Ui.Input(result.Root);
         var content = Ui.Stack(
-            Ui.Heading("确认整合包导入"),
             Ui.Field("实例名称", name),
             Ui.Field("游戏根目录", directory),
             Ui.Button("选择目录", async () => directory.Text = await FilePicker.Folder((Window)TopLevel.GetTopLevel(name)!) ?? directory.Text),
             Ui.Text(result.Game + " · " + result.Loader)
         );
-        content.Children.Add(Ui.Button("确认导入", async () =>
+        var confirm = Ui.Button("开始导入", async () =>
                 {
                     await session.RequestAsync("packQueued", new
                     {
@@ -32,8 +31,8 @@ internal static class InstallDialogs
                         directory = directory.Text ?? ""
                     }, m => m.Token == result.Token);
                     (TopLevel.GetTopLevel(name) as Window)?.Close();
-                }, true));
-        await Ui.Show(owner, "整合包导入", content);
+                }, true);
+        await Ui.Show(owner, "导入整合包", content, 600, 430, Ui.DialogActions(content, confirm), "确认名称与目标目录后开始导入。");
     }
 
     public static async Task Loader(LauncherFacade session, Window owner, string version)
@@ -74,14 +73,13 @@ internal static class InstallDialogs
                 install.IsEnabled = result.Versions.Length > 0;
                 status.Text = $"{result.Versions.Length} 个版本";
             });
-        await Ui.Show(owner, "版本安装配置 · " + version, Ui.Stack(
-                Ui.Heading(version),
+        var content = Ui.Stack(
                 Ui.Muted("安装会生成对应加载器版本并保留原版；只有兼容的加载器版本才能安装。"),
                 Ui.Field("加载器", loader),
                 read,
                 Ui.Field("加载器版本", releases),
-                status,
-                install
-        ));
+                status
+        );
+        await Ui.Show(owner, "安装模组加载器", content, 560, 450, Ui.DialogActions(content, install), "Minecraft " + version + " · 仅列出兼容版本。");
     }
 }

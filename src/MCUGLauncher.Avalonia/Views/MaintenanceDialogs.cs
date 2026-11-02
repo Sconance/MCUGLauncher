@@ -11,12 +11,11 @@ internal static class MaintenanceDialogs
             version
         });
         var content = Ui.Stack(
-            Ui.Heading("卸载范围"),
             Ui.Text(result.Notice)
         );
         foreach (var path in result.Paths)
             content.Children.Add(Ui.Text(path));
-        content.Children.Add(Ui.Button("确认执行卸载计划", async () =>
+        var uninstall = Ui.Button("继续卸载", async () =>
                 {
                     await session.SendAsync(new
                     {
@@ -24,8 +23,9 @@ internal static class MaintenanceDialogs
                         token = result.Token
                     });
                     (TopLevel.GetTopLevel(content) as Window)?.Close();
-                }));
-        await Ui.Show(owner, "卸载预览", content);
+                });
+        uninstall.Classes.Add("danger-primary");
+        await Ui.Show(owner, "确认卸载范围", content, 680, 560, Ui.DialogActions(content, uninstall), "请检查文件列表。继续后还需确认删除。");
     }
 
     public static async Task Updates(LauncherFacade session, Window owner, string version)
@@ -35,7 +35,7 @@ internal static class MaintenanceDialogs
             type = "checkContentUpdates",
             version
         });
-        var content = Ui.Stack(Ui.Heading("可更新内容"));
+        var content = Ui.Stack(Ui.Muted("选择需要更新的内容，先查看文件变更，再确认应用。"));
         var selected = new List<(string Id, CheckBox Box)>();
         foreach (var item in result.Items)
         {
@@ -47,7 +47,7 @@ internal static class MaintenanceDialogs
             selected.Add((item.Id, box));
         }
 
-        content.Children.Add(Ui.Button("预览所选更新", async () =>
+        var review = Ui.Button("预览所选更新", async () =>
                 {
                     var ids = selected.Where(i => i.Box.IsChecked == true).Select(i => i.Id).ToArray();
                     var preview = await session.RequestAsync("contentUpdatePreview", new
@@ -56,12 +56,12 @@ internal static class MaintenanceDialogs
                         token = result.Token,
                         projects = ids
                     });
-                    var plan = Ui.Stack(Ui.Heading("确认更新文件"));
+                    var plan = Ui.Stack(Ui.Muted("以下文件将按预览结果更新。"));
                     foreach (var change in preview.Changes)
                         plan.Children.Add(Ui.Text(change.Path + " · " + change.Before + " → " + change.After));
-                    plan.Children.Add(Ui.Button("应用更新", () => session.SendAsync(new { type = "applyContentUpdates", token = preview.Token }), true));
-                    await Ui.Show((Window)TopLevel.GetTopLevel(content)!, "内容更新预览", plan);
-                }));
-        await Ui.Show(owner, "内容更新", content);
+                    var apply = Ui.Button("应用更新", () => session.SendAsync(new { type = "applyContentUpdates", token = preview.Token }), true);
+                    await Ui.Show((Window)TopLevel.GetTopLevel(content)!, "确认文件更新", plan, actions: Ui.DialogActions(plan, apply));
+                }, true);
+        await Ui.Show(owner, "内容更新", content, actions: Ui.DialogActions(content, review));
     }
 }

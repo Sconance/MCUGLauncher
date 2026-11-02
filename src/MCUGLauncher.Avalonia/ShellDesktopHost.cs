@@ -6,8 +6,8 @@ namespace MCUGLauncher.Avalonia;
 // Avalonia confirmation and storage dialogs never block the UI thread.
 internal sealed class ShellDesktopHost(Window owner, Action<object> send) : IDesktopHost
 {
-    public Task<bool> ConfirmStopGameAsync() => Ui.Confirm(owner, "关闭游戏", "确认关闭这个游戏？未保存的内容可能丢失。");
-    public Task<bool> ConfirmUninstallAsync(string name) => Ui.Confirm(owner, "确认卸载", "确认执行「" + name + "」的卸载计划？列出的文件将永久删除，请先确认备份。");
+    public Task<bool> ConfirmStopGameAsync() => Ui.Confirm(owner, "关闭游戏", "确认关闭这个游戏？未保存的进度将丢失。", "关闭游戏", true);
+    public Task<bool> ConfirmUninstallAsync(string name) => Ui.Confirm(owner, "确认卸载", "确认执行「" + name + "」的卸载计划？列出的文件将永久删除，请先确认备份。", "确认卸载", true);
     public void PickFolder(string target) => Pick(target, () => FilePicker.Folder(owner));
     public void PickSaveFile(string target) => Pick(target, () => FilePicker.Save(owner));
     public void PickFile(string target) => Pick(target, () => FilePicker.Open(owner, "选择文件", target switch { "java" => "*.exe", "offlineSkin" => "*.png", "pack" => "*.mrpack", _ => "*.*" }));

@@ -77,3 +77,8 @@ VanillaPage 从 DownloadPage 中分离原版专用展示，资源页不再混有
 ## 当前名称统一
 
 本轮主要是标识和路径统一，不改变业务层划分，不新增中间转发类。ConfigStore 移除名称导入分支，继续只负责配置读写；用户手动选择的目录不由重命名脚本改动。配置回归改为当前格式完整往返，而非保留已移除的导入接口。Core/App 公共类型及测试均同步根命名空间；默认目录、事务和包清单标识与调用方一致。数据格式影响见 NAMING.md，不能把通过格式检查等同于跨标识数据兼容。
+
+
+## 统一弹窗展示
+
+DialogWindow 归纳原 Ui.Show/Confirm/Error 重复的窗口组装，专职标题、视口、底栏、拖动和关闭；不包含网络、配置、认证或安装算法。各视图显式提供 DialogActions，不通过扫描按钮文字猜测业务动作。NativePage.PrepareDialog 只处理自身标记的重复标题。MicrosoftLoginWindow 只复用外框，保留原认证逻辑。无 App/Core 修改，无新增后端组件依赖。验证包括 NativeUiChecks 的真实鼠标状态、弹窗位置/文本/按钮边界与取消行为。
