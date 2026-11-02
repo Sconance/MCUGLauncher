@@ -1,147 +1,100 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using MCUGLauncher.Avalonia.Presentation;
-
 namespace MCUGLauncher.Avalonia.Views;
+
 internal sealed class HomePage : NativePage
 {
     readonly StackPanel account = Ui.Stack();
-    readonly StackPanel instances = Ui.Stack();
-    readonly StackPanel community = Ui.Stack();
-    readonly TextBox search = Ui.Input("", "搜索实例名称、版本或加载器");
-    bool settingRoots;
-    readonly ComboBox roots = Ui.Select(Array.Empty<string>());
+    readonly StackPanel launch = Ui.Stack();
+    readonly ContentControl right = new();
+    readonly InstancePickerView picker;
+    readonly HomeFeedPanel servers;
+    readonly HomeFeedPanel announcements;
+    readonly HomeFeedPanel recommendations;
+    readonly HomeFeedPanel quotes;
+    readonly StackPanel feeds;
+    bool expanded;
     public HomePage(LauncherFacade session) : base(session)
     {
-        Title("启动", "选择实例后启动，任务与正在运行的游戏独立管理。");
-        roots.ItemsSource = State.GameRoots;
-        roots.SelectedItem = State.Root;
-        roots.SelectionChanged += async (_, _) =>
-        {
-            if (!settingRoots && roots.SelectedItem is string path && path != State.Root)
-                await Send(new
-                {
-                    type = "saveSettings",
-                    root = path
-                });
-        };
-        var right = Ui.Stack();
-        var layout = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("280,*"),
-            ColumnSpacing = 18
-        };
-        var left = Ui.Card(account);
+        picker = new InstancePickerView(session, () => Toggle(false));
+        servers = new HomeFeedPanel(session, "servers");
+        announcements = new HomeFeedPanel(session, "announcements");
+        recommendations = new HomeFeedPanel(session, "recommendations");
+        quotes = new HomeFeedPanel(session, "quotes");
+        feeds = Ui.Stack(servers, announcements, recommendations);
+        var left = Ui.Stack(Ui.Card(account), launch);
+        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("300,*"), ColumnSpacing = 18 };
         layout.Children.Add(left);
         Grid.SetColumn(right, 1);
         layout.Children.Add(right);
         Body.Children.Add(layout);
-        right.Children.Add(Ui.Card(Ui.Stack(
-                    Ui.Row(
-                        roots,
-                        Ui.Button("添加游戏目录", async () =>
-                            {
-                                var path = await FilePicker.Folder(Owner);
-                                if (path != null)
-                                    await Send(new
-                                    {
-                                        type = "saveSettings",
-                                        root = path
-                                    });
-                            }),
-                        Ui.Button("导入整合包", () => InstallDialogs.Import(Session, Owner)),
-                        Ui.Button("刷新实例", () => Send(new { type = "requestState" }))
-                    ),
-                    search,
-                    instances
-        )));
-        right.Children.Add(Ui.Card(community));
-        search.TextChanged += (_, _) => DrawInstances();
-        Draw();
+        Body.Children.Add(quotes);
+        Toggle(session.HomeInstancePanelOpen);
+        DrawAccount();
     }
-
-    void Draw()
+    void Toggle(bool value)
     {
-        settingRoots = true;
-        roots.ItemsSource = State.GameRoots.Length > 0 ? State.GameRoots : new[]
-        {
-            State.Root
-        };
-        roots.SelectedItem = State.Root;
-        settingRoots = false;
+        expanded = value;
+        Session.HomeInstancePanelOpen = value;
+        right.Content = expanded ? picker : feeds;
+        quotes.IsVisible = !expanded;
+        DrawLaunch();
+    }
+    void DrawAccount()
+    {
+        foreach (var image in account.GetLogicalDescendants().OfType<Image>())
+            (image.Source as IDisposable)?.Dispose();
         account.Children.Clear();
-        account.Children.Add(Ui.Row(
-                Ui.Avatar(Session.Avatar, 72),
-                Ui.Stack(
-                    Ui.Heading(State.Player),
-                    Ui.Text(State.AccountLabel),
-                    Ui.Action("账号与皮肤", () => Session.Navigate?.Invoke("accounts"))
-                )
-        ));
-        account.Children.Add(Ui.Row(
-                LaunchButton(),
-                Ui.Action("运行中的游戏（" + Session.Games.Length + "）", () => Session.Navigate?.Invoke("games"))
-        ));
-        DrawInstances();
-        community.Children.Clear();
-        community.Children.Add(Ui.Heading("社区动态"));
-        foreach (var entry in Session.Community.GetValueOrDefault("announcements")?.Take(3) ?? [])
-            community.Children.Add(Ui.Stack(
-                    Ui.Text(entry.Title, 16),
-                    Ui.Text(entry.Body.Length > 0 ? entry.Body : entry.Text),
-                    Ui.Text(entry.PublishedAt)
-            ));
-        if (community.Children.Count == 1)
-            community.Children.Add(Ui.Text("暂无公告，联网内容加载后会显示在这里。"));
-        community.Children.Add(Ui.Action("公告、推荐与服务器", () => Session.Navigate?.Invoke("community")));
+        var tabs = Ui.Row();
+        foreach (var (label, mode) in new[] { ("正版", "microsoft"), ("离线", "offline"), ("MUA 登录", "mua") })
+            tabs.Children.Add(Ui.Button(label, () => Send(new { type = "switchAccountMode", account = mode }), State.AccountType == mode));
+        account.Children.Add(tabs);
+        var avatar = Ui.Button("", () => AccountDialogs.Skin(Session, Owner));
+        avatar.Content = Ui.Avatar(Session.Avatar, 90);
+        avatar.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        account.Children.Add(avatar);
+        var name = Ui.Heading(State.Player);
+        name.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        account.Children.Add(name);
+        var identity = Ui.Text(State.AccountLabel);
+        identity.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        account.Children.Add(identity);
+        account.Children.Add(Ui.Button(State.AccountType == "offline" ? "切换本地账号" : "切换账号", () => AccountDialogs.Open(Session, Owner, State.AccountType)));
+        account.Children.Add(Ui.Action("账号设置", () => Session.Navigate?.Invoke("options")));
+        account.Children.Add(Ui.Text("账号保存在本机"));
     }
-
-    Button LaunchButton()
+    void DrawLaunch()
     {
+        launch.Children.Clear();
         var button = Ui.Button("启动游戏", () => Send(new { type = "launch", version = State.SelectedVersion }), true);
+        button.Content = Ui.Stack(Ui.Text("▷ 启动游戏", 22), Ui.Text((State.SelectedVersion.Length > 0 ? State.SelectedVersion : "未选择实例") + " · " + (State.AutoMemory ? "自动内存" : State.Ram + " MB")));
         button.IsEnabled = State.SelectedVersion.Length > 0;
-        return button;
+        button.MinHeight = 84;
+        button.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,40"), ColumnSpacing = 8 };
+        row.Children.Add(button);
+        var actions = Ui.Stack(Ui.Action(expanded ? "‹" : "›", () => Toggle(!expanded)), Ui.Action("⚙", () => Session.Navigate?.Invoke("manage")));
+        Grid.SetColumn(actions, 1);
+        row.Children.Add(actions);
+        launch.Children.Add(row);
+        launch.Children.Add(Ui.Action("运行中的游戏（" + Session.Games.Length + "）", () => Session.Navigate?.Invoke("games")));
     }
-    void DrawInstances()
-    {
-        instances.Children.Clear();
-        var query = search.Text ?? "";
-        foreach (var group in State.Instances.Where(i => (i.Title + " " + i.Name + " " + i.Minecraft + " " + i.Loader).Contains(query, StringComparison.OrdinalIgnoreCase)).GroupBy(i => i.Loader))
-        {
-            var rows = Ui.Stack();
-            foreach (var item in group)
-            {
-                var row = Ui.Row(
-                    Ui.Button(item.Title + "\n" + item.Minecraft + " · " + item.Loader, async () =>
-                        {
-                            await Send(new
-                            {
-                                type = "selectVersion",
-                                version = item.Name
-                            });
-                            await Send(new
-                            {
-                                type = "selectInstance",
-                                instance = item.Name
-                            });
-                        }),
-                    Ui.Button("启动", () => Send(new { type = "launch", version = item.Name }), true),
-                    Ui.Action("管理", () => Session.Navigate?.Invoke("instances"))
-                );
-                rows.Children.Add(row);
-            }
-
-            instances.Children.Add(new Expander { Header = (group.Key.Length > 0 ? group.Key : "原版游戏") + "（" + group.Count() + "）", IsExpanded = true, HorizontalAlignment = HorizontalAlignment.Stretch, Content = rows });
-        }
-
-        if (instances.Children.Count == 0)
-            instances.Children.Add(Ui.Text("当前目录没有匹配的实例，请添加目录或前往下载页安装。"));
-    }
-
     protected override void Receive(NativeMessage message)
     {
-        if (message.Type is "state" or "accountState" or "avatar" or "community" or "games")
-            Draw();
+        if (message.Type is "state" or "accountState" or "avatar")
+            DrawAccount();
+        if (message.Type is "state" or "games")
+            DrawLaunch();
+    }
+    public override void Dispose()
+    {
+        picker.Dispose();
+        servers.Dispose();
+        announcements.Dispose();
+        recommendations.Dispose();
+        quotes.Dispose();
+        base.Dispose();
     }
 }

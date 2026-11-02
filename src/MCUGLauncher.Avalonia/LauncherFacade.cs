@@ -24,6 +24,15 @@ internal sealed class LauncherFacade : IDisposable, INotifyPropertyChanged
     public string Avatar => avatar;
     public (double Width, double Height, bool Maximized) WindowPreferences => application is null ? (1200, 800, false) : (application.Config.WindowWidth, application.Config.WindowHeight, application.Config.WindowMaximized);
     public string Status { get; private set; } = "AI 迁移框架尝试 · 尚未完成真实账号与游戏验收";
+    public bool AdminUiUnlocked
+    {
+        get; set;
+    }
+    public bool HomeInstancePanelOpen
+    {
+        get; set;
+    }
+    public string PendingSearch { get; set; } = "";
     public Action<string>? Navigate
     {
         get; set;

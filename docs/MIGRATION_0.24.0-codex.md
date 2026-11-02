@@ -2,14 +2,14 @@
 
 ## 基线
 
-来自 `origin/0.22.3-Avalonia` 的 `7f1dc70`，该分支已基于 `0.22.3-codex` 最新文档与功能做过 App/Core 拆分。保留其历史以便追溯，没有合入 `0.24.0-deepseek.zip`，不把包内说明当成已验证实现。本次不触碰 0.23.x，也不修改 Avalonia 起步分支。
+产品基线是 `origin/0.22.3-codex` 的 `6c091c6`。此前从 `origin/0.22.3-Avalonia` 的 `7f1dc70` 复用框架适配和 App/Core 拆分后，错误地重排了页面，不能把祖先关系当成产品对齐证明。本轮按 [对照修订](UI_PARITY_0.22.3-codex.md) 恢复位置与遗漏入口。保留历史以便追溯，没有合入 `0.24.0-deepseek.zip`。本次不触碰 0.23.x，也不修改 Avalonia 起步分支。
 
 ## 迁移范围
 
 | 原页面/行为 | 原生入口 | 仍使用的后端 |
 |---|---|---|
 | 账号卡、实例分组、目录选择、搜索、启动 | HomePage | selectVersion/selectInstance/launch/saveSettings |
-| 正版/离线/MUA、角色选择、头像、移除账号 | AccountsPage | AccountCommands/AccountModeCommands/MuaProfileSelection/AvatarCommands |
+| 正版/离线/MUA、角色选择、头像、移除账号 | AccountDialogs / CommunityOptionsPage | AccountCommands/AccountModeCommands/MuaProfileSelection/AvatarCommands |
 | 原版与加载器安装 | DownloadPage/InstallDialogs | ResourceCommands/InstallationCommands |
 | 资源搜索、收藏、详情、版本/实例/目录选择 | DownloadPage/ResourceDialog/BookmarksPage | ResourceChoiceCommands/BookmarkCommands |
 | 整合包导入确认、改名与目录 | InstallDialogs | previewPack/confirmPack |
@@ -20,7 +20,7 @@
 | 公告、推荐、语录、配图、服务器状态 | CommunityPage/ServersPage/RemoteImage | CommunityCommands/CommunityService/ServerPingService |
 | 本地公告与推荐编辑 | EditorPage | verifyKey/publish/saveAnnouncements/saveRecommendations |
 | 默认/自定义源、自动/手动测试、保存与使用分离 | SourcesPage | SettingsCommands/CommunityCommands |
-| Java、内存、目录、匿名、日志、系统信息 | SettingsPage/JavaPage/DiagnosticsPage | 现有相应 Commands |
+| Java、内存、目录、匿名、日志、系统信息 | SettingsPage/JavaPage/UtilitySettingsPage | 现有相应 Commands |
 | 存档备份与恢复 | SavesPage | SaveCommands/Core SaveProtection |
 
 不迁移旧前端中仅用于浏览器演示的假统计、假版本、假操作提示。后端原本未实现的功能也不会因为换框架而宣称完成，例如游戏内离线皮肤/披风上传、整合包升级合并。资源详情展示实际搜索结果描述和兼容版本，未凭空补造远端评价或截图。

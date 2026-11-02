@@ -8,9 +8,11 @@ internal sealed class InstancesPage : NativePage
     bool updating;
     readonly StackPanel mods = Ui.Stack();
     readonly TextBox cloneName = Ui.Input("", "新实例名称");
-    public InstancesPage(LauncherFacade session) : base(session)
+    public InstancesPage(LauncherFacade session, bool contentManagement = false) : base(session)
     {
-        Title("实例与内容管理", "设置、模组、克隆、导出和卸载都复用原有后端流程。");
+        Title(contentManagement ? "版本内容管理" : "实例维护", "设置、模组、克隆、导出和卸载都复用原有后端流程。");
+        if (contentManagement)
+            Body.Children.Add(Ui.Action("返回", () => Session.Navigate?.Invoke("home")));
         instances = Ui.Select(State.Instances);
         instances.SelectedItem = State.Instances.FirstOrDefault(i => i.Name == State.SelectedInstance);
         instances.SelectionChanged += async (_, _) =>
@@ -25,6 +27,8 @@ internal sealed class InstancesPage : NativePage
         Body.Children.Add(Ui.Card(Ui.Stack(
                     instances,
                     Ui.Row(
+                        Ui.Action("下载模组", () => Session.Navigate?.Invoke("mod")),
+                        Ui.Action("版本设置", () => Session.Navigate?.Invoke("version")),
                         Ui.Button("实例启动参数", () => LaunchOptionsPage.Open(Session, Owner, Selected)),
                         Ui.Button("启动", () => Send(new { type = "launch", version = Selected }), true),
                         Folder("实例文件夹", "version"),
@@ -37,33 +41,36 @@ internal sealed class InstancesPage : NativePage
                         Ui.Action("存档保护", () => Session.Navigate?.Invoke("saves"))
                     )
         )));
-        var saves = Ui.Check("包含存档");
-        var servers = Ui.Check("包含服务器列表");
-        Body.Children.Add(Ui.Card(Ui.Stack(
-                    Ui.Heading("维护"),
-                    cloneName,
-                    Ui.Row(
-                        saves,
-                        servers
-                    ),
-                    Ui.Row(
-                        Ui.Button("克隆实例", () => Send(new { type = "cloneInstance", version = Selected, name = cloneName.Text ?? "", saves = saves.IsChecked == true, servers = servers.IsChecked == true })),
-                        Ui.Button("导出 ZIP", async () =>
-                            {
-                                var path = await FilePicker.Save(Owner);
-                                if (path != null)
-                                    await Send(new
-                                    {
-                                        type = "exportInstance",
-                                        version = Selected,
-                                        path,
-                                        saves = saves.IsChecked == true,
-                                        servers = servers.IsChecked == true
-                                    });
-                            }),
-                        Ui.Button("查看卸载范围", () => MaintenanceDialogs.Uninstall(Session, Owner, Selected))
-                    )
-        )));
+        if (!contentManagement)
+        {
+            var saves = Ui.Check("包含存档");
+            var servers = Ui.Check("包含服务器列表");
+            Body.Children.Add(Ui.Card(Ui.Stack(
+                        Ui.Heading("维护"),
+                        cloneName,
+                        Ui.Row(
+                            saves,
+                            servers
+                        ),
+                        Ui.Row(
+                            Ui.Button("克隆实例", () => Send(new { type = "cloneInstance", version = Selected, name = cloneName.Text ?? "", saves = saves.IsChecked == true, servers = servers.IsChecked == true })),
+                            Ui.Button("导出 ZIP", async () =>
+                                {
+                                    var path = await FilePicker.Save(Owner);
+                                    if (path != null)
+                                        await Send(new
+                                        {
+                                            type = "exportInstance",
+                                            version = Selected,
+                                            path,
+                                            saves = saves.IsChecked == true,
+                                            servers = servers.IsChecked == true
+                                        });
+                                }),
+                            Ui.Button("查看卸载范围", () => MaintenanceDialogs.Uninstall(Session, Owner, Selected))
+                        )
+            )));
+        }
         Body.Children.Add(Ui.Heading("本地模组"));
         Body.Children.Add(mods);
         DrawMods();
@@ -79,7 +86,8 @@ internal sealed class InstancesPage : NativePage
         {
             mods.Children.Add(Ui.Card(Ui.Stack(
                         Ui.Text(mod.Name, 16),
-                        Ui.Text(mod.File + " · " + mod.V),
+                        Ui.Text(mod.File + " · " + mod.Size + " · " + mod.V),
+                        Ui.Text(mod.Enabled ? "已启用" : "已禁用"),
                         Ui.Row(
                             Ui.Button(mod.Enabled ? "禁用" : "启用", () => Send(new { type = "toggleMod", file = mod.File, enabled = !mod.Enabled })),
                             Ui.Button("删除", async () =>

@@ -10,6 +10,7 @@ internal sealed class SavesPage : NativePage
         Title("存档保护", "当前实例：" + State.SelectedInstance + "。恢复会创建新存档，不覆盖原存档。");
         Body.Children.Add(Ui.Row(
                 Ui.Button("备份当前实例", () => Send(new { type = "backupSaves" }), true),
+                Ui.Button("打开存档文件夹", () => Send(new { type = "openFolder", kind = "saves" })),
                 Ui.Button("刷新备份", () => Send(new { type = "listSaveBackups" }))
         ));
         Body.Children.Add(list);

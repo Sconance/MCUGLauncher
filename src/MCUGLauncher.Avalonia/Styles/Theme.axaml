@@ -4,6 +4,8 @@
   <Style Selector="Button"><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="13,9"/><Setter Property="Background" Value="#EAF3F9"/><Setter Property="Foreground" Value="#006DB8"/><Setter Property="BorderBrush" Value="#D5E4EE"/></Style>
   <Style Selector="Button.busy"><Setter Property="Opacity" Value="0.6"/></Style>
   <Style Selector="Button.primary"><Setter Property="Background" Value="#0074BC"/><Setter Property="Foreground" Value="White"/></Style>
+  <Style Selector="Button.primary TextBlock"><Setter Property="Foreground" Value="White"/></Style>
+  <Style Selector="Button.instance-selected"><Setter Property="BorderBrush" Value="#0074BC"/><Setter Property="BorderThickness" Value="2"/></Style>
   <Style Selector="Button.primary:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="#005F9F"/><Setter Property="TextElement.Foreground" Value="White"/></Style>
   <Style Selector="Button.nav"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="HorizontalContentAlignment" Value="Left"/></Style>
   <Style Selector="Button.nav.selected"><Setter Property="Background" Value="#D8ECF8"/><Setter Property="FontWeight" Value="SemiBold"/></Style>

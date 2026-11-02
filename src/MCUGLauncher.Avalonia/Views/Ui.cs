@@ -191,15 +191,15 @@ internal static class Ui
         return dialog.ShowDialog<bool>(owner);
     }
 
-    public static async Task Show(Window owner, string title, Control content)
+    public static async Task Show(Window owner, string title, Control content, double width = 680, double height = 650)
     {
         var dialog = new Window
         {
             Title = title,
-            Width = 680,
-            Height = 650,
-            MinWidth = 440,
-            MinHeight = 340,
+            Width = width,
+            Height = height,
+            MinWidth = Math.Min(440, width),
+            MinHeight = Math.Min(340, height),
             WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
         dialog.Content = new ScrollViewer

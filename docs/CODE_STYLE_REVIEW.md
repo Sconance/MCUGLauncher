@@ -50,3 +50,10 @@ fix 合并时保留原生移动循环、异步桥接和已实现的账号/下载
 ResourceChoiceCommands、LaunchOptionsCommands、MuaProfileSelection、AvatarCommands 分别管理选择流程；选择令牌固定目标目录，异步结果带请求标识避免覆盖新选择。复用 Core ContentService、InstanceCatalog、MemoryPolicy 与认证服务，不在用例构建 WPF 控件。AvatarImage 作为原生图像编码适配器，文件选择留在窗口入口。前端拆成资源选择、导入确认、启动参数、MUA 角色和头像模块，共用 dialogs.js，不继续堆入主窗口。
 
 管理员页面和公告编辑未变更。回归使用临时目录与模拟网络，不代表真实账号登录或游戏联机已经验收。
+
+
+## codex 界面对照修订
+
+本轮不改 App/Core。恢复工作限制在 Avalonia 展示层：HomePage 仅装配账号/启动、InstancePickerView 和 HomeFeedPanel；账号、皮肤与服务器保持 owned dialog；UtilitySettingsPage 恢复原有设置分区。没有为页面重写网络、认证或队列。移除被迁移错误引入的独立 AccountsPage 与合并 DiagnosticsPage，避免保留重复入口。
+
+产品基线与控件位置另由 CodexParity 检查，而非仅依赖格式化或菜单计数。具体恢复项及尚未实测的部分见 UI_PARITY_0.22.3-codex.md。

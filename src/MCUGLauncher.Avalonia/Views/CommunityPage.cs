@@ -6,13 +6,25 @@ namespace MCUGLauncher.Avalonia.Views;
 internal sealed class CommunityPage : NativePage
 {
     readonly StackPanel entries = Ui.Stack();
-    public CommunityPage(LauncherFacade session) : base(session)
+    readonly bool recommendationsOnly;
+    readonly string? onlyFeed;
+    string recommendationType = "server";
+    public CommunityPage(LauncherFacade session, bool recommendationsOnly = false, string? onlyFeed = null) : base(session)
     {
-        Title("公告与群友推荐", "内容来自配置的数据源；没有内容或请求失败时不会填入演示数据。");
+        this.recommendationsOnly = recommendationsOnly;
+        this.onlyFeed = onlyFeed;
+        Title(onlyFeed == "announcements" ? "全部公告" : recommendationsOnly ? "群友推荐" : "社区内容", "内容来自配置的数据源；没有内容或请求失败时不会填入演示数据。");
         Body.Children.Add(Ui.Row(
                 Ui.Button("刷新社区内容", () => Send(new { type = "refreshCommunity" })),
                 Ui.Action("服务器列表", () => Session.Navigate?.Invoke("servers"))
         ));
+        if (recommendationsOnly)
+        {
+            var tabs = Ui.Row();
+            foreach (var (label, kind) in new[] { ("服务器", "server"), ("材质包", "material"), ("光影", "shader") })
+                tabs.Children.Add(Ui.Action(label, () => { recommendationType = kind; Draw(); }));
+            Body.Children.Add(tabs);
+        }
         Body.Children.Add(entries);
         Draw();
     }
@@ -20,12 +32,12 @@ internal sealed class CommunityPage : NativePage
     void Draw()
     {
         entries.Children.Clear();
-        foreach (var key in new[]
+        foreach (var key in (onlyFeed != null ? new[] { onlyFeed } : recommendationsOnly ? new[] { "recommendations" } : new[]
             {
                 "announcements",
                 "recommendations",
                 "quotes"
-            }
+            })
 
         )
         {
@@ -35,7 +47,7 @@ internal sealed class CommunityPage : NativePage
                 "recommendations" => "群友推荐",
                 _ => "群友语录"
             }));
-            foreach (var entry in Session.Community.GetValueOrDefault(key) ?? [])
+            foreach (var entry in (Session.Community.GetValueOrDefault(key) ?? []).Where(e => !recommendationsOnly || e.Type == recommendationType))
             {
                 if (DateTimeOffset.TryParse(entry.ExpiresAt, out var expiry) && expiry < DateTimeOffset.Now)
                     continue;
@@ -48,6 +60,8 @@ internal sealed class CommunityPage : NativePage
                     content.Children.Add(new RemoteImage(Session, entry.ImageUrl));
                 if (Uri.TryCreate(entry.Url, UriKind.Absolute, out var uri) && uri.Scheme == "https")
                     content.Children.Add(Ui.Action("在浏览器打开", () => Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true })));
+                if (key == "recommendations")
+                    content.Children.Add(Ui.Button(entry.Type == "server" ? "查看服务器" : "搜索资源", () => HomeFeedPanel.Recommendation(Session, Owner, entry)));
                 entries.Children.Add(Ui.Card(content));
             }
         }
@@ -67,13 +81,7 @@ internal sealed class ServersPage : NativePage
     public ServersPage(LauncherFacade session) : base(session)
     {
         Title("服务器收藏", "启动器直接查询服务器状态，可复制地址、独立保存或删除。");
-        var name = Ui.Input("", "名称");
-        var address = Ui.Input("", "host:port");
-        Body.Children.Add(Ui.Card(Ui.Stack(
-                    Ui.Field("名称", name),
-                    Ui.Field("地址", address),
-                    Ui.Button("保存服务器", () => Send(new { type = "saveServer", name = name.Text ?? "", address = address.Text ?? "" }), true)
-        )));
+        Body.Children.Add(Ui.Button("添加服务器", () => ServerDialog.Open(Session, Owner)));
         Body.Children.Add(list);
         Draw();
     }
@@ -97,6 +105,7 @@ internal sealed class ServersPage : NativePage
                                     if (Owner.Clipboard != null)
                                         await Owner.Clipboard.SetTextAsync(server.Address);
                                 }),
+                            Ui.Button("编辑", () => ServerDialog.Open(Session, Owner, server)),
                             Ui.Button("删除", () => Send(new { type = "deleteServer", address = server.Address }))
                         )
             )));

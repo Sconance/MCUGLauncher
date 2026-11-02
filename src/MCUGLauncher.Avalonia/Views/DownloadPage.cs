@@ -12,6 +12,8 @@ internal sealed class DownloadPage : NativePage
     public DownloadPage(LauncherFacade session, string category) : base(session)
     {
         this.category = category;
+        query.Text = session.PendingSearch;
+        session.PendingSearch = "";
         Title(category == "vanilla" ? "原版游戏与加载器" : "资源下载", "数据来自 Mojang / Modrinth，下载交给现有 Core 队列校验和安装。");
         var filters = Ui.Row(
             query,
@@ -22,7 +24,7 @@ internal sealed class DownloadPage : NativePage
         filters.Children.Add(Ui.Button("搜索 / 刷新", Search, true));
         Body.Children.Add(Ui.Card(filters));
         Body.Children.Add(results);
-        if (category == "vanilla")
+        if (category == "vanilla" || !string.IsNullOrWhiteSpace(query.Text))
             _ = Search();
     }
 

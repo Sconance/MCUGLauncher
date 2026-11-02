@@ -28,7 +28,7 @@ public partial class ShellWindow : Window
         session.MessageReceived += OnMessage;
         BrandPanel.Children.Add(Ui.Logo());
         BrandPanel.Children.Add(Ui.Text("MCUG Launcher", 20));
-        foreach (var (label, id) in new[] { ("▷ 启动", "home"), ("↓ 下载", "vanilla"), ("⚙ 设置", "settings") })
+        foreach (var (label, id) in new[] { ("▷ 启动", "home"), ("↓ 下载", "community"), ("⚙ 设置", "settings") })
             TopNavigation.Children.Add(Ui.Action(label, () => Navigate(id)));
         TaskButton.Click += (_, _) => Navigate("tasks");
         Opened += async (_, _) => { if (injected == null) await session.SendAsync(new { type = "ready" }); };
@@ -43,8 +43,14 @@ public partial class ShellWindow : Window
         {
             group = entry.Group;
             Sidebar.Children.Clear();
-            foreach (var item in NavigationCatalog.All.Where(i => i.Group == group))
+            var section = "";
+            foreach (var item in NavigationCatalog.All.Where(i => i.Group == group && i.Visible))
             {
+                if (item.Section != section)
+                {
+                    section = item.Section;
+                    Sidebar.Children.Add(Ui.Text(section, 11));
+                }
                 var button = Ui.Action(item.Label, () => Navigate(item.Id));
                 button.Tag = item.Id;
                 if (item.IconPath is { Length: > 0 } image)
@@ -73,10 +79,18 @@ public partial class ShellWindow : Window
     }
     async void OnMessage(NativeMessage message)
     {
+        if (message.Type == "accountSwitchResult" && message.NeedsLogin)
+        {
+            try
+            {
+                await AccountDialogs.Open(session, this, message.Account);
+            }
+            catch (Exception error) { session.Report(error.Message); }
+        }
         if (message.Type == "muaProfiles")
             try
             {
-                await AccountsPage.SelectProfile(session, this, message);
+                await AccountDialogs.SelectProfile(session, this, message);
             }
             catch (Exception error) { session.Report(error.Message); }
     }

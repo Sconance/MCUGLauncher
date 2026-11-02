@@ -77,6 +77,19 @@ internal static class Program
                 ok = true,
                 ms = 24
             });
+        if (type == "verifyKey")
+            Deliver(new
+            {
+                type = "keyResult",
+                ok = true,
+                message = "已验证"
+            });
+        if (type == "saveServer")
+            Deliver(new
+            {
+                type = "serverResult",
+                ok = true
+            });
         if (type == "searchContent")
             Deliver(new
             {
@@ -220,6 +233,7 @@ internal static class Program
             await Task.Delay(20);
             Check(window.GetVisualDescendants().OfType<NativePage>().Any(), "native route " + entry.Id);
         }
+        await CodexParity(window);
         window.Navigate("sources");
         await Task.Delay(20);
         Check(Find(window, "已使用默认源").IsEnabled == false, "default source active status");
@@ -232,9 +246,9 @@ internal static class Program
         Check(Sent.Last().GetProperty("type").GetString() == "saveCustomSources", "save custom preset does not activate it");
         await Click(Find(window, "使用自定义源"));
         Check(Sent.Last().GetProperty("type").GetString() == "useDataSources", "explicit native activation command");
-        window.Navigate("accounts");
+        window.Navigate("home");
         await Task.Delay(10);
-        await Click(Find(window, "MUA"));
+        await Click(Find(window, "MUA 登录"));
         Check(Sent.Last().GetProperty("account").GetString() == "mua", "native account mode switch");
         var dialog = ResourceDialog.Open(Session, window, new NativeItem { Id = "sodium", Name = "Sodium" }, "mod");
         await Task.Delay(30);
@@ -278,4 +292,61 @@ internal static class Program
         window.Close();
         Console.WriteLine("ALL_NATIVE_UI_CHECKS_PASSED (headless native controls and simulated application responses; no live account/game)");
     }
+    static async Task CodexParity(ShellWindow window)
+    {
+        var expected = new[] { "启动设置", "Java 管理", "安装与导入", "下载与网络", "界面与背景", "更多选项", "管理员", "数据源", "服务器收藏", "运行中的游戏", "实例维护", "我的收藏", "存档保护", "下载任务", "任务与恢复", "运行日志", "诊断与反馈", "关于与许可" };
+        Check(NavigationCatalog.All.Where(i => i.Group == "settings" && i.Visible).Select(i => i.Label).SequenceEqual(expected), "settings sections preserve codex order and labels");
+        Session.HomeInstancePanelOpen = false;
+        window.Navigate("home");
+        await Task.Delay(25);
+        Check(!Controls<InstancePickerView>(window).Any(), "home defaults to dashboard, not permanent instance list");
+        Check(Controls<HomeFeedPanel>(window).Count() == 4, "home retains separate server, announcement, recommendation and quote regions");
+        foreach (var label in new[] { "正版", "离线", "MUA 登录", "账号设置", "切换本地账号" })
+            Check(Controls<Button>(window).Any(b => b.Content?.ToString() == label), "home account control " + label);
+        await Click(Find(window, "›"));
+        Check(Controls<InstancePickerView>(window).Count() == 1, "launch arrow opens right-hand instance panel");
+        await Click(Find(window, "收起"));
+        Check(!Controls<InstancePickerView>(window).Any(), "instance close restores home dashboard");
+        await Click(Find(window, "切换本地账号"));
+        var dialog = window.OwnedWindows.Last();
+        Check(dialog.Title == "切换本地账号" && dialog.Owner == window && dialog.WindowStartupLocation == WindowStartupLocation.CenterOwner, "offline switch remains a centered owned dialog");
+        using (var frame = dialog.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/offline-account-dialog.png");
+        dialog.Close();
+        await Task.Delay(20);
+        var avatar = Controls<Button>(window).First(b => b.Content is Image);
+        await Click(avatar);
+        dialog = window.OwnedWindows.Last();
+        Check(dialog.Title == "皮肤与披风", "avatar keeps original skin dialog entry point");
+        dialog.Close();
+        await Task.Delay(20);
+        await Click(Find(window, "添加服务器"));
+        dialog = window.OwnedWindows.Last();
+        Check(dialog.Title == "添加服务器", "server creation stays on home as a dialog");
+        dialog.Close();
+        await Task.Delay(20);
+        await Click(Find(window, "↓ 下载"));
+        Check(Controls<CommunityPage>(window).Any(), "top download opens group recommendations as in codex");
+        foreach (var label in new[] { "服务器", "材质包", "光影" })
+            Check(Controls<Button>(window).Any(b => b.Content?.ToString() == label), "recommendation category " + label);
+        window.Navigate("options");
+        await Task.Delay(20);
+        Check(Controls<Button>(window).Any(b => b.Content?.ToString() == "保存密钥"), "community key settings restored");
+        window.Navigate("settings");
+        await Task.Delay(20);
+        Check(Controls<TextBlock>(window).Any(t => t.Text == "游戏窗口宽") && Controls<TextBlock>(window).Any(t => t.Text == "游戏窗口高"), "basic launch dimensions restored in original settings page");
+        window.Navigate("editor");
+        await Task.Delay(20);
+        Check(!Find(window, "发布公告").IsEnabled, "admin publishing entry starts behind the original local verification gate");
+        await Click(Find(window, "验证管理员"));
+        await Click(Find(window, "发布公告"));
+        var publishDialog = window.OwnedWindows.Last();
+        Check(publishDialog.Title == "发布公告" && publishDialog.Owner == window, "announcement editing remains an owned dialog, not a merged settings form");
+        using (var frame = publishDialog.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/announcement-editor-dialog.png");
+        publishDialog.Close();
+        await Task.Delay(20);
+        Console.WriteLine("CODEX_UI_PARITY_CHECKS_PASSED (entry points and actions, not a claim of pixel-perfect rendering)");
+    }
+
 }

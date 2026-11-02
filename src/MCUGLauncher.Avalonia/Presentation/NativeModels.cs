@@ -14,6 +14,13 @@ internal sealed record NativeItem
     public string Description { get; init; } = "";
     public string Desc { get; init; } = "";
     public string Author { get; init; } = "";
+    public string Size { get; init; } = "";
+    public int Major
+    {
+        get; init;
+    }
+    public string Arch { get; init; } = "";
+    public string Vendor { get; init; } = "";
     public string File { get; init; } = "";
     public string Path { get; init; } = "";
     public string V { get; init; } = "";
@@ -75,6 +82,10 @@ internal sealed record LaunchOptions
 }
 internal sealed record NativeMessage
 {
+    public bool NeedsLogin
+    {
+        get; init;
+    }
     public string Id { get; init; } = "";
     public int Ping
     {
@@ -143,6 +154,10 @@ internal sealed record NativeMessage
 }
 internal sealed record CommunityEntry
 {
+    public string Type { get; init; } = "";
+    public string Addr { get; init; } = "";
+    public string Version { get; init; } = "";
+    public string Intro { get; init; } = "";
     [System.Text.Json.Serialization.JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalFields
     {

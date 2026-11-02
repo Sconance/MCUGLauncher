@@ -42,6 +42,6 @@ internal sealed class ShellDesktopHost(Window owner, Action<object> send) : IDes
     {
         owner.WindowState = WindowState.Normal;
         owner.Width = 1200;
-        owner.Height = 800;
+        owner.Height = 780;
     }
 }

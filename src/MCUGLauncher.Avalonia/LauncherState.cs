@@ -18,6 +18,10 @@ internal sealed record LauncherState
     {
         get; init;
     }
+    public bool CommunityKey
+    {
+        get; init;
+    }
     public bool Anonymous
     {
         get; init;
