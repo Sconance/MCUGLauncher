@@ -119,6 +119,13 @@ internal sealed class LauncherFacade : IDisposable
             version
         }, Options));
 
+    public Task CheckUpdatesAsync(string version) =>
+        application.HandleAsync(JsonSerializer.Serialize(new
+        {
+            type = "checkContentUpdates",
+            version
+        }, Options));
+
     public Task ExportInstanceAsync(string version, string path, bool servers, bool saves) =>
         application.HandleAsync(JsonSerializer.Serialize(new
         {

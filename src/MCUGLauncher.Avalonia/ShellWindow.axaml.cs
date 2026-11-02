@@ -203,10 +203,17 @@ public partial class ShellWindow : Window
                 };
                 var export = new Button { Content = "导出" };
                 export.Click += (_, _) => { exportVersion = instance.Name; host.PickSaveFile("export"); };
+                var updates = new Button { Content = "检查更新" };
+                updates.Click += async (_, _) =>
+                {
+                    await facade.CheckUpdatesAsync(instance.Name);
+                    Add("已提交更新检查：" + instance.Name);
+                };
                 var uninstall = new Button { Content = "卸载预览" };
                 uninstall.Click += async (_, _) => await facade.PreviewUninstallAsync(instance.Name);
                 row.Children.Add(clone);
                 row.Children.Add(export);
+                row.Children.Add(updates);
                 row.Children.Add(uninstall);
                 Content.Children.Add(row);
             }
