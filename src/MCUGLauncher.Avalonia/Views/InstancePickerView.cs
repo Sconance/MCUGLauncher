@@ -12,8 +12,8 @@ internal sealed class InstancePickerView : NativePage
     bool updating;
     public InstancePickerView(LauncherFacade session, Action close) : base(session)
     {
-        Body.Children.Add(Ui.Row(Ui.Heading("游戏目录"), Ui.Button("导入整合包", () => InstallDialogs.Import(Session, Owner)), Ui.Button("刷新版本", () => Send(new { type = "requestState" })), Ui.Action("收起", close)));
-        Body.Children.Add(Ui.Row(roots, Ui.Button("+", async () =>
+        Body.Children.Add(Ui.Beside(Ui.Stack(Ui.Heading("游戏目录"), Ui.Muted("选择实例后可直接启动，或进入版本设置。")), Ui.Row(Ui.Button("导入整合包", () => InstallDialogs.Import(Session, Owner)), Ui.Button("刷新版本", () => Send(new { type = "requestState" })), Ui.Action("收起", close))));
+        Body.Children.Add(Ui.Beside(roots, Ui.Button("+", async () =>
         {
             var path = await FilePicker.Folder(Owner);
             if (path != null)
@@ -25,6 +25,10 @@ internal sealed class InstancePickerView : NativePage
         })));
         Body.Children.Add(search);
         Body.Children.Add(list);
+        Content = null;
+        Content = Ui.Card(Body);
+        ((Border)Content).Margin = default;
+        roots.MinWidth = 0;
         roots.SelectionChanged += async (_, _) =>
         {
             if (!updating && roots.SelectedItem is string root && root != State.Root)
@@ -67,7 +71,20 @@ internal sealed class InstancePickerView : NativePage
                 row.Children.Add(settings);
                 rows.Children.Add(row);
             }
-            list.Children.Add(new Expander { Header = (group.Key is "" or "原版" ? "原版游戏" : group.Key + " 版本") + "（" + group.Count() + "）", IsExpanded = true, Content = rows, HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch });
+            var label = (group.Key is "" or "原版" ? "原版游戏" : group.Key + " 版本") + "（" + group.Count() + "）";
+            Button? header = null;
+            header = Ui.Action("⌄  " + label, () =>
+            {
+                rows.IsVisible = !rows.IsVisible;
+                header!.Content = (rows.IsVisible ? "⌄  " : "›  ") + label;
+            });
+            header.Classes.Add("nav");
+            header.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
+            var groupPanel = Ui.Stack(header, rows);
+            groupPanel.Spacing = 8;
+            var groupCard = Ui.Card(groupPanel);
+            groupCard.Padding = new Thickness(8);
+            list.Children.Add(groupCard);
         }
         if (list.Children.Count == 0)
             list.Children.Add(Ui.Text("当前目录没有匹配的实例。"));

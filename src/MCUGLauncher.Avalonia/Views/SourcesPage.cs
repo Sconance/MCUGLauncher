@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using MCUGLauncher.Models;
 using MCUGLauncher.Avalonia.Presentation;
@@ -45,6 +46,7 @@ internal sealed class SourcesPage : NativePage
         {
             var input = Ui.Input(sources.GetValueOrDefault(key) ?? "");
             input.IsReadOnly = mode == "default";
+            input.MinWidth = 0;
             var result = Ui.Text("尚未测试");
             results[key] = result;
             var observed = input.Text;
@@ -57,11 +59,21 @@ internal sealed class SourcesPage : NativePage
                     draft[key] = input.Text ?? "";
                 result.Text = "地址已修改，尚未测试";
             };
-            rows.Children.Add(Ui.Card(Ui.Stack(
-                        Ui.Field(label, input),
-                        Ui.Button("测试", () => Test(key, input.Text ?? "")),
-                        result
-            )));
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("140,*,74"), RowDefinitions = new RowDefinitions("Auto,Auto"), ColumnSpacing = 16, RowSpacing = 6 };
+            var labelControl = Ui.Text(label, 12);
+            labelControl.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
+            row.Children.Add(labelControl);
+            Grid.SetColumn(input, 1);
+            row.Children.Add(input);
+            var test = Ui.Button("测试", () => Test(key, input.Text ?? ""));
+            test.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
+            test.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+            Grid.SetColumn(test, 2);
+            row.Children.Add(test);
+            Grid.SetColumn(result, 1);
+            Grid.SetRow(result, 1);
+            row.Children.Add(result);
+            rows.Children.Add(Ui.Card(row));
             _ = Test(key, input.Text ?? "");
         }
 

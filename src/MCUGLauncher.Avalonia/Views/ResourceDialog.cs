@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
 using MCUGLauncher.Avalonia.Presentation;
 
@@ -31,10 +32,13 @@ internal sealed class ResourceDialog : NativePage
         }.Concat(State.Instances.Select(i => i with { Id = i.Name })).ToArray();
         instances = Ui.Select(choices);
         instances.SelectedItem = choices.FirstOrDefault(i => i.Id == State.SelectedInstance) ?? choices[0];
-        Title(project.Title, project.Description);
-        Body.Children.Add(new RemoteImage(Session, project.Icon, 80));
-        Body.Children.Add(Ui.Text("作者：" + project.Author));
-        Body.Children.Add(Ui.Action("在浏览器打开项目", () => Process.Start(new ProcessStartInfo("https://modrinth.com/project/" + Uri.EscapeDataString(project.Id)) { UseShellExecute = true })));
+        var description = Ui.Stack(Ui.Heading(project.Title), Ui.Muted("作者：" + project.Author));
+        var hero = new Grid { ColumnDefinitions = new ColumnDefinitions("80,*"), ColumnSpacing = 16 };
+        hero.Children.Add(new RemoteImage(Session, project.Icon, 80));
+        Grid.SetColumn(description, 1);
+        hero.Children.Add(description);
+        var details = Ui.Stack(hero, Ui.Text(project.Description), Ui.Action("在浏览器打开项目", () => Process.Start(new ProcessStartInfo("https://modrinth.com/project/" + Uri.EscapeDataString(project.Id)) { UseShellExecute = true })));
+        details.Name = "ResourceDescription";
         confirm = Ui.Button("确认下载", async () =>
             {
                 if (versions.SelectedItem is not NativeItem version || token.Length == 0)
@@ -48,18 +52,40 @@ internal sealed class ResourceDialog : NativePage
                     path = destination.Text ?? ""
                 });
             }, true);
-        Body.Children.Add(Ui.Card(Ui.Stack(
-                    Ui.Field("兼容性依据实例", instances),
+        var directory = Ui.Field("自定义下载目录", Ui.Beside(destination, Ui.Button("选择目录", async () => destination.Text = await FilePicker.Folder(Owner) ?? destination.Text)));
+        destination.MinWidth = 0;
+        var options = Ui.Stack(Ui.Text("下载选项", 16),
+                    Ui.Field("目标实例", instances),
                     Ui.Field("游戏版本", game),
                     Ui.Field("加载器", loader),
                     Ui.Button("读取兼容资源版本", Load),
                     Ui.Field("资源版本", versions),
                     Ui.Field("安装方式", mode),
-                    Ui.Field("自定义下载目录", destination),
-                    Ui.Button("选择目录", async () => destination.Text = await FilePicker.Folder(Owner) ?? destination.Text),
+                    directory,
                     status,
                     confirm
-        )));
+        );
+        options.Name = "ResourceInstallOptions";
+        confirm.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
+        confirm.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("*,310"), ColumnSpacing = 22 };
+        layout.Children.Add(details);
+        var card = Ui.Card(options);
+        Grid.SetColumn(card, 1);
+        layout.Children.Add(card);
+        layout.SizeChanged += (_, _) =>
+        {
+            var narrow = layout.Bounds.Width < 680;
+            layout.ColumnDefinitions = new ColumnDefinitions(narrow ? "*" : "*,310");
+            layout.RowDefinitions = new RowDefinitions(narrow ? "Auto,Auto" : "Auto");
+            layout.RowSpacing = narrow ? 18 : 0;
+            Grid.SetColumn(card, narrow ? 0 : 1);
+            Grid.SetRow(card, narrow ? 1 : 0);
+        };
+        Body.Children.Add(layout);
+        void UpdateMode() => directory.IsVisible = mode.SelectedIndex == 1;
+        mode.SelectionChanged += (_, _) => UpdateMode();
+        UpdateMode();
         if (category is "modpack" or "datapack")
         {
             mode.SelectedIndex = 1;
@@ -116,5 +142,5 @@ internal sealed class ResourceDialog : NativePage
         }
     }
 
-    public static Task Open(LauncherFacade session, Window owner, NativeItem project, string category) => Ui.Show(owner, "资源详情与安装选项", new ResourceDialog(session, project, category));
+    public static Task Open(LauncherFacade session, Window owner, NativeItem project, string category) => Ui.Show(owner, "资源详情与安装选项", new ResourceDialog(session, project, category), 1000, 740);
 }

@@ -47,6 +47,21 @@ internal static class Ui
         return panel;
     }
 
+    // Use a measured grid for fixed actions beside stretchable content; WrapPanel is only for wrapping toolbars.
+    public static Grid Beside(Control content, Control actions, double gap = 10)
+    {
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = gap };
+        grid.Children.Add(content);
+        Grid.SetColumn(actions, 1);
+        grid.Children.Add(actions);
+        return grid;
+    }
+    public static TextBlock Muted(string text, double size = 11)
+    {
+        var block = Text(text, size);
+        block.Foreground = Brush.Parse("#687D8D");
+        return block;
+    }
     public static Border Card(Control child) => new()
     {
         Child = child,

@@ -57,3 +57,8 @@ ResourceChoiceCommands、LaunchOptionsCommands、MuaProfileSelection、AvatarCom
 本轮不改 App/Core。恢复工作限制在 Avalonia 展示层：HomePage 仅装配账号/启动、InstancePickerView 和 HomeFeedPanel；账号、皮肤与服务器保持 owned dialog；UtilitySettingsPage 恢复原有设置分区。没有为页面重写网络、认证或队列。移除被迁移错误引入的独立 AccountsPage 与合并 DiagnosticsPage，避免保留重复入口。
 
 产品基线与控件位置另由 CodexParity 检查，而非仅依赖格式化或菜单计数。具体恢复项及尚未实测的部分见 UI_PARITY_0.22.3-codex.md。
+
+
+## UI 对齐修订
+
+本轮只调整 Views、主题与壳的展示参数，继续采用 0.22.3-Avalonia 的职责划分。网格布局留在各功能视图；Ui.Beside 只归纳多个页面共同使用的“弹性内容 + 右侧操作”布局，不创建新的业务管理器。分组折叠、窄窗换行是视图状态；下载目标、资源令牌、数据源保存/启用仍走原协议。未修改 App/Core 或引入后端依赖。SourceFormatter 和边界检查之外，实际查看了几何断言及渲染截图。

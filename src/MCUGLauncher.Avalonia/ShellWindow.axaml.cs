@@ -26,10 +26,15 @@ public partial class ShellWindow : Window
         session.Navigate = Navigate;
         session.PropertyChanged += Changed;
         session.MessageReceived += OnMessage;
-        BrandPanel.Children.Add(Ui.Logo());
-        BrandPanel.Children.Add(Ui.Text("MCUG Launcher", 20));
+        BrandPanel.Children.Add(Ui.Logo(30));
+        BrandPanel.Children.Add(Ui.Text("MCUG Launcher", 16));
         foreach (var (label, id) in new[] { ("▷ 启动", "home"), ("↓ 下载", "community"), ("⚙ 设置", "settings") })
-            TopNavigation.Children.Add(Ui.Action(label, () => Navigate(id)));
+        {
+            var button = Ui.Action(label, () => Navigate(id));
+            button.Tag = id;
+            button.Classes.Add("top-nav");
+            TopNavigation.Children.Add(button);
+        }
         TaskButton.Click += (_, _) => Navigate("tasks");
         Opened += async (_, _) => { if (injected == null) await session.SendAsync(new { type = "ready" }); };
         Closed += (_, _) => { session.RememberWindow(Width, Height, WindowState == WindowState.Maximized); page?.Dispose(); session.PropertyChanged -= Changed; session.MessageReceived -= OnMessage; session.Dispose(); };
@@ -62,6 +67,8 @@ public partial class ShellWindow : Window
             }
         }
         PageGrid.ColumnDefinitions[0].Width = new GridLength(group == "home" ? 0 : 190);
+        foreach (var button in TopNavigation.Children.OfType<Button>())
+            button.Classes.Set("selected", button.Tag as string == (group == "home" ? "home" : group == "download" ? "community" : "settings"));
         page?.Dispose();
         page = entry.Create(session);
         PageHost.Content = page;

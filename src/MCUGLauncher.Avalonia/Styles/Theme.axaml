@@ -12,4 +12,9 @@
   <Style Selector="TextBox"><Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#D2E2EE"/><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="10,8"/><Setter Property="MinHeight" Value="36"/></Style>
   <Style Selector="ComboBox"><Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#D2E2EE"/><Setter Property="CornerRadius" Value="8"/><Setter Property="MinHeight" Value="36"/></Style>
   <Style Selector="ProgressBar"><Setter Property="Foreground" Value="#0074BC"/></Style>
+  <Style Selector="Button.link"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="5,3"/><Setter Property="FontSize" Value="11"/></Style>
+  <Style Selector="Button.account-tab"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="4,0"/><Setter Property="FontSize" Value="10.5"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="HorizontalContentAlignment" Value="Center"/></Style>
+  <Style Selector="Button.account-tab.active"><Setter Property="Background" Value="White"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+  <Style Selector="Button.top-nav"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Height" Value="34"/><Setter Property="FontSize" Value="12.5"/><Setter Property="Padding" Value="15,0"/></Style>
+  <Style Selector="Button.top-nav.selected"><Setter Property="Background" Value="#D8ECF8"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
 </Styles>

@@ -25,79 +25,162 @@ internal sealed class HomeFeedPanel : NativePage
     }
     void Draw()
     {
-        Body.Children.Clear();
-        Body.Children.Add(Ui.Card(kind switch
+        var card = Ui.Card(kind switch
         {
             "servers" => Servers(),
             "announcements" => Announcements(),
             "recommendations" => Recommendations(),
             _ => Quote()
-        }));
+        });
+        card.Margin = default;
+        card.Padding = new global::Avalonia.Thickness(15, 12);
+        if (kind == "quotes")
+            card.Height = 100;
+        Content = card;
     }
-    StackPanel Servers()
+    static Grid Header(string title, Control actions)
     {
-        var panel = Ui.Stack(Ui.Row(Ui.Heading("正在开设的服务器"), Ui.Button("添加服务器", () => ServerDialog.Open(Session, Owner)), Ui.Action("‹", () => { index--; Draw(); }), Ui.Action("›", () => { index++; Draw(); })));
+        var label = Ui.Text(title, 13.5);
+        label.FontWeight = global::Avalonia.Media.FontWeight.SemiBold;
+        label.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
+        return Ui.Beside(label, actions);
+    }
+    static Button Link(string label, Action action)
+    {
+        var button = Ui.Action(label, action);
+        button.Classes.Add("link");
+        return button;
+    }
+    static Button Link(string label, Func<Task> action)
+    {
+        var button = Ui.Button(label, action);
+        button.Classes.Add("link");
+        return button;
+    }
+    Grid Servers()
+    {
+        var panel = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 10 };
+        var tools = Ui.Row(Link("‹", () => { index--; Draw(); }), Link("›", () => { index++; Draw(); }), Link("添加服务器", () => ServerDialog.Open(Session, Owner)));
+        panel.Children.Add(Header("正在开设的服务器", tools));
         var items = State.Servers;
+        Control body;
         if (items.Length == 0)
         {
-            panel.Children.Add(Ui.Text("还没有添加服务器，填入 host:port 即可查看实时人数和延迟。"));
-            return panel;
+            var copy = Ui.Stack(Ui.Text("还没有添加服务器", 12), Ui.Muted("填入 host:port，就能在这里看到实时人数与延迟。"));
+            body = Ui.Beside(copy, Link("＋ 添加", () => ServerDialog.Open(Session, Owner)));
+            body.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
         }
-        var server = items[((index % items.Length) + items.Length) % items.Length];
-        var status = pings.GetValueOrDefault(server.Address);
-        panel.Children.Add(Ui.Text(server.Name, 17));
-        panel.Children.Add(Ui.Text(server.Address));
-        panel.Children.Add(Ui.Text(status == null ? "尚未查询状态" : status.Online ? $"在线 · {status.Players}/{status.Max} 人 · {status.Ping} ms" : "离线或暂时无法连接"));
-        panel.Children.Add(Ui.Row(
-            Ui.Button("刷新状态", () => Send(new { type = "pingServer", address = server.Address, id = server.Address })),
-            Ui.Button("编辑服务器", () => ServerDialog.Open(Session, Owner, server)),
-            Ui.Button("移除", async () => { if (await Ui.Confirm(Owner, "移除服务器", "移除这个收藏的服务器？")) await Send(new { type = "deleteServer", address = server.Address }); })));
+        else
+        {
+            var server = items[((index % items.Length) + items.Length) % items.Length];
+            var status = pings.GetValueOrDefault(server.Address);
+            body = Ui.Stack(Ui.Text(server.Name, 15), Ui.Muted(server.Address),
+                Ui.Text(status == null ? "正在查询状态…" : status.Online ? $"在线 · {status.Players}/{status.Max} 人 · {status.Ping} ms" : "离线或暂时无法连接", 11),
+                Ui.Row(Link("刷新状态", () => Send(new { type = "pingServer", address = server.Address, id = server.Address })),
+                    Link("编辑服务器", () => ServerDialog.Open(Session, Owner, server)),
+                    Link("移除", async () => { if (await Ui.Confirm(Owner, "移除服务器", "移除这个收藏的服务器？")) await Send(new { type = "deleteServer", address = server.Address }); })));
+        }
+        Grid.SetRow(body, 1);
+        panel.Children.Add(body);
         return panel;
     }
     CommunityEntry[] Entries(string key) => (Session.Community.GetValueOrDefault(key) ?? []).Where(e => !DateTimeOffset.TryParse(e.ExpiresAt, out var expiry) || expiry > DateTimeOffset.Now).ToArray();
-    StackPanel Announcements()
+    Grid Announcements()
     {
-        var panel = Ui.Stack(Ui.Row(Ui.Heading("群公告"), Ui.Button("查看全部", () => Ui.Show(Owner, "全部公告", new CommunityPage(Session, onlyFeed: "announcements")))));
+        var panel = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 8 };
+        panel.Children.Add(Header("群公告", Link("查看全部", () => Ui.Show(Owner, "全部公告", new CommunityPage(Session, onlyFeed: "announcements")))));
         var items = Entries("announcements");
+        Control body;
         if (items.Length == 0)
-        {
-            panel.Children.Add(Ui.Text("暂无公告，新的消息会出现在这里。"));
-            return panel;
-        }
-        var entry = items[Math.Abs(index) % items.Length];
-        panel.Children.Add(Ui.Text(entry.Title, 17));
-        panel.Children.Add(Ui.Text(entry.Body.Length > 0 ? entry.Body : entry.Text));
-        if (entry.ImageUrl.Length > 0)
-            panel.Children.Add(new RemoteImage(Session, entry.ImageUrl));
-        panel.Children.Add(Ui.Row(Ui.Text(entry.Author + " · " + entry.PublishedAt), Ui.Action("下一条", () => { index++; Draw(); })));
-        return panel;
-    }
-    StackPanel Recommendations()
-    {
-        var panel = Ui.Stack(Ui.Row(Ui.Heading("群友推荐"), Ui.Action("浏览更多", () => Session.Navigate?.Invoke("community"))));
-        foreach (var entry in Entries("recommendations").Take(3))
-        {
-            var button = Ui.Button(entry.Name, () => Recommendation(Session, Owner, entry));
-            panel.Children.Add(Ui.Row(button, Ui.Text(entry.Description)));
-        }
-        if (panel.Children.Count == 1)
-            panel.Children.Add(Ui.Text("暂无群友推荐。"));
-        return panel;
-    }
-    StackPanel Quote()
-    {
-        var panel = Ui.Stack(Ui.Row(Ui.Text("“ 群友语录", 17), Ui.Action("下一条", () => { index++; Draw(); })));
-        var entries = Entries("quotes");
-        if (entries.Length == 0)
-            panel.Children.Add(Ui.Text("还没有语录。"));
+            body = Ui.Muted("暂无公告，新的消息会出现在这里。");
         else
         {
-            var entry = entries[Math.Abs(index) % entries.Length];
-            panel.Children.Add(Ui.Text(entry.Text + " —— " + entry.Author));
+            var entry = items[Math.Abs(index) % items.Length];
+            var title = Ui.Text(entry.Title, 12);
+            title.FontWeight = global::Avalonia.Media.FontWeight.SemiBold;
+            var summary = Ui.Muted(entry.Body.Length > 0 ? entry.Body : entry.Text);
+            summary.MaxLines = 2;
+            summary.TextTrimming = global::Avalonia.Media.TextTrimming.CharacterEllipsis;
+            var copy = Ui.Stack(title, summary);
+            copy.Spacing = 4;
+            var pager = new StackPanel { Orientation = global::Avalonia.Layout.Orientation.Horizontal, Spacing = 4, VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center };
+            pager.Children.Add(Link("‹", () => { index = (index + items.Length - 1) % items.Length; Draw(); }));
+            pager.Children.Add(Ui.Muted($"{index % items.Length + 1} / {items.Length}"));
+            pager.Children.Add(Link("›", () => { index++; Draw(); }));
+            var row = Ui.Beside(copy, pager);
             if (entry.ImageUrl.Length > 0)
-                panel.Children.Add(new RemoteImage(Session, entry.ImageUrl));
+            {
+                var image = new RemoteImage(Session, entry.ImageUrl, 48);
+                var illustrated = new Grid { ColumnDefinitions = new ColumnDefinitions("48,*"), ColumnSpacing = 10 };
+                illustrated.Children.Add(image);
+                Grid.SetColumn(row, 1);
+                illustrated.Children.Add(row);
+                body = illustrated;
+            }
+            else
+                body = row;
         }
+        Grid.SetRow(body, 1);
+        panel.Children.Add(body);
         return panel;
+    }
+    Grid Recommendations()
+    {
+        var panel = new Grid { RowDefinitions = new RowDefinitions("Auto,*"), RowSpacing = 10 };
+        panel.Children.Add(Header("群友推荐", Link("浏览更多", () => Session.Navigate?.Invoke("community"))));
+        var rows = Ui.Stack();
+        rows.Spacing = 6;
+        foreach (var entry in Entries("recommendations").Take(3))
+        {
+            var copy = Ui.Stack(Ui.Text(entry.Name, 12), Ui.Muted("由 " + entry.Author + " 推荐", 10));
+            copy.Spacing = 3;
+            var button = Ui.Button("", () => Recommendation(Session, Owner, entry));
+            button.Content = Ui.Beside(copy, Ui.Muted("›", 16));
+            button.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
+            button.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
+            button.Padding = new global::Avalonia.Thickness(8, 5);
+            button.Classes.Add("link");
+            rows.Children.Add(button);
+        }
+        if (rows.Children.Count == 0)
+        {
+            rows.Children.Add(Ui.Text("暂无群友推荐", 12));
+            rows.Children.Add(Ui.Muted("等群友整理好，第一时间放上来。"));
+            rows.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
+        }
+        Grid.SetRow(rows, 1);
+        panel.Children.Add(rows);
+        return panel;
+    }
+    Grid Quote()
+    {
+        var entries = Entries("quotes");
+        var entry = entries.Length > 0 ? entries[Math.Abs(index) % entries.Length] : null;
+        var copy = Ui.Text(entry == null ? "还没有语录。" : entry.Text + " —— " + entry.Author, 15);
+        copy.MaxLines = 2;
+        copy.TextTrimming = global::Avalonia.Media.TextTrimming.CharacterEllipsis;
+        copy.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
+        Control main = copy;
+        if (entry?.ImageUrl.Length > 0)
+        {
+            var imageRow = new Grid { ColumnDefinitions = new ColumnDefinitions("136,*"), ColumnSpacing = 15 };
+            imageRow.Children.Add(new RemoteImage(Session, entry.ImageUrl, 70) { Width = 136 });
+            Grid.SetColumn(copy, 1);
+            imageRow.Children.Add(copy);
+            main = imageRow;
+        }
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("68,*,Auto"), ColumnSpacing = 15 };
+        var label = Ui.Stack(Ui.Muted("“", 26), Ui.Text("群友语录", 10.5));
+        label.Spacing = 0;
+        label.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
+        row.Children.Add(label);
+        Grid.SetColumn(main, 1);
+        row.Children.Add(main);
+        var next = Link("下一条", () => { index++; Draw(); });
+        next.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
+        Grid.SetColumn(next, 2);
+        row.Children.Add(next);
+        return row;
     }
     internal static Task Recommendation(LauncherFacade session, Window owner, CommunityEntry entry)
     {

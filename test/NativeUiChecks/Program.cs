@@ -255,6 +255,17 @@ internal static class Program
         // Owned modal windows form their own visual root.
         var owned = window.OwnedWindows.Last();
         await Click(Find(owned, "读取兼容资源版本"));
+        await Task.Delay(25);
+        var description = Controls<StackPanel>(owned).Single(c => c.Name == "ResourceDescription");
+        var install = Controls<StackPanel>(owned).Single(c => c.Name == "ResourceInstallOptions");
+        Check(description.TranslatePoint(default, owned)!.Value.X < install.TranslatePoint(default, owned)!.Value.X, "resource description stays left of installation options");
+        using (var frame = owned.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/resource-detail.png");
+        owned.Width = 520;
+        await Task.Delay(25);
+        Check(install.TranslatePoint(default, owned)!.Value.Y > description.TranslatePoint(default, owned)!.Value.Y, "narrow resource dialog moves options below its description without hiding controls");
+        owned.Width = 1000;
+        await Task.Delay(25);
         var combos = Controls<ComboBox>(owned).ToArray();
         combos[2].SelectedIndex = 1;
         await Click(Find(owned, "确认下载"));
@@ -281,16 +292,47 @@ internal static class Program
             window.Height = size.Item2;
             window.Navigate("home");
             await Task.Delay(35);
+            CheckHomeGeometry(window);
             using var frame = window.CaptureRenderedFrame();
             Check(frame != null, "Skia native frame " + name);
             frame!.Save("work/native-ui/home-" + name + ".png");
         }
         window.Navigate("sources");
+        window.Width = 1280;
+        window.Height = 800;
         await Task.Delay(20);
         using (var frame = window.CaptureRenderedFrame())
             frame!.Save("work/native-ui/sources.png");
+        window.Navigate("mod");
+        await Task.Delay(25);
+        await Click(Find(window, "搜索 / 刷新"));
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/catalog.png");
+        window.Navigate("home");
+        await Task.Delay(25);
+        await Click(Find(window, "›"));
+        await Task.Delay(25);
+        var picker = Controls<InstancePickerView>(window).Single();
+        var roots = Controls<ComboBox>(picker).Single();
+        Check(roots.Bounds.Width > picker.Bounds.Width - 110, "instance directory stretches beside its add action");
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/instance-panel.png");
         window.Close();
         Console.WriteLine("ALL_NATIVE_UI_CHECKS_PASSED (headless native controls and simulated application responses; no live account/game)");
+    }
+    static void CheckHomeGeometry(ShellWindow window)
+    {
+        var account = Controls<Border>(window).Single(c => c.Name == "HomeAccountCard");
+        var footer = Controls<Border>(window).Single(c => c.Name == "HomeAccountFooter");
+        var launch = Controls<Button>(window).Single(c => c.Name == "HomeLaunchButton");
+        var footerBottom = footer.TranslatePoint(default, account)!.Value.Y + footer.Bounds.Height;
+        Check(Math.Abs(account.Bounds.Height - 426) < 1 && account.Bounds.Height - footerBottom < 15, "account footer remains anchored at the bottom of the original card");
+        Check(Math.Abs(account.TranslatePoint(default, window)!.Value.X - launch.TranslatePoint(default, window)!.Value.X) < 1, "launch action aligns with the account card's left edge");
+        var panels = Controls<HomeFeedPanel>(window).ToArray();
+        Check(Math.Abs(panels[1].Bounds.Height - 112) < 1, "announcement remains the compact middle dashboard row");
+        Check(Math.Abs(panels.Last().Bounds.Height - 100) < 1, "quote strip retains its horizontal 100px region");
+        var progress = Controls<ProgressBar>(window).First(p => p.Name == "TaskProgress");
+        Check(progress.Bounds.Width <= 120, "titlebar progress stays inside its task summary width");
     }
     static async Task CodexParity(ShellWindow window)
     {
