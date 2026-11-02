@@ -118,6 +118,7 @@ await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await SettingsScenarios.Run(fixture);
+ArchitectureScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);
 Console.WriteLine("ALL_WEB_BRIDGE_CHECKS_PASSED (isolated fixtures; no live account or gameplay)");
 

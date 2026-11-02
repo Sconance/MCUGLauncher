@@ -10,8 +10,9 @@ namespace MCUGLauncher.Services;
 /// </summary>
 /// <remarks>
 /// B component: constructs Models.VersionGroup/InstanceInfo/ModInfo and reads InstanceInfo.Name.
-/// Reuses Core InstanceCatalog.MetadataDirectory/DirectoryFor, AtomicFile.ReadJson and ContentService.SafeFile.
+/// Reuses Core InstanceCatalog.MetadataDirectory/DirectoryFor, AtomicFile.ReadJson, ContentService.SafeFile and ProfileInspector.Read(string,string).
 /// Reads versions and instance JSON only; no network, UI or command-handler dependency.
+/// ContentService.Toggle/MoveToBackup handle mutations; member contracts: docs/components/VersionCatalog.md.
 /// Empty directories return an empty collection rather than a synthetic selectable instance.
 /// </remarks>
 public sealed class VersionCatalog
@@ -105,7 +106,7 @@ public sealed class VersionCatalog
     /// 读取实例的版本详情。
     /// </summary>
     /// <remarks>
-    /// 包含 Minecraft 版本、加载器与加载器版本。
+    /// 包含 Minecraft 版本、加载器、当前档案声明的 Java 主版本与元数据完整性。
     /// </remarks>
     public static VersionDetails ReadDetails(string root, string name)
     {
@@ -117,37 +118,22 @@ public sealed class VersionCatalog
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(file));
             var json = doc.RootElement;
-            var id = json.TryGetProperty("id", out var idValue) ? idValue.GetString() ?? name : name;
-            var inherits = json.TryGetProperty("inheritsFrom", out var parentValue) ? parentValue.GetString() ?? "" : "";
-            var type = json.TryGetProperty("type", out var typeValue) ? typeValue.GetString() ?? "" : "";
-            var minecraft = "";
-            var probe = name;
-            for (var depth = 0; depth < 8 && probe.Length > 0; depth++)
+            var requirements = ProfileInspector.Read(root, name);
+            var loader = requirements.Loader switch
             {
-                var probeFile = Path.Combine(root, "versions", probe, probe + ".json");
-                if (!File.Exists(probeFile))
-                    break;
-                using var probeDoc = JsonDocument.Parse(File.ReadAllText(probeFile));
-                if (probeDoc.RootElement.TryGetProperty("inheritsFrom", out var next))
-                {
-                    probe = next.GetString() ?? "";
-                    continue;
-                }
-
-                if (probeDoc.RootElement.TryGetProperty("id", out var rootId))
-                    minecraft = rootId.GetString() ?? "";
-                break;
-            }
-
-            if (minecraft.Length == 0)
-                minecraft = inherits.Length > 0 ? inherits : id;
-            var loader = DetectLoader(name + " " + inherits + " " + id);
+                "fabric" => "Fabric",
+                "quilt" => "Quilt",
+                "forge" => "Forge",
+                "neoforge" => "NeoForge",
+                "optifine" => "OptiFine",
+                _ => "原版"
+            };
             var java = json.TryGetProperty("javaVersion", out var javaVersion) && javaVersion.TryGetProperty("majorVersion", out var major)
                 ? major.GetInt32().ToString()
                 : "";
-            return new VersionDetails(name, minecraft, loader, java, true);
+            return new VersionDetails(name, requirements.Minecraft, loader, java, true);
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
             return new VersionDetails(name, "", "原版", "", false);
         }
@@ -190,25 +176,23 @@ public sealed class VersionCatalog
     }
 
     /// <summary>
-    /// 设置Enabled。
+    /// 通过 Core 切换启用状态，相同状态不重复切换。
     /// </summary>
     public static void SetEnabled(ModInfo mod, bool enabled)
     {
-        var target = enabled
-            ? mod.Path.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase)
-                ? mod.Path[..^".disabled".Length]
-                : mod.Path
-            : mod.Path.EndsWith(".disabled", StringComparison.OrdinalIgnoreCase)
-                ? mod.Path
-                : mod.Path + ".disabled";
-        if (!target.Equals(mod.Path, StringComparison.OrdinalIgnoreCase))
-            File.Move(mod.Path, target);
+        if (mod.Enabled == enabled)
+            return;
+        ContentService.Toggle(LocalFile(mod));
     }
 
-    /// <summary>
-    /// 删除。
-    /// </summary>
-    public static void Delete(ModInfo mod) => File.Delete(mod.Path);
+    /// <summary>经 Core 依赖校验移除模组，保留可恢复的文件备份。</summary>
+    public static void Delete(ModInfo mod)
+    {
+        var instance = Directory.GetParent(Path.GetDirectoryName(mod.Path)!)!.FullName;
+        ContentService.MoveToBackup(instance, LocalFile(mod));
+    }
+
+    static LocalContent LocalFile(ModInfo mod) => new(mod.Path, mod.Name, "", mod.Enabled ? "已启用" : "已禁用", null);
 
     /// <summary>
     /// 执行 实例Directory。
@@ -237,23 +221,7 @@ public sealed class VersionCatalog
         file.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) ||
         file.EndsWith(".jar.disabled", StringComparison.OrdinalIgnoreCase);
 
-    static string DetectLoader(string value)
-    {
-        var text = value.ToLowerInvariant();
-        if (text.Contains("fabric"))
-            return "Fabric";
-        if (text.Contains("neoforge"))
-            return "NeoForge";
-        if (text.Contains("forge"))
-            return "Forge";
-        if (text.Contains("quilt"))
-            return "Quilt";
-        if (text.Contains("optifine"))
-            return "OptiFine";
-        return "原版";
-    }
 }
-
 /// <summary>
 /// 表示 版本Details 数据。
 /// </summary>

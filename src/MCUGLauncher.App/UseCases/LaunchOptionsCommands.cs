@@ -10,7 +10,7 @@ namespace MCUGLauncher.UseCases;
 /// B 类。成员级依赖见 docs/components/LaunchOptionsCommands.md。
 /// LauncherContext.Config.Root/LegacyPreferences/AutoMemory/Ram/Java/Width/Height 提供当前配置；
 /// Store.Save(AppConfig)/Send(object)/RefreshState() 持久化并回推；
-/// InstanceSnapshot.Capture(AppConfig,string).Settings 冻结实例选项，PreviewCache.Add/Get 绑定预览目标。
+/// InstanceSnapshot.Capture/GlobalSettings 冻结实例目标与全局选项，PreviewCache.Add/Get 绑定预览目标。
 /// 不依赖窗口、视图或其他 Commands。
 /// </remarks>
 internal sealed class LaunchOptionsCommands(LauncherContext context)
@@ -35,12 +35,7 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
         }
         else
         {
-            settings = Clone(context.Config.LegacyPreferences.Launch);
-            settings.AutoMemory = context.Config.AutoMemory;
-            settings.RamMb = context.Config.Ram;
-            settings.Java = context.Config.Java;
-            settings.Width = context.Config.Width;
-            settings.Height = context.Config.Height;
+            settings = InstanceSnapshot.GlobalSettings(context.Config);
         }
         context.Send(new
         {
@@ -60,9 +55,9 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
         var target = targets.Get(token);
         var options = message.GetProperty("settings");
         var inherited = message.TryGetProperty("inherit", out var inherit) && inherit.GetBoolean();
-        var settings = Clone(context.Config.LegacyPreferences.Launch);
+        var settings = InstanceSnapshot.GlobalSettings(context.Config);
         if (target.Version.Length > 0)
-            settings = InstanceSnapshot.Capture(ConfigAt(target.Root), target.Version).Settings;
+            settings = InstanceSnapshot.Capture(target.Root, target.Version, settings).Settings;
         settings.AutoMemory = options.GetProperty("autoMemory").GetBoolean();
         settings.FullScreen = options.GetProperty("fullScreen").GetBoolean();
         if (options.TryGetProperty("autoChinese", out var autoChinese))
@@ -104,13 +99,6 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
         context.RefreshState();
     }
 
-    MCUGLauncher.Models.AppConfig ConfigAt(string root)
-    {
-        var config = JsonSerializer.Deserialize<MCUGLauncher.Models.AppConfig>(JsonSerializer.Serialize(context.Config))!;
-        config.Root = root;
-        return config;
-    }
-    static LaunchSettings Clone(LaunchSettings settings) => JsonSerializer.Deserialize<LaunchSettings>(JsonSerializer.Serialize(settings))!;
     static int Number(JsonElement value, string name, int min, int max)
     {
         if (!value.GetProperty(name).TryGetInt32(out var number) || number < min || number > max)

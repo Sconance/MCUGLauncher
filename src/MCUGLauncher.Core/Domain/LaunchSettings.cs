@@ -68,6 +68,10 @@ public sealed class LaunchSettings
     /// </summary>
     public string Server { get; set; } = "";
 
+    /// <summary>返回独立的启动选项副本，供预览与启动快照使用。</summary>
+    /// <remarks>当前成员均为值类型或不可变字符串；新增可变集合时须同步深复制及隔离测试。</remarks>
+    public LaunchSettings Copy() => (LaunchSettings)MemberwiseClone();
+
     /// <summary>
     /// 执行 SplitArguments。
     /// </summary>

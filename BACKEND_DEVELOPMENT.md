@@ -190,7 +190,7 @@ LauncherApplication / LauncherContext
 | `DiagnosticCommands` | 日志读取与系统信息 | `LauncherContext.Config/Send/Store` |
 | `GameCommands` | 启动/停止游戏、进程观察 | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |
 | `InstallationCommands` | 加载器列表/安装、整合包预览/导入 | `LauncherContext.Config/Http/Send/Tasks/Token` |
-| `InstanceCommands` | 目录打开、模组启停/删除 | `LauncherContext.Config/RefreshState` |
+| `InstanceCommands` | 目录打开、模组启停/删除 | `LauncherContext.Config/IsInstanceInUse(string)/RefreshState`；VersionCatalog 模组适配，见 docs/components/InstanceCommands.md |
 | `InstanceMaintenanceCommands` | 实例克隆与导出 | `LauncherContext.Config/Tasks` |
 | `LaunchOptionsCommands` | 启动选项读写 | `LauncherContext.Config/RefreshState/Send/Store` |
 | `LauncherContext` | 共享运行时（配置、HTTP、队列、会话、状态回推） | `ConfigStore`、`NetworkPolicyHandler`、`CommunityService`、`DownloadExecutor`、`LauncherTaskQueue`、`RunningGameRegistry`、`AccountSessionCache`、`MicrosoftAccountService`、`MuaAccountService` |
@@ -208,9 +208,9 @@ LauncherApplication / LauncherContext
 | `AvatarImage` | 把皮肤字节编码为 PNG Data URI | `AvatarRenderer`（WPF 渲染）、`PngBitmapEncoder` |
 | `ConfigStore` | `config.json` 读取、迁移、保存 | `AppConfig`（Models） |
 | `DownloadExecutor` | 按任务类型执行下载/安装/维护 | `InstanceOperationExecutor` 与 Core 的 `OperationRecord`/`OperationContext` |
-| `InstanceSnapshot` | 捕获实例根目录、名称、要求与启动设置 | `AppConfig`、Core 实例/包类型 |
+| `InstanceSnapshot` | 捕获实例根目录、名称、要求与启动设置 | AppConfig 全局默认字段、InstanceRequirements.Read；Core Copy/实例类型，见 docs/components/InstanceSnapshot.md |
 | `LauncherStateBuilder` | 组装前端 `state` 快照 | `AppConfig`、`VersionCatalog`、收藏快照参数（由调用方传入） |
-| `VersionCatalog` | 版本目录扫描、实例与模组读取 | `AppConfig`、`ModInfo`/`VersionDetails` 等 Models |
+| `VersionCatalog` | 版本目录扫描、实例与模组适配 | Models 值对象；Core ProfileInspector.Read、ContentService.Toggle/MoveToBackup，见 docs/components/VersionCatalog.md |
 
 #### 8.2.3 Authentication（3 个）
 
@@ -379,3 +379,8 @@ ResourceCommands（B）保持既有依赖：LauncherContext.Http / Token 读取 
 ### 本轮设置与语言修订
 
 GameCommands、SettingsCommands、LaunchOptionsCommands 仍为 B 类，完整成员依赖见 docs/components 下同名文档和类 remarks。GameCommands 复用 Core GameDefaults，不引入视图依赖；SettingsCommands 扩展既有偏好保存，不新建服务；LaunchOptionsCommands 统一全局/实例的 AutoChinese。LauncherStateBuilder 只将 AppConfig.LegacyPreferences 加入状态快照，UI 不获得存储器或认证对象。
+
+
+### 重复逻辑归并复查
+
+InstanceRequirements（A）保留整合包安装记录优先级，其余直接调用 Core ProfileInspector.Read。InstanceSnapshot（B）统一合并全局启动默认，LaunchOptionsCommands（B）复用它并直接传根目录；不再克隆整个 AppConfig。LaunchSettings.Copy（Core）由两者使用；仅支持现有值类型/字符串字段，可变字段由回归检查阻止静默浅复制。VersionCatalog（B）不再自己猜加载器或重写继承算法；旧模组入口复用 Core 内容事务。详见 docs/ARCHITECTURE_REVIEW_2026-11-02.md。

@@ -87,3 +87,8 @@ DialogWindow 归纳原 Ui.Show/Confirm/Error 重复的窗口组装，专职标�
 ## 设置与提示本轮复查
 
 全局启动编辑复用实例编辑器，消除重复保存逻辑；Java、网络、外观、目录按职责独立视图，账号及版本概览从综合工具页移出。语言写入在 GameCommands 调用 Core，窗口中无启动算法。新增配置通过既有 SettingsCommands 保存；没有新建只转发的 Manager。SourceFormatter 之外人工检查了网络对象引用、实例目录冻结和依赖声明。
+
+
+## 重复逻辑与 Core 复用
+
+见 ARCHITECTURE_REVIEW_2026-11-02.md。本轮删除 App 的重复继承/加载器算法和启动配置 JSON 复制，复用 Core 内容变更，补齐修改组件依赖声明。没有用文件数量或格式通过作为全仓合规证明。
