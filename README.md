@@ -8,6 +8,11 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-Avalonia 分支使用
 
 ![主页](docs/images/app-home.png)
 
+![设置](docs/images/app-settings.png)
+
+界面布局与配色以 `0.22.3-fix` 的 Web 前端样式为基准：白色顶栏、浅灰绿画布、12px 卡片、
+蓝色强调色、紧凑表单与分段导航；实现为原生 Avalonia 控件，不加载 Web UI。
+
 ## 0.22.3 更新重点
 
 - **原生 Avalonia 界面**：左侧导航切换启动、实例、下载、账号、任务、游戏、收藏、社区与设置；

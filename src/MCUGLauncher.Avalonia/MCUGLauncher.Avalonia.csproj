@@ -18,6 +18,9 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <AvaloniaResource Include="Assets/MCUGLogo.png" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../MCUGLauncher.App/MCUGLauncher.App.csproj" />
     <ProjectReference Include="../MCUGLauncher.Core/MCUGLauncher.Core.csproj" />
     <PackageReference Include="Avalonia" Version="11.3.22" />

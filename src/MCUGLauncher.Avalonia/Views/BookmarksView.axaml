@@ -3,7 +3,7 @@
              x:Class="MCUGLauncher.Avalonia.Views.BookmarksView">
   <Grid RowDefinitions="Auto,*">
     <StackPanel Spacing="6">
-      <TextBlock Text="我的收藏" Classes="h2" />
+      <TextBlock Text="我的收藏" Classes="pageTitle" />
       <TextBlock Text="收藏保存在本机；下载时仍会按当前实例重新检查兼容版本。"
                  Classes="muted" TextWrapping="Wrap" />
     </StackPanel>

@@ -3,7 +3,7 @@
              x:Class="MCUGLauncher.Avalonia.Views.CommunityView">
   <Grid RowDefinitions="Auto,*">
     <StackPanel Spacing="6">
-      <TextBlock Text="社区管理" Classes="h2" />
+      <TextBlock Text="社区管理" Classes="pageTitle" />
       <TextBlock Text="管理员发布公告；内容会先保存到本机，配置写入接口后同步到社区数据源。"
                  Classes="muted" TextWrapping="Wrap" />
     </StackPanel>

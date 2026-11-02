@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MCUGLauncher.Avalonia.Views.TasksView">
+  <Grid RowDefinitions="Auto,*">
+    <StackPanel Spacing="6">
+      <TextBlock Text="下载任务" Classes="pageTitle" />
+      <TextBlock Text="任务由持久队列管理；关闭页面或启动器不会丢失已提交的下载。"
+                 Classes="muted" TextWrapping="Wrap" />
+    </StackPanel>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,14,0,0">
+      <StackPanel Spacing="10">
+        <StackPanel x:Name="TasksPanel" Spacing="8" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button x:Name="RefreshButton" Content="刷新任务" Classes="ghost" />
+          <TextBlock x:Name="StatusText" Classes="status" VerticalAlignment="Center" />
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

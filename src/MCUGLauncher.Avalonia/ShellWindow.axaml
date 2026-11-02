@@ -2,38 +2,84 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="MCUGLauncher.Avalonia.ShellWindow"
         Title="MCUG Launcher"
-        Width="1100" Height="720"
-        MinWidth="900" MinHeight="600"
+        Width="1200" Height="780"
+        MinWidth="960" MinHeight="640"
         Background="{StaticResource AppBg}"
+        SystemDecorations="BorderOnly"
         WindowStartupLocation="CenterScreen">
-  <Grid ColumnDefinitions="220,*">
-    <Border Background="{StaticResource AppSidebar}" Padding="14">
-      <StackPanel Spacing="10">
-        <TextBlock Text="MCUG Launcher" Foreground="White" FontSize="20" FontWeight="Bold" />
-        <TextBlock Text="原生 Avalonia 界面" Foreground="{StaticResource AppSidebarText}" FontSize="12" />
-        <Button x:Name="HomeButton" Classes="nav" Content="启动" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-        <Button x:Name="MaintenanceButton" Classes="nav" Content="实例" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-        <Button x:Name="DownloadButton" Classes="nav" Content="下载" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-        <Button x:Name="AccountButton" Classes="nav" Content="账号" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-        <Button x:Name="TasksButton" Classes="nav" Content="任务" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-        <Button x:Name="GamesButton" Classes="nav" Content="游戏" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-        <Button x:Name="BookmarksButton" Classes="nav" Content="收藏" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-        <Button x:Name="CommunityButton" Classes="nav" Content="社区" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-        <Button x:Name="SettingsButton" Classes="nav" Content="设置" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      </StackPanel>
+  <Grid RowDefinitions="52,*">
+    <Border x:Name="TitleBar"
+            Background="#FFFFFF"
+            BorderBrush="{StaticResource AppLine}"
+            BorderThickness="0,0,0,1"
+            PointerPressed="OnTitleBarPointerPressed"
+            DoubleTapped="OnTitleBarDoubleTapped">
+      <Grid ColumnDefinitions="220,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10" Margin="18,0,0,0" VerticalAlignment="Center">
+          <Image Source="avares://MCUGLauncher/Assets/MCUGLogo.png" Width="30" Height="30" />
+          <TextBlock Text="MCUG Launcher" FontSize="16" FontWeight="Bold" Foreground="#1B3044"
+                     VerticalAlignment="Center" />
+          <TextBlock x:Name="BrandVersion" Text="0.22.3" FontSize="9.5" Foreground="#646D75"
+                     VerticalAlignment="Bottom" Margin="0,0,0,14" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+          <Button x:Name="HomeButton" Classes="topnav" AutomationProperties.Name="启动">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <TextBlock Text="▶" FontSize="9" />
+              <TextBlock Text="启动" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="DownloadButton" Classes="topnav" AutomationProperties.Name="下载">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <TextBlock Text="↓" FontSize="13" />
+              <TextBlock Text="下载" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="SettingsButton" Classes="topnav" AutomationProperties.Name="设置">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <TextBlock Text="⚙" FontSize="12" />
+              <TextBlock Text="设置" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="MoreButton" Classes="topnav" Content="更多">
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="实例" Click="OnInstancesMenu" />
+                <MenuItem Header="账号与皮肤" Click="OnAccountMenu" />
+                <MenuItem Header="下载任务" Click="OnTasksMenu" />
+                <MenuItem Header="运行中的游戏" Click="OnGamesMenu" />
+                <MenuItem Header="我的收藏" Click="OnBookmarksMenu" />
+                <MenuItem Header="社区管理" Click="OnCommunityMenu" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+          <Button x:Name="MinimizeButton" Classes="titlebarbtn" Content="—" Click="OnMinimizeWindow"
+                  AutomationProperties.Name="最小化" />
+          <Button x:Name="MaximizeButton" Classes="titlebarbtn" Content="□" Click="OnMaximizeWindow"
+                  AutomationProperties.Name="最大化" />
+          <Button x:Name="CloseButton" Classes="titlebarbtn close" Content="✕" Click="OnCloseWindow"
+                  AutomationProperties.Name="关闭" />
+        </StackPanel>
+      </Grid>
     </Border>
-    <Border Grid.Column="1" Background="{StaticResource AppCard}" CornerRadius="16" Margin="18" Padding="20">
+
+    <Border Grid.Row="1" Padding="20,20,24,20">
       <ContentControl x:Name="PageHost"
                       HorizontalContentAlignment="Stretch"
                       VerticalContentAlignment="Stretch" />
     </Border>
+
     <Border x:Name="ToastLayer"
-            Grid.ColumnSpan="2"
+            Grid.RowSpan="2"
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
             Margin="24"
             Padding="14,10"
-            CornerRadius="10"
+            CornerRadius="8"
             Background="{StaticResource AppSidebar}"
             IsVisible="False">
       <TextBlock x:Name="ToastText" Foreground="White" TextWrapping="Wrap" MaxWidth="420" />

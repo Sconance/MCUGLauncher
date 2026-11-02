@@ -13,9 +13,11 @@ internal partial class HomeView : UserControl
     LauncherState? state;
     CommunityData community = CommunityData.Empty;
     Bitmap? announcementImage;
+    Bitmap? avatar;
     int imageVersion;
     string serverSignature = "";
     string editingServer = "";
+    bool updatingInstances;
     int announcementIndex;
     int quoteIndex;
 
@@ -37,6 +39,7 @@ internal partial class HomeView : UserControl
         facade = value;
         facade.StateChanged += ApplyState;
         facade.CommunityChanged += OnCommunity;
+        facade.AvatarReceived += OnAvatar;
         facade.ServerPingReceived += OnServerPing;
         facade.ServerResultReceived += OnServerResult;
         facade.ToastReceived += info => Status(info.Message);
@@ -44,6 +47,7 @@ internal partial class HomeView : UserControl
         community = facade.Community;
         ApplyState(facade.State);
         RenderCommunity();
+        _ = facade.ReadAvatarAsync();
     }
 
     void WireButtons()
@@ -61,6 +65,17 @@ internal partial class HomeView : UserControl
             await facade!.LaunchAsync(target);
         };
         RefreshButton.Click += async (_, _) => await facade!.RequestStateAsync();
+        InstanceSelector.SelectionChanged += async (_, _) =>
+        {
+            if (updatingInstances || state is null)
+                return;
+            var instances = Instances();
+            if (InstanceSelector.SelectedIndex < 0 || InstanceSelector.SelectedIndex >= instances.Count)
+                return;
+            var name = instances[InstanceSelector.SelectedIndex].Name;
+            if (name != state.SelectedInstance)
+                await facade!.SelectInstanceAsync(name);
+        };
         AddServerButton.Click += (_, _) =>
         {
             editingServer = "";
@@ -120,8 +135,10 @@ internal partial class HomeView : UserControl
             ?? snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedVersion);
         LaunchTarget.Text = current is null
             ? "请选择实例"
-            : $"{current.DisplayName} · {snapshot.SelectedVersion} · "
-              + (snapshot.AutoMemory ? "自动内存" : snapshot.Ram + " MB");
+            : $"{current.DisplayName} · {current.Minecraft} · {current.Loader}";
+        LaunchSubtitle.Text = current is null
+            ? "未选择实例"
+            : $"{current.Name} · " + (snapshot.AutoMemory ? "自动内存" : snapshot.Ram + " MB");
         LaunchButton.IsEnabled = current is not null;
         RenderInstances();
         var signature = string.Join("|", snapshot.Servers.Select(item => item.Address));
@@ -138,61 +155,46 @@ internal partial class HomeView : UserControl
 
     void RenderInstances()
     {
-        InstancePanel.Children.Clear();
         if (state is null)
             return;
-        var instances = state.Instances
+        var instances = Instances();
+        var labels = instances
+            .Select(item => item.DisplayName + " · " + item.Loader + " · " + item.Minecraft)
+            .ToArray();
+        updatingInstances = true;
+        InstanceSelector.ItemsSource = labels;
+        var index = Array.FindIndex(instances.ToArray(), item => item.Name == state.SelectedInstance);
+        InstanceSelector.SelectedIndex = labels.Length == 0 ? -1 : Math.Max(0, index);
+        updatingInstances = false;
+    }
+
+    IReadOnlyList<InstanceInfo> Instances() => state is null
+        ? Array.Empty<InstanceInfo>()
+        : state.Instances
             .Where(item => item.Name.Length > 0 && item.Loader != "请安装版本")
             .ToArray();
-        if (instances.Length == 0)
-        {
-            InstancePanel.Children.Add(Muted("尚未找到已安装实例。"));
-            return;
-        }
-        foreach (var instance in instances)
-        {
-            var selected = instance.Name == state.SelectedInstance;
-            var copy = new StackPanel { Spacing = 2 };
-            copy.Children.Add(new TextBlock
-            {
-                Text = instance.DisplayName + (selected ? "  · 当前" : ""),
-                FontWeight = FontWeight.SemiBold
-            });
-            copy.Children.Add(new TextBlock
-            {
-                Text = $"{instance.Minecraft} · {instance.Loader} · {instance.Mods} 个模组",
-                Classes = { "muted" }
-            });
-            var launch = new Button { Content = "启动", Classes = { "ghost" } };
-            var name = instance.Name;
-            launch.Click += async (_, _) => await facade!.LaunchAsync(name);
-            var select = new Button
-            {
-                Content = selected ? "当前实例" : "设为当前",
-                Classes = { "ghost" },
-                IsEnabled = !selected
-            };
-            select.Click += async (_, _) => await facade!.SelectInstanceAsync(name);
-            var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-            actions.Children.Add(select);
-            actions.Children.Add(launch);
-            var row = new Border
-            {
-                Background = selected ? new SolidColorBrush(Color.Parse("#EAF4FB")) : Brushes.Transparent,
-                CornerRadius = new CornerRadius(8),
-                Padding = new Thickness(8, 6),
-                Child = Pair(copy, actions)
-            };
-            InstancePanel.Children.Add(row);
-        }
-    }
 
     void RenderServers()
     {
         ServerPanel.Children.Clear();
         if (state is not { Servers.Count: > 0 })
         {
-            ServerPanel.Children.Add(Muted("还没有收藏服务器。填入 host:port，就能看到实时人数与延迟。"));
+            ServerPanel.Children.Add(new Border
+            {
+                Width = 200,
+                MinHeight = 120,
+                Padding = new Thickness(12),
+                CornerRadius = new CornerRadius(9),
+                Background = new SolidColorBrush(Color.Parse("#F8FBF9")),
+                BorderBrush = new SolidColorBrush(Color.Parse("#D6DDE4")),
+                BorderThickness = new Thickness(1),
+                Child = new TextBlock
+                {
+                    Text = "还没有收藏服务器。\n填入 host:port，就能看到实时人数与延迟。",
+                    TextWrapping = TextWrapping.Wrap,
+                    Classes = { "muted" }
+                }
+            });
             ServerSummary.Text = "0 台服务器";
             return;
         }
@@ -201,30 +203,59 @@ internal partial class HomeView : UserControl
         foreach (var server in state.Servers)
         {
             pings.TryGetValue(server.Address, out var ping);
-            var copy = new StackPanel { Spacing = 3 };
-            copy.Children.Add(new TextBlock
+            var icon = new Border
+            {
+                Width = 34,
+                Height = 34,
+                CornerRadius = new CornerRadius(8),
+                Background = new SolidColorBrush(Color.Parse(ping?.Online == true ? "#3370AA" : "#8A96A0")),
+                Child = new TextBlock
+                {
+                    Text = "▣",
+                    Foreground = Brushes.White,
+                    FontSize = 16,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            };
+            var heading = new StackPanel { Spacing = 2 };
+            heading.Children.Add(new TextBlock
             {
                 Text = server.Name.Length > 0 ? server.Name : server.Address,
-                FontWeight = FontWeight.SemiBold
+                FontWeight = FontWeight.SemiBold,
+                FontSize = 12.5
             });
-            copy.Children.Add(new TextBlock { Text = server.Address, Classes = { "muted" } });
+            heading.Children.Add(new TextBlock
+            {
+                Text = ping is null ? "尚未查询" : ping.Online ? $"{ping.Players}/{ping.Max} 人 · {ping.Ping} ms" : "离线",
+                Classes = { "muted" }
+            });
+            var top = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+            top.Children.Add(icon);
+            Grid.SetColumn(heading, 1);
+            heading.Margin = new Thickness(9, 0, 0, 0);
+            top.Children.Add(heading);
+            var copy = new StackPanel { Spacing = 5 };
+            copy.Children.Add(top);
             copy.Children.Add(new TextBlock
             {
-                Text = ping is null
-                    ? "尚未查询"
-                    : ping.Online
-                        ? $"{ping.Players}/{ping.Max} 人 · {ping.Ping} ms · {ping.Motd}"
-                        : "离线 · " + ping.Error,
+                Text = server.Address,
+                Classes = { "muted" },
+                TextWrapping = TextWrapping.Wrap
+            });
+            copy.Children.Add(new TextBlock
+            {
+                Text = ping is null ? "等待查询" : ping.Online ? ping.Motd : "无法连接",
                 TextWrapping = TextWrapping.Wrap,
                 Classes = { "muted" }
             });
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
             var current = server;
-            var query = new Button { Content = "查询", Classes = { "ghost" } };
+            var query = new Button { Content = "查询", Classes = { "link" } };
             query.Click += async (_, _) => await facade!.PingServerAsync(current.Address, current.Address);
-            var edit = new Button { Content = "编辑", Classes = { "ghost" } };
+            var edit = new Button { Content = "编辑", Classes = { "link" } };
             edit.Click += (_, _) => ShowServerForm(current);
-            var delete = new Button { Content = "删除", Classes = { "ghost" } };
+            var delete = new Button { Content = "删除", Classes = { "link" } };
             delete.Click += async (_, _) =>
             {
                 await facade!.DeleteServerAsync(current.Address);
@@ -234,14 +265,18 @@ internal partial class HomeView : UserControl
             actions.Children.Add(query);
             actions.Children.Add(edit);
             actions.Children.Add(delete);
+            copy.Children.Add(actions);
             ServerPanel.Children.Add(new Border
             {
-                Width = 260,
+                Width = 200,
+                MinHeight = 154,
                 Margin = new Thickness(0, 0, 10, 10),
-                Padding = new Thickness(12),
-                CornerRadius = new CornerRadius(10),
-                Background = new SolidColorBrush(Color.Parse("#F8FAFC")),
-                Child = new StackPanel { Spacing = 6, Children = { copy, actions } }
+                Padding = new Thickness(11),
+                CornerRadius = new CornerRadius(9),
+                Background = new SolidColorBrush(Color.Parse("#FDFEFD")),
+                BorderBrush = new SolidColorBrush(Color.Parse("#DDE4EB")),
+                BorderThickness = new Thickness(1),
+                Child = copy
             });
         }
     }
@@ -358,7 +393,38 @@ internal partial class HomeView : UserControl
             });
             if (item.Description.Length > 0)
                 copy.Children.Add(new TextBlock { Text = item.Description, TextWrapping = TextWrapping.Wrap, Classes = { "muted" } });
-            RecommendationPanel.Children.Add(copy);
+            var icon = new Border
+            {
+                Width = 30,
+                Height = 30,
+                CornerRadius = new CornerRadius(7),
+                Background = new SolidColorBrush(Color.Parse(item.Type switch
+                {
+                    "material" => "#C9822B",
+                    "shader" => "#7B5AC8",
+                    _ => "#3370AA"
+                })),
+                Child = new TextBlock
+                {
+                    Text = item.Type switch { "material" => "◆", "shader" => "✦", _ => "▣" },
+                    Foreground = Brushes.White,
+                    FontSize = 13,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            };
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+            row.Children.Add(icon);
+            Grid.SetColumn(copy, 1);
+            copy.Margin = new Thickness(9, 0, 0, 0);
+            row.Children.Add(copy);
+            RecommendationPanel.Children.Add(new Border
+            {
+                BorderBrush = new SolidColorBrush(Color.Parse("#E7EEF4")),
+                BorderThickness = new Thickness(0, 0, 0, 1),
+                Padding = new Thickness(0, 6),
+                Child = row
+            });
         }
     }
 
@@ -374,6 +440,30 @@ internal partial class HomeView : UserControl
         var quote = community.Quotes[quoteIndex];
         QuoteText.Text = quote.Type == "image" ? "[图片语录] " + quote.Text : quote.Text;
         QuoteMeta.Text = string.Join(" · ", new[] { quote.Author, quote.Source }.Where(value => value.Length > 0));
+    }
+
+    void OnAvatar(AvatarInfo info)
+    {
+        avatar?.Dispose();
+        avatar = Decode(info.Image);
+        AvatarImage.Source = avatar;
+    }
+
+    static Bitmap? Decode(string dataUrl)
+    {
+        var comma = dataUrl.IndexOf(',');
+        if (comma < 0 || comma + 1 >= dataUrl.Length)
+            return null;
+        try
+        {
+            var bytes = Convert.FromBase64String(dataUrl[(comma + 1)..]);
+            using var input = new MemoryStream(bytes);
+            return new Bitmap(input);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     void OnServerPing(ServerPingInfo info)
@@ -408,17 +498,6 @@ internal partial class HomeView : UserControl
     }
 
     void Status(string message) => HomeStatus.Text = message;
-
-    static Control Pair(Control copy, Control actions)
-    {
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
-        row.Children.Add(copy);
-        Grid.SetColumn(actions, 1);
-        actions.Margin = new Thickness(12, 0, 0, 0);
-        actions.VerticalAlignment = VerticalAlignment.Center;
-        row.Children.Add(actions);
-        return row;
-    }
 
     static TextBlock Muted(string text) => new() { Text = text, Classes = { "muted" } };
 }

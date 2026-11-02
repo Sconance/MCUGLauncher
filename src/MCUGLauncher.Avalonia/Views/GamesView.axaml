@@ -3,7 +3,7 @@
              x:Class="MCUGLauncher.Avalonia.Views.GamesView">
   <Grid RowDefinitions="Auto,*">
     <Grid ColumnDefinitions="*,Auto">
-      <TextBlock Text="运行中的游戏" Classes="h2" />
+      <TextBlock Text="运行中的游戏" Classes="pageTitle" />
       <Button x:Name="RefreshButton" Grid.Column="1" Content="刷新" Classes="ghost" />
     </Grid>
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">

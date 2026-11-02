@@ -3,7 +3,7 @@
              x:Class="MCUGLauncher.Avalonia.Views.DownloadView">
   <Grid RowDefinitions="Auto,*,Auto">
     <Grid ColumnDefinitions="*,Auto">
-      <TextBlock Text="下载" Classes="h2" />
+      <TextBlock Text="下载" Classes="pageTitle" />
       <TextBlock x:Name="InstanceHint" Grid.Column="1" Classes="muted" VerticalAlignment="Center" />
     </Grid>
 
@@ -17,7 +17,7 @@
           </Grid>
           <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
             <StackPanel Spacing="8">
-              <StackPanel x:Name="ResultsPanel" Spacing="6" />
+              <WrapPanel x:Name="ResultsPanel" Orientation="Horizontal" />
               <Border x:Name="DetailCard" Classes="card" IsVisible="False">
                 <StackPanel Spacing="8">
                   <TextBlock x:Name="DetailTitle" Classes="h2" TextWrapping="Wrap" />

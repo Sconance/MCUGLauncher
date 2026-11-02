@@ -1,9 +1,11 @@
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Layout;
-using Avalonia.Media;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
+using BlockLaunch;
 using MCUGLauncher.Avalonia.Views;
 
 namespace MCUGLauncher.Avalonia;
@@ -21,24 +23,18 @@ public partial class ShellWindow : Window
     readonly GamesView gamesView;
     readonly BookmarksView bookmarksView;
     readonly CommunityView communityView;
+    readonly TasksView tasksView;
     readonly Dictionary<string, Button> navigation = new(StringComparer.Ordinal);
     readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
-    StackPanel? pageContent;
-    IReadOnlyList<TaskInfo> tasks = [];
     string page = "home";
 
     public ShellWindow()
     {
         InitializeComponent();
         navigation["home"] = HomeButton;
-        navigation["instances"] = MaintenanceButton;
         navigation["download"] = DownloadButton;
-        navigation["account"] = AccountButton;
-        navigation["tasks"] = TasksButton;
-        navigation["games"] = GamesButton;
-        navigation["bookmarks"] = BookmarksButton;
-        navigation["community"] = CommunityButton;
         navigation["settings"] = SettingsButton;
+        BrandVersion.Text = ProductInfo.Version;
         host = new ShellDesktopHost(
             () => Handle,
             message => facade.SendMessage(message),
@@ -55,8 +51,9 @@ public partial class ShellWindow : Window
         gamesView = new GamesView(facade);
         bookmarksView = new BookmarksView(facade);
         communityView = new CommunityView(facade);
-        Width = Math.Clamp(facade.Config.WindowWidth, 900, 7680);
-        Height = Math.Clamp(facade.Config.WindowHeight, 600, 4320);
+        tasksView = new TasksView(facade);
+        Width = Math.Clamp(facade.Config.WindowWidth, 960, 7680);
+        Height = Math.Clamp(facade.Config.WindowHeight, 640, 4320);
         if (facade.Config.WindowMaximized)
             WindowState = WindowState.Maximized;
         Closing += (_, _) =>
@@ -75,12 +72,6 @@ public partial class ShellWindow : Window
             ToastLayer.IsVisible = false;
             toastTimer.Stop();
         };
-        facade.TasksChanged += list =>
-        {
-            tasks = list;
-            if (page == "tasks")
-                Render();
-        };
         facade.LaunchResultReceived += info => ShowToast(info.Message);
         facade.AuthResultReceived += info => ShowToast(info.Message);
         facade.ErrorReceived += message => ShowToast("操作失败：" + message);
@@ -91,15 +82,14 @@ public partial class ShellWindow : Window
             downloadView.Activate();
             Show("download");
         };
-        MaintenanceButton.Click += (_, _) => Show("instances");
-        AccountButton.Click += (_, _) => Show("account");
-        TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
-        GamesButton.Click += (_, _) => { gamesView.Activate(); Show("games"); };
-        BookmarksButton.Click += (_, _) => Show("bookmarks");
-        CommunityButton.Click += (_, _) => Show("community");
         SettingsButton.Click += (_, _) => Show("settings");
         Render();
-        Opened += async (_, _) => await facade.StartAsync();
+        Opened += async (_, _) =>
+        {
+            var preference = 2; // DWMWCP_ROUND
+            DwmSetWindowAttribute(Handle, 33, ref preference, sizeof(int));
+            await facade.StartAsync();
+        };
         Closed += (_, _) => facade.Dispose();
     }
 
@@ -115,6 +105,53 @@ public partial class ShellWindow : Window
             button.Classes.Remove("active");
         if (navigation.TryGetValue(page, out var active))
             active.Classes.Add("active");
+        MoreButton.Classes.Remove("active");
+        if (page is not ("home" or "download" or "settings"))
+            MoreButton.Classes.Add("active");
+    }
+
+    void OnInstancesMenu(object? sender, RoutedEventArgs e) => Show("instances");
+
+    void OnAccountMenu(object? sender, RoutedEventArgs e) => Show("account");
+
+    void OnTasksMenu(object? sender, RoutedEventArgs e)
+    {
+        tasksView.Activate();
+        Show("tasks");
+    }
+
+    void OnGamesMenu(object? sender, RoutedEventArgs e)
+    {
+        gamesView.Activate();
+        Show("games");
+    }
+
+    void OnBookmarksMenu(object? sender, RoutedEventArgs e) => Show("bookmarks");
+
+    void OnCommunityMenu(object? sender, RoutedEventArgs e) => Show("community");
+
+    void OnMinimizeWindow(object? sender, RoutedEventArgs e) =>
+        WindowState = WindowState.Minimized;
+
+    void OnMaximizeWindow(object? sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+    void OnCloseWindow(object? sender, RoutedEventArgs e) => Close();
+
+    void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+        if (e.Source is Visual source && source.FindAncestorOfType<Button>(includeSelf: true) is not null)
+            return;
+        BeginMoveDrag(e);
+    }
+
+    void OnTitleBarDoubleTapped(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is Visual source && source.FindAncestorOfType<Button>(includeSelf: true) is not null)
+            return;
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
     }
 
     void Render()
@@ -161,51 +198,11 @@ public partial class ShellWindow : Window
             PageHost.Content = communityView;
             return;
         }
-        var panel = new StackPanel { Spacing = 12 };
-        pageContent = panel;
-        PageHost.Content = new ScrollViewer
-        {
-            Content = panel,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
-        };
         if (page == "tasks")
-            RenderTasks();
-    }
-
-    void RenderTasks()
-    {
-        AddHeading("下载任务");
-        if (tasks.Count == 0)
         {
-            Add("当前没有排队或运行中的任务。");
+            PageHost.Content = tasksView;
             return;
         }
-        foreach (var task in tasks)
-        {
-            Add($"{task.Name} · {task.State} · {task.Percent:0}%");
-            if (task.Message.Length > 0)
-                Add("  " + task.Message);
-            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            foreach (var (label, action) in new[]
-                     {
-                         ("暂停", "pause"), ("继续", "resume"), ("取消", "cancel"), ("删除", "delete")
-                     })
-            {
-                var button = new Button { Content = label };
-                var taskId = task.Id;
-                var taskAction = action;
-                button.Click += async (_, _) =>
-                {
-                    await facade.TaskActionAsync(taskId, taskAction);
-                    await facade.RequestTasksAsync();
-                };
-                row.Children.Add(button);
-            }
-            Add(row);
-        }
-        var refresh = new Button { Content = "刷新任务", HorizontalAlignment = HorizontalAlignment.Left };
-        refresh.Click += async (_, _) => await facade.RequestTasksAsync();
-        Add(refresh);
     }
 
     void ShowToast(string message)
@@ -257,15 +254,6 @@ public partial class ShellWindow : Window
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     static extern IntPtr SendMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
 
-    void AddHeading(string text) => Add(new TextBlock
-    {
-        Text = text,
-        FontSize = 18,
-        FontWeight = FontWeight.Bold,
-        Margin = new Thickness(0, 12, 0, 0)
-    });
-
-    void Add(string text) => Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap });
-
-    void Add(Control control) => pageContent?.Children.Add(control);
+    [DllImport("dwmapi.dll")]
+    static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 }

@@ -268,16 +268,17 @@ internal partial class DownloadView : UserControl
                 await facade!.ToggleBookmarkAsync(itemId, itemName, itemDescription, itemAuthor, itemKind);
                 Status(bookmarked ? "已取消收藏：" + itemName : "已收藏：" + itemName);
             };
-            var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(0, 10, 0, 0) };
             actions.Children.Add(detail);
             actions.Children.Add(choose);
             actions.Children.Add(bookmark);
+            copy.Children.Add(actions);
             ResultsPanel.Children.Add(new Border
             {
-                BorderBrush = new SolidColorBrush(Color.Parse("#E3EAF0")),
-                BorderThickness = new Thickness(0, 0, 0, 1),
-                Padding = new Thickness(0, 6),
-                Child = Row(copy, actions)
+                Width = 350,
+                Margin = new Thickness(0, 0, 14, 14),
+                Classes = { "card" },
+                Child = copy
             });
         }
     }
@@ -441,17 +442,6 @@ internal partial class DownloadView : UserControl
     }
 
     void Status(string message) => StatusText.Text = message;
-
-    static Control Row(Control copy, Control actions)
-    {
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
-        row.Children.Add(copy);
-        Grid.SetColumn(actions, 1);
-        actions.Margin = new Thickness(12, 0, 0, 0);
-        actions.VerticalAlignment = VerticalAlignment.Center;
-        row.Children.Add(actions);
-        return row;
-    }
 
     static TextBlock Muted(string text) => new() { Text = text, Classes = { "muted" } };
 }

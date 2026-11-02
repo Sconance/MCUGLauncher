@@ -57,9 +57,8 @@ internal partial class GamesView : UserControl
             };
             GamesPanel.Children.Add(new Border
             {
-                BorderBrush = new SolidColorBrush(Color.Parse("#E3EAF0")),
-                BorderThickness = new Thickness(0, 0, 0, 1),
-                Padding = new Thickness(0, 6),
+                Classes = { "card" },
+                Padding = new Thickness(14),
                 Child = Row(copy, stop)
             });
         }

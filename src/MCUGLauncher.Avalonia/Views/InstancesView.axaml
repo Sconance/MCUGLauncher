@@ -3,7 +3,7 @@
              x:Class="MCUGLauncher.Avalonia.Views.InstancesView">
   <Grid RowDefinitions="Auto,*">
     <StackPanel Spacing="8">
-      <TextBlock Text="实例" Classes="h2" />
+      <TextBlock Text="实例" Classes="pageTitle" />
       <Grid ColumnDefinitions="*,Auto,Auto,Auto">
         <ComboBox x:Name="InstanceSelector" />
         <Button x:Name="LaunchButton" Grid.Column="1" Content="启动" Classes="primary" Margin="8,0,0,0" />
@@ -15,15 +15,18 @@
 
     <TabControl Grid.Row="1" Margin="0,12,0,0">
       <TabItem Header="内容">
+        <Border Classes="card" Padding="16" Margin="0,10,0,0">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="8" Margin="0,8,0,0">
             <TextBlock x:Name="ContentSummary" Classes="muted" />
             <StackPanel x:Name="ModsPanel" Spacing="6" />
           </StackPanel>
         </ScrollViewer>
+        </Border>
       </TabItem>
 
       <TabItem Header="启动设置">
+        <Border Classes="card" Padding="16" Margin="0,10,0,0">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="10" Margin="0,8,0,0">
             <TextBlock Text="实例显示名" FontWeight="SemiBold" />
@@ -65,9 +68,11 @@
             </StackPanel>
           </StackPanel>
         </ScrollViewer>
+        </Border>
       </TabItem>
 
       <TabItem Header="维护">
+        <Border Classes="card" Padding="16" Margin="0,10,0,0">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="10" Margin="0,8,0,0">
             <TextBlock Text="克隆为独立实例" FontWeight="SemiBold" />
@@ -97,6 +102,7 @@
             <TextBlock x:Name="MaintenanceStatus" Classes="status" />
           </StackPanel>
         </ScrollViewer>
+        </Border>
       </TabItem>
     </TabControl>
   </Grid>
