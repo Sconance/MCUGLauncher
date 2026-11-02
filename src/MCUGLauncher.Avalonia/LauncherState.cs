@@ -4,6 +4,19 @@ namespace MCUGLauncher.Avalonia;
 
 internal sealed record InstanceInfo(string Name, string Loader);
 
+internal sealed record ContentItem(string Id, string Name, string Description)
+{
+    public static ContentItem From(JsonElement element) => new(
+        Read(element, "id"),
+        Read(element, "name"),
+        Read(element, "description"));
+
+    static string Read(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString() ?? ""
+            : "";
+}
+
 internal sealed record TaskInfo(string Id, string Name, string State, double Percent, string Message)
 {
     public static TaskInfo From(JsonElement element) => new(

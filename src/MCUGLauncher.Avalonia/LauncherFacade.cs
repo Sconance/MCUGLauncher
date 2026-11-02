@@ -18,7 +18,9 @@ internal sealed class LauncherFacade : IDisposable
     }
 
     public event Action<IReadOnlyList<TaskInfo>>? TasksChanged;
+    public event Action<IReadOnlyList<ContentItem>>? ContentChanged;
     public IReadOnlyList<TaskInfo> Tasks { get; private set; } = Array.Empty<TaskInfo>();
+    public IReadOnlyList<ContentItem> ContentItems { get; private set; } = Array.Empty<ContentItem>();
 
     public LauncherFacade(IDesktopHost desktop)
     {
@@ -133,6 +135,12 @@ internal sealed class LauncherFacade : IDisposable
         {
             State = LauncherState.From(root);
             StateChanged?.Invoke(State);
+        }
+        if (root.TryGetProperty("type", out var contentType) && contentType.GetString() == "contentList"
+            && root.TryGetProperty("items", out var contentItems) && contentItems.ValueKind == JsonValueKind.Array)
+        {
+            ContentItems = contentItems.EnumerateArray().Select(ContentItem.From).ToArray();
+            ContentChanged?.Invoke(ContentItems);
         }
         if (root.TryGetProperty("type", out var messageType) && messageType.GetString() == "tasks"
             && root.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)

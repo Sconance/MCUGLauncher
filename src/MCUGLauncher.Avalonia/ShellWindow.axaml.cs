@@ -14,7 +14,7 @@ public partial class ShellWindow : Window
     JsonElement state;
     LauncherState? typed;
     IReadOnlyList<TaskInfo> tasks = Array.Empty<TaskInfo>();
-    JsonElement contentItems;
+    IReadOnlyList<ContentItem> contentItems = Array.Empty<ContentItem>();
     JsonElement uninstallPreview;
     string page = "home";
 
@@ -31,6 +31,12 @@ public partial class ShellWindow : Window
             ResetWindow);
         facade = new LauncherFacade(host);
         facade.MessageReceived += OnMessage;
+        facade.ContentChanged += list =>
+        {
+            contentItems = list;
+            if (page == "download")
+                Render();
+        };
         facade.TasksChanged += list =>
         {
             tasks = list;
@@ -73,13 +79,6 @@ public partial class ShellWindow : Window
         {
             uninstallPreview = message.Clone();
             if (page == "maintenance")
-                Render();
-        }
-        else if (type.GetString() == "contentList")
-        {
-            if (message.TryGetProperty("items", out var items))
-                contentItems = items.Clone();
-            if (page == "download")
                 Render();
         }
         else if (type.GetString() == "contentError")
@@ -234,16 +233,15 @@ public partial class ShellWindow : Window
             await facade.SearchContentAsync(category.SelectedItem as string ?? "mod", query.Text?.Trim() ?? "");
         Content.Children.Add(search);
 
-        if (contentItems.ValueKind == JsonValueKind.Array && contentItems.GetArrayLength() > 0)
+        if (contentItems.Count > 0)
         {
-            foreach (var item in contentItems.EnumerateArray())
+            foreach (var item in contentItems)
             {
-                var id = ReadString(item, "id");
-                var name = ReadString(item, "name");
-                var desc = ReadString(item, "description");
+                var name = item.Name;
+                var desc = item.Description;
                 Add(name + (desc.Length > 0 ? "  ·  " + desc : ""));
                 var install = new Button { Content = "安装 " + name, HorizontalAlignment = HorizontalAlignment.Left };
-                var projectId = id;
+                var projectId = item.Id;
                 var type = category.SelectedItem as string ?? "mod";
                 install.Click += async (_, _) =>
                 {
