@@ -40,13 +40,15 @@ internal class DialogWindow : Window
         };
         scroll.Content = body;
         scroll.HorizontalScrollBarVisibility = global::Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
-        scroll.Padding = new Thickness(22, 18);
+        // Padding belongs to the scrollable content, so its bottom is part of the extent.
+        // ScrollViewer padding otherwise leaves the final controls under the fixed footer.
+        body.Padding = new Thickness(22, 18);
         scroll.SizeChanged += (_, _) =>
         {
-            var width = Math.Max(0, scroll.Bounds.Width - scroll.Padding.Left - scroll.Padding.Right);
+            var width = Math.Max(0, scroll.Bounds.Width);
             body.MaxWidth = width;
             if (body.Content is Control content)
-                content.MaxWidth = width;
+                content.MaxWidth = Math.Max(0, width - body.Padding.Left - body.Padding.Right);
         };
         footer.Padding = new Thickness(22, 14);
         footer.Background = global::Avalonia.Media.Brushes.White;

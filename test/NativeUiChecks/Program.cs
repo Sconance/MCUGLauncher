@@ -421,6 +421,16 @@ internal static class Program
         Check(dialog is DialogWindow && dialog.SystemDecorations == SystemDecorations.BorderOnly, "shared native dialog shell: " + dialog.Title);
         var footer = Controls<Border>(dialog).Single(c => c.Name == "DialogFooter");
         var body = Controls<ContentControl>(dialog).Single(c => c.Name == "DialogBody");
+        var scroller = Controls<ScrollViewer>(dialog).Single(s => ReferenceEquals(s.Content, body));
+        scroller.ScrollToEnd();
+        dialog.UpdateLayout();
+        var bodyBottom = body.TranslatePoint(new Point(0, body.Bounds.Height), dialog)!.Value.Y;
+        var footerTop = footer.TranslatePoint(default, dialog)!.Value.Y;
+        Check(bodyBottom <= footerTop + 1, "scrolling reaches the complete dialog body above its fixed footer: " + dialog.Title + " / " + bodyBottom + " / " + footerTop);
+        using (var frame = dialog.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/dialog-bottom-" + primaryLabel + ".png");
+        scroller.ScrollToHome();
+        dialog.UpdateLayout();
         foreach (var text in Controls<TextBlock>(body))
             Check(text.Bounds.Width <= dialog.ClientSize.Width - 43, "dialog body text stays within the content width: " + text.Text + " / " + text.Bounds.Width + " / " + dialog.ClientSize.Width);
         var primary = Find(footer, primaryLabel);
@@ -478,11 +488,30 @@ internal static class Program
         launchDialog.Height = 400;
         await Task.Delay(25);
         CheckDialogFooter(launchDialog, "保存设置");
+        launchDialog.Height = 650;
+        await Task.Delay(25);
+        CheckDialogFooter(launchDialog, "保存设置");
         Check(Controls<ScrollViewer>(launchDialog).Any(), "long launch form scrolls independently of its footer");
         using (var frame = launchDialog.CaptureRenderedFrame())
             frame!.Save("work/native-ui/dialog-launch-options.png");
         await Click(Find(launchDialog, "取消"));
         await launch;
+        foreach (var (label, page) in new (string, NativePage)[]
+        {
+            ("提交公告", new EditorPage(Session, "publish")),
+            ("确认下载", new ResourceDialog(Session, new NativeItem { Id = "fixture", Name = "资源详情", Description = string.Join("\n", Enumerable.Repeat("较长的介绍内容，用于验证完整滚动范围", 24)) }, "mod"))
+        })
+        {
+            var pending = Ui.Show(window, label, page, 1000, 400);
+            await Task.Delay(30);
+            var dialog = window.OwnedWindows.Last();
+            CheckDialogFooter(dialog, label);
+            dialog.Height = 650;
+            await Task.Delay(25);
+            CheckDialogFooter(dialog, label);
+            await Click(Find(dialog, "取消"));
+            await pending;
+        }
         var confirmation = Ui.Confirm(window, "关闭游戏", "关闭后未保存的进度会丢失。", "关闭游戏", true);
         await Task.Delay(25);
         var confirmDialog = window.OwnedWindows.Last();

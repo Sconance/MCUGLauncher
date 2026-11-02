@@ -102,3 +102,8 @@ DialogWindow 归纳原 Ui.Show/Confirm/Error 重复的窗口组装，专职标�
 ## 关于页与滚动条修订
 
 仅修改原有展示页与共享主题，不新增业务组件。版本复用 ProductInfo.Version，无手填旧版本。滚动条继续使用 Avalonia 原生 Track/Thumb 及拖动逻辑，只覆盖尺寸与颜色。NativeUiChecks 验证许可空框移除、项目入口、悬停加粗及实际拖动，并检查 Skia 截图。
+
+
+## 滚动底部完整性
+
+只修共享 DialogWindow 的内容留白归属，不为每个页面添加补丁高度或空白控件。启动与保存协议不变；NativeUiChecks 验证实际滚动范围和固定底栏边界。
