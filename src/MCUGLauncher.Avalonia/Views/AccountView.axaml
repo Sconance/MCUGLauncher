@@ -7,7 +7,7 @@
         <TextBlock Text="账号" Classes="h2" />
         <Border Width="128" Height="128" CornerRadius="12" Background="{StaticResource AppBg}"
                 HorizontalAlignment="Left">
-          <Image x:Name="AvatarImage" Width="128" Height="128" Stretch="Uniform" />
+          <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AvatarImage" Width="128" Height="128" Stretch="Uniform" />
         </Border>
         <TextBlock x:Name="AvatarLabel" Classes="muted" TextWrapping="Wrap" />
         <Button x:Name="ChooseSkinButton" Content="选择本地皮肤" Classes="ghost" HorizontalAlignment="Left" />

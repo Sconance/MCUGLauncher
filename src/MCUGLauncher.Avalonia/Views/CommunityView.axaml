@@ -37,7 +37,7 @@
               <Button x:Name="ClearImageButton" Content="移除图片" Classes="ghost" IsEnabled="False" />
               <TextBlock x:Name="ImageLabel" Classes="muted" VerticalAlignment="Center" />
             </StackPanel>
-            <Image x:Name="ImagePreview" MaxHeight="160" Stretch="Uniform" HorizontalAlignment="Left" />
+            <Image RenderOptions.BitmapInterpolationMode="None" x:Name="ImagePreview" MaxHeight="160" Stretch="Uniform" HorizontalAlignment="Left" />
             <Button x:Name="PublishButton" Content="保存并发布" Classes="primary" HorizontalAlignment="Left" />
             <TextBlock x:Name="PublishStatus" Classes="status" TextWrapping="Wrap" />
           </StackPanel>

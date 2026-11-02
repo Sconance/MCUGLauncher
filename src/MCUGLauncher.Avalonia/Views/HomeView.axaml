@@ -12,7 +12,7 @@
               <Border Width="100" Height="100" CornerRadius="14" Padding="3"
                       Background="{StaticResource AppAccentWash}" BorderBrush="{StaticResource AppLine}"
                       BorderThickness="1" HorizontalAlignment="Center">
-                <Image x:Name="AvatarImage" Stretch="Uniform" />
+                <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AvatarImage" Stretch="Uniform" />
               </Border>
               <TextBlock x:Name="PlayerName" FontSize="18" FontWeight="Bold"
                          HorizontalAlignment="Center" TextWrapping="Wrap" />
@@ -73,7 +73,7 @@
               </Grid>
               <TextBlock x:Name="AnnouncementTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
               <TextBlock x:Name="AnnouncementBody" TextWrapping="Wrap" />
-              <Image x:Name="AnnouncementImage" MaxHeight="180" Stretch="Uniform"
+              <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AnnouncementImage" MaxHeight="180" Stretch="Uniform"
                      HorizontalAlignment="Left" IsVisible="False" />
               <TextBlock x:Name="AnnouncementMeta" Classes="muted" />
             </StackPanel>
