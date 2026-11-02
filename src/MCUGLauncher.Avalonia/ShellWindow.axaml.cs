@@ -5,6 +5,8 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 
+using MCUGLauncher.Avalonia.Views;
+
 namespace MCUGLauncher.Avalonia;
 
 /// <summary>原生 Avalonia 外壳：阶段 1 提供启动/设置两页，旧 WebView 作为回退入口保留。</summary>
@@ -140,34 +142,10 @@ public partial class ShellWindow : Window
 
     void RenderHome()
     {
-        var snapshot = typed;
-        Add("账号：" + (snapshot?.AccountLabel is { Length: > 0 } label ? label : "离线账号"));
-        Add("玩家：" + (snapshot?.Player ?? ""));
-        Add("当前版本：" + (snapshot?.SelectedVersion ?? ""));
-
-        AddHeading("实例");
-        if (snapshot is { Instances.Count: > 0 })
-        {
-            foreach (var instance in snapshot.Instances)
-            {
-                if (instance.Name.Length == 0)
-                    continue;
-                var row = new Button
-                {
-                    Content = "启动  " + instance.Name + (instance.Loader.Length > 0 ? "  ·  " + instance.Loader : ""),
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    HorizontalContentAlignment = HorizontalAlignment.Left
-                };
-                row.Classes.Add("primary");
-                row.Click += async (_, _) => await facade.LaunchAsync(instance.Name);
-                Content.Children.Add(row);
-            }
-        }
-        else
-        {
-            Add("尚未找到已安装实例。");
-        }
-
+        var view = new HomeView();
+        view.Render(typed);
+        view.LaunchRequested += name => _ = facade.LaunchAsync(name);
+        Content.Children.Add(view);
         var refresh = new Button { Content = "刷新状态", HorizontalAlignment = HorizontalAlignment.Left };
         refresh.Click += async (_, _) => await facade.RequestStateAsync();
         Content.Children.Add(refresh);
