@@ -156,6 +156,38 @@ using (var markdownClient = new HttpClient(new MarkdownResponseHandler(
         && tested.Text.Contains("Markdown 公告有效", StringComparison.Ordinal),
         "announcement service loads and validates a direct Markdown URL");
 }
+var emptyGameRoot = Path.Combine(fixture, "empty-game");
+Directory.CreateDirectory(emptyGameRoot);
+var emptyCatalog = VersionCatalog.Load(emptyGameRoot, "missing");
+Check(emptyCatalog.Instances.Count == 0
+    && emptyCatalog.Selected.Length == 0
+    && VersionCatalog.ReadMods(emptyGameRoot, "").Count == 0,
+    "empty game directory has no fake selectable instance");
+using (var emptyHttp = new HttpClient())
+{
+    var feeds = new CommunityService(emptyHttp);
+    Check(await feeds.ReadAsync("", CancellationToken.None) is null
+        && await feeds.ReadAsync("not-a-url", CancellationToken.None) is null,
+        "blank and invalid community URLs are rejected before sending a request");
+}
+application.Config.CustomDataSources = new MCUGLauncher.Models.DataSourceConfig
+{
+    Announcements = "",
+    Recommendations = "",
+    Quotes = ""
+};
+await Request("""{"type":"useDataSources","mode":"custom"}""");
+var disabledSourcesPayload = messages.Last(message =>
+    message.TryGetProperty("type", out var type) && type.GetString() == "community")
+    .GetProperty("payload");
+Check(Has("communityRefreshDone")
+    && messages.Last(message => message.TryGetProperty("type", out var type) && type.GetString() == "communityRefreshDone")
+        .GetProperty("ok").GetBoolean()
+    && disabledSourcesPayload.GetProperty("announcements").GetString() == "[]"
+    && disabledSourcesPayload.GetProperty("recommendations").GetString() == "[]"
+    && disabledSourcesPayload.GetProperty("quotes").GetString() == "[]"
+    && !Has("error"),
+    "switching to disabled community sources clears feeds without a failed refresh");
 await Request("""{"type":"window","action":"minimize"}""");
 Check(desktop.LastAction == "minimize", "native command routes through desktop boundary");
 await Request("""{"type":"saveServer","name":"Fixture","address":"localhost:25565"}""");

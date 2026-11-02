@@ -252,12 +252,14 @@ public sealed class CommunityService
     /// </remarks>
     public async Task<string?> ReadAsync(string url, CancellationToken token)
     {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http"))
+            return null;
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
         deadline.CancelAfter(TimeSpan.FromSeconds(8));
         token = deadline.Token;
         try
         {
-            using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, token);
+            using var response = await _http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, token);
             if (!response.IsSuccessStatusCode)
                 return null;
             return await response.Content.ReadAsStringAsync(token);

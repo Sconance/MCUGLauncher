@@ -9,7 +9,10 @@ namespace MCUGLauncher.Services;
 /// 本地版本目录扫描。
 /// </summary>
 /// <remarks>
-/// 只读 versions 目录与实例 JSON，不访问网络；供界面状态、启动与内容安装共用。
+/// B component: constructs Models.VersionGroup/InstanceInfo/ModInfo and reads InstanceInfo.Name.
+/// Reuses Core InstanceCatalog.MetadataDirectory/DirectoryFor, AtomicFile.ReadJson and ContentService.SafeFile.
+/// Reads versions and instance JSON only; no network, UI or command-handler dependency.
+/// Empty directories return an empty collection rather than a synthetic selectable instance.
 /// </remarks>
 public sealed class VersionCatalog
 {
@@ -81,11 +84,8 @@ public sealed class VersionCatalog
         foreach (var pair in loaders.OrderBy(pair => pair.Key))
             groups.Add(new VersionGroup(pair.Key + " 版本", pair.Value.Count, pair.Value));
 
-        if (instances.Count == 0)
-            instances.Add(new InstanceInfo("未找到版本", "请安装版本", 0, 0) { IsPlaceholder = true });
-
         var current = instances.FirstOrDefault(i => i.Name.Equals(selected, StringComparison.OrdinalIgnoreCase))?.Name
-            ?? instances[0].Name;
+            ?? instances.FirstOrDefault()?.Name ?? "";
         return new VersionCatalog { Groups = groups, Instances = instances, Selected = current, Root = root };
     }
 
@@ -161,6 +161,8 @@ public sealed class VersionCatalog
     /// </remarks>
     public static IReadOnlyList<ModInfo> ReadMods(string root, string instance)
     {
+        if (string.IsNullOrWhiteSpace(instance))
+            return [];
         var dir = Path.Combine(InstanceDirectory(root, instance), "mods");
         if (!Directory.Exists(dir))
             return [];

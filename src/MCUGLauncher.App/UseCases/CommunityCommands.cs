@@ -39,29 +39,40 @@ internal sealed class CommunityCommands(LauncherContext context)
     {
         var items = new Dictionary<string, string>();
         string? announcementError = null;
+        var successful = true;
         var localRecs = Path.Combine(context.Store.DataDirectory, "recommendations.local.json");
         if (File.Exists(localRecs))
             items["recommendations"] = File.ReadAllText(localRecs);
-        var announcementResult = await context.Community.ReadAnnouncementAsync(
-            context.Config.DataSources.Announcements,
-            context.Token);
-        if (announcementResult.Ok)
+        var announcementUrl = context.Config.DataSources.Announcements;
+        if (string.IsNullOrWhiteSpace(announcementUrl))
         {
-            try
-            {
-                var announcement = CommunityService.ParseMarkdownAnnouncement(
-                    announcementResult.Markdown,
-                    context.Config.DataSources.Announcements);
-                items["announcements"] = JsonSerializer.Serialize(new[] { announcement }, CommunityJsonOptions);
-            }
-            catch (InvalidDataException ex)
-            {
-                announcementError = "公告 Markdown 无效：" + ex.Message;
-            }
+            items["announcements"] = "[]";
         }
         else
         {
-            announcementError = announcementResult.Error;
+            var announcementResult = await context.Community.ReadAnnouncementAsync(
+                announcementUrl,
+                context.Token);
+            successful &= announcementResult.Ok;
+            if (announcementResult.Ok)
+            {
+                try
+                {
+                    var announcement = CommunityService.ParseMarkdownAnnouncement(
+                        announcementResult.Markdown,
+                        announcementUrl);
+                    items["announcements"] = JsonSerializer.Serialize(new[] { announcement }, CommunityJsonOptions);
+                }
+                catch (InvalidDataException ex)
+                {
+                    successful = false;
+                    announcementError = "公告 Markdown 无效：" + ex.Message;
+                }
+            }
+            else
+            {
+                announcementError = announcementResult.Error;
+            }
         }
 
         var jobs = new[]
@@ -73,9 +84,9 @@ internal sealed class CommunityCommands(LauncherContext context)
         {
             if (items.ContainsKey(name))
                 continue;
-            var text = await context.Community.ReadAsync(url, context.Token);
-            if (text != null)
-                items[name] = text;
+            var text = string.IsNullOrWhiteSpace(url) ? "[]" : await context.Community.ReadAsync(url, context.Token);
+            successful &= text != null;
+            items[name] = text ?? "[]";
         }
         if (items.Count > 0)
             context.Send(new
@@ -87,7 +98,7 @@ internal sealed class CommunityCommands(LauncherContext context)
             context.Send(new
             {
                 type = "communityRefreshDone",
-                ok = items.Count == jobs.Length + 1
+                ok = successful
             });
         if (announcementError is not null)
             context.Send(new

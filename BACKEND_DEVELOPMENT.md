@@ -509,3 +509,5 @@ internal sealed class SaveCommands(LauncherContext context)
 ## 加载器目录复用
 
 InstallationCommands.LoadersAsync 统一调用 Core LoaderCatalog.Get，避免在 App 重复解析 Fabric/Quilt 数据。先检查提供方的游戏支持列表，再查询对应加载器版本。
+
+版本目录在无实例时返回空列表与空选中项，不构造可误选的占位实例；空实例名不读取 mods。CommunityService 仅接受 HTTP(S) 源，空或无效地址返回 null；切换数据源后重新发送社区状态。
