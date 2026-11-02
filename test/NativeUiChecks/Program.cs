@@ -44,7 +44,15 @@ internal static class Program
             Deliver(new
             {
                 type = "vanillaList",
-                items = new[] { new { id = "1.21.1", released = "2024-08-08" } }
+                items = new[] { new { id = "1.21.1", type = "release", released = "2024-08-08" }, new { id = "26.4-snapshot-6", type = "snapshot", released = "2026-01-01" }, new { id = "b1.7.3", type = "old_beta", released = "2011-01-01" } }
+            });
+        if (type == "listLoaders")
+            Deliver(new
+            {
+                type = "loaderList",
+                version = item.GetProperty("version").GetString(),
+                loader = item.GetProperty("loader").GetString(),
+                versions = new[] { "0.16.0" }
             });
         if (type == "listSaveBackups")
             Deliver(new
@@ -234,6 +242,7 @@ internal static class Program
             Check(window.GetVisualDescendants().OfType<NativePage>().Any(), "native route " + entry.Id);
         }
         await CodexParity(window);
+        await WindowAndVanillaParity(window);
         await ButtonAppearance();
         window.Navigate("sources");
         await Task.Delay(20);
@@ -332,6 +341,45 @@ internal static class Program
         window.Close();
         Console.WriteLine("ALL_NATIVE_UI_CHECKS_PASSED (headless native controls and simulated application responses; no live account/game)");
     }
+    static async Task WindowAndVanillaParity(ShellWindow window)
+    {
+        Check(window.SystemDecorations == SystemDecorations.BorderOnly && window.ExtendClientAreaToDecorationsHint, "custom shell requests border-only chrome with integrated titlebar");
+        Check(!Controls<TextBlock>(window).Any(t => t.Name == "StatusText"), "persistent footer text removed");
+        Session.Report("操作提示测试");
+        await Task.Delay(20);
+        var notice = Controls<NotificationView>(window).Single();
+        Check(notice.IsVisible, "backend feedback remains visible as a temporary notification");
+        await Click(Controls<Button>(notice).Single());
+        Check(!notice.IsVisible, "temporary notification can be dismissed");
+        await Click(Controls<Button>(window).Single(b => b.Name == "MaximizeButton"));
+        Check(window.WindowState == WindowState.Maximized, "integrated maximize action");
+        await Click(Controls<Button>(window).Single(b => b.Name == "MaximizeButton"));
+        Check(window.WindowState == WindowState.Normal, "integrated restore action");
+        window.Navigate("vanilla");
+        await Task.Delay(30);
+        await Click(Find(window, "快照版"));
+        Check(Controls<TextBlock>(window).Any(t => t.Text == "26.4-snapshot-6") && !Controls<TextBlock>(window).Any(t => t.Text == "1.21.1"), "snapshot filter displays snapshots separately from releases");
+        await Click(Find(window, "安装"));
+        Check(Sent.Last().GetProperty("version").GetString() == "26.4-snapshot-6", "snapshot installation uses selected snapshot id");
+        await Click(Find(window, "远古版"));
+        Check(Controls<TextBlock>(window).Any(t => t.Text == "b1.7.3"), "historical versions remain accessible");
+        await Click(Find(window, "全部"));
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/vanilla-types.png");
+        window.Navigate("manage");
+        await Task.Delay(25);
+        var loading = Click(Find(window, "安装模组加载器"));
+        await loading;
+        var dialog = window.OwnedWindows.Last();
+        await Click(Find(dialog, "读取加载器版本"));
+        await Click(Find(dialog, "安装所选加载器"));
+        Check(Sent.Last().GetProperty("type").GetString() == "installLoader" && Sent.Last().GetProperty("version").GetString() == "1.21.1", "installed-instance loader entry uses base Minecraft version, not instance display name");
+        dialog.Close();
+        await Task.Delay(20);
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/manage-actions.png");
+    }
+
     static async Task ButtonAppearance()
     {
         var activations = 0;

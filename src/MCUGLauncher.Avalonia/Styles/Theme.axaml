@@ -226,4 +226,11 @@
   <Style Selector="ProgressBar">
     <Setter Property="Foreground" Value="#006DB8"/>
   </Style>
+  <Style Selector="Button.window-control">
+    <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Width" Value="40"/><Setter Property="MinHeight" Value="34"/><Setter Property="Padding" Value="0"/>
+    <Setter Property="Foreground" Value="#414B55"/><Setter Property="FontSize" Value="17"/><Setter Property="FontWeight" Value="Normal"/>
+  </Style>
+  <Style Selector="Button.window-control:pointerover"><Setter Property="Background" Value="#E8F2F8"/></Style>
+  <Style Selector="Button.close-window:pointerover"><Setter Property="Background" Value="#C42B1C"/><Setter Property="Foreground" Value="White"/></Style>
 </Styles>

@@ -46,25 +46,17 @@ internal sealed class ResourceCommands(LauncherContext context)
         }
     }
 
-    public async Task SendVanillaVersionsAsync()
+    public async Task SendVanillaVersionsAsync(string requestId = "")
     {
         try
         {
             var json = await context.Http.GetStringAsync("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json", context.Token);
             using var doc = JsonDocument.Parse(json);
-            var items = doc.RootElement.GetProperty("versions").EnumerateArray()
-                .Where(v => v.GetProperty("type").GetString() == "release")
-                .Take(24)
-                .Select(v => new
-                {
-                    id = v.GetProperty("id").GetString() ?? "",
-                    type = v.GetProperty("type").GetString() ?? "release",
-                    released = v.GetProperty("releaseTime").GetDateTimeOffset().ToString("yyyy-MM-dd")
-                })
-                .ToList();
+            var items = ManifestEntries(doc.RootElement);
             context.Send(new
             {
                 type = "vanillaList",
+                requestId,
                 items
             });
         }
@@ -74,10 +66,20 @@ internal sealed class ResourceCommands(LauncherContext context)
             {
                 type = "contentError",
                 category = "vanilla",
+                requestId,
                 message = "读取原版版本列表失败：" + ex.Message
             });
         }
     }
+
+    // Preserve the complete manifest and its type; presentation decides which category to show.
+    internal static object[] ManifestEntries(JsonElement manifest) => manifest.GetProperty("versions").EnumerateArray()
+        .Select(v => (object)new
+        {
+            id = v.GetProperty("id").GetString() ?? "",
+            type = v.GetProperty("type").GetString() ?? "release",
+            released = v.GetProperty("releaseTime").GetDateTimeOffset().ToString("yyyy-MM-dd")
+        }).ToArray();
 
     public Task InstallVanillaAsync(string version)
     {

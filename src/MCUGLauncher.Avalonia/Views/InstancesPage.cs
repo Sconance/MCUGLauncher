@@ -10,9 +10,8 @@ internal sealed class InstancesPage : NativePage
     readonly TextBox cloneName = Ui.Input("", "新实例名称");
     public InstancesPage(LauncherFacade session, bool contentManagement = false) : base(session)
     {
-        Title(contentManagement ? "版本内容管理" : "实例维护", "设置、模组、克隆、导出和卸载都复用原有后端流程。");
-        if (contentManagement)
-            Body.Children.Add(Ui.Action("返回", () => Session.Navigate?.Invoke("home")));
+        var heading = Ui.Stack(Ui.Heading(contentManagement ? "版本内容管理" : "实例维护"), Ui.Muted("选择实例后管理启动、模组、加载器与本地文件。"));
+        Body.Children.Add(contentManagement ? Ui.Beside(heading, Ui.Action("返回", () => Session.Navigate?.Invoke("home"))) : heading);
         instances = Ui.Select(State.Instances);
         instances.SelectedItem = State.Instances.FirstOrDefault(i => i.Name == State.SelectedInstance);
         instances.SelectionChanged += async (_, _) =>
@@ -25,21 +24,20 @@ internal sealed class InstancesPage : NativePage
                 });
         };
         Body.Children.Add(Ui.Card(Ui.Stack(
-                    instances,
-                    Ui.Row(
-                        Ui.Action("下载模组", () => Session.Navigate?.Invoke("mod")),
-                        Ui.Action("版本设置", () => Session.Navigate?.Invoke("version")),
-                        Ui.Button("实例启动参数", () => LaunchOptionsPage.Open(Session, Owner, Selected)),
-                        Ui.Button("启动", () => Send(new { type = "launch", version = Selected }), true),
-                        Folder("实例文件夹", "version"),
-                        Folder("Mod 文件夹", "mods"),
-                        Folder("存档文件夹", "saves"),
-                        Folder("截图", "screenshots")
-                    ),
-                    Ui.Row(
-                        Ui.Button("检查内容更新", () => MaintenanceDialogs.Updates(Session, Owner, Selected)),
-                        Ui.Action("存档保护", () => Session.Navigate?.Invoke("saves"))
-                    )
+            Ui.Text("当前实例", 14), instances,
+            Ui.Row(Ui.Button("启动", () => Send(new { type = "launch", version = Selected }), true),
+                Ui.Action("版本设置", () => Session.Navigate?.Invoke("version")),
+                Ui.Button("实例启动参数", () => LaunchOptionsPage.Open(Session, Owner, Selected)),
+                Ui.Button("安装模组加载器", InstallLoader))
+        )));
+        Body.Children.Add(Ui.Card(Ui.Stack(
+            Ui.Text("内容管理", 14),
+            Ui.Row(Ui.Action("下载模组", () => Session.Navigate?.Invoke("mod")),
+                Ui.Button("检查内容更新", () => MaintenanceDialogs.Updates(Session, Owner, Selected)),
+                Ui.Action("存档保护", () => Session.Navigate?.Invoke("saves"))),
+            Ui.Text("本地文件", 14),
+            Ui.Row(Folder("实例文件夹", "version"), Folder("Mod 文件夹", "mods"),
+                Folder("存档文件夹", "saves"), Folder("截图", "screenshots"))
         )));
         if (!contentManagement)
         {
@@ -77,6 +75,14 @@ internal sealed class InstancesPage : NativePage
     }
 
     string Selected => (instances.SelectedItem as NativeItem)?.Name ?? State.SelectedInstance;
+
+    Task InstallLoader()
+    {
+        var instance = instances.SelectedItem as NativeItem;
+        if (instance == null || instance.Minecraft.Length == 0)
+            throw new ArgumentException("请先选择已读取游戏版本的实例。");
+        return InstallDialogs.Loader(Session, Owner, instance.Minecraft);
+    }
 
     Button Folder(string label, string kind) => Ui.Button(label, () => Send(new { type = "openFolder", kind }));
     void DrawMods()

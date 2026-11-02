@@ -6,6 +6,7 @@ namespace MCUGLauncher.Avalonia.Presentation;
 // Typed transport boundary. Views never parse JSON or hold application services.
 internal sealed record NativeItem
 {
+    public string Type { get; init; } = "";
     public string Id { get; init; } = "";
     public string Name { get; init; } = "";
     public string DisplayName { get; init; } = "";

@@ -67,3 +67,8 @@ ResourceChoiceCommands、LaunchOptionsCommands、MuaProfileSelection、AvatarCom
 ## 按钮角色与状态修订
 
 按钮颜色和状态统一定义在 Theme.axaml，不在点击事件里硬改背景。页面只指定 primary/soft/link/nav/account-tab/bookmark 等展示角色；Favorites、源模式和推荐类别驱动选中态。共享 Button ControlTheme 只控制呈现，不承载账号、配置或下载逻辑。App/Core 及依赖登记表不变，原协议兼容。实际鼠标状态回归用于避免只检查按钮外层属性而漏掉内部文字覆盖。
+
+
+## 版本分类及窗口修订
+
+VanillaPage 从 DownloadPage 中分离原版专用展示，资源页不再混有第二套原版逻辑；加载器入口复用既有用例，操作目标取 NativeItem.Minecraft。NotificationView 仅负责临时反馈及定时器生命周期。ShellWindow 仍只组装页面、通知和原生窗口事件。后端仅移除版本清单截断、透传 requestId，依赖登记已更新，无新下载器或安装服务。格式、边界、NativeUiChecks 及 WebBridgeChecks 均需检查。

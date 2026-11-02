@@ -76,6 +76,7 @@ internal static class InstallDialogs
             });
         await Ui.Show(owner, "版本安装配置 · " + version, Ui.Stack(
                 Ui.Heading(version),
+                Ui.Muted("安装会生成对应加载器版本并保留原版；只有兼容的加载器版本才能安装。"),
                 Ui.Field("加载器", loader),
                 read,
                 Ui.Field("加载器版本", releases),

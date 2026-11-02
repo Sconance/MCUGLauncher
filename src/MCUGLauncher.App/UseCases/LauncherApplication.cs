@@ -244,7 +244,7 @@ internal sealed class LauncherApplication : IDisposable
                     await resourceCommands.InstallContentAsync(root);
                     break;
                 case "vanillaVersions":
-                    await resourceCommands.SendVanillaVersionsAsync();
+                    await resourceCommands.SendVanillaVersionsAsync(ReadString(root, "requestId"));
                     break;
                 case "installVanilla":
                     await resourceCommands.InstallVanillaAsync(ReadString(root, "version"));

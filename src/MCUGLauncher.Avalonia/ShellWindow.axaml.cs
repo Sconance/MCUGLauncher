@@ -2,6 +2,8 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.VisualTree;
+using Avalonia.Input;
 using MCUGLauncher.Avalonia.Presentation;
 using MCUGLauncher.Avalonia.Views;
 namespace MCUGLauncher.Avalonia;
@@ -10,6 +12,7 @@ namespace MCUGLauncher.Avalonia;
 public partial class ShellWindow : Window
 {
     readonly LauncherFacade session;
+    readonly NotificationView notice = new();
     NativePage? page;
     string group = "";
     public ShellWindow() : this(null) { }
@@ -35,13 +38,37 @@ public partial class ShellWindow : Window
             button.Classes.Add("top-nav");
             TopNavigation.Children.Add(button);
         }
+        NoticeHost.Content = notice;
+        MinimizeButton.Click += (_, _) => WindowState = WindowState.Minimized;
+        MaximizeButton.Click += (_, _) => ToggleMaximized();
+        CloseButton.Click += (_, _) => Close();
+        TitleBar.PointerPressed += (_, e) =>
+        {
+            if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed || e.Source is Button
+                || (e.Source as Visual)?.GetVisualAncestors().OfType<Button>().Any() == true)
+                return;
+            if (e.ClickCount == 2)
+                ToggleMaximized();
+            else
+                BeginMoveDrag(e);
+        };
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == WindowStateProperty)
+            {
+                MaximizeButton.Content = WindowState == WindowState.Maximized ? "❐" : "□";
+                ToolTip.SetTip(MaximizeButton, WindowState == WindowState.Maximized ? "还原" : "最大化");
+            }
+        };
         TaskButton.Click += (_, _) => Navigate("tasks");
         TaskButton.Classes.Add("soft");
         Opened += async (_, _) => { if (injected == null) await session.SendAsync(new { type = "ready" }); };
-        Closed += (_, _) => { session.RememberWindow(Width, Height, WindowState == WindowState.Maximized); page?.Dispose(); session.PropertyChanged -= Changed; session.MessageReceived -= OnMessage; session.Dispose(); };
+        Closed += (_, _) => { session.RememberWindow(Width, Height, WindowState == WindowState.Maximized); notice.Dispose(); page?.Dispose(); session.PropertyChanged -= Changed; session.MessageReceived -= OnMessage; session.Dispose(); };
         Navigate("home");
         Changed(this, new(null));
     }
+    void ToggleMaximized() => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
     internal void Navigate(string id)
     {
         var entry = NavigationCatalog.All.FirstOrDefault(i => i.Id == id) ?? NavigationCatalog.All[0];
@@ -79,7 +106,8 @@ public partial class ShellWindow : Window
     }
     void Changed(object? sender, PropertyChangedEventArgs args)
     {
-        StatusText.Text = session.Status;
+        if (args.PropertyName == nameof(LauncherFacade.Status))
+            notice.Show(session.Status);
         var active = session.Tasks.Where(t => t.State is "Running" or "Queued" or "Paused").ToArray();
         TaskButton.Content = "↓ 下载任务（" + active.Length + "）";
         TaskProgress.IsVisible = active.Length > 0;

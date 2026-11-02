@@ -9,7 +9,7 @@ internal static class NavigationCatalog
     } = [
         new("home","启动","home","▷",s=>new HomePage(s)),
         new("community","群友推荐","download","♧",s=>new CommunityPage(s,true),Section:"社区"),
-        new("vanilla","原版游戏","download","◇",s=>new DownloadPage(s,"vanilla"),Section:"下载"),
+        new("vanilla","原版游戏","download","◇",s=>new VanillaPage(s),Section:"下载"),
         new("mod","模组","download","⊞",s=>new DownloadPage(s,"mod"),Section:"下载"),
         new("modpack","整合包","download","▣",s=>new DownloadPage(s,"modpack"),Section:"下载"),
         new("resourcepack","资源包","download","▧",s=>new DownloadPage(s,"resourcepack"),Section:"下载"),

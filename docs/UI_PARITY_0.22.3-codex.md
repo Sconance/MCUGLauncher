@@ -64,3 +64,18 @@ NativeUiChecks 新增几何位置断言，并保存主页三种尺寸、实例�
 按原文案恢复搜索/刷新列表、打开登录窗口、登录 MUA、本地 PNG 皮肤/恢复默认头像、查看更多和下载。收藏按钮显示空心/实心心形，由已有 Favorites 状态回推确认；数据源页签与推荐分类选中态同时同步。未重写业务流程。
 
 保存 button-states/button-hover/button-disabled 截图；NativeUiChecks 同时检查普通/次要/主按钮文字、悬停/按下/禁用、源页签选中和收藏状态。未宣称每个页面已经逐像素一致。
+
+
+## 第四轮：版本类型、管理动作与窗口外框
+
+这是用户明确追加的 UI 需求，允许更改原常驻状态栏和系统标题栏：
+
+- 原版清单不再仅返回最近 24 个正式版；原生 VanillaPage 独立负责正式版、快照版、远古版、全部、搜索和每页 50 条的展示。DownloadPage 只负责社区资源，移除重复的原版分支。
+- 已安装实例的管理页增加加载器入口，取实例真实 Minecraft 版本，不把自定义实例名称当作版本号。复用 InstallDialogs/InstallationCommands；该流程生成加载器版本并保留原版，不声称在同目录原地改造现有整合包。
+- 版本管理按钮按当前实例、内容管理、本地文件分组；返回按钮回到页头右侧。
+- 删除底部常驻状态文字。必要反馈保留为顶部临时、可关闭的提示，不丢弃失败信息。
+- 使用当前 Avalonia 11.3 的 ExtendClientAreaToDecorationsHint / NoChrome / BorderOnly，把最小化、最大化/还原、关闭放入主 UI 顶栏；窗口生命周期留在 ShellWindow，拖动避开交互按钮，保留 Windows 边缘缩放。
+
+实际 Windows 验收：已观察系统标题栏消失；内嵌最大化/还原可用；标题栏拖动使位置从 (312,312) 变为 (362,362)；右边缘缩放使宽度从 1200 变为 1100。随后桌面锁屏，未继续点击实际版本列表或验收真实加载器安装；不能把 Headless 的安装命令检查写成真实安装已成功。未关闭用户游戏。
+
+NativeUiChecks 检查快照/历史筛选、快照安装目标、实例加载器使用基础版本、临时通知、最大化/还原；WebBridgeChecks 检查清单无 24 项截断。框架参考：[Avalonia Window API](https://api-docs.avaloniaui.net/docs/T_Avalonia_Controls_Window)。

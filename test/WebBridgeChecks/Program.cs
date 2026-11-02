@@ -22,6 +22,17 @@ bool Has(string type) => messages.Any(m => m.GetProperty("type").GetString() == 
 void Check(bool value, string name) { if (!value) throw new Exception(name); Console.WriteLine("PASS " + name); }
 async Task Request(string json) { messages.Clear(); await application.HandleAsync(json); }
 
+using (var manifest = JsonDocument.Parse(JsonSerializer.Serialize(new
+{
+    versions = Enumerable.Range(0, 30).Select(i => new { id = "release-" + i, type = "release", releaseTime = "2026-01-01T00:00:00Z" })
+        .Concat(new[] { new { id = "fixture-snapshot", type = "snapshot", releaseTime = "2026-01-02T00:00:00Z" }, new { id = "fixture-beta", type = "old_beta", releaseTime = "2011-01-01T00:00:00Z" } })
+})))
+{
+    var entries = JsonSerializer.SerializeToElement(ResourceCommands.ManifestEntries(manifest.RootElement));
+    Check(entries.GetArrayLength() == 32 && entries.EnumerateArray().Any(v => v.GetProperty("type").GetString() == "snapshot")
+        && entries.EnumerateArray().Any(v => v.GetProperty("type").GetString() == "old_beta"), "vanilla manifest preserves snapshots, historical types and releases beyond the old 24-item cap");
+}
+
 await Request("""{"type":"requestState"}""");
 Check(Has("state") && messages[0].GetProperty("selectedVersion").GetString() == "custom-fabric", "state reflects fixture instance");
 await Request("""{"type":"saveSettings","player":"Changed","ram":1,"width":99999,"height":1}""");

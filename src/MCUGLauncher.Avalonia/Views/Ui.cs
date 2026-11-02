@@ -50,6 +50,7 @@ internal static class Ui
     // Use a measured grid for fixed actions beside stretchable content; WrapPanel is only for wrapping toolbars.
     public static Grid Beside(Control content, Control actions, double gap = 10)
     {
+        actions.VerticalAlignment = VerticalAlignment.Center;
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = gap };
         grid.Children.Add(content);
         Grid.SetColumn(actions, 1);
