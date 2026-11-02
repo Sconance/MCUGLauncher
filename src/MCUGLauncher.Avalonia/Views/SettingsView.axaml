@@ -33,6 +33,11 @@
               <TextBox x:Name="RootBox" Watermark="游戏根目录" />
               <Button x:Name="BrowseRootButton" Grid.Column="1" Content="选择" Classes="ghost" Margin="8,0,0,0" />
             </Grid>
+            <TextBlock Text="已保存游戏目录" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="*,Auto">
+              <ComboBox x:Name="GameRootBox" />
+              <Button x:Name="AddRootButton" Grid.Column="1" Content="添加并切换" Classes="ghost" Margin="8,0,0,0" />
+            </Grid>
             <TextBlock Text="Java 路径（留空自动选择）" FontWeight="SemiBold" />
             <Grid ColumnDefinitions="*,Auto,Auto">
               <TextBox x:Name="JavaBox" Watermark="留空时由启动核心选择" />

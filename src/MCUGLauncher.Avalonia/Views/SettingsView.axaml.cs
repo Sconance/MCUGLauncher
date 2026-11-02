@@ -13,6 +13,8 @@ internal partial class SettingsView : UserControl
     LauncherState? state;
     string current = "launch";
     string editingServer = "";
+    bool updatingRoots;
+    bool addRootOnPick;
 
     public SettingsView()
     {
@@ -78,7 +80,25 @@ internal partial class SettingsView : UserControl
 
     void WireButtons()
     {
-        BrowseRootButton.Click += async (_, _) => await Pick(facade?.PickFolderAsync("root"));
+        BrowseRootButton.Click += async (_, _) =>
+        {
+            addRootOnPick = false;
+            await Pick(facade?.PickFolderAsync("root"));
+        };
+        AddRootButton.Click += async (_, _) =>
+        {
+            addRootOnPick = true;
+            await Pick(facade?.PickFolderAsync("root"));
+        };
+        GameRootBox.SelectionChanged += async (_, _) =>
+        {
+            if (updatingRoots || facade is null || GameRootBox.SelectedItem is not string root)
+                return;
+            if (root.Length == 0 || root == state?.Root)
+                return;
+            LaunchStatus.Text = "正在切换游戏目录…";
+            await facade.SaveSettingsAsync(new AppSettingsPatch(Root: root));
+        };
         BrowseJavaButton.Click += async (_, _) => await Pick(facade?.PickFileAsync("java"));
         ScanJavaButton.Click += async (_, _) => await ScanJava(JavaStatus);
         SaveLaunchButton.Click += async (_, _) => await SaveLaunch();
@@ -316,7 +336,14 @@ internal partial class SettingsView : UserControl
         if (info.Target == "root")
         {
             RootBox.Text = info.Path;
-            LaunchStatus.Text = "已选择游戏目录，保存后生效。";
+            if (addRootOnPick)
+            {
+                addRootOnPick = false;
+                LaunchStatus.Text = "正在添加并切换游戏目录…";
+                _ = facade!.SaveSettingsAsync(new AppSettingsPatch(Root: info.Path));
+            }
+            else
+                LaunchStatus.Text = "已选择游戏目录，保存后生效。";
         }
         else if (info.Target == "java")
         {
@@ -388,6 +415,14 @@ internal partial class SettingsView : UserControl
         if (snapshot is null)
             return;
         SetText(RootBox, snapshot.Root);
+        var roots = snapshot.GameRoots
+            .Where(value => value.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        updatingRoots = true;
+        GameRootBox.ItemsSource = roots;
+        GameRootBox.SelectedIndex = Array.IndexOf(roots, snapshot.Root);
+        updatingRoots = false;
         SetText(JavaBox, snapshot.Java);
         SetText(JavaPathBox, snapshot.Java);
         SetText(RamBox, snapshot.Ram.ToString());

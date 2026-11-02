@@ -18,6 +18,8 @@ public partial class ShellWindow : Window
     readonly HomeView homeView;
     readonly DownloadView downloadView;
     readonly AccountView accountView;
+    readonly GamesView gamesView;
+    readonly BookmarksView bookmarksView;
     readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     StackPanel? pageContent;
     IReadOnlyList<TaskInfo> tasks = [];
@@ -39,6 +41,8 @@ public partial class ShellWindow : Window
         homeView.AccountRequested += () => Show("account");
         downloadView = new DownloadView(facade);
         accountView = new AccountView(facade);
+        gamesView = new GamesView(facade);
+        bookmarksView = new BookmarksView(facade);
         Width = Math.Clamp(facade.Config.WindowWidth, 900, 7680);
         Height = Math.Clamp(facade.Config.WindowHeight, 600, 4320);
         if (facade.Config.WindowMaximized)
@@ -78,6 +82,8 @@ public partial class ShellWindow : Window
         MaintenanceButton.Click += (_, _) => Show("instances");
         AccountButton.Click += (_, _) => Show("account");
         TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
+        GamesButton.Click += (_, _) => { gamesView.Activate(); Show("games"); };
+        BookmarksButton.Click += (_, _) => Show("bookmarks");
         SettingsButton.Click += (_, _) => Show("settings");
         ClassicButton.Click += (_, _) => new MainWindow().Show();
         Render();
@@ -117,6 +123,16 @@ public partial class ShellWindow : Window
         {
             accountView.Activate();
             PageHost.Content = accountView;
+            return;
+        }
+        if (page == "games")
+        {
+            PageHost.Content = gamesView;
+            return;
+        }
+        if (page == "bookmarks")
+        {
+            PageHost.Content = bookmarksView;
             return;
         }
         var panel = new StackPanel { Spacing = 12 };
