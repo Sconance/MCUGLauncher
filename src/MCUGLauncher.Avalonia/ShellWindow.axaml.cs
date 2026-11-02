@@ -15,6 +15,7 @@ public partial class ShellWindow : Window
     string exportVersion = "";
     TextBox? rootBox;
     TextBox? javaBox;
+    string javaScan = "";
     JsonElement state;
     LauncherState? typed;
     IReadOnlyList<TaskInfo> tasks = Array.Empty<TaskInfo>();
@@ -216,6 +217,11 @@ public partial class ShellWindow : Window
         var browseJava = new Button { Content = "选择 java.exe", HorizontalAlignment = HorizontalAlignment.Left };
         browseJava.Click += (_, _) => host.PickFile("java");
         Content.Children.Add(browseJava);
+        var scan = new Button { Content = "扫描 Java", HorizontalAlignment = HorizontalAlignment.Left };
+        scan.Click += async (_, _) => await facade.ScanJavaAsync();
+        Content.Children.Add(scan);
+        if (javaScan.Length > 0)
+            Add(javaScan);
         Add("离线玩家名");
         Content.Children.Add(player);
         Add("内存（MB）");

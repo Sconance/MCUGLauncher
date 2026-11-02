@@ -43,6 +43,8 @@ internal sealed class LauncherFacade : IDisposable
 
     public Task RequestStateAsync() => application.HandleAsync("""{"type":"requestState"}""");
 
+    public Task ScanJavaAsync() => application.HandleAsync("""{"type":"scanJava"}""");
+
     public Task SaveSettingsAsync(string root, string java, int ram, string? player = null)
     {
         var payload = new Dictionary<string, object>
