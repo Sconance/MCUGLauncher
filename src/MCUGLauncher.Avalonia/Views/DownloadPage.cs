@@ -1,3 +1,4 @@
+using Avalonia.VisualTree;
 using Avalonia.Controls;
 using MCUGLauncher.Avalonia.Presentation;
 
@@ -7,7 +8,7 @@ internal sealed class DownloadPage : NativePage
     readonly string category;
     readonly TextBox query = Ui.Input("", "搜索名称、作者或说明");
     readonly TextBox game = Ui.Input("", "游戏版本（留空不限）");
-    readonly ComboBox loader = Ui.Select(new[] { "", "fabric", "forge", "neoforge", "quilt" });
+    readonly ComboBox loader = Ui.Select(new[] { "全部加载器", "fabric", "forge", "neoforge", "quilt" });
     readonly StackPanel results = Ui.Stack();
     readonly Dictionary<string, Button> bookmarkButtons = [];
     readonly global::Avalonia.Controls.Primitives.UniformGrid cards = new() { Columns = 1 };
@@ -54,7 +55,7 @@ internal sealed class DownloadPage : NativePage
                 category,
                 query = query.Text ?? "",
                 game = game.Text ?? "",
-                loader = category is "mod" or "modpack" ? loader.SelectedItem as string ?? "" : "",
+                loader = (category is "mod" or "modpack") && loader.SelectedIndex > 0 ? loader.SelectedItem as string ?? "" : "",
                 requestId = request
             }, m => m.RequestId == request);
             results.Children.Clear();
@@ -78,6 +79,20 @@ internal sealed class DownloadPage : NativePage
                             Ui.Text(item.Author + $" · {item.Downloads:N0} 次下载"),
                             buttons
                 ));
+                card.Cursor = new global::Avalonia.Input.Cursor(global::Avalonia.Input.StandardCursorType.Hand);
+                card.PointerReleased += async (_, e) =>
+                {
+                    if (e.InitialPressMouseButton != global::Avalonia.Input.MouseButton.Left
+                        || e.Source is Button
+                        || (e.Source as global::Avalonia.Visual)?.GetVisualAncestors().OfType<Button>().Any() == true)
+                        return;
+                    e.Handled = true;
+                    try
+                    {
+                        await ResourceDialog.Open(Session, Owner, item, category);
+                    }
+                    catch (Exception error) { await Ui.Error(this, error.Message); }
+                };
                 card.Margin = new global::Avalonia.Thickness(0, 0, 12, 12);
                 cards.Children.Add(card);
             }

@@ -5,6 +5,8 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
 
+/// <summary>检查、预览并确认指定实例的内容更新。</summary>
+/// <remarks>B 类。LauncherContext.Config/Http/Token 提供配置和请求；Tasks.Enqueue(string,string,string,DownloadRequest)/Send(object) 入队并回推；InstanceSnapshot.Capture(AppConfig,string).Root/Key/Name/Directory/Requirements 冻结目标；PreviewCache.Add/Get 保存检查和预览。Core ContentUpdates.Check/Preview 执行领域逻辑。 无窗口/视图依赖；完整成员说明见 docs/components/ContentUpdateCommands.md。</remarks>
 internal sealed class ContentUpdateCommands(LauncherContext context, Func<CancellationToken, IResourceProvider>? createProvider = null)
 {
     sealed record Checked(InstanceSnapshot Instance, List<ContentUpdate> Items);
@@ -68,5 +70,10 @@ internal sealed class ContentUpdateCommands(LauncherContext context, Func<Cancel
         var preview = previews.Get(token, consume: true);
         context.Tasks.Enqueue("更新 " + preview.Instance.Name, preview.Instance.Root, preview.Instance.Directory,
             new DownloadRequest { Kind = "update", PreparedPlan = preview.Preview.Plan, ContentFingerprint = preview.Preview.Fingerprint });
+        context.Send(new
+        {
+            type = "contentUpdateQueued",
+            token
+        });
     }
 }

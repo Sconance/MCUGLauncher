@@ -16,6 +16,7 @@ internal static class Program
     static readonly List<JsonElement> Sent = [];
     static LauncherFacade Session = null!;
     static int code;
+    static bool rejectNextAuth;
     [STAThread]
     public static int Main()
     {
@@ -46,10 +47,63 @@ internal static class Program
                 type = "vanillaList",
                 items = new[] { new { id = "1.21.1", type = "release", released = "2024-08-08" }, new { id = "26.4-snapshot-6", type = "snapshot", released = "2026-01-01" }, new { id = "b1.7.3", type = "old_beta", released = "2011-01-01" } }
             });
+        if (type == "previewLocalImport")
+            Deliver(new
+            {
+                type = "localImportPreview",
+                token = "drop-token",
+                kind = "mods",
+                name = "测试实例",
+                target = "fixture",
+                path = "fixture.jar"
+            });
+        if (type == "confirmLocalImport")
+            Deliver(new
+            {
+                type = "localImportQueued",
+                token = "drop-token"
+            });
+        if (type == "saveLaunchOptions")
+            Deliver(new
+            {
+                type = "launchOptionsSaved"
+            });
+        if (type == "saveSettings")
+            Deliver(new
+            {
+                type = "settingsSaved"
+            });
+        if (type == "installLoader")
+            Deliver(new
+            {
+                type = "loaderQueued"
+            });
+        if (type == "queueContentVersion")
+            Deliver(new
+            {
+                type = "resourceQueued",
+                token = item.GetProperty("token").GetString()
+            });
+        if (type == "loginMua" || type == "loginMicrosoft")
+        {
+            Deliver(new
+            {
+                type = "authResult",
+                pending = true
+            });
+            Deliver(new
+            {
+                type = "authResult",
+                ok = !rejectNextAuth,
+                message = "模拟结果"
+            });
+            rejectNextAuth = false;
+        }
         if (type == "listLoaders")
             Deliver(new
             {
                 type = "loaderList",
+                requestId = item.GetProperty("requestId").GetString(),
                 version = item.GetProperty("version").GetString(),
                 loader = item.GetProperty("loader").GetString(),
                 versions = new[] { "0.16.0" }
@@ -245,6 +299,7 @@ internal static class Program
         await DialogParity(window);
         await WindowAndVanillaParity(window);
         await SettingsParity(window);
+        await ResourceInteractions(window);
         await ButtonAppearance();
         window.Navigate("sources");
         await Task.Delay(20);
@@ -343,6 +398,62 @@ internal static class Program
         window.Close();
         Console.WriteLine("ALL_NATIVE_UI_CHECKS_PASSED (headless native controls and simulated application responses; no live account/game)");
     }
+    static async Task ResourceInteractions(ShellWindow window)
+    {
+        foreach (var route in new[] { "mod", "modpack", "resourcepack", "shader", "datapack" })
+        {
+            var entry = NavigationCatalog.All.First(n => n.Id == route);
+            window.Navigate(entry.Id);
+            await Task.Delay(20);
+            await Click(Find(window, "搜索"));
+            var page = Controls<DownloadPage>(window).Single();
+            var cards = Controls<global::Avalonia.Controls.Primitives.UniformGrid>(page).Single();
+            var card = (Control)cards.Children[0];
+            var point = card.TranslatePoint(new Point(card.Bounds.Width - 25, 25), window)!.Value;
+            window.MouseMove(point);
+            window.MouseDown(point, global::Avalonia.Input.MouseButton.Left);
+            window.MouseUp(point, global::Avalonia.Input.MouseButton.Left);
+            await Task.Delay(30);
+            var dialog = window.OwnedWindows.Last();
+            Check(dialog.Title == "资源详情与安装选项", "real card click opens resource details: " + route);
+            await Click(Find(dialog, "读取兼容资源版本"));
+            using (var frame = dialog.CaptureRenderedFrame())
+                frame!.Save("work/native-ui/resource-open-" + route + ".png");
+            await Click(Find(dialog, "确认下载"));
+            Check(!window.OwnedWindows.Contains(dialog), "confirmed queue result closes resource dialog: " + route);
+        }
+        rejectNextAuth = true;
+        var login = AccountDialogs.Open(Session, window, "mua");
+        await Task.Delay(20);
+        var account = window.OwnedWindows.Last();
+        await Click(Find(account, "登录 MUA"));
+        await Task.Delay(25);
+        var error = window.OwnedWindows.SelectMany(w => w.OwnedWindows).Last();
+        Check(account.IsVisible, "failed login keeps its account form open");
+        await Click(Find(error, "知道了"));
+        await Click(Find(account, "登录 MUA"));
+        await login;
+        Check(!window.OwnedWindows.Contains(account), "successful MUA login closes its dialog after final result");
+        var form = LaunchOptionsPage.Open(Session, window, "fixture");
+        await Task.Delay(20);
+        var launch = window.OwnedWindows.Last();
+        await Click(Find(launch, "保存设置"));
+        await form;
+        Check(!window.OwnedWindows.Contains(launch), "saved launch options close only after acknowledgment");
+        var drops = Controls<FileDropView>(window).Single();
+        var before = Sent.Count(m => m.GetProperty("type").GetString() == "confirmLocalImport");
+        var dropping = drops.Import(new[] { "fixture.jar" });
+        await Task.Delay(25);
+        var prompt = window.OwnedWindows.Last();
+        using (var frame = prompt.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/drop-confirmation.png");
+        Check(Sent.Count(m => m.GetProperty("type").GetString() == "confirmLocalImport") == before, "file drop previews before queuing");
+        await Click(Find(prompt, "开始导入"));
+        await dropping;
+        Check(Sent.Count(m => m.GetProperty("type").GetString() == "confirmLocalImport") == before + 1, "drop confirmation submits frozen preview token");
+
+    }
+
     static async Task SettingsParity(ShellWindow window)
     {
         window.Navigate("about");

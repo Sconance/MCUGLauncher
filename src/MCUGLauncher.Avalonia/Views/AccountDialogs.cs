@@ -15,7 +15,16 @@ internal static class AccountDialogs
     {
         var content = Ui.Stack(Ui.Text("登录 Microsoft 账号后，可使用已购买的 Minecraft Java 版。"),
             Ui.Card(Ui.Text("启动器不保存密码，只保留授权会话。切换到离线模式不会移除已保存的账号。")));
-        var login = Ui.Button("打开登录窗口", () => session.SendAsync(new { type = "loginMicrosoft" }), true);
+        var login = Ui.Button("打开登录窗口", async () =>
+        {
+            var response = await session.RequestAsync("authResult", new
+            {
+                type = "loginMicrosoft"
+            }, m => !m.Pending);
+            if (!response.Ok)
+                throw new IOException(response.Message);
+            (TopLevel.GetTopLevel(content) as Window)?.Close();
+        }, true);
         return Ui.Show(owner, "正版账号登录", content, 500, 350, Ui.DialogActions(content, login), "请在 Microsoft 官方页面完成授权。");
     }
     static Task Mua(LauncherFacade session, Window owner)
@@ -28,12 +37,15 @@ internal static class AccountDialogs
         {
             var secret = password.Text ?? "";
             password.Text = "";
-            await session.SendAsync(new
+            var response = await session.RequestAsync("authResult", new
             {
                 type = "loginMua",
                 account = user.Text ?? "",
                 password = secret
-            });
+            }, m => !m.Pending);
+            if (!response.Ok)
+                throw new IOException(response.Message);
+            (TopLevel.GetTopLevel(content) as Window)?.Close();
         }, true);
         return Ui.Show(owner, "MUA 登录", content, 500, 380, Ui.DialogActions(content, login), "使用 MUA 账号验证身份并选择角色。");
     }
@@ -43,7 +55,7 @@ internal static class AccountDialogs
         var content = Ui.Stack(Ui.Field("角色名", name), Ui.Muted("仅用于离线游戏，不修改正版或 MUA 角色。"));
         var save = Ui.Button("保存并切换", async () =>
         {
-            await session.SendAsync(new
+            await session.RequestAsync("settingsSaved", new
             {
                 type = "saveSettings",
                 player = name.Text ?? ""

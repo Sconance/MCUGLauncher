@@ -25,6 +25,7 @@
       </Border>
       <ScrollViewer Grid.Column="1" x:Name="PageScroll" HorizontalScrollBarVisibility="Disabled"><ContentControl x:Name="PageHost" HorizontalContentAlignment="Stretch" Margin="24,20" /></ScrollViewer>
     </Grid>
+    <ContentControl Grid.Row="1" x:Name="DropHost" IsHitTestVisible="False" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
     <ContentControl Grid.Row="1" x:Name="NoticeHost" HorizontalAlignment="Right" VerticalAlignment="Top" MaxWidth="520" Margin="16" />
   </Grid>
 </Window>

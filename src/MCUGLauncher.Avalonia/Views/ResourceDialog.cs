@@ -10,7 +10,7 @@ internal sealed class ResourceDialog : NativePage
     readonly string category;
     readonly ComboBox instances;
     readonly TextBox game = Ui.Input("", "游戏版本（可留空）");
-    readonly ComboBox loader = Ui.Select(new[] { "", "vanilla", "fabric", "forge", "neoforge", "quilt" });
+    readonly ComboBox loader = Ui.Select(new[] { "不限加载器", "vanilla", "fabric", "forge", "neoforge", "quilt" });
     readonly ComboBox versions = Ui.Select(Array.Empty<NativeItem>());
     readonly ComboBox mode = Ui.Select(new[] { "安装到实例", "下载到自定义目录" });
     readonly TextBox destination = Ui.Input("", "下载目录");
@@ -45,14 +45,16 @@ internal sealed class ResourceDialog : NativePage
             {
                 if (versions.SelectedItem is not NativeItem version || token.Length == 0)
                     throw new ArgumentException("请读取并选择资源版本。");
-                await Send(new
+                var queuedToken = token;
+                await Session.RequestAsync("resourceQueued", new
                 {
                     type = "queueContentVersion",
                     token,
                     versionId = version.Id,
                     mode = mode.SelectedIndex == 1 ? "local" : "instance",
                     path = destination.Text ?? ""
-                });
+                }, m => m.Token == queuedToken);
+                (TopLevel.GetTopLevel(this) as Window)?.Close();
             }, true);
         var directory = Ui.Field("自定义下载目录", Ui.Beside(destination, Ui.Button("选择目录", async () => destination.Text = await FilePicker.Folder(Owner) ?? destination.Text)));
         destination.MinWidth = 0;
@@ -122,7 +124,7 @@ internal sealed class ResourceDialog : NativePage
             category,
             instance = (instances.SelectedItem as NativeItem)?.Id ?? "",
             game = game.Text ?? "",
-            loader = loader.SelectedItem as string ?? "",
+            loader = loader.SelectedIndex > 0 ? loader.SelectedItem as string ?? "" : "",
             requestId = request
         }, m => m.RequestId == request);
         if (generation != revision)

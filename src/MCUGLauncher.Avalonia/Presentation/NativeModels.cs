@@ -84,6 +84,11 @@ internal sealed record LaunchOptions
 }
 internal sealed record NativeMessage
 {
+    public bool Pending
+    {
+        get; init;
+    }
+    public string Kind { get; init; } = "";
     public bool NeedsLogin
     {
         get; init;

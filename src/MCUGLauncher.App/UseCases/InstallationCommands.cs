@@ -6,6 +6,8 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
 
+/// <summary>列出兼容加载器，预览并确认整合包导入。</summary>
+/// <remarks>B 类。LauncherContext.Config.Root/Java、Token、Http 提供目标和网络；Tasks.Enqueue(string,string,string,DownloadRequest)/Send(object) 入队并回推；PreviewCache.Add/Get 保存导入令牌。Core LoaderCatalog.Get、PackService.ReadOverview 负责领域解析。 无窗口/视图依赖；完整成员说明见 docs/components/InstallationCommands.md。</remarks>
 internal sealed class InstallationCommands(LauncherContext context, Action<string, string, string, DownloadRequest>? enqueue = null)
 {
     public async Task LoadersAsync(JsonElement root)
@@ -27,6 +29,7 @@ internal sealed class InstallationCommands(LauncherContext context, Action<strin
         context.Send(new
         {
             type = "loaderList",
+            requestId = ReadString(root, "requestId"),
             version = game,
             loader,
             versions
@@ -43,6 +46,11 @@ internal sealed class InstallationCommands(LauncherContext context, Action<strin
             throw new ArgumentException("请先选择加载器版本。");
         context.Tasks.Enqueue("安装 " + game + " / " + loader + " " + release, context.Config.Root, game,
             new DownloadRequest { Kind = "game", Version = game, Loader = loader, LoaderVersion = release, Java = context.Config.Java });
+        context.Send(new
+        {
+            type = "loaderQueued",
+            requestId = ReadString(root, "requestId")
+        });
     }
 
     sealed record ImportChoice(string Root, string File, string Hash, PackOverview Overview);

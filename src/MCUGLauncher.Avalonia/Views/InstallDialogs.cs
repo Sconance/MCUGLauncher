@@ -8,6 +8,11 @@ internal static class InstallDialogs
         var path = await FilePicker.Open(owner, "整合包", "*.zip", "*.mrpack");
         if (path == null)
             return;
+        await ImportPath(session, owner, path);
+    }
+
+    public static async Task ImportPath(LauncherFacade session, Window owner, string path)
+    {
         var result = await session.RequestAsync("packPreview", new
         {
             type = "previewPack",
@@ -44,35 +49,45 @@ internal static class InstallDialogs
             {
                 if (releases.SelectedItem is not string selected)
                     throw new ArgumentException("请先读取加载器版本。");
-                await session.SendAsync(new
+                await session.RequestAsync("loaderQueued", new
                 {
                     type = "installLoader",
                     version,
                     loader = loader.SelectedItem as string ?? "",
                     loaderVersion = selected
                 });
-                status.Text = "已加入下载任务。";
+                (TopLevel.GetTopLevel(releases) as Window)?.Close();
             }, true);
-        loader.SelectionChanged += (_, _) =>
+        var revision = 0;
+        async Task ReadVersions()
         {
+            var generation = ++revision;
             releases.ItemsSource = Array.Empty<string>();
             install.IsEnabled = false;
-        };
-        install.IsEnabled = false;
-        var read = Ui.Button("读取加载器版本", async () =>
+            status.Text = "正在读取兼容版本…";
+            var kind = loader.SelectedItem as string ?? "fabric";
+            try
             {
-                var kind = loader.SelectedItem as string ?? "fabric";
+                var request = Guid.NewGuid().ToString("N");
                 var result = await session.RequestAsync("loaderList", new
                 {
                     type = "listLoaders",
                     version,
-                    loader = kind
-                }, m => m.Version == version && m.Loader == kind);
+                    loader = kind,
+                    requestId = request
+                }, m => m.Version == version && m.Loader == kind && m.RequestId == request);
+                if (generation != revision)
+                    return;
                 releases.ItemsSource = result.Versions;
                 releases.SelectedIndex = result.Versions.Length > 0 ? 0 : -1;
                 install.IsEnabled = result.Versions.Length > 0;
-                status.Text = $"{result.Versions.Length} 个版本";
-            });
+                status.Text = result.Versions.Length > 0 ? $"{result.Versions.Length} 个兼容版本" : "此游戏版本没有兼容版本，请选择其他加载器";
+            }
+            catch (Exception error) { if (generation == revision) status.Text = "读取失败：" + error.Message; }
+        }
+        loader.SelectionChanged += (_, _) => _ = ReadVersions();
+        var read = Ui.Button("读取加载器版本", ReadVersions);
+        _ = ReadVersions();
         var content = Ui.Stack(
                 Ui.Muted("安装会生成对应加载器版本并保留原版；只有兼容的加载器版本才能安装。"),
                 Ui.Field("加载器", loader),

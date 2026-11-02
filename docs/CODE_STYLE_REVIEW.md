@@ -107,3 +107,8 @@ DialogWindow 归纳原 Ui.Show/Confirm/Error 重复的窗口组装，专职标�
 ## 滚动底部完整性
 
 只修共享 DialogWindow 的内容留白归属，不为每个页面添加补丁高度或空白控件。启动与保存协议不变；NativeUiChecks 验证实际滚动范围和固定底栏边界。
+
+
+## 原生交互修复
+
+参见 INTERACTION_FIXES.md。ShellWindow 仅组装 FileDropView，导入识别与执行复用 Core，LocalImportCommands 承担真正的预览/确认用例。关闭窗口依据命令成功回执，不以 SendAsync 返回代替业务成功；增加请求身份与过期结果隔离。组件依赖同步登记，不为多个页面分别重写导入算法。

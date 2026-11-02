@@ -17,11 +17,13 @@ internal static class MaintenanceDialogs
             content.Children.Add(Ui.Text(path));
         var uninstall = Ui.Button("继续卸载", async () =>
                 {
-                    await session.SendAsync(new
+                    var queued = await session.RequestAsync("uninstallQueued", new
                     {
                         type = "applyUninstall",
                         token = result.Token
-                    });
+                    }, m => m.Token == result.Token);
+                    if (!queued.Ok)
+                        return;
                     (TopLevel.GetTopLevel(content) as Window)?.Close();
                 });
         uninstall.Classes.Add("danger-primary");
@@ -59,7 +61,16 @@ internal static class MaintenanceDialogs
                     var plan = Ui.Stack(Ui.Muted("以下文件将按预览结果更新。"));
                     foreach (var change in preview.Changes)
                         plan.Children.Add(Ui.Text(change.Path + " · " + change.Before + " → " + change.After));
-                    var apply = Ui.Button("应用更新", () => session.SendAsync(new { type = "applyContentUpdates", token = preview.Token }), true);
+                    var apply = Ui.Button("应用更新", async () =>
+                    {
+                        await session.RequestAsync("contentUpdateQueued", new
+                        {
+                            type = "applyContentUpdates",
+                            token = preview.Token
+                        }, m => m.Token == preview.Token);
+                        (TopLevel.GetTopLevel(plan) as Window)?.Close();
+                        (TopLevel.GetTopLevel(content) as Window)?.Close();
+                    }, true);
                     await Ui.Show((Window)TopLevel.GetTopLevel(content)!, "确认文件更新", plan, actions: Ui.DialogActions(plan, apply));
                 }, true);
         await Ui.Show(owner, "内容更新", content, actions: Ui.DialogActions(content, review));

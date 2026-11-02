@@ -18,6 +18,7 @@ internal sealed class LauncherApplication : IDisposable
     readonly SaveCommands saveCommands;
     readonly BookmarkCommands bookmarkCommands;
     readonly InstallationCommands installationCommands;
+    readonly LocalImportCommands localImports;
     readonly AccountCommands accountCommands;
     readonly AccountModeCommands accountModes;
     readonly GameCommands gameCommands;
@@ -43,6 +44,7 @@ internal sealed class LauncherApplication : IDisposable
         saveCommands = new SaveCommands(context);
         bookmarkCommands = new BookmarkCommands(context);
         installationCommands = new InstallationCommands(context);
+        localImports = new LocalImportCommands(context);
         accountCommands = new AccountCommands(context);
         accountModes = new AccountModeCommands(context);
         gameCommands = new GameCommands(context);
@@ -100,8 +102,15 @@ internal sealed class LauncherApplication : IDisposable
                     break;
                 case "applyUninstall":
                     var uninstallToken = ReadString(root, "token");
-                    if (await desktop.ConfirmUninstallAsync(uninstallCommands.Name(uninstallToken)))
+                    var approved = await desktop.ConfirmUninstallAsync(uninstallCommands.Name(uninstallToken));
+                    if (approved)
                         uninstallCommands.Apply(uninstallToken);
+                    context.Send(new
+                    {
+                        type = "uninstallQueued",
+                        token = uninstallToken,
+                        ok = approved
+                    });
                     break;
                 case "checkContentUpdates":
                     await updateCommands.CheckAsync(ReadString(root, "version"));
@@ -165,6 +174,12 @@ internal sealed class LauncherApplication : IDisposable
                     break;
                 case "queueContentVersion":
                     resourceChoices.Queue(root);
+                    break;
+                case "previewLocalImport":
+                    await localImports.Preview(root);
+                    break;
+                case "confirmLocalImport":
+                    localImports.Confirm(root);
                     break;
                 case "previewPack":
                     await installationCommands.PreviewPackAsync(root);

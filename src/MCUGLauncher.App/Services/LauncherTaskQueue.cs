@@ -115,7 +115,7 @@ internal sealed class LauncherTaskQueue : IDisposable
         var installsGame = Same(record.Root, root) && request.Kind is "game" or "pack";
         var maintainsInstance = request.Instance != null && (Same(request.Instance.Directory, directory)
             || Same(record.Root, root) && request.Instance.Key == key);
-        var writesContent = request.Kind is "content" or "update" && Same(record.Target, directory);
+        var writesContent = request.Kind is "content" or "update" or "local" && Same(record.Target, directory);
         if (installsGame || maintainsInstance || writesContent)
             throw new IOException("目标实例或其游戏文件正在维护，请等待任务完成或暂停后再启动。");
     }

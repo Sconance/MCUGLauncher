@@ -126,6 +126,7 @@ await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await SettingsScenarios.Run(fixture);
+await LocalImportScenarios.Run(fixture);
 await ServerPingScenarios.Run();
 ArchitectureScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);

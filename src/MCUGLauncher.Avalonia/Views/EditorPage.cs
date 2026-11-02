@@ -66,7 +66,20 @@ internal sealed class EditorPage : NativePage
                             }),
                         Ui.Muted("提交后按当前配置发布，或保存为本地待发布内容。")
             )));
-            DialogActions = Ui.DialogActions(this, Ui.Button("提交公告", () => Send(new { type = "publish", title = title.Text ?? "", body = body.Text ?? "", expiresAt = expires.Text ?? "", imageData = image }), true));
+            DialogActions = Ui.DialogActions(this, Ui.Button("提交公告", async () =>
+            {
+                var result = await Session.RequestAsync("publishResult", new
+                {
+                    type = "publish",
+                    title = title.Text ?? "",
+                    body = body.Text ?? "",
+                    expiresAt = expires.Text ?? "",
+                    imageData = image
+                });
+                if (!result.Ok)
+                    throw new IOException(result.Message);
+                (TopLevel.GetTopLevel(this) as Window)?.Close();
+            }, true));
         }
         if (mode == "recommendations")
         {
@@ -74,14 +87,15 @@ internal sealed class EditorPage : NativePage
             var desc = Ui.Input();
             var url = Ui.Input();
             Body.Children.Add(Ui.Card(Ui.Stack(Ui.Field("推荐名称", name), Ui.Field("简介", desc), Ui.Field("资源或服务器链接", url))));
-            DialogActions = Ui.DialogActions(this, Ui.Button("保存本地推荐", () =>
+            DialogActions = Ui.DialogActions(this, Ui.Button("保存本地推荐", async () =>
             {
                 var items = (Session.Community.GetValueOrDefault("recommendations") ?? []).Append(new CommunityEntry { Id = Guid.NewGuid().ToString("N"), Name = name.Text ?? "", Description = desc.Text ?? "", Url = url.Text ?? "", Author = State.Player }).ToArray();
-                return Send(new
+                await Session.RequestAsync("saved", new
                 {
                     type = "saveRecommendations",
                     items
                 });
+                (TopLevel.GetTopLevel(this) as Window)?.Close();
             }, true));
         }
         Body.Children.Add(existing);

@@ -68,7 +68,7 @@ internal sealed class LaunchOptionsPage : NativePage
                 {
                     if (!int.TryParse(ram.Text, out var memory) || !int.TryParse(width.Text, out var w) || !int.TryParse(height.Text, out var h))
                         throw new ArgumentException("内存和窗口尺寸必须是整数。");
-                    await Send(new
+                    await Session.RequestAsync("launchOptionsSaved", new
                     {
                         type = "saveLaunchOptions",
                         token = result.Token,
@@ -88,6 +88,8 @@ internal sealed class LaunchOptionsPage : NativePage
                             server = server.Text ?? ""
                         }
                     });
+                    if (!inline)
+                        (TopLevel.GetTopLevel(this) as Window)?.Close();
                 }, true);
         if (inline)
             Body.Children.Add(Ui.Row(save));

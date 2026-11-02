@@ -389,3 +389,16 @@ InstanceRequirements（A）保留整合包安装记录优先级，其余直接�
 ### Core 复用复查
 
 ServerPingService 为 A 类适配，移除 App 自写 SLP 编码/拆包，统一 Core ServerFavorites.Ping。ConfigStore、CommunityCommands 复用 AtomicFile 存储。SettingsCommands 使用 Preferences.Copy 和 DataSourceConfig.Copy；不再用 JSON 序列化复制编辑草稿或比较来源。依赖面没有新增服务，详见 docs/CORE_REUSE_AUDIT.md。
+
+
+### 原生交互修复登记
+
+| 组件 | 级别 | 依赖与变更 |
+| --- | --- | --- |
+| LocalImportCommands | B | Config.Root/LastInstance、Token、Games.UsesDirectory、Tasks.RequireLaunchAvailable/Enqueue、Send、InstanceSnapshot.Capture、PreviewCache.Add/Get；详见同名组件文档 |
+| InstallationCommands | B | 原成员依赖不变，loaderList 增加 requestId，新增 loaderQueued 成功回执；详见同名组件文档 |
+| ContentUpdateCommands | B | 原成员依赖不变，新增 contentUpdateQueued 成功回执；详见同名组件文档 |
+| DownloadExecutor | B | 继续使用 InstallationProgress.Message/Advance、InstanceOperationExecutor.ExecuteAsync、VersionCatalog.InstanceDirectory；本地复制和存档导入复用 Core，不新增服务 |
+| LauncherTaskQueue | A | 仅 Core/BCL，运行中的 local 请求加入实例启动互斥范围 |
+
+LocalImportCommands 有明确的预览/确认职责，不把文件识别和复制放进 ShellWindow，也不重写 Core 安装算法。

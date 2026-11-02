@@ -14,6 +14,7 @@ public partial class ShellWindow : Window
     readonly LauncherFacade session;
     readonly NotificationView notice = new();
     readonly BackgroundView background = new();
+    readonly FileDropView drops;
     NativePage? page;
     string group = "";
     public ShellWindow() : this(null) { }
@@ -39,6 +40,8 @@ public partial class ShellWindow : Window
             button.Classes.Add("top-nav");
             TopNavigation.Children.Add(button);
         }
+        drops = new FileDropView(session, this);
+        DropHost.Content = drops;
         NoticeHost.Content = notice;
         BackgroundHost.Content = background;
         PageHost.SizeChanged += (_, _) => { if (page != null) page.MaxWidth = PageHost.Bounds.Width; };
@@ -66,7 +69,7 @@ public partial class ShellWindow : Window
         TaskButton.Click += (_, _) => Navigate("tasks");
         TaskButton.Classes.Add("soft");
         Opened += async (_, _) => { if (injected == null) await session.SendAsync(new { type = "ready" }); };
-        Closed += (_, _) => { session.RememberWindow(Width, Height, WindowState == WindowState.Maximized); notice.Dispose(); background.Dispose(); page?.Dispose(); session.PropertyChanged -= Changed; session.MessageReceived -= OnMessage; session.Dispose(); };
+        Closed += (_, _) => { session.RememberWindow(Width, Height, WindowState == WindowState.Maximized); notice.Dispose(); background.Dispose(); drops.Dispose(); page?.Dispose(); session.PropertyChanged -= Changed; session.MessageReceived -= OnMessage; session.Dispose(); };
         Navigate("home");
         Changed(this, new(null));
     }
