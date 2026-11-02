@@ -332,5 +332,31 @@ internal sealed class LauncherApplication : IDisposable
         }
     });
 
+    // Bounded image fetch for community announcements; the facade only receives bytes.
+    public async Task<byte[]> DownloadImageAsync(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || uri.Scheme is not ("http" or "https")
+            || uri.UserInfo.Length > 0)
+            throw new ArgumentException("图片地址无效。");
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(8));
+        using var response = await context.Http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+        response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength > 4 * 1024 * 1024)
+            throw new InvalidDataException("公告配图不能超过 4 MB。");
+        await using var input = await response.Content.ReadAsStreamAsync(timeout.Token);
+        using var output = new MemoryStream();
+        var buffer = new byte[8192];
+        int read;
+        while ((read = await input.ReadAsync(buffer, timeout.Token)) > 0)
+        {
+            if (output.Length + read > 4 * 1024 * 1024)
+                throw new InvalidDataException("公告配图不能超过 4 MB。");
+            await output.WriteAsync(buffer.AsMemory(0, read), timeout.Token);
+        }
+        return output.ToArray();
+    }
+
     public void Dispose() => context.Dispose();
 }

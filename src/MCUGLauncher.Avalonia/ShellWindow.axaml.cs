@@ -21,6 +21,7 @@ public partial class ShellWindow : Window
     readonly GamesView gamesView;
     readonly BookmarksView bookmarksView;
     readonly CommunityView communityView;
+    readonly Dictionary<string, Button> navigation = new(StringComparer.Ordinal);
     readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     StackPanel? pageContent;
     IReadOnlyList<TaskInfo> tasks = [];
@@ -29,6 +30,15 @@ public partial class ShellWindow : Window
     public ShellWindow()
     {
         InitializeComponent();
+        navigation["home"] = HomeButton;
+        navigation["instances"] = MaintenanceButton;
+        navigation["download"] = DownloadButton;
+        navigation["account"] = AccountButton;
+        navigation["tasks"] = TasksButton;
+        navigation["games"] = GamesButton;
+        navigation["bookmarks"] = BookmarksButton;
+        navigation["community"] = CommunityButton;
+        navigation["settings"] = SettingsButton;
         host = new ShellDesktopHost(
             () => Handle,
             message => facade.SendMessage(message),
@@ -88,7 +98,6 @@ public partial class ShellWindow : Window
         BookmarksButton.Click += (_, _) => Show("bookmarks");
         CommunityButton.Click += (_, _) => Show("community");
         SettingsButton.Click += (_, _) => Show("settings");
-        ClassicButton.Click += (_, _) => new MainWindow().Show();
         Render();
         Opened += async (_, _) => await facade.StartAsync();
         Closed += (_, _) => facade.Dispose();
@@ -100,8 +109,17 @@ public partial class ShellWindow : Window
         Render();
     }
 
+    void UpdateNavigation()
+    {
+        foreach (var button in navigation.Values)
+            button.Classes.Remove("active");
+        if (navigation.TryGetValue(page, out var active))
+            active.Classes.Add("active");
+    }
+
     void Render()
     {
+        UpdateNavigation();
         if (page == "settings")
         {
             PageHost.Content = settingsView;

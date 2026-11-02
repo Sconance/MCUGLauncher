@@ -33,6 +33,15 @@
     <Setter Property="Background" Value="#1A4F7A" />
     <Setter Property="TextElement.Foreground" Value="White" />
   </Style>
+  <Style Selector="Button.nav.active">
+    <Setter Property="Background" Value="#1A4F7A" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.nav.active:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#1A4F7A" />
+    <Setter Property="TextElement.Foreground" Value="White" />
+  </Style>
 
   <Style Selector="Button.primary">
     <Setter Property="Background" Value="{StaticResource AppAccent}" />

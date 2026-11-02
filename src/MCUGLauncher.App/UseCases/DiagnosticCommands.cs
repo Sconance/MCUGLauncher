@@ -1,9 +1,8 @@
 using BlockLaunch;
-using Microsoft.Web.WebView2.Core;
 
 namespace MCUGLauncher.UseCases;
 
-// Handles diagnostic use cases; no WPF controls or browser access.
+// Handles diagnostic use cases; no UI controls or browser access.
 internal sealed class DiagnosticCommands(LauncherContext context)
 {
     public void ReadLog()
@@ -30,18 +29,12 @@ internal sealed class DiagnosticCommands(LauncherContext context)
 
     public void SendSystemInfo()
     {
-        var webview = "未知";
-        try
-        {
-            webview = CoreWebView2Environment.GetAvailableBrowserVersionString();
-        }
-        catch { }
         context.Send(new
         {
             type = "systemInfo",
             app = ProductInfo.Version,
             dotnet = Environment.Version.ToString(),
-            webview,
+            webview = "仅微软登录窗口使用",
             os = Environment.OSVersion.VersionString,
             root = context.Config.Root,
             data = context.Store.DataDirectory

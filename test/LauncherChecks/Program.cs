@@ -7,7 +7,7 @@ using MCUGLauncher.Services;
 using MCUGLauncher.UseCases;
 using MCUGLauncher;
 
-var fixture = Path.Combine(Path.GetTempPath(), "mcug-web-check-" + Guid.NewGuid().ToString("N"));
+var fixture = Path.Combine(Path.GetTempPath(), "mcug-launcher-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(fixture);
 var store = new ConfigStore(fixture);
 var gameRoot = Path.Combine(fixture, "game");
@@ -98,7 +98,7 @@ await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);
-Console.WriteLine("ALL_WEB_BRIDGE_CHECKS_PASSED (isolated fixtures; no live account or gameplay)");
+Console.WriteLine("ALL_LAUNCHER_CHECKS_PASSED (isolated fixtures; no live account or gameplay)");
 
 sealed class FakeDesktop : IDesktopHost
 {

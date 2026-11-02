@@ -2,14 +2,14 @@
 
 ## 1. 目的
 
-本规范约束 `src/MCUGLauncher` 后端（UseCases、Services、Authentication、Models）的新增与修改，目标是：
+本规范约束 `src/MCUGLauncher.App` 后端（UseCases、Services、Authentication、Models）的新增与修改，目标是：
 
 1. 让新组件尽可能只依赖 `MCUGLauncher.Core`，为后续插件化铺路；
 2. 让不得不依赖现有组件的组件，把依赖面**显式、完整、可审查**地写清楚；
 3. 修改现有组件时优先归纳逻辑，而不是不断堆叠新组件；
 4. 当共用逻辑的成本足够大时，把逻辑沉淀到 Core，而不是复制到更多组件。
 
-前端 Ui、MainWindow 与协议入口不属于“组件”，不在本规范的分级范围内，但仍受《AGENTS.md》约束。
+原生页面 `Views/*View`、`ShellWindow` 与协议入口不属于“组件”，不在本规范的分级范围内，但仍受《AGENTS.md》约束。
 
 ## 2. 术语
 
@@ -19,14 +19,14 @@
 | **组件** | 一个承担单一职责的类或一组强内聚类，例如 `SaveCommands`、`LauncherTaskQueue` |
 | **完全独立组件（A）** | 除 Core/BCL/NuGet 外，不依赖仓库内任何已有 CS 类 |
 | **不完全独立组件（B）** | 除 Core 外，还依赖仓库内已有组件（如 `LauncherContext`、`LauncherTaskQueue`） |
-| **集成层（C）** | `LauncherApplication`、`MainWindow` 等只做装配/转发的入口，不承载业务 |
+| **集成层（C）** | `LauncherApplication`、`ShellWindow` 等只做装配/转发的入口，不承载业务 |
 | **依赖面** | 组件实际使用的类型成员集合（方法、属性、事件），不是“引用到的整个类型” |
 
 ## 3. 组件分级与硬性规则
 
 ### 3.1 A 类：完全独立组件
 
-定义：只依赖 Core、BCL、NuGet；不引用 `LauncherContext`、`Services/*`、`Authentication/*`、`UseCases/*`、`Models/*`、WPF/WebView2。
+定义：只依赖 Core、BCL、NuGet；不引用 `LauncherContext`、`Services/*`、`Authentication/*`、`UseCases/*`、`Models/*`、Avalonia/WebView2。
 
 规则：
 
@@ -45,14 +45,14 @@
 
 - **必须在组件文档中声明依赖的全部类与成员**（方法签名、属性、事件），见第 4 节；
 - 依赖面只写实际使用的成员，不允许用“依赖 LauncherContext”这种笼统表述；
-- 不得依赖 `MainWindow`、`Ui/*`、WebView2、WPF 控件；
+- 不得依赖 `ShellWindow`、`Views/*`、WebView2、Avalonia 控件；
 - 不得反向依赖集成层（`LauncherApplication`）或其他 B 组件的**实现细节**；只允许依赖其公开契约/方法；
 - 新增依赖必须在同一提交更新依赖声明与登记表；
 - B 组件如果依赖超过 5 个成员，应评估拆分或上移 Core。
 
 ### 3.3 C 类：集成层
 
-`LauncherApplication`、`MainWindow`、`LauncherContext` 的构造与注册属于集成层：
+`LauncherApplication`、`ShellWindow`、`LauncherContext` 的构造与注册属于集成层：
 
 - 只做装配、协议分发、窗口适配；
 - 不写业务算法；
@@ -77,7 +77,7 @@
 /// - <see cref="LauncherContext.Store"/>.<see cref="ConfigStore.Save"/>：保存实例选择；
 /// - <see cref="LauncherContext.Games"/>.<see cref="RunningGameRegistry.UsesDirectory"/>：禁止恢复运行中的实例；
 /// - <see cref="LauncherContext.Send"/>：回推 saveList/saveRestored 消息。
-/// 不依赖：Ui、MainWindow、WebView2、LauncherApplication、其他 *Commands。
+/// 不依赖：Views、ShellWindow、WebView2、LauncherApplication、其他 *Commands。
 /// </remarks>
 ```
 
@@ -140,8 +140,8 @@
 5. **协议与 UI 解耦**：组件只处理 `JsonElement`/领域对象，返回结果通过 `Send` 回调；不直接操作 DOM/窗口。
 6. **补测试与边界**：
    - A 类：纯单元测试；
-   - B 类：`WebBridgeChecks` 场景 + 受影响检查；
-   - 新协议：更新 `ProtocolValues` 字段表与 `check-web-boundaries.py`。
+   - B 类：`LauncherChecks` 场景 + 受影响检查；
+   - 新协议：更新 `ProtocolValues` 字段表与 `check-native-boundaries.py`。
 7. **更新文档**：`ARCHITECTURE.md`（模块职责）与本文登记表。
 
 ### 7.1 插件化目标形态
@@ -162,18 +162,18 @@ LauncherApplication / LauncherContext
 
 ## 8. 当前组件类别划分
 
-统计范围：`src/MCUGLauncher` 的后端组件（UseCases、Services、Authentication、Models），不含 `MainWindow` 与 Core。共 **45 个**：A 类 13 个、B 类 28 个、C 类 4 个。
+统计范围：`src/MCUGLauncher.App` 的后端组件（UseCases、Services、Authentication、Models），不含 `ShellWindow` 与 Core。共 **45 个**：A 类 13 个、B 类 28 个、C 类 4 个。
 
 ### 8.1 C 类（集成层，4 个）
 
 | 组件 | 位置 | 说明 |
 | --- | --- | --- |
 | `LauncherApplication` | `UseCases/LauncherApplication.cs` | 协议入口、命令注册、启动恢复与状态回推；只装配，不写业务 |
-| `IDesktopHost` | `UseCases/IDesktopHost.cs` | 原生窗口/对话框契约，由 `MainWindow` 实现 |
-| `MicrosoftLoginWebUi` | `Authentication/MicrosoftLoginWebUi.cs` | `IWebUI` 适配器，桥接 WPF 登录窗口 |
-| `MicrosoftLoginWindow` | `Authentication/MicrosoftLoginWindow.cs` | WPF + WebView2 授权窗口，属于 UI 边界 |
+| `IDesktopHost` | `UseCases/IDesktopHost.cs` | 原生窗口/对话框契约，由 `ShellDesktopHost` 实现 |
+| `MicrosoftLoginWebUi` | `src/MCUGLauncher.Avalonia/MicrosoftLoginWebUi.cs` | `IWebUI` 适配器，桥接 Avalonia 登录窗口 |
+| `MicrosoftLoginWindow` | `src/MCUGLauncher.Avalonia/MicrosoftLoginWindow.cs` | Avalonia + WebView2 授权窗口，属于 UI 边界 |
 
-> `MainWindow` 是宿主壳，不计入后端组件；它只依赖 `LauncherApplication` 与 `IDesktopHost`。
+> `ShellWindow` 是宿主壳，不计入后端组件；它只依赖 `LauncherFacade` 与 `IDesktopHost`。
 
 ### 8.2 B 类（28 个）
 
@@ -311,11 +311,11 @@ AccountModeCommands.Apply(LauncherContext context, string mode, MSession? sessio
 
 - [ ] 组件级别（A/B/C）已在 `<remarks>` 或提交说明中写明；
 - [ ] B 组件依赖清单完整到“类.成员（含参数）”，并与代码一致；
-- [ ] 没有依赖 `Ui/*`、`MainWindow`、WebView2、`LauncherApplication`；
+- [ ] 没有依赖 `Views/*`、`ShellWindow`、WebView2、`LauncherApplication`；
 - [ ] 修改现有组件时没有新增组件/新增依赖（有则说明理由）；
 - [ ] 共用逻辑先就地归纳；下沉 Core 满足第 6 节全部条件；
 - [ ] 没有新增 `HttpClient`、下载器、任务队列、Java 扫描器等重复能力；
-- [ ] 新协议字段已更新 `ProtocolValues`、边界检查与 `WebBridgeChecks`；
+- [ ] 新协议字段已更新 `ProtocolValues`、边界检查与 `LauncherChecks`；
 - [ ] 文档（ARCHITECTURE、登记表）与代码同提交更新。
 
 ## 10. 迁移与例外
@@ -341,7 +341,7 @@ AccountModeCommands.Apply(LauncherContext context, string mode, MSession? sessio
 /// - LauncherContext.Store.Save(AppConfig)：保存选择；
 /// - LauncherContext.Games.UsesDirectory(string)：拒绝运行中的实例；
 /// - LauncherContext.Send：回推 saveList/saveRestored。
-/// 不依赖：Ui、MainWindow、WebView2、其他 *Commands。
+/// 不依赖：Views、ShellWindow、WebView2、其他 *Commands。
 /// </remarks>
 internal sealed class SaveCommands(LauncherContext context)
 ```

@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -39,7 +39,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UninstallChecks", "test\Uni
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpgradeChecks", "test\UpgradeChecks\UpgradeChecks.csproj", "{81983DCB-6E46-441D-AD62-ADE101F63BE9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebBridgeChecks", "test\WebBridgeChecks\WebBridgeChecks.csproj", "{5AAEDDE4-9B4B-4A9E-8ED7-D823FC975AAB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LauncherChecks", "test\LauncherChecks\LauncherChecks.csproj", "{5AAEDDE4-9B4B-4A9E-8ED7-D823FC975AAB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{643C2ED9-4A80-48BD-9CD3-94B749E730BF}"
 EndProject

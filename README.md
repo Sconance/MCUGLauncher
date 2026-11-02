@@ -1,6 +1,8 @@
 # MCUG Launcher 0.22.3
 
-Windows 上的 Minecraft Java 版启动器。当前 0.22.3-codex 是 WebView2 迁移开发分支，已接回下载任务、加载器安装、整合包导入、运行游戏、收藏与存档备份等入口，仍有部分旧功能待恢复。具体范围见 [修复状态](docs/REPORT_FIX_STATUS.md)。
+Windows 上的 Minecraft Java 版启动器。当前 0.22.3-Avalonia 分支使用原生 Avalonia 界面，
+已接回启动、实例、下载、账号、任务、运行游戏、收藏、社区与设置等入口。WebView2 仅用于微软 OAuth
+登录窗口；旧 Web UI 已移除。具体范围见 [原生 UI 迁移矩阵](docs/NATIVE_UI_PARITY.md)。
 
 当前版本为 **0.22.3**。
 
@@ -8,7 +10,8 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-codex 是 WebView2 �
 
 ## 0.22.3 更新重点
 
-- **新的蓝白界面**：主页去掉左侧栏，顶部「启动 / 下载 / 设置」直接切换页面；设置页和下载页保留各自的页内导航。
+- **原生 Avalonia 界面**：左侧导航切换启动、实例、下载、账号、任务、游戏、收藏、社区与设置；
+  蓝色主题、卡片式内容与可滚动布局，不再加载 HTML/CSS/JS 主界面。
 - **版本选择面板**：点击「启动游戏」右侧的 `>`，游戏目录从右侧展开，可在「原版游戏 / FABRIC 版本」中直接选版本启动。
 - **版本内容管理**：横向分类标签，模组表格支持更新、禁止更新、禁用、启动、删除；可切换当前实例。
 - **模组下载链路**：「下载 → 模组」列表进入模组详情，支持安装到实例，或下载到自定义目录。
@@ -36,11 +39,11 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-codex 是 WebView2 �
 - 模组列表 → 模组详情：安装到实例，或下载到自定义目录。整合包仅下载 `.mrpack` 文件，不自动导入。
 - 搜索结果需要联网；内容说明来自 Modrinth，暂不提供中文翻译。
 
-### 版本
+### 实例
 
-- 主页右侧「选择实例」打开实例面板，可直接启动任一组版本。
-- 「版本内容管理」展示模组表格；实例切换在页面右上角。
-- 「版本设置」展示概览、个性化、快捷方式、启动概览、高级管理；不包含 Mod 管理（已移到内容管理页）。
+- 主页和「实例」页都可切换当前实例、直接启动或设为当前。
+- 「实例」页包含内容、启动设置、维护三个页签：模组启停/删除、实例启动参数（可继承全局）、
+  版本文件夹、克隆、导出、卸载预览与内容更新。
 
 ### 设置
 
@@ -51,8 +54,8 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-codex 是 WebView2 �
 - 社区：更多选项、管理员、数据源。
 - 服务器收藏：查看收藏服务器、重新 ping、管理或添加。
 - 存档保护：一键打包 `saves` 到本地备份目录，或打开存档文件夹。
-- 下载任务：说明当前版本不保留后台任务，并提供模组下载入口。
-- 任务与恢复：恢复窗口、重新加载界面、打开配置目录。
+- 下载任务：持久队列，支持暂停、继续、取消与删除；关闭页面不影响任务。
+- 任务与恢复：恢复窗口尺寸、打开配置目录与游戏目录。
 - 运行日志：读取最近 400 行日志，打开日志目录。
 - 诊断与反馈：读取 .NET / WebView2 / 系统 / 路径信息并复制。
 - 关于与许可：版本、社区数据仓库、管理员文档入口。
@@ -83,40 +86,35 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-codex 是 WebView2 �
 ## 技术架构
 
 ```
-Avalonia .NET 8 宿主 (MainWindow / WebView2)
-        │  虚拟域名 app.local
+Avalonia 原生窗口 (ShellWindow + Views/*View)
+        │  类型化 LauncherFacade
         ▼
-内嵌 HTML/CSS/JS (src/MCUGLauncher/Ui)
-        │  window.chrome.webview 消息桥
+UseCases / Services（账号、版本、任务、社区、配置）
         ▼
-C# 服务：版本扫描 / 启动 / 服务器 ping / Modrinth / 社区 JSON / 配置
+MCUGLauncher.Core（下载校验、依赖解析、实例与启动）
 ```
 
-选择 WebView2 的原因：0.22.3 的设计稿是一套完整的前端视觉系统，直接复用 HTML/CSS 能保证 1:1 还原，同时把 C# 服务与 UI 分离，后续换界面不需要动启动核心。
-
-后端组件的分级、依赖声明与 Core 下沉规则见 [BACKEND_DEVELOPMENT.md](BACKEND_DEVELOPMENT.md)。
-
-开发说明与检查范围见 [WebView2 UI 开发说明](docs/WEBVIEW_UI.md)，本分支整理记录见 [0.22.3-codex](docs/REVIEW_0.22.3-codex.md)。
+WebView2 只保留在微软 OAuth 登录窗口中，不参与主界面渲染。后端组件的分级、依赖声明与 Core
+下沉规则见 [BACKEND_DEVELOPMENT.md](BACKEND_DEVELOPMENT.md)。当前架构与迁移状态见
+[架构说明](docs/ARCHITECTURE.md) 与 [原生 UI 迁移矩阵](docs/NATIVE_UI_PARITY.md)。
 
 ### 目录
 
 ```
-src/MCUGLauncher/            WPF 宿主、服务、桥接
-  Ui/                        已批准的界面资源
-  UseCases/                  消息分发与按职责划分的业务流程
-  Services/                  配置、版本、ping、社区、模组
-  Models/AppConfig.cs        集中配置模型
-src/MCUGLauncher.Core/       启动核心（沿用 0.22.2）
+src/MCUGLauncher.Avalonia/   原生 Avalonia 窗口、Views 页面与微软登录窗口
+src/MCUGLauncher.App/        UseCases、Services、Authentication、配置模型
+src/MCUGLauncher.Core/       启动核心（下载、Java、实例、整合包）
+test/                        行为、兼容与 LauncherChecks
 community/                   数据源示例 JSON
 docs/images/                 README 截图
-artifacts/full/                   完整版发布产物
-artifacts/lite/                   轻量版发布产物
+artifacts/full/              完整版发布产物
+artifacts/lite/              轻量版发布产物
 ```
 
 ## 运行要求
 
 - Windows 10 / 11 x64。
-- **WebView2 Runtime**（Windows 11 通常已内置；Windows 10 如缺失需安装 Evergreen Runtime）。
+- **WebView2 Runtime**：仅微软 OAuth 登录窗口需要（Windows 11 通常已内置；Windows 10 如缺失需安装 Evergreen Runtime）。
 - 完整版：无需安装 .NET。
 - 轻量版：需要 **.NET 8 Desktop Runtime x64**。
 

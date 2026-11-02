@@ -13,6 +13,7 @@ internal partial class HomeView : UserControl
     LauncherState? state;
     CommunityData community = CommunityData.Empty;
     Bitmap? announcementImage;
+    int imageVersion;
     string serverSignature = "";
     string editingServer = "";
     int announcementIndex;
@@ -271,7 +272,7 @@ internal partial class HomeView : UserControl
             AnnouncementBody.Text = "新的群公告会出现在这里。";
             AnnouncementMeta.Text = "";
             AnnouncementIndex.Text = "0 / 0";
-            ShowAnnouncementImage("");
+            _ = ShowAnnouncementImage("");
             return;
         }
         var item = community.Announcements[announcementIndex];
@@ -284,23 +285,39 @@ internal partial class HomeView : UserControl
             item.ImageUrl.Length > 0 ? "含配图" : ""
         }.Where(value => value.Length > 0));
         AnnouncementIndex.Text = $"{announcementIndex + 1} / {community.Announcements.Count}";
-        ShowAnnouncementImage(item.ImageUrl);
+        _ = ShowAnnouncementImage(item.ImageUrl);
     }
 
-    void ShowAnnouncementImage(string url)
+    async Task ShowAnnouncementImage(string url)
     {
+        var version = ++imageVersion;
         announcementImage?.Dispose();
         announcementImage = null;
         AnnouncementImage.Source = null;
         AnnouncementImage.IsVisible = false;
-        if (!url.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
+        if (url.Length == 0)
             return;
         try
         {
-            var comma = url.IndexOf(',');
-            if (comma < 0)
+            byte[] bytes;
+            if (url.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
+            {
+                var comma = url.IndexOf(',');
+                if (comma < 0)
+                    return;
+                bytes = Convert.FromBase64String(url[(comma + 1)..]);
+            }
+            else if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                     || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                if (facade is null)
+                    return;
+                bytes = await facade.DownloadImageAsync(url);
+            }
+            else
                 return;
-            var bytes = Convert.FromBase64String(url[(comma + 1)..]);
+            if (version != imageVersion)
+                return;
             using var input = new MemoryStream(bytes);
             announcementImage = new Bitmap(input);
             AnnouncementImage.Source = announcementImage;
@@ -308,6 +325,8 @@ internal partial class HomeView : UserControl
         }
         catch
         {
+            if (version != imageVersion)
+                return;
             announcementImage = null;
             AnnouncementImage.Source = null;
             AnnouncementImage.IsVisible = false;

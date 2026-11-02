@@ -20,7 +20,6 @@
         <Button x:Name="BookmarksButton" Classes="nav" Content="收藏" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
         <Button x:Name="CommunityButton" Classes="nav" Content="社区" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
         <Button x:Name="SettingsButton" Classes="nav" Content="设置" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-        <Button x:Name="ClassicButton" Classes="nav" Content="经典界面（WebView）" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
       </StackPanel>
     </Border>
     <Border Grid.Column="1" Background="{StaticResource AppCard}" CornerRadius="16" Margin="18" Padding="20">

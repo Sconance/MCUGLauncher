@@ -84,7 +84,7 @@ Core / App 库：保持不变
 - `CommunityView`：管理员密钥、公告发布（标题/正文/过期时间/配图）、公告/推荐删除管理；
 - 主页公告支持本地 data URL 配图；
 - 设置页：已保存游戏目录切换、添加并切换；
-- 旧 `MainWindow`（WebView）保留为“经典界面”回退入口。
+- **WebView 主界面已删除**：`Ui/`、`MainWindow`、`bridge`、`WebUiChecks` 与 Web 边界脚本已移除；
+  新增 `scripts/check-native-boundaries.py`，WebView2 仅保留在微软 OAuth 登录窗口。
 
-下一步：远程公告配图、逐页视觉对齐与 WebView 退出；功能对齐后删除
-`Ui/`、`MainWindow`、`bridge` 与 Web 相关检查，仅保留微软登录 WebView2。
+远程公告配图已通过有界下载接入。剩余事项：逐页视觉对齐；功能与登录/游戏验收仍需在真实环境补测。

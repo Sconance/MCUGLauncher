@@ -1,5 +1,8 @@
 # Avalonia 迁移计划（0.22.3-Avalonia）
 
+> 历史记录：本阶段已完成。当前主界面是原生 Avalonia，`Ui/` 与 `MainWindow` 已删除；
+> WebView2 只用于微软 OAuth 登录。现行架构见 [架构说明](ARCHITECTURE.md)。
+
 ## 目标
 
 把 WPF 宿主迁移到 Avalonia 12/11 技术栈，保留现有 WebView2 + HTML/CSS/JS 界面与 `UseCases` 业务层，最终删除 `UseWPF` 与 `System.Windows` 依赖。

@@ -409,6 +409,8 @@ internal sealed class LauncherFacade : IDisposable
             kind
         });
 
+    public Task<byte[]> DownloadImageAsync(string url) => application.DownloadImageAsync(url);
+
     public Task ReadAvatarAsync() => application.HandleAsync("""{"type":"readAvatar"}""");
 
     public Task SetOfflineSkinAsync(string path) => CommandAsync(new { type = "setOfflineSkin", path });

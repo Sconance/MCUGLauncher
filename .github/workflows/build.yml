@@ -16,8 +16,8 @@ jobs:
           global-json-file: global.json
       - name: Validate repository layout
         run: python scripts/check-layout.py
-      - name: Check WebView boundaries
-        run: python scripts/check-web-boundaries.py
+      - name: Check native UI boundaries
+        run: python scripts/check-native-boundaries.py
       - name: Check version metadata
         run: python scripts/check-version.py
       - name: Check source formatting
@@ -26,17 +26,4 @@ jobs:
         run: ./scripts/build.ps1
 
       - name: Run isolated regression checks
-        run: ./scripts/run-checks.ps1 -Name MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks,WebBridgeChecks
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Install browser check dependencies
-        run: npm ci --ignore-scripts
-        working-directory: test/WebUiChecks
-      - name: Check JavaScript formatting
-        run: npm run format:check
-        working-directory: test/WebUiChecks
-      - name: Check Web UI interactions and responsive layout
-        run: npm test
-        working-directory: test/WebUiChecks
+        run: ./scripts/run-checks.ps1 -Name MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks,LauncherChecks

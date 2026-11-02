@@ -2,11 +2,11 @@
 
 ## 架构
 
-- MainWindow 只管理 WebView2 生命周期、窗口和原生对话框，不新增账号、安装、下载、配置或社区业务。
-- 不用 partial MainWindow 分散业务，也不把窗口或控件传入 UseCases。
-- 新功能优先复用 Core；Services 负责适配，UseCases 负责流程，Ui 负责展示和事件。不能为了换界面另写一套下载器、依赖解析器或 Java 扫描。
-- 后台任务由 LauncherTaskQueue/OperationCoordinator 管理，不能绑定在页面的 fetch 或路由生命周期上。
-- 前端按功能增添模块，避免继续扩大 app.js/host.js；演示内容只在独立浏览器预览出现，宿主模式不能用假数据填空。
+- ShellWindow 只管理导航、窗口生命周期和原生对话框，不新增账号、安装、下载、配置或社区业务。
+- 业务页面放在 `Views/*View`，通过 `LauncherFacade` 调用 UseCases；不要把窗口或控件传入 UseCases。
+- 新功能优先复用 Core；Services 负责适配，UseCases 负责流程，Views 负责展示和事件。不能为了换界面另写一套下载器、依赖解析器或 Java 扫描。
+- 后台任务由 LauncherTaskQueue/OperationCoordinator 管理，不能绑定在页面导航或视图生命周期上。
+- WebView2 只用于微软 OAuth 登录窗口；不要在启动器主界面重新引入 Web UI、`Ui/` 资源或浏览器消息桥。
 - 菜单必须提供实际入口；尚未接通的功能明确标注，不把有按钮当成功能完成。
 - 不以行数作为唯一标准。一个模块负责一件事，依赖应明确；避免过度抽象和仅转发调用的无意义文件。
 - 后端组件分级、依赖声明与 Core 下沉规则见 [后端开发规范](BACKEND_DEVELOPMENT.md)：新组件优先做成完全独立组件，依赖现有组件的必须逐成员声明。
@@ -21,10 +21,10 @@
 
 ## 提交前
 
-运行布局、版本、C# SourceFormatter、JavaScript Prettier、Web 边界检查及受影响的 test/*Checks。修改页面需运行 WebUiChecks 并查看截图。修改任务需验证排队、取消和恢复。
+运行布局、版本、C# SourceFormatter、原生 UI 边界检查及受影响的 test/*Checks。修改页面需实际启动并查看截图/控件状态。修改任务需验证排队、取消和恢复。
 
-测试进程、假 HTTP 和浏览器模拟桥接不能代替真实账号、游戏和 WebView2 验收；提交说明须说明验证范围和剩余缺口。
+测试进程、假 HTTP 和模拟对话框不能代替真实账号、游戏和 WebView2（微软登录）验收；提交说明须说明验证范围和剩余缺口。
 
 只推送用户指定分支。发布 Release、移动标签或覆盖正式程序须有相应用户指示。
 
-前端 app.js 只保留路由，页面不要放回入口；原生模式不能直接加载 preview-data.js。服务层不反向依赖 UseCases。卸载必须经过路径预览与原生确认，恢复排队卸载也必须确认。
+Views 通过 `LauncherFacade` 调用业务，服务层不反向依赖 UseCases。卸载必须经过路径预览与原生确认，恢复排队卸载也必须确认。WebView2 仅用于微软登录，不得恢复主界面 Web UI。

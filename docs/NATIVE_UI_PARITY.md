@@ -3,12 +3,14 @@
 目标：用 Avalonia 原生页面替换 `src/MCUGLauncher.Avalonia/Ui/` 的 HTML/CSS/JS，业务仍只经过
 `UseCases`、`Services` 与 `Core`。WebView 只保留给微软 OAuth 登录窗口。
 
-过渡期约束：
+**WebView 主界面已删除**：`Ui/`、`MainWindow`、`bridge` 和 `WebUiChecks` 已移除；
+`WebView2` 仅保留在微软 OAuth 登录窗口。以下矩阵保留为迁移记录与剩余视觉/远程图片事项。
 
-- 功能未在原生页面覆盖前，不删除 `Ui/`、`MainWindow` 和“经典界面”入口；`AGENTS.md` 的兼容性要求优先。
+约束：
+
 - 新页面只通过 `LauncherFacade` 调用业务命令，不在页面拼 JSON，也不复制下载器、依赖解析器或 Java 扫描。
 - 每个页面独立为 `Views/*View`，`ShellWindow` 只负责导航、窗口生命周期和页面宿主。
-- 页面接入后同步更新本文件的矩阵；只有矩阵全部为“已完成”并通过验收，才能进入删除阶段。
+- 页面接入后同步更新本文件的矩阵。
 
 ## 功能矩阵（以 `Ui/*.js` 与 `LauncherApplication` 命令为准）
 
@@ -19,7 +21,7 @@
 | 账号卡与登录入口 | `home-page.js`、`accounts.js` | 已完成（账号卡 + 账号页切换） |
 | 皮肤、披风、MUA 档案 | `avatars.js`、`mua-profiles.js` | 部分完成（头像、离线 PNG 皮肤、MUA 多角色选择；在线皮肤上传/披风待接） |
 | 主页服务器状态 | `home-page.js`、`host.js` | 已完成（自动查询、添加/编辑/删除） |
-| 公告 / 推荐 / 语录 | `home-page.js`、`community-pages.js` | 已完成文本展示与本地 data URL 配图（远程配图待接） |
+| 公告 / 推荐 / 语录 | `home-page.js`、`community-pages.js` | 已完成文本展示、本地 data URL 与远程 http(s) 配图（有界下载） |
 | 下载分类与搜索 | `resource-pages.js` | 已完成（五类 Modrinth 搜索） |
 | 资源详情 / 版本选择 / 安装 | `resource-pages.js`、`resource-picker.js` | 已完成基础流程（版本选择、实例安装/目录下载） |
 | 原版版本列表 / 安装 | `resource-pages.js` | 已完成 |
@@ -58,12 +60,13 @@
    账号头像、离线皮肤、MUA 多角色选择。披风与在线皮肤上传待接。
 6. **外围工具（已完成第一版）**：任务、运行中游戏、收藏（含按版本安装）、目录、
    管理员公告发布与公告/推荐删除管理已接入。
-7. **删除 WebView 主界面**：删除 `Ui/`、`MainWindow`、`bridge.js`、Web 边界检查与 `WebUiChecks`；
-   更新 `scripts/build.ps1`、CI 与文档；保留 `MicrosoftLoginWindow` 的 WebView2。
+7. **删除 WebView 主界面（已完成）**：删除 `Ui/`、`MainWindow`、`bridge.js`、Web 边界检查与
+   `WebUiChecks`；更新 CI 与文档；保留 `MicrosoftLoginWindow` 的 WebView2。
 
 ## 删除阶段门槛
 
 - 上表所有功能为“已完成”，且 `dotnet build`、C# 格式、布局/版本检查通过。
 - 真实账号登录、真实下载安装、启动/退出、删除与恢复在 Windows 上人工验收。
 - 发布包不再包含 `Ui/` 资源；微软登录窗口仍可独立打开并完成 OAuth。
-- 删除 `Ui/` 后，`scripts/check-web-boundaries.py` 改为检查原生页面不反向依赖 Web 协议或 WebView。
+- 删除 `Ui/` 后，边界检查已改为 `scripts/check-native-boundaries.py`，检查原生页面不反向依赖
+  Web 协议或 WebView，并限制 WebView2 只出现在微软登录窗口。
