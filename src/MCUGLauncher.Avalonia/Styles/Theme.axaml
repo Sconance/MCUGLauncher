@@ -239,4 +239,23 @@
   <Style Selector="Button.danger-primary:pressed"><Setter Property="Background" Value="#8F302A"/></Style>
   <Style Selector="Button.danger-primary:disabled"><Setter Property="Background" Value="#D7A5A1"/><Setter Property="Foreground" Value="White"/></Style>
   <Style Selector="Button.filter-tab"><Setter Property="MinHeight" Value="30"/><Setter Property="FontSize" Value="12"/><Setter Property="Padding" Value="12,5"/></Style>
+  <!-- Stable hit area: only the thumb grows, so content does not shift on hover. -->
+  <Style Selector="ScrollBar:vertical">
+    <Setter Property="Width" Value="16"/>
+    <Setter Property="MinWidth" Value="16"/>
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="ScrollBar:vertical /template/ Thumb">
+    <Setter Property="Width" Value="5"/>
+    <Setter Property="RenderTransform" Value="none"/>
+    <Setter Property="Background" Value="#9AABB8"/>
+  </Style>
+  <Style Selector="ScrollBar:vertical:pointerover /template/ Thumb">
+    <Setter Property="Width" Value="11"/>
+    <Setter Property="Background" Value="#52718A"/>
+  </Style>
+  <Style Selector="ScrollBar:vertical[IsExpanded=true] /template/ Thumb">
+    <Setter Property="Width" Value="11"/>
+    <Setter Property="Background" Value="#52718A"/>
+  </Style>
 </Styles>

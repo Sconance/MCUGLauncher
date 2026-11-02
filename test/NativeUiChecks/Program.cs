@@ -345,6 +345,36 @@ internal static class Program
     }
     static async Task SettingsParity(ShellWindow window)
     {
+        window.Navigate("about");
+        await Task.Delay(30);
+        Check(!Controls<TextBox>(window.FindControl<ContentControl>("PageHost")!).Any(), "about page has no empty license text area");
+        Check(Find(window, "打开项目仓库") != null, "about page preserves a project link");
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/about-clean.png");
+        window.Navigate("settings");
+        await Task.Delay(30);
+        var scroll = window.FindControl<ScrollViewer>("PageScroll")!;
+        var bar = Controls<global::Avalonia.Controls.Primitives.ScrollBar>(scroll)
+            .First(b => b.Orientation == global::Avalonia.Layout.Orientation.Vertical && b.IsVisible);
+        var thumb = Controls<global::Avalonia.Controls.Primitives.Thumb>(bar).Single();
+        Check(bar.Bounds.Width >= 16, "vertical scrollbar keeps a wide pointer hit area");
+        window.MouseMove(new Point(400, 60));
+        await Task.Delay(600);
+        var idleWidth = thumb.Bounds.Width;
+        var edge = bar.TranslatePoint(new Point(bar.Bounds.Width / 2, bar.Bounds.Height / 2), window)!.Value;
+        window.MouseMove(edge);
+        await Task.Delay(600);
+        Check(thumb.Bounds.Width > idleWidth && thumb.Bounds.Width >= 11, "approaching the scrollbar expands its thumb");
+        using (var frame = window.CaptureRenderedFrame())
+            frame!.Save("work/native-ui/scrollbar-expanded.png");
+        var grip = thumb.TranslatePoint(new Point(thumb.Bounds.Width / 2, thumb.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(grip, global::Avalonia.Input.MouseButton.Left);
+        window.MouseMove(grip + new Vector(0, 40));
+        window.MouseUp(grip + new Vector(0, 40), global::Avalonia.Input.MouseButton.Left);
+        await Task.Delay(30);
+        Check(scroll.Offset.Y > 0, "expanded scrollbar still drags the page");
+        scroll.Offset = default;
+        window.MouseMove(new Point(400, 60));
         window.Navigate("network");
         await Task.Delay(25);
         await Click(Find(window, "保存网络设置"));
@@ -565,7 +595,7 @@ internal static class Program
     }
     static async Task CodexParity(ShellWindow window)
     {
-        var expected = new[] { "启动设置", "Java 管理", "游戏目录", "实例维护", "存档保护", "界面与背景", "下载与网络", "安装与导入", "维护与恢复", "账号与社区", "数据源", "服务器收藏", "我的收藏", "管理员", "下载任务", "运行中的游戏", "运行日志", "诊断与反馈", "关于与许可" };
+        var expected = new[] { "启动设置", "Java 管理", "游戏目录", "实例维护", "存档保护", "界面与背景", "下载与网络", "安装与导入", "维护与恢复", "账号与社区", "数据源", "服务器收藏", "我的收藏", "管理员", "下载任务", "运行中的游戏", "运行日志", "诊断与反馈", "关于" };
         Check(NavigationCatalog.All.Where(i => i.Group == "settings" && i.Visible).Select(i => i.Label).SequenceEqual(expected), "settings retain all functions with user-approved category grouping");
         Session.HomeInstancePanelOpen = false;
         window.Navigate("home");

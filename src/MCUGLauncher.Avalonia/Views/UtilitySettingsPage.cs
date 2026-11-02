@@ -33,10 +33,15 @@ internal sealed class UtilitySettingsPage : NativePage
                 Body.Children.Add(output);
                 break;
             case "about":
-                Title("关于与许可", MCUGLauncher.ProductInfo.Name + " · " + MCUGLauncher.ProductInfo.Version + " · AI 迁移框架尝试");
-                Body.Children.Add(Ui.Logo(70));
-                Body.Children.Add(Ui.Button("查看第三方许可", async () => { using var stream = global::Avalonia.Platform.AssetLoader.Open(new Uri("avares://MCUGLauncher/Assets/Notices.txt")); using var reader = new StreamReader(stream); output.Text = await reader.ReadToEndAsync(); }));
-                Body.Children.Add(output);
+                Title("关于");
+                Body.Children.Add(Ui.Card(Ui.Stack(
+                    Ui.Row(Ui.Logo(64), Ui.Stack(
+                        Ui.Heading(MCUGLauncher.ProductInfo.Name),
+                        Ui.Text("版本 " + MCUGLauncher.ProductInfo.Version),
+                        Ui.Muted("AI 迁移框架尝试 · 测试版本"))),
+                    Ui.Text("项目地址：https://github.com/Sconance/MCUGLauncher"),
+                    Ui.Action("打开项目仓库", () => System.Diagnostics.Process.Start(
+                        new System.Diagnostics.ProcessStartInfo("https://github.com/Sconance/MCUGLauncher") { UseShellExecute = true })))));
                 break;
         }
     }

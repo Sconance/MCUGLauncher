@@ -34,7 +34,7 @@ internal static class NavigationCatalog
         new("games","运行中的游戏","settings","▷",s=>new GamesPage(s),Section:"任务与诊断"),
         new("logs","运行日志","settings","▤",s=>new UtilitySettingsPage(s,"logs"),Section:"任务与诊断"),
         new("diagnose","诊断与反馈","settings","ⓘ",s=>new UtilitySettingsPage(s,"diagnose"),Section:"任务与诊断"),
-        new("about","关于与许可","settings","ⓘ",s=>new UtilitySettingsPage(s,"about"),Section:"关于"),
+        new("about","关于","settings","ⓘ",s=>new UtilitySettingsPage(s,"about"),Section:"关于"),
         new("manage","版本内容管理","home","⚙",s=>new InstancesPage(s,true),Visible:false),
         new("version","版本设置","home","⚙",s=>new VersionOverviewPage(s),Visible:false)
     ];

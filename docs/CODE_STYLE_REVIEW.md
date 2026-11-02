@@ -97,3 +97,8 @@ DialogWindow 归纳原 Ui.Show/Confirm/Error 重复的窗口组装，专职标�
 ## Core 复用复查
 
 详见 CORE_REUSE_AUDIT.md。删除 App 重复 SLP 协议代码，复用原子存储，使用明确的副本/地址比较代替 JSON 中转。没有新增管理器或机械拆文件，保留现有分支上的快照改进。测试覆盖核心行为及异常路径；未宣称全项目零缺陷。
+
+
+## 关于页与滚动条修订
+
+仅修改原有展示页与共享主题，不新增业务组件。版本复用 ProductInfo.Version，无手填旧版本。滚动条继续使用 Avalonia 原生 Track/Thumb 及拖动逻辑，只覆盖尺寸与颜色。NativeUiChecks 验证许可空框移除、项目入口、悬停加粗及实际拖动，并检查 Skia 截图。
