@@ -102,6 +102,7 @@ MCUGLauncher.Core（下载校验、依赖解析、实例与启动）
 WebView2 只保留在微软 OAuth 登录窗口中，不参与主界面渲染。后端组件的分级、依赖声明与 Core
 下沉规则见 [BACKEND_DEVELOPMENT.md](BACKEND_DEVELOPMENT.md)。当前架构与迁移状态见
 [架构说明](docs/ARCHITECTURE.md) 与 [原生 UI 迁移矩阵](docs/NATIVE_UI_PARITY.md)。
+UI 文件权限、样式任务边界与 AI 自动开发约束见 [UI 开发指南](docs/UI_DEVELOPMENT.md)。
 
 ### 目录
 
