@@ -13,7 +13,7 @@ public partial class ShellWindow : Window
     LauncherFacade facade = null!;
     JsonElement state;
     LauncherState? typed;
-    JsonElement tasks;
+    IReadOnlyList<TaskInfo> tasks = Array.Empty<TaskInfo>();
     JsonElement contentItems;
     JsonElement uninstallPreview;
     string page = "home";
@@ -31,6 +31,12 @@ public partial class ShellWindow : Window
             ResetWindow);
         facade = new LauncherFacade(host);
         facade.MessageReceived += OnMessage;
+        facade.TasksChanged += list =>
+        {
+            tasks = list;
+            if (page == "tasks")
+                Render();
+        };
         facade.StateChanged += snapshot =>
         {
             typed = snapshot;
@@ -79,13 +85,6 @@ public partial class ShellWindow : Window
         else if (type.GetString() == "contentError")
         {
             Add("下载失败：" + ReadString(message, "message"));
-        }
-        else if (type.GetString() == "tasks")
-        {
-            if (message.TryGetProperty("items", out var items))
-                tasks = items.Clone();
-            if (page == "tasks")
-                Render();
         }
         else if (type.GetString() == "launchResult")
         {
@@ -296,21 +295,16 @@ public partial class ShellWindow : Window
     void RenderTasks()
     {
         AddHeading("下载任务");
-        if (tasks.ValueKind != JsonValueKind.Array || tasks.GetArrayLength() == 0)
+        if (tasks.Count == 0)
         {
             Add("当前没有排队或运行中的任务。");
             return;
         }
-        foreach (var task in tasks.EnumerateArray())
+        foreach (var task in tasks)
         {
-            var id = ReadString(task, "id");
-            var name = ReadString(task, "name");
-            var stateText = ReadString(task, "state");
-            var percent = task.TryGetProperty("percent", out var p) && p.TryGetDouble(out var value) ? value : 0;
-            var message = ReadString(task, "message");
-            Add($"{name} · {stateText} · {percent:0}%");
-            if (message.Length > 0)
-                Add("  " + message);
+            Add($"{task.Name} · {task.State} · {task.Percent:0}%");
+            if (task.Message.Length > 0)
+                Add("  " + task.Message);
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
             foreach (var (label, action) in new[]
                      {
@@ -318,7 +312,7 @@ public partial class ShellWindow : Window
                      })
             {
                 var button = new Button { Content = label };
-                var taskId = id;
+                var taskId = task.Id;
                 var taskAction = action;
                 button.Click += async (_, _) =>
                 {
