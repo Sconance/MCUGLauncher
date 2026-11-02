@@ -355,3 +355,15 @@ internal sealed class SaveCommands(LauncherContext context)
 | B 组件 `using MCUGLauncher.Ui` | 依赖 UI，破坏分层 |
 | 把 `%LOCALAPPDATA%` 路径逻辑放进 Core | Core 不应知道应用配置 |
 | 在三个组件里复制“实例目录解析” | 应归纳后下沉 Core |
+
+
+## 0.24.0-codex 原生迁移依赖变动
+
+后端项目现位于 `src/MCUGLauncher.App`，旧路径只保留为历史说明。
+
+- ResourceCommands（B）：继续依赖 LauncherContext.Config.Root/LastInstance/Java、Http、Token、Store.DataDirectory、Tasks.Enqueue(string,string,string,DownloadRequest)、Send(object)，VersionCatalog.Load/ReadDetails/InstanceDirectory；新增图片读取复用 SkinAssets.Download(HttpClient,Uri,CancellationToken)。readImage 为原生图片控件提供受限 HTTPS、有界字节结果，不引用图片解码器或控件。它属于已有资源用例，不新增下载器。
+- DiagnosticCommands（B）：LauncherContext.Store.DataDirectory、Config.Root、Send(object)。移除 WebView2 版本探测，系统信息不依赖界面框架。
+- CommunityCommands（B）：既有 LauncherContext.Community.ReadAsync/TestAsync、Config.DataSources/Servers/Player/CommunityKey/AdminKey/WriteEndpoint、Store.DataDirectory/Save(AppConfig)、Http、Token、Send(object)、RefreshState()，以及 ServerPingService.PingAsync。仅将既有 Servers 数据源纳入同一读取流程，未增加组件依赖或新网络客户端。
+- ShellWindow、ShellDesktopHost、LauncherFacade（C）：装配、原生窗口操作和协议适配；Views 为前端视图，不列入后端 B 组件。
+
+IDesktopHost 确认契约变更：ConfirmStopGameAsync() / ConfirmUninstallAsync(string) 返回 Task<bool>；LauncherApplication 在关闭、卸载及恢复排队卸载前 await 结果。测试替身与 ShellDesktopHost 同步更新，取消不执行操作。

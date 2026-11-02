@@ -93,6 +93,8 @@ await Request("""{"type":"requestGames"}""");
 Check(Has("games") && messages.Last().GetProperty("items").GetArrayLength() == 0, "running games request contains only owned sessions");
 application.RememberWindow(1400, 900, true);
 Check(store.Load().WindowWidth == 1400 && store.Load().WindowMaximized, "window dimensions persist through application boundary");
+await Request("""{"type":"readImage","url":"http://localhost/private.png","requestId":"blocked-image"}""");
+Check(Has("imageData") && !messages.Last().GetProperty("ok").GetBoolean(), "native image reader rejects non-HTTPS and unapproved hosts without fetching");
 await ResourceScenarios.Run(fixture);
 await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
@@ -102,8 +104,8 @@ Console.WriteLine("ALL_WEB_BRIDGE_CHECKS_PASSED (isolated fixtures; no live acco
 
 sealed class FakeDesktop : IDesktopHost
 {
-    public bool ConfirmStopGame() => false;
-    public bool ConfirmUninstall(string name) => false;
+    public Task<bool> ConfirmStopGameAsync() => Task.FromResult(false);
+    public Task<bool> ConfirmUninstallAsync(string name) => Task.FromResult(false);
     public void PickSaveFile(string target)
     {
     }

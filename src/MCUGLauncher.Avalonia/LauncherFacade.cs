@@ -1,138 +1,148 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Avalonia.Threading;
+using MCUGLauncher.Services;
 using MCUGLauncher.UseCases;
+using MCUGLauncher.Avalonia.Presentation;
 
 namespace MCUGLauncher.Avalonia;
 
-/// <summary>类型化 UI 门面：替代 WebView JSON 协议，向原生 View 暴露业务消息。</summary>
-internal sealed class LauncherFacade : IDisposable
+/// <summary>Native presentation state and compatibility adapter to existing use cases.</summary>
+internal sealed class LauncherFacade : IDisposable, INotifyPropertyChanged
 {
-    static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
-    readonly LauncherApplication application;
-
-    public event Action<JsonElement>? MessageReceived;
-    public event Action<LauncherState>? StateChanged;
-    public LauncherState? State
+    internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    readonly LauncherApplication? application;
+    readonly Func<object, Task>? testSend;
+    readonly CancellationTokenSource lifetime = new();
+    readonly Dictionary<string, string> avatarCache = [];
+    string avatar = AvaloniaAvatarImage.Encode(null);
+    public LauncherState State { get; private set; } = new();
+    public NativeItem[] Tasks { get; private set; } = [];
+    public NativeItem[] Games { get; private set; } = [];
+    public Dictionary<string, CommunityEntry[]> Community { get; } = [];
+    public string Avatar => avatar;
+    public (double Width, double Height, bool Maximized) WindowPreferences => application is null ? (1200, 800, false) : (application.Config.WindowWidth, application.Config.WindowHeight, application.Config.WindowMaximized);
+    public string Status { get; private set; } = "AI 迁移框架尝试 · 尚未完成真实账号与游戏验收";
+    public Action<string>? Navigate
     {
-        get; private set;
+        get; set;
     }
-
-    public LauncherFacade(IDesktopHost desktop)
+    public event Action<NativeMessage>? MessageReceived;
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public LauncherFacade(IDesktopHost desktop, ConfigStore? store = null)
     {
-        application = new LauncherApplication(
-            Send,
-            desktop,
-            dispatch: action => Dispatcher.UIThread.Post(action),
-            microsoftBrowser: _ => new MicrosoftLoginWebUi(),
-            avatarEncoder: AvaloniaAvatarImage.Encode);
+        application = new LauncherApplication(SendMessage, desktop, store,
+            action => Dispatcher.UIThread.Post(action), _ => new MicrosoftLoginWebUi(), AvaloniaAvatarImage.Encode);
     }
-
-    public Task StartAsync() => application.HandleAsync("""{"type":"ready"}""");
-
-    public Task LaunchAsync(string version) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "launch",
-            version
-        }, Options));
-
-    public Task RequestStateAsync() => application.HandleAsync("""{"type":"requestState"}""");
-
-    public Task SaveSettingsAsync(string root, string java, int ram) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "saveSettings",
-            root,
-            java,
-            ram
-        }, Options));
-
-    public Task RequestTasksAsync() => application.HandleAsync("""{"type":"requestTasks"}""");
-
-    public Task TaskActionAsync(string id, string action) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "taskAction",
-            id,
-            action
-        }, Options));
-
-    public Task LoginMicrosoftAsync() => application.HandleAsync("""{"type":"loginMicrosoft"}""");
-
-    public Task LoginMuaAsync(string account, string password) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "loginMua",
-            account,
-            password
-        }, Options));
-
-    public Task SwitchAccountModeAsync(string mode) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "switchAccountMode",
-            account = mode
-        }, Options));
-
-    public Task ForgetAccountAsync(string mode) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "forgetAccount",
-            account = mode
-        }, Options));
-
-    public Task SearchContentAsync(string category, string query) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "searchContent",
-            category,
-            query
-        }, Options));
-
-    public Task InstallContentAsync(string id, string category) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "installContent",
-            id,
-            category
-        }, Options));
-
-    public void SendMessage(object payload) => Send(payload);
-
-    public Task CloneInstanceAsync(string version, string name) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "cloneInstance",
-            version,
-            name
-        }, Options));
-
-    public Task PreviewUninstallAsync(string version) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "previewUninstall",
-            version
-        }, Options));
-
-    public Task ApplyUninstallAsync(string token) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
-        {
-            type = "applyUninstall",
-            token
-        }, Options));
-
-    void Send(object payload)
+    internal LauncherFacade(Func<object, Task> send) => testSend = send;
+    public Task SendAsync(object payload) => testSend != null ? testSend(payload)
+        : application!.HandleAsync(JsonSerializer.Serialize(payload, Json));
+    public async Task<NativeMessage> RequestAsync(string response, object payload, Func<NativeMessage, bool>? matches = null)
     {
-        var json = JsonSerializer.Serialize(payload, Options);
-        using var document = JsonDocument.Parse(json);
-        var root = document.RootElement.Clone();
-        if (root.TryGetProperty("type", out var type) && type.GetString() == "state")
+        var command = System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(payload, Json))!.AsObject();
+        var requestId = command["requestId"]?.GetValue<string>() ?? Guid.NewGuid().ToString("N");
+        command["requestId"] = requestId;
+        var completion = new TaskCompletionSource<NativeMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void Receive(NativeMessage message)
         {
-            State = LauncherState.From(root);
-            StateChanged?.Invoke(State);
+            if (message.Type == response && (matches == null || matches(message)))
+                completion.TrySetResult(message);
+            else if (message.Type is "error" or "contentError" && message.RequestId == requestId)
+                completion.TrySetException(new IOException(message.Message));
         }
-        MessageReceived?.Invoke(root);
+        MessageReceived += Receive;
+        try
+        {
+            await SendAsync(command);
+            return await completion.Task.WaitAsync(TimeSpan.FromSeconds(70), lifetime.Token);
+        }
+        finally { MessageReceived -= Receive; }
     }
-
-    public void Dispose() => application.Dispose();
+    public void Report(string text)
+    {
+        Status = text;
+        Notify(nameof(Status));
+    }
+    public void SendMessage(object value)
+    {
+        var json = JsonSerializer.Serialize(value, Json);
+        if (Dispatcher.UIThread.CheckAccess())
+            Receive(json);
+        else
+            Dispatcher.UIThread.Post(() => Receive(json));
+    }
+    internal void Receive(string json)
+    {
+        var message = JsonSerializer.Deserialize<NativeMessage>(json, Json)!;
+        var oldKey = State.AccountType + ":" + State.Player;
+        if (message.Type == "state")
+            State = JsonSerializer.Deserialize<LauncherState>(json, Json)!;
+        if (message.Type == "accountState")
+            State = State with
+            {
+                Player = message.Player,
+                AccountType = message.AccountType,
+                AccountLabel = message.AccountLabel
+            };
+        var key = State.AccountType + ":" + State.Player;
+        if (oldKey != key)
+        {
+            avatar = avatarCache.GetValueOrDefault(key) ?? AvaloniaAvatarImage.Encode(null);
+            Notify(nameof(Avatar));
+            _ = SendAsync(new
+            {
+                type = "readAvatar"
+            });
+        }
+        if (message.Type == "avatar" && message.Account == State.AccountType && message.Player == State.Player && message.Image.StartsWith("data:image/png;base64,", StringComparison.Ordinal))
+        {
+            if (!message.Fallback || !avatarCache.ContainsKey(key) || message.Account == "offline")
+            {
+                avatar = message.Image;
+                avatarCache[key] = avatar;
+                if (avatarCache.Count > 24)
+                    avatarCache.Remove(avatarCache.Keys.First());
+                Notify(nameof(Avatar));
+            }
+        }
+        if (message.Type == "tasks")
+            Tasks = message.Items;
+        if (message.Type == "games")
+            Games = message.Items;
+        if (message.Type == "community")
+            foreach (var (name, text) in message.Payload)
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(text);
+                    var entries = doc.RootElement;
+                    if (entries.ValueKind == JsonValueKind.Object && (entries.TryGetProperty("items", out var nested) || entries.TryGetProperty(name, out nested)))
+                        entries = nested;
+                    if (entries.ValueKind == JsonValueKind.Array)
+                        Community[name] = entries.Deserialize<CommunityEntry[]>(Json) ?? [];
+                }
+                catch (JsonException) { Report("社区内容格式无效：" + name); }
+            }
+        if (message.Type is "error" or "toast" or "saved" or "launchResult" or "publishResult" or "authResult" or "accountSwitchResult" or "serverResult")
+            Report(message.Message);
+        if (message.Type == "settingsSaved")
+            Report("已保存设置。");
+        if (message.Type is "state" or "accountState")
+            Notify(nameof(State));
+        if (message.Type is "tasks" or "games")
+        {
+            Notify(nameof(Tasks));
+            Notify(nameof(Games));
+        }
+        MessageReceived?.Invoke(message);
+    }
+    public void RememberWindow(double width, double height, bool maximized) => application?.RememberWindow(width, height, maximized);
+    void Notify([CallerMemberName] string? property = null) => PropertyChanged?.Invoke(this, new(property));
+    public void Dispose()
+    {
+        lifetime.Cancel();
+        application?.Dispose();
+        lifetime.Dispose();
+    }
 }

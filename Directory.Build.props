@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup>
-    <McugVersion>0.22.3</McugVersion>
+    <McugVersion>0.24.0</McugVersion>
+    <McugChannel>codex</McugChannel>
+    <InformationalVersion>$(McugVersion)-$(McugChannel)</InformationalVersion>
     <Version>$(McugVersion)</Version>
   </PropertyGroup>
 

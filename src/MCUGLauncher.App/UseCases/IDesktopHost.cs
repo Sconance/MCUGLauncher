@@ -5,8 +5,8 @@ namespace MCUGLauncher.UseCases;
 // Native window operations stay in the shell, outside application use cases.
 internal interface IDesktopHost
 {
-    bool ConfirmStopGame();
-    bool ConfirmUninstall(string name);
+    Task<bool> ConfirmStopGameAsync();
+    Task<bool> ConfirmUninstallAsync(string name);
     void PickSaveFile(string target);
     void Window(string action);
     void Drag();

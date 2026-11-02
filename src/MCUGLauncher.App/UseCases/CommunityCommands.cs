@@ -6,7 +6,11 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
 
-// Handles community use cases; no WPF controls or browser access.
+/// <summary>Existing community feeds, local publishing and server status flows.</summary>
+/// <remarks>B: LauncherContext.Community.ReadAsync/TestAsync; Config.DataSources/Servers/Player/
+/// CommunityKey/AdminKey/WriteEndpoint; Store.DataDirectory/Save(AppConfig); Http; Token;
+/// Send(object); RefreshState(); ServerPingService.PingAsync. No UI or browser dependencies.
+/// Server feeds use the same reader and network policy as announcements.</remarks>
 internal sealed class CommunityCommands(LauncherContext context)
 {
     public async Task SendCommunityAsync(bool notify = false)
@@ -21,6 +25,7 @@ internal sealed class CommunityCommands(LauncherContext context)
         var jobs = new[]
         {
             ("announcements", context.Config.DataSources.Announcements),
+            ("servers", context.Config.DataSources.Servers),
             ("recommendations", context.Config.DataSources.Recommendations),
             ("quotes", context.Config.DataSources.Quotes)
         };

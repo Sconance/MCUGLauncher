@@ -66,6 +66,7 @@ internal sealed class LauncherApplication : IDisposable
 
     public async Task HandleAsync(string json)
     {
+        var requestId = "";
         try
         {
             using var document = JsonDocument.Parse(json);
@@ -73,6 +74,7 @@ internal sealed class LauncherApplication : IDisposable
             if (root.ValueKind != JsonValueKind.Object)
                 throw new ArgumentException("消息必须是对象。");
             ProtocolValues.ValidateMessage(root);
+            requestId = ReadString(root, "requestId");
             var type = ReadString(root, "type");
             switch (type)
             {
@@ -98,7 +100,7 @@ internal sealed class LauncherApplication : IDisposable
                     break;
                 case "applyUninstall":
                     var uninstallToken = ReadString(root, "token");
-                    if (desktop.ConfirmUninstall(uninstallCommands.Name(uninstallToken)))
+                    if (await desktop.ConfirmUninstallAsync(uninstallCommands.Name(uninstallToken)))
                         uninstallCommands.Apply(uninstallToken);
                     break;
                 case "checkContentUpdates":
@@ -123,7 +125,7 @@ internal sealed class LauncherApplication : IDisposable
                     context.SendGames();
                     break;
                 case "stopGame":
-                    if (desktop.ConfirmStopGame())
+                    if (await desktop.ConfirmStopGameAsync())
                         gameCommands.Stop(ReadString(root, "id"));
                     break;
                 case "listLoaders":
@@ -178,7 +180,7 @@ internal sealed class LauncherApplication : IDisposable
                     var taskId = ReadString(root, "id");
                     var taskAction = ReadString(root, "action");
                     var pending = context.Tasks.History().FirstOrDefault(t => t.Id == taskId);
-                    if (taskAction == "resume" && pending?.Download?.Kind == "uninstall" && !desktop.ConfirmUninstall(pending.Name))
+                    if (taskAction == "resume" && pending?.Download?.Kind == "uninstall" && !await desktop.ConfirmUninstallAsync(pending.Name))
                         break;
                     context.Tasks.Change(taskId, taskAction);
                     break;
@@ -228,6 +230,9 @@ internal sealed class LauncherApplication : IDisposable
                     break;
                 case "deleteVersion":
                     await uninstallCommands.PreviewAsync(ReadString(root, "version"));
+                    break;
+                case "readImage":
+                    await resourceCommands.ReadImageAsync(root);
                     break;
                 case "searchContent":
                     context.Log("searchContent " + ReadString(root, "category") + " " + ReadString(root, "query"));
@@ -309,6 +314,7 @@ internal sealed class LauncherApplication : IDisposable
             context.Send(new
             {
                 type = "error",
+                requestId,
                 message = ex.Message
             });
         }

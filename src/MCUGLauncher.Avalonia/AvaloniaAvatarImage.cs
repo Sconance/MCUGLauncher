@@ -13,10 +13,8 @@ internal static class AvaloniaAvatarImage
     public static string Encode(byte[]? skin)
     {
         using var output = new MemoryStream();
-        if (skin is null)
-            RenderDefault().Save(output);
-        else
-            RenderSkin(skin).Save(output);
+        using var bitmap = skin is null ? RenderDefault() : RenderSkin(skin);
+        bitmap.Save(output);
         return "data:image/png;base64," + Convert.ToBase64String(output.ToArray());
     }
 

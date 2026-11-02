@@ -5,3 +5,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("AuthChecks")]
 [assembly: InternalsVisibleTo("MuaChecks")]
 [assembly: InternalsVisibleTo("WebBridgeChecks")]
+[assembly: InternalsVisibleTo("NativeUiChecks")]

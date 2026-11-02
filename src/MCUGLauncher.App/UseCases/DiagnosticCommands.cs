@@ -1,9 +1,11 @@
 using BlockLaunch;
-using Microsoft.Web.WebView2.Core;
 
 namespace MCUGLauncher.UseCases;
 
-// Handles diagnostic use cases; no WPF controls or browser access.
+/// <summary>Returns log text and runtime information without depending on a UI framework.</summary>
+/// <remarks>B component: LauncherContext.Store.DataDirectory (log location),
+/// LauncherContext.Config.Root (game path), LauncherContext.Send(object) (result channel).
+/// No window, browser runtime or application-composition dependencies.</remarks>
 internal sealed class DiagnosticCommands(LauncherContext context)
 {
     public void ReadLog()
@@ -30,18 +32,11 @@ internal sealed class DiagnosticCommands(LauncherContext context)
 
     public void SendSystemInfo()
     {
-        var webview = "未知";
-        try
-        {
-            webview = CoreWebView2Environment.GetAvailableBrowserVersionString();
-        }
-        catch { }
         context.Send(new
         {
             type = "systemInfo",
             app = ProductInfo.Version,
             dotnet = Environment.Version.ToString(),
-            webview,
             os = Environment.OSVersion.VersionString,
             root = context.Config.Root,
             data = context.Store.DataDirectory

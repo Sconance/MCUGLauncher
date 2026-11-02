@@ -5,9 +5,47 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
 
-// Handles resource use cases; no WPF controls or browser access.
+/// <summary>Resource browsing, queue requests and bounded presentation images.</summary>
+/// <remarks>
+/// B component. Uses LauncherContext.Config (Root/LastInstance/Java), Http, Token,
+/// Store.DataDirectory, Tasks.Enqueue(string,string,string,DownloadRequest), Send(object),
+/// SkinAssets.Download(HttpClient,Uri,CancellationToken), VersionCatalog.Load/ReadDetails/InstanceDirectory.
+/// Does not depend on views, native controls or the application composition root.
+/// </remarks>
 internal sealed class ResourceCommands(LauncherContext context)
 {
+    public async Task ReadImageAsync(JsonElement message)
+    {
+        var id = ReadString(message, "requestId");
+        try
+        {
+            var url = ReadString(message, "url");
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != "https"
+                || uri.UserInfo.Length > 0 || uri.Host is not ("cdn.modrinth.com" or "raw.githubusercontent.com" or "textures.minecraft.net"))
+                throw new ArgumentException("图片来源未获允许。");
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(12));
+            var bytes = await SkinAssets.Download(context.Http, uri, timeout.Token);
+            context.Send(new
+            {
+                type = "imageData",
+                requestId = id,
+                image = Convert.ToBase64String(bytes),
+                ok = true
+            });
+        }
+        catch (Exception)
+        {
+            context.Send(new
+            {
+                type = "imageData",
+                requestId = id,
+                image = "",
+                ok = false
+            });
+        }
+    }
+
     public async Task SendVanillaVersionsAsync()
     {
         try

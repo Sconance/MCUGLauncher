@@ -27,6 +27,6 @@
     <PackageReference Include="WebView2.Avalonia" Version="1.0.3240.44-preview.250526.1" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Ui/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <AvaloniaResource Include="Assets/**" />
   </ItemGroup>
 </Project>

@@ -20,6 +20,7 @@ internal sealed class MicrosoftLoginWindow : Window
     readonly CancellationTokenSource lifetime = new();
     readonly WebView2 browser = new();
     bool closed;
+    bool navigationBound;
 
     public MicrosoftLoginWindow(Uri loginUri, ICodeFlowUrlChecker? checker)
     {
@@ -58,9 +59,9 @@ internal sealed class MicrosoftLoginWindow : Window
         try
         {
             Show();
-            browser.Source = loginUri;
             browser.DOMContentLoaded += OnDomContentLoaded;
-            return await result.Task;
+            browser.Source = loginUri;
+            return await result.Task.WaitAsync(TimeSpan.FromMinutes(5), linked.Token);
         }
         catch (OperationCanceledException)
         {
@@ -82,6 +83,9 @@ internal sealed class MicrosoftLoginWindow : Window
         var core = browser.CoreWebView2;
         if (core is null)
             return;
+        if (navigationBound)
+            return;
+        navigationBound = true;
         core.Settings.AreDevToolsEnabled = false;
         core.NavigationStarting += OnNavigationStarting;
         core.NavigationCompleted += OnNavigationCompleted;

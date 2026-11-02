@@ -1,395 +1,83 @@
-using System.Text.Json;
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.Layout;
 using Avalonia.Media;
-
+using MCUGLauncher.Avalonia.Presentation;
+using MCUGLauncher.Avalonia.Views;
 namespace MCUGLauncher.Avalonia;
 
-/// <summary>原生 Avalonia 外壳：阶段 1 提供启动/设置两页，旧 WebView 作为回退入口保留。</summary>
+// Composition and native window lifetime only. Page views own presentation, use cases own work.
 public partial class ShellWindow : Window
 {
-    LauncherFacade facade = null!;
-    JsonElement state;
-    LauncherState? typed;
-    JsonElement tasks;
-    JsonElement contentItems;
-    JsonElement uninstallPreview;
-    string page = "home";
-
-    public ShellWindow()
+    readonly LauncherFacade session;
+    NativePage? page;
+    string group = "";
+    public ShellWindow() : this(null) { }
+    internal ShellWindow(LauncherFacade? injected)
     {
         InitializeComponent();
-        using (var empty = JsonDocument.Parse("{}"))
-            state = empty.RootElement.Clone();
-        var host = new ShellDesktopHost(
-            () => Handle,
-            message => facade?.SendMessage(message),
-            HandleWindow,
-            DragWindow,
-            ResetWindow);
-        facade = new LauncherFacade(host);
-        facade.MessageReceived += OnMessage;
-        facade.StateChanged += snapshot =>
-        {
-            typed = snapshot;
-            if (page == "home")
-                Render();
-        };
-        HomeButton.Click += (_, _) => Show("home");
-        DownloadButton.Click += (_, _) => Show("download");
-        MaintenanceButton.Click += (_, _) => Show("maintenance");
-        AccountButton.Click += (_, _) => Show("account");
-        TasksButton.Click += (_, _) => { page = "tasks"; _ = facade.RequestTasksAsync(); Render(); };
-        SettingsButton.Click += (_, _) => Show("settings");
-        ClassicButton.Click += (_, _) => new MainWindow().Show();
-        Opened += async (_, _) => await facade.StartAsync();
-        Closed += (_, _) => facade.Dispose();
+        Title = BlockLaunch.ProductInfo.Name + " · " + BlockLaunch.ProductInfo.Version + " · AI 迁移框架尝试";
+        session = injected ?? App.CreateSession(new ShellDesktopHost(this, value => session!.SendMessage(value)));
+        var size = session.WindowPreferences;
+        Width = Math.Clamp(size.Width, 960, 3840);
+        Height = Math.Clamp(size.Height, 640, 2160);
+        if (size.Maximized)
+            WindowState = WindowState.Maximized;
+        session.Navigate = Navigate;
+        session.PropertyChanged += Changed;
+        session.MessageReceived += OnMessage;
+        BrandPanel.Children.Add(Ui.Logo());
+        BrandPanel.Children.Add(Ui.Text("MCUG Launcher", 20));
+        foreach (var (label, id) in new[] { ("▷ 启动", "home"), ("↓ 下载", "vanilla"), ("⚙ 设置", "settings") })
+            TopNavigation.Children.Add(Ui.Action(label, () => Navigate(id)));
+        TaskButton.Click += (_, _) => Navigate("tasks");
+        Opened += async (_, _) => { if (injected == null) await session.SendAsync(new { type = "ready" }); };
+        Closed += (_, _) => { session.RememberWindow(Width, Height, WindowState == WindowState.Maximized); page?.Dispose(); session.PropertyChanged -= Changed; session.MessageReceived -= OnMessage; session.Dispose(); };
+        Navigate("home");
+        Changed(this, new(null));
     }
-
-    void Show(string next)
+    internal void Navigate(string id)
     {
-        page = next;
-        Render();
-    }
-
-    void OnMessage(JsonElement message)
-    {
-        if (!message.TryGetProperty("type", out var type))
-            return;
-        if (type.GetString() == "state")
+        var entry = NavigationCatalog.All.FirstOrDefault(i => i.Id == id) ?? NavigationCatalog.All[0];
+        if (entry.Group != group)
         {
-            state = message;
-            Render();
-        }
-        else if (type.GetString() == "uninstallPreview")
-        {
-            uninstallPreview = message.Clone();
-            if (page == "maintenance")
-                Render();
-        }
-        else if (type.GetString() == "contentList")
-        {
-            if (message.TryGetProperty("items", out var items))
-                contentItems = items.Clone();
-            if (page == "download")
-                Render();
-        }
-        else if (type.GetString() == "contentError")
-        {
-            Add("下载失败：" + ReadString(message, "message"));
-        }
-        else if (type.GetString() == "tasks")
-        {
-            if (message.TryGetProperty("items", out var items))
-                tasks = items.Clone();
-            if (page == "tasks")
-                Render();
-        }
-        else if (type.GetString() == "launchResult")
-        {
-            var ok = message.TryGetProperty("ok", out var value) && value.ValueKind == JsonValueKind.True;
-            Add(ok ? "已启动游戏。" : "启动失败：" + ReadString(message, "message"));
-        }
-    }
-
-    void Render()
-    {
-        Content.Children.Clear();
-        if (page == "settings")
-            RenderSettings();
-        else if (page == "maintenance")
-            RenderMaintenance();
-        else if (page == "download")
-            RenderDownload();
-        else if (page == "account")
-            RenderAccount();
-        else if (page == "tasks")
-            RenderTasks();
-        else
-            RenderHome();
-    }
-
-    void RenderHome()
-    {
-        var snapshot = typed;
-        Add("账号：" + (snapshot?.AccountLabel is { Length: > 0 } label ? label : "离线账号"));
-        Add("玩家：" + (snapshot?.Player ?? ""));
-        Add("当前版本：" + (snapshot?.SelectedVersion ?? ""));
-
-        AddHeading("实例");
-        if (snapshot is { Instances.Count: > 0 })
-        {
-            foreach (var instance in snapshot.Instances)
+            group = entry.Group;
+            Sidebar.Children.Clear();
+            foreach (var item in NavigationCatalog.All.Where(i => i.Group == group))
             {
-                if (instance.Name.Length == 0)
-                    continue;
-                var row = new Button
-                {
-                    Content = "启动  " + instance.Name + (instance.Loader.Length > 0 ? "  ·  " + instance.Loader : ""),
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    HorizontalContentAlignment = HorizontalAlignment.Left
-                };
-                row.Click += async (_, _) => await facade.LaunchAsync(instance.Name);
-                Content.Children.Add(row);
+                var button = Ui.Action(item.Label, () => Navigate(item.Id));
+                button.Tag = item.Id;
+                if (item.IconPath is { Length: > 0 } image)
+                    button.Content = Ui.Row(new Image { Source = new global::Avalonia.Media.Imaging.Bitmap(global::Avalonia.Platform.AssetLoader.Open(new Uri(image))), Width = 20, Height = 20 }, Ui.Text(item.Label));
+                else
+                    button.Content = item.Symbol + "  " + item.Label;
+                button.Classes.Add("nav");
+                Sidebar.Children.Add(button);
             }
         }
-        else
-        {
-            Add("尚未找到已安装实例。");
-        }
-
-        var refresh = new Button { Content = "刷新状态", HorizontalAlignment = HorizontalAlignment.Left };
-        refresh.Click += async (_, _) => await facade.RequestStateAsync();
-        Content.Children.Add(refresh);
+        PageGrid.ColumnDefinitions[0].Width = new GridLength(group == "home" ? 0 : 190);
+        page?.Dispose();
+        page = entry.Create(session);
+        PageHost.Content = page;
+        PageScroll.Offset = default;
+        foreach (var button in Sidebar.Children.OfType<Button>())
+            button.Classes.Set("selected", button.Tag as string == entry.Id);
     }
-
-    void RenderSettings()
+    void Changed(object? sender, PropertyChangedEventArgs args)
     {
-        AddHeading("设置");
-        var root = new TextBox { Text = ReadString(state, "root"), Watermark = "游戏根目录" };
-        var java = new TextBox { Text = ReadString(state, "java"), Watermark = "Java 路径（留空自动）" };
-        var ram = new TextBox
-        {
-            Text = state.TryGetProperty("ram", out var ramValue) && ramValue.TryGetInt32(out var value) ? value.ToString() : "4096",
-            Watermark = "内存 MB"
-        };
-        Add("游戏目录");
-        Content.Children.Add(root);
-        Add("Java");
-        Content.Children.Add(java);
-        Add("内存（MB）");
-        Content.Children.Add(ram);
-
-        var save = new Button { Content = "保存设置", HorizontalAlignment = HorizontalAlignment.Left };
-        save.Click += async (_, _) =>
-        {
-            var memory = int.TryParse(ram.Text, out var parsed) ? Math.Clamp(parsed, 512, 65536) : 4096;
-            await facade.SaveSettingsAsync(root.Text?.Trim() ?? "", java.Text?.Trim() ?? "", memory);
-            await facade.RequestStateAsync();
-            Add("设置已保存。");
-        };
-        Content.Children.Add(save);
-        Add("提示：目录与 Java 的浏览对话框将在下一阶段接入。");
+        StatusText.Text = session.Status;
+        var active = session.Tasks.Where(t => t.State is "Running" or "Queued" or "Paused").ToArray();
+        TaskButton.Content = "↓ 下载任务（" + active.Length + "）";
+        TaskProgress.IsVisible = active.Length > 0;
+        TaskProgress.Value = active.Length > 0 ? active.Average(t => t.Percent ?? 0) : 0;
     }
-
-    void RenderMaintenance()
+    async void OnMessage(NativeMessage message)
     {
-        AddHeading("实例维护");
-        if (state.TryGetProperty("instances", out var instances) && instances.ValueKind == JsonValueKind.Array)
-        {
-            var cloneName = new TextBox { Watermark = "新实例名称", Width = 260, HorizontalAlignment = HorizontalAlignment.Left };
-            Content.Children.Add(cloneName);
-            foreach (var item in instances.EnumerateArray())
+        if (message.Type == "muaProfiles")
+            try
             {
-                var version = ReadString(item, "name");
-                if (version.Length == 0)
-                    continue;
-                Add(version);
-                var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-                var clone = new Button { Content = "克隆" };
-                var source = version;
-                clone.Click += async (_, _) =>
-                {
-                    var name = cloneName.Text?.Trim() ?? "";
-                    if (name.Length == 0)
-                        return;
-                    await facade.CloneInstanceAsync(source, name);
-                    await facade.RequestStateAsync();
-                };
-                var uninstall = new Button { Content = "卸载预览" };
-                uninstall.Click += async (_, _) => await facade.PreviewUninstallAsync(source);
-                row.Children.Add(clone);
-                row.Children.Add(uninstall);
-                Content.Children.Add(row);
+                await AccountsPage.SelectProfile(session, this, message);
             }
-        }
-        if (uninstallPreview.ValueKind == JsonValueKind.Object
-            && uninstallPreview.TryGetProperty("token", out var tokenValue)
-            && tokenValue.GetString() is { Length: > 0 } token)
-        {
-            AddHeading("卸载预览");
-            Add(ReadString(uninstallPreview, "notice"));
-            if (uninstallPreview.TryGetProperty("paths", out var paths) && paths.ValueKind == JsonValueKind.Array)
-                foreach (var path in paths.EnumerateArray())
-                    Add("· " + (path.GetString() ?? ""));
-            var apply = new Button { Content = "确认卸载", HorizontalAlignment = HorizontalAlignment.Left };
-            apply.Click += async (_, _) => { await facade.ApplyUninstallAsync(token); await facade.RequestStateAsync(); };
-            Content.Children.Add(apply);
-        }
-        else
-        {
-            Add("选择实例后可克隆或预览卸载。卸载预览必须先查看路径。");
-        }
+            catch (Exception error) { session.Report(error.Message); }
     }
-
-    void RenderDownload()
-    {
-        AddHeading("下载");
-        var category = new ComboBox
-        {
-            ItemsSource = new[] { "mod", "modpack", "resourcepack", "shader", "datapack" },
-            SelectedIndex = 0,
-            HorizontalAlignment = HorizontalAlignment.Left
-        };
-        var query = new TextBox { Watermark = "搜索关键词", Width = 320, HorizontalAlignment = HorizontalAlignment.Left };
-        Content.Children.Add(category);
-        Content.Children.Add(query);
-        var search = new Button { Content = "搜索", HorizontalAlignment = HorizontalAlignment.Left };
-        search.Click += async (_, _) =>
-            await facade.SearchContentAsync(category.SelectedItem as string ?? "mod", query.Text?.Trim() ?? "");
-        Content.Children.Add(search);
-
-        if (contentItems.ValueKind == JsonValueKind.Array && contentItems.GetArrayLength() > 0)
-        {
-            foreach (var item in contentItems.EnumerateArray())
-            {
-                var id = ReadString(item, "id");
-                var name = ReadString(item, "name");
-                var desc = ReadString(item, "description");
-                Add(name + (desc.Length > 0 ? "  ·  " + desc : ""));
-                var install = new Button { Content = "安装 " + name, HorizontalAlignment = HorizontalAlignment.Left };
-                var projectId = id;
-                var type = category.SelectedItem as string ?? "mod";
-                install.Click += async (_, _) =>
-                {
-                    await facade.InstallContentAsync(projectId, type);
-                    await facade.RequestStateAsync();
-                };
-                Content.Children.Add(install);
-            }
-        }
-        else
-        {
-            Add("输入关键词后搜索 Modrinth。");
-        }
-    }
-
-    void RenderAccount()
-    {
-        AddHeading("账号");
-        Add("当前：" + (ReadString(state, "accountLabel") is { Length: > 0 } label ? label : "离线账号"));
-        Add("玩家：" + ReadString(state, "player"));
-
-        var microsoft = new Button { Content = "登录微软账号", HorizontalAlignment = HorizontalAlignment.Left };
-        microsoft.Click += async (_, _) => { await facade.LoginMicrosoftAsync(); await facade.RequestStateAsync(); };
-        Content.Children.Add(microsoft);
-
-        AddHeading("MUA 账号");
-        var account = new TextBox { Watermark = "MUA 账号" };
-        var password = new TextBox { Watermark = "密码", PasswordChar = '●' };
-        Content.Children.Add(account);
-        Content.Children.Add(password);
-        var muaLogin = new Button { Content = "登录 MUA", HorizontalAlignment = HorizontalAlignment.Left };
-        muaLogin.Click += async (_, _) =>
-        {
-            await facade.LoginMuaAsync(account.Text?.Trim() ?? "", password.Text ?? "");
-            await facade.RequestStateAsync();
-        };
-        Content.Children.Add(muaLogin);
-
-        var offline = new Button { Content = "切换到离线账号", HorizontalAlignment = HorizontalAlignment.Left };
-        offline.Click += async (_, _) => { await facade.SwitchAccountModeAsync("offline"); await facade.RequestStateAsync(); };
-        Content.Children.Add(offline);
-
-        var forget = new Button { Content = "忘记已保存账号", HorizontalAlignment = HorizontalAlignment.Left };
-        forget.Click += async (_, _) =>
-        {
-            await facade.ForgetAccountAsync(ReadString(state, "accountType") is { Length: > 0 } mode ? mode : "offline");
-            await facade.RequestStateAsync();
-        };
-        Content.Children.Add(forget);
-    }
-
-    void RenderTasks()
-    {
-        AddHeading("下载任务");
-        if (tasks.ValueKind != JsonValueKind.Array || tasks.GetArrayLength() == 0)
-        {
-            Add("当前没有排队或运行中的任务。");
-            return;
-        }
-        foreach (var task in tasks.EnumerateArray())
-        {
-            var id = ReadString(task, "id");
-            var name = ReadString(task, "name");
-            var stateText = ReadString(task, "state");
-            var percent = task.TryGetProperty("percent", out var p) && p.TryGetDouble(out var value) ? value : 0;
-            var message = ReadString(task, "message");
-            Add($"{name} · {stateText} · {percent:0}%");
-            if (message.Length > 0)
-                Add("  " + message);
-            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-            foreach (var (label, action) in new[]
-                     {
-                         ("暂停", "pause"), ("继续", "resume"), ("取消", "cancel"), ("删除", "delete")
-                     })
-            {
-                var button = new Button { Content = label };
-                var taskId = id;
-                var taskAction = action;
-                button.Click += async (_, _) =>
-                {
-                    await facade.TaskActionAsync(taskId, taskAction);
-                    await facade.RequestTasksAsync();
-                };
-                row.Children.Add(button);
-            }
-            Content.Children.Add(row);
-        }
-        var refresh = new Button { Content = "刷新任务", HorizontalAlignment = HorizontalAlignment.Left };
-        refresh.Click += async (_, _) => await facade.RequestTasksAsync();
-        Content.Children.Add(refresh);
-    }
-
-    IntPtr Handle => TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
-
-    void HandleWindow(string action)
-    {
-        switch (action)
-        {
-            case "minimize":
-                WindowState = WindowState.Minimized;
-                break;
-            case "maximize":
-                WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-                break;
-            case "close":
-                Close();
-                break;
-        }
-    }
-
-    void DragWindow()
-    {
-        if (Handle == IntPtr.Zero)
-            return;
-        ReleaseCapture();
-        SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
-    }
-
-    void ResetWindow()
-    {
-        Width = 1100;
-        Height = 720;
-        WindowState = WindowState.Normal;
-    }
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    static extern bool ReleaseCapture();
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    static extern IntPtr SendMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
-
-    void AddHeading(string text) =>
-        Content.Children.Add(new TextBlock { Text = text, FontSize = 18, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 12, 0, 0) });
-
-    void Add(string text) =>
-        Content.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap });
-
-    static string ReadString(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
-            ? value.GetString() ?? ""
-            : "";
 }

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><SelfContained>true</SelfContained><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><RuntimeIdentifier>win-x64</RuntimeIdentifier></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../src/MCUGLauncher.Avalonia/MCUGLauncher.Avalonia.csproj"/><PackageReference Include="Avalonia.Headless" Version="11.3.22" /></ItemGroup>
+</Project>
+
