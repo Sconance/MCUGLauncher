@@ -43,14 +43,19 @@ internal sealed class LauncherFacade : IDisposable
 
     public Task RequestStateAsync() => application.HandleAsync("""{"type":"requestState"}""");
 
-    public Task SaveSettingsAsync(string root, string java, int ram) =>
-        application.HandleAsync(JsonSerializer.Serialize(new
+    public Task SaveSettingsAsync(string root, string java, int ram, string? player = null)
+    {
+        var payload = new Dictionary<string, object>
         {
-            type = "saveSettings",
-            root,
-            java,
-            ram
-        }, Options));
+            ["type"] = "saveSettings",
+            ["root"] = root,
+            ["java"] = java,
+            ["ram"] = ram
+        };
+        if (!string.IsNullOrWhiteSpace(player))
+            payload["player"] = player;
+        return application.HandleAsync(JsonSerializer.Serialize(payload, Options));
+    }
 
     public Task RequestTasksAsync() => application.HandleAsync("""{"type":"requestTasks"}""");
 

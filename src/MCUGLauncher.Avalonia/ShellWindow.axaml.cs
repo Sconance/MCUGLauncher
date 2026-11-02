@@ -204,6 +204,7 @@ public partial class ShellWindow : Window
         var java = new TextBox { Text = snapshot?.Java ?? "", Watermark = "Java 路径（留空自动）" };
         rootBox = root;
         javaBox = java;
+        var player = new TextBox { Text = snapshot?.Player ?? "", Watermark = "离线玩家名" };
         var ram = new TextBox { Text = (snapshot?.Ram ?? 4096).ToString(), Watermark = "内存 MB" };
         Add("游戏目录");
         Content.Children.Add(root);
@@ -215,6 +216,8 @@ public partial class ShellWindow : Window
         var browseJava = new Button { Content = "选择 java.exe", HorizontalAlignment = HorizontalAlignment.Left };
         browseJava.Click += (_, _) => host.PickFile("java");
         Content.Children.Add(browseJava);
+        Add("离线玩家名");
+        Content.Children.Add(player);
         Add("内存（MB）");
         Content.Children.Add(ram);
         var save = new Button { Content = "保存设置", HorizontalAlignment = HorizontalAlignment.Left };
@@ -222,7 +225,7 @@ public partial class ShellWindow : Window
         save.Click += async (_, _) =>
         {
             var memory = int.TryParse(ram.Text, out var parsed) ? Math.Clamp(parsed, 512, 65536) : 4096;
-            await facade.SaveSettingsAsync(root.Text?.Trim() ?? "", java.Text?.Trim() ?? "", memory);
+            await facade.SaveSettingsAsync(root.Text?.Trim() ?? "", java.Text?.Trim() ?? "", memory, player.Text?.Trim());
             await facade.RequestStateAsync();
             Add("设置已保存。");
         };
