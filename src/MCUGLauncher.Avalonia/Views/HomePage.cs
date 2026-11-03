@@ -103,12 +103,27 @@ internal sealed class HomePage : NativePage
         }
         details.Children.Add(new Border { Child = tabs, Background = global::Avalonia.Media.Brush.Parse("#E8F0F7"), CornerRadius = new CornerRadius(7), Padding = new Thickness(2) });
         var avatar = Ui.Button("", () => AccountDialogs.Skin(Session, UI, Owner));
+        avatar.Classes.Add("avatar");
+        var portrait = new Grid { Width = 100, Height = 100 };
+        portrait.Children.Add(new Border
+        {
+            Width = 82,
+            Height = 82,
+            HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center,
+            Background = global::Avalonia.Media.Brushes.Transparent,
+            BoxShadow = global::Avalonia.Media.BoxShadows.Parse("0 3 10 0 #220E2B3F"),
+            IsHitTestVisible = false
+        });
         avatar.Content = Ui.Avatar(UI.Avatar, 94);
+        portrait.Children.Add(avatar);
+        ToolTip.SetTip(avatar, "查看或更换头像");
+        global::Avalonia.Automation.AutomationProperties.SetName(avatar, "查看或更换头像");
         avatar.Padding = new Thickness(3);
         avatar.Width = avatar.Height = 100;
-        avatar.Margin = new Thickness(0, 13, 0, 0);
-        avatar.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
-        details.Children.Add(avatar);
+        portrait.Margin = new Thickness(0, 13, 0, 0);
+        portrait.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        details.Children.Add(portrait);
         var name = Ui.Text(State.Player, 18);
         name.FontWeight = global::Avalonia.Media.FontWeight.Bold;
         name.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;

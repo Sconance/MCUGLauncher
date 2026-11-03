@@ -33,18 +33,35 @@ internal static class AvaloniaAvatarImage
         using var source = new Bitmap(input);
         var scale = source.PixelSize.Width / 64;
         var size = 8 * scale;
-        var target = new RenderTargetBitmap(new PixelSize(size, size), new Vector(96, 96));
-        using (var context = target.CreateDrawingContext())
+        return ComposeHead(source, new Rect(8 * scale, 8 * scale, size, size), new Rect(40 * scale, 8 * scale, size, size));
+    }
+
+    // The outer skin layer extends past the face. Integer texture scaling preserves crisp pixels;
+    // all margins scale with the source resolution, including HD skins.
+    static Bitmap ComposeHead(Bitmap source, Rect face, Rect? outerLayer = null)
+    {
+        var scale = face.Width / 8;
+        var edge = (int)(72 * scale);
+        var target = new RenderTargetBitmap(new PixelSize(edge, edge), new Vector(96, 96));
+        try
         {
-            context.DrawImage(source, new Rect(8 * scale, 8 * scale, size, size), new Rect(0, 0, size, size));
-            context.DrawImage(source, new Rect(40 * scale, 8 * scale, size, size), new Rect(0, 0, size, size));
+            using var context = target.CreateDrawingContext();
+            using var options = context.PushRenderOptions(new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.None });
+            context.DrawImage(source, face, new Rect(4 * scale, 4 * scale, 64 * scale, 64 * scale));
+            if (outerLayer is { } layer)
+                context.DrawImage(source, layer, new Rect(0, 0, edge, edge));
+            return target;
         }
-        return target;
+        catch
+        {
+            target.Dispose();
+            throw;
+        }
     }
 
     static Bitmap RenderDefault()
     {
-        var bitmap = new WriteableBitmap(new PixelSize(8, 8), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
+        using var bitmap = new WriteableBitmap(new PixelSize(8, 8), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using (var buffer = bitmap.Lock())
         {
             for (var y = 0; y < 8; y++)
@@ -62,6 +79,6 @@ internal static class AvaloniaAvatarImage
                     Marshal.WriteByte(buffer.Address, offset + 3, 255);
                 }
         }
-        return bitmap;
+        return ComposeHead(bitmap, new Rect(0, 0, 8, 8));
     }
 }

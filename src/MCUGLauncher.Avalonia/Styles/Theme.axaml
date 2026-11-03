@@ -258,4 +258,11 @@
     <Setter Property="Width" Value="11"/>
     <Setter Property="Background" Value="#52718A"/>
   </Style>
+  <Style Selector="Button.avatar">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+  <Style Selector="Button.avatar:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#E8F2F8"/>
+  </Style>
 </Styles>
