@@ -59,6 +59,7 @@ internal partial class AccountView : UserControl
                 AuthStatus.Text = "请填写 MUA 账号和密码。";
                 return;
             }
+
             AuthStatus.Text = "正在登录 MUA…";
             await service!.LoginMuaAsync(account, MuaPasswordBox.Text ?? "");
         };
@@ -111,8 +112,8 @@ internal partial class AccountView : UserControl
         SkinHint.Text = info.Fallback
             ? "正在使用默认头像；离线模式可选择本地皮肤。"
             : info.Account == "offline"
-                ? "本地皮肤仅对离线账号生效。"
-                : "在线账号皮肤来自认证站。";
+                ? "本地皮肤仅对离线账号生效"
+                : "在线账号皮肤来自认证站";
     }
 
     void OnAuth(AuthResultInfo info)
@@ -155,6 +156,7 @@ internal partial class AccountView : UserControl
             };
             ProfilesPanel.Children.Add(button);
         }
+
         ProfilesCard.IsVisible = info.Items.Count > 0;
         if (info.Items.Count == 0)
             AuthStatus.Text = "MUA 登录未返回可选角色。";

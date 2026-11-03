@@ -3,7 +3,7 @@
         x:Class="MCUGLauncher.Avalonia.ShellWindow"
         Title="MCUG Launcher"
         Width="1200" Height="780"
-        MinWidth="960" MinHeight="640"
+        MinWidth="1130" MinHeight="640"
         Background="{StaticResource AppBg}"
         SystemDecorations="BorderOnly"
         WindowStartupLocation="CenterScreen">
@@ -68,7 +68,12 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Padding="20,20,24,20">
+        <!--
+            右 Padding = 滚动条到窗口右边界的距离（0 = 贴边）。
+            内容右侧留白不在这里，而在 Theme.axaml 的 ScrollViewer.Padding 上；
+            二者之和决定卡片位置：Padding(0) + 滚动条列(6) + ScrollViewer.Padding(11) = 17。
+        -->
+        <Border Grid.Row="1" Padding="20,20,3,20">
             <ContentControl x:Name="PageHost"
                             HorizontalContentAlignment="Stretch"
                             VerticalContentAlignment="Stretch" />
