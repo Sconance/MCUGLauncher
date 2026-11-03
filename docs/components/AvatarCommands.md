@@ -4,7 +4,7 @@
 
 依赖成员：
 - LauncherContext.Config.AccountType/Player/SkinFile：快照身份与离线文件路径。
-- LauncherContext.AccountRevision、OnlineSession.UUID：区分会话与丢弃迟到结果。
+- LauncherContext.AccountRevision、OnlineSession.UUID、AccountSessions.Identity(string).Uuid：区分会话与丢弃迟到结果。
 - LauncherContext.Http/Token：传入 Core SkinAssets.SkinUri/Download，执行有界读取与取消。
 - LauncherContext.Microsoft.ReadSavedAccount()：读取正版皮肤地址。
 - LauncherContext.Mua.Read()/Metadata(CancellationToken)/Skin(credential,metadata,CancellationToken)：读取 MUA 当前角色和皮肤。

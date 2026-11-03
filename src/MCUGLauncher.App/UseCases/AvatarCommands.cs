@@ -7,7 +7,7 @@ namespace MCUGLauncher.UseCases;
 
 /// <summary>读取和缓存头像，合并自动刷新；手动刷新绕过缓存，不参与账号授权。</summary>
 /// <remarks>
-/// B 类：读取 LauncherContext.Config.AccountType/Player/SkinFile、AccountRevision、OnlineSession.UUID；
+/// B 类：读取 LauncherContext.Config.AccountType/Player/SkinFile、AccountRevision、OnlineSession.UUID、AccountSessions.Identity(string).Uuid；
 /// Token/Http 用于取消和有界下载，Microsoft.ReadSavedAccount、Mua.Read/Metadata/Skin 提供皮肤来源；
 /// Store.DataDirectory/Save(AppConfig) 保存离线皮肤设置，Send(object) 回推快照。
 /// 编码由构造参数提供，无控件依赖；成员和缓存规则见 docs/components/AvatarCommands.md。
@@ -25,7 +25,7 @@ internal sealed class AvatarCommands(LauncherContext context, Func<byte[]?, stri
         var mode = context.Config.AccountType;
         var player = context.Config.Player;
         var skinFile = context.Config.SkinFile;
-        var key = mode + ":" + player + ":" + context.OnlineSession?.UUID + ":" + (mode == "offline" ? skinFile : "");
+        var key = mode + ":" + player + ":" + (context.OnlineSession?.UUID ?? context.AccountSessions.Identity(mode)?.Uuid) + ":" + (mode == "offline" ? skinFile : "");
         if (!force && cache.TryGetValue(key, out var saved) && DateTimeOffset.UtcNow - saved.Loaded <
             (saved.Fallback ? TimeSpan.FromSeconds(15) : TimeSpan.FromMinutes(5)))
         {

@@ -9,7 +9,7 @@ namespace MCUGLauncher.UseCases;
 /// <summary>准备并启动独立游戏会话，观察退出并处理关闭请求。</summary>
 /// <remarks>
 /// B 类。成员级依赖与跨模块契约见 docs/components/GameCommands.md。
-/// LauncherContext.Config/OnlineSession/Mua/Token/Http/Store/Tasks/Games 提供启动快照与运行环境；
+/// LauncherContext.Config/Mua/Token/Http/Store/Tasks/Games 提供启动快照与运行环境；
 /// MarkPreparing(string,string)/ReleasePreparing(string) 保留准备状态；Send(object)/SendGames()/Log(string) 回推结果。
 /// 不依赖任何 View、窗口或控件；语言设置复用 Core GameDefaults.EnsureChinese。
 /// </remarks>
@@ -34,34 +34,33 @@ internal sealed class GameCommands(LauncherContext context,
                 throw new IOException("还没有可启动的版本。");
             var player = context.Config.Player;
             var mode = context.Config.AccountType;
-            var online = context.OnlineSession;
-            if (mode != "offline" && online == null)
-                throw new IOException("在线账号尚未验证完成，请完成登录后再启动。");
             var instance = InstanceSnapshot.Capture(context.Config, key);
             context.Tasks.RequireLaunchAvailable(instance.Root, key, instance.Directory);
             context.Games.RequireAvailable(instance.Directory, player, mode == "offline");
             context.MarkPreparing(instance.Root, instance.Directory);
             reservedDirectory = instance.Directory;
-            var session = mode == "offline" ? new MSession
+            MSession session;
+            if (mode == "offline")
+                session = new MSession
+                {
+                    Username = player,
+                    UUID = OfflineUuid(player),
+                    AccessToken = "0",
+                    ClientToken = Guid.NewGuid().ToString("N"),
+                    UserType = "legacy"
+                };
+            else
             {
-                Username = player,
-                UUID = OfflineUuid(player),
-                AccessToken = "0",
-                ClientToken = Guid.NewGuid().ToString("N"),
-                UserType = "legacy"
-            } : online!;
+                session = await new AccountModeCommands(context).EnsureFreshAsync(mode);
+                if (!string.Equals(session.Username, player, StringComparison.Ordinal))
+                    throw new IOException("账号身份已改变，请重新选择账号后启动。");
+            }
             AuthlibLaunch? external = null;
             if (mode == "mua" && context.Mua != null)
             {
                 var metadata = await context.Mua.Metadata(context.Token);
                 var jar = await AuthlibLaunch.Prepare(Path.Combine(context.Store.DataDirectory, "authlib-injector"), context.Http, context.Token);
                 external = new AuthlibLaunch(jar, metadata.Json);
-            }
-            if (mode != "offline")
-            {
-                session = await new AccountModeCommands(context).EnsureFreshAsync(mode);
-                if (!string.Equals(session.Username, player, StringComparison.Ordinal))
-                    throw new IOException("账号身份已改变，请重新选择账号后启动。");
             }
             var settings = instance.Settings;
             if (settings.AutoChinese && !context.Games.UsesDirectory(instance.Directory))

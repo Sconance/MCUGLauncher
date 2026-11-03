@@ -503,3 +503,5 @@ internal sealed class SaveCommands(LauncherContext context)
 
 ## 账号切换性能修订
 AccountModeCommands（B）新增 Store.SaveAsync(AppConfig) 快照保存依赖，身份选择与启动前验证仍分离；AvatarCommands（B）增加本地编码缓存和请求合并，不引入 UI 依赖。逐成员登记见 docs/components/AccountModeCommands.md、docs/components/AvatarCommands.md 和 ConfigStore.md；行为及验证边界见 docs/account-switch-performance.md。
+
+账号选择分离补充：AccountSessionCache（A）分别持有无令牌 AccountIdentity 与已验证 MSession；AccountModeCommands 新增 Identity/RememberIdentity 和 Mua.Read 依赖，启动时只预读本地身份。GameCommands 在创建进程前通过 EnsureFreshAsync 获取会话，移除对预先存在 OnlineSession 的要求。成员说明见对应组件文档与 docs/account-switch-performance.md。
