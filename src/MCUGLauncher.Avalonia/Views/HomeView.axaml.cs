@@ -189,25 +189,13 @@ internal partial class HomeView : UserControl
         ServerPanel.Children.Clear();
         if (state is not { Servers.Count: > 0 })
         {
-            ServerPanel.Children.Add(new Border
-            {
-                Width = 200,
-                MinHeight = 120,
-                Padding = new Thickness(12),
-                CornerRadius = new CornerRadius(9),
-                Background = new SolidColorBrush(Color.Parse("#F8FBF9")),
-                BorderBrush = new SolidColorBrush(Color.Parse("#D6DDE4")),
-                BorderThickness = new Thickness(1),
-                Child = new TextBlock
-                {
-                    Text = "还没有收藏服务器。\n填入 host:port，就能看到实时人数与延迟。",
-                    TextWrapping = TextWrapping.Wrap,
-                    Classes = { "muted" }
-                }
-            });
+            ServerPanel.IsVisible = false;
+            ServerEmptyPanel.IsVisible = true;
             ServerSummary.Text = "0 台服务器";
             return;
         }
+        ServerPanel.IsVisible = true;
+        ServerEmptyPanel.IsVisible = false;
         var online = state.Servers.Count(server => pings.TryGetValue(server.Address, out var ping) && ping.Online);
         ServerSummary.Text = $"{online} 在线 · {state.Servers.Count - online} 离线";
         foreach (var server in state.Servers)

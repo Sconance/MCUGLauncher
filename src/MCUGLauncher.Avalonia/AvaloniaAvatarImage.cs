@@ -35,35 +35,44 @@ internal static class AvaloniaAvatarImage
         using var source = new Bitmap(input);
         var scale = source.PixelSize.Width / 64;
         var size = 8 * scale;
-        var target = new RenderTargetBitmap(new PixelSize(size, size), new Vector(96, 96));
+        var target = new RenderTargetBitmap(new PixelSize(size * 7, size * 7), new Vector(96, 96));
         using (var context = target.CreateDrawingContext())
+        using (context.PushRenderOptions(new RenderOptions
+               {
+                   BitmapInterpolationMode = BitmapInterpolationMode.None
+               }))
         {
-            context.DrawImage(source, new Rect(8 * scale, 8 * scale, size, size), new Rect(0, 0, size, size));
-            context.DrawImage(source, new Rect(40 * scale, 8 * scale, size, size), new Rect(0, 0, size, size));
+            context.DrawImage(source, new Rect(8 * scale, 8 * scale, size, size), new Rect(4, 4, size * 6, size * 6));
+            context.DrawImage(source, new Rect(40 * scale, 8 * scale, size, size), new Rect(0, 0, size * 7, size * 7));
         }
+
         return target;
     }
 
     static Bitmap RenderDefault()
     {
-        var bitmap = new WriteableBitmap(new PixelSize(8, 8), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
+        var bitmap = new WriteableBitmap(new PixelSize(8, 8), new Vector(96, 96), PixelFormat.Bgra8888,
+            AlphaFormat.Unpremul);
         using (var buffer = bitmap.Lock())
         {
             for (var y = 0; y < 8; y++)
-                for (var x = 0; x < 8; x++)
-                {
-                    var color = y < 2 || (y == 2 && (x == 0 || x == 7)) ? Color.FromRgb(71, 47, 34) : Color.FromRgb(187, 135, 97);
-                    if (y == 4 && x is 1 or 2 or 5 or 6)
-                        color = x is 2 or 5 ? Color.FromRgb(56, 91, 159) : Colors.White;
-                    if (y == 6 && x is >= 2 and <= 5)
-                        color = Color.FromRgb(103, 64, 46);
-                    var offset = y * buffer.RowBytes + x * 4;
-                    Marshal.WriteByte(buffer.Address, offset, color.B);
-                    Marshal.WriteByte(buffer.Address, offset + 1, color.G);
-                    Marshal.WriteByte(buffer.Address, offset + 2, color.R);
-                    Marshal.WriteByte(buffer.Address, offset + 3, 255);
-                }
+            for (var x = 0; x < 8; x++)
+            {
+                var color = y < 2 || (y == 2 && (x == 0 || x == 7))
+                    ? Color.FromRgb(71, 47, 34)
+                    : Color.FromRgb(187, 135, 97);
+                if (y == 4 && x is 1 or 2 or 5 or 6)
+                    color = x is 2 or 5 ? Color.FromRgb(56, 91, 159) : Colors.White;
+                if (y == 6 && x is >= 2 and <= 5)
+                    color = Color.FromRgb(103, 64, 46);
+                var offset = y * buffer.RowBytes + x * 4;
+                Marshal.WriteByte(buffer.Address, offset, color.B);
+                Marshal.WriteByte(buffer.Address, offset + 1, color.G);
+                Marshal.WriteByte(buffer.Address, offset + 2, color.R);
+                Marshal.WriteByte(buffer.Address, offset + 3, 255);
+            }
         }
+
         return bitmap;
     }
 }
