@@ -46,6 +46,16 @@ internal static class Program
         var item = JsonSerializer.SerializeToElement(message, Json);
         Sent.Add(item);
         var type = item.GetProperty("type").GetString();
+        if (type == "readAvatar")
+            Deliver(new
+            {
+                type = "avatar",
+                account = Session.State.AccountType,
+                player = Session.State.Player,
+                image = AvaloniaAvatarImage.Encode(null),
+                fallback = true
+            });
+
         if (type == "switchAccountMode" && pendingModeSwitch != null)
             return pendingModeSwitch.Task;
 

@@ -18,8 +18,17 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
     {
         var revision = context.AccountRevision;
         var selected = context.Config.AccountType;
+        await PreloadIdentitiesAsync();
+        if (revision == context.AccountRevision)
+            await SwitchAsync(selected, false);
+    }
+    public async Task PreloadIdentitiesAsync()
+    {
+        var revision = context.AccountRevision;
         foreach (var mode in new[] { "microsoft", "mua" })
         {
+            if (context.AccountSessions.Identity(mode) != null)
+                continue;
             try
             {
                 var identity = await ReadIdentityAsync(mode);
@@ -29,11 +38,9 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
                     context.AccountSessions.RememberIdentity(mode, identity);
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or AccountStorageException)
-            { /* One damaged local account must not block the other mode or force a login at startup. */
+            { /* A damaged local account must not block the other mode or force a login at startup. */
             }
         }
-        if (revision == context.AccountRevision)
-            await SwitchAsync(selected, false);
     }
     Task<AccountIdentity?> ReadIdentityAsync(string mode) => readIdentity != null ? readIdentity(mode) : Task.Run(() =>
     {

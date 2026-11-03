@@ -8,8 +8,7 @@ internal sealed class UiContext : IDisposable, INotifyPropertyChanged
     readonly ILauncherService service;
     readonly Dictionary<string, string> avatars = [];
     string identity = "";
-    static readonly Lazy<string> defaultAvatar = new(() => AvaloniaAvatarImage.Encode(null));
-    public string Avatar { get; private set; } = defaultAvatar.Value;
+    public string Avatar { get; private set; } = "";
     public string Status { get; private set; } = "";
     public Action<string>? Navigate
     {
@@ -41,7 +40,7 @@ internal sealed class UiContext : IDisposable, INotifyPropertyChanged
         if (key != identity)
         {
             identity = key;
-            Avatar = avatars.GetValueOrDefault(key) ?? defaultAvatar.Value;
+            Avatar = avatars.GetValueOrDefault(key) ?? "";
             AvatarChanged?.Invoke();
         }
         PropertyChanged?.Invoke(this, new(null));

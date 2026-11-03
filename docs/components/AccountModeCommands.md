@@ -14,3 +14,5 @@
 有会话缓存时立即应用内存身份并发布账号摘要；随后等待不可变配置快照异步落盘。本地身份加载通过 ReadSavedAccount / Mua.Read 读取并缓存，首次切换不做网络恢复；网络授权仅由 EnsureFreshAsync 在启动前按需执行。保存失败说明可能无法保留重启后的选择，不将磁盘错误误报为授权失效。
 
 启动前 EnsureFreshAsync 的授权验证保持原规则。恢复任务仍检查 AccountRevision；旧恢复完成不能改回先前账号。
+
+PreloadIdentitiesAsync 仅从本地凭据读取身份，LauncherApplication 在首次 RefreshState 前等待它；RestoreSelectedAsync 复用此步骤并保留选择版本检查。这里不调用网络认证。

@@ -10,13 +10,18 @@ namespace MCUGLauncher.UseCases;
 /// B 类：读取 LauncherContext.Config.AccountType/Player/SkinFile、AccountRevision、OnlineSession.UUID、AccountSessions.Identity(string).Uuid；
 /// Token/Http 用于取消和有界下载，Microsoft.ReadSavedAccount、Mua.Read/Metadata/Skin 提供皮肤来源；
 /// Store.DataDirectory/Save(AppConfig) 保存离线皮肤设置，Send(object) 回推快照。
+/// AvatarDiskCache.ReadAsync/ReadSourceAsync/SaveAsync 管理账号和来源索引及图片持久化。
 /// 编码由构造参数提供，无控件依赖；成员和缓存规则见 docs/components/AvatarCommands.md。
 /// </remarks>
 internal sealed class AvatarCommands(LauncherContext context, Func<byte[]?, string> encode)
 {
-    sealed record Portrait(string Image, string Label, bool Fallback, DateTimeOffset Loaded);
-    readonly Dictionary<string, Portrait> cache = [];
+    sealed record Portrait(string Image, string Label, bool Fallback, string Source = "");
+    readonly AvatarDiskCache disk = new(Path.Combine(context.Store.DataDirectory, "cache", "avatars", "v1"));
     readonly Dictionary<string, Task<Portrait>> pending = [];
+    readonly Dictionary<string, long> generations = [];
+    readonly object requestGate = new();
+    readonly Dictionary<string, long> latestReads = [];
+    long nextGeneration, nextRead;
     string? defaultImage;
 
     public async Task ReadAsync(bool force = true)
@@ -25,79 +30,137 @@ internal sealed class AvatarCommands(LauncherContext context, Func<byte[]?, stri
         var mode = context.Config.AccountType;
         var player = context.Config.Player;
         var skinFile = context.Config.SkinFile;
-        var key = mode + ":" + player + ":" + (context.OnlineSession?.UUID ?? context.AccountSessions.Identity(mode)?.Uuid) + ":" + (mode == "offline" ? skinFile : "");
-        if (!force && cache.TryGetValue(key, out var saved) && DateTimeOffset.UtcNow - saved.Loaded <
-            (saved.Fallback ? TimeSpan.FromSeconds(15) : TimeSpan.FromMinutes(5)))
+        var uuid = context.OnlineSession?.UUID ?? context.AccountSessions.Identity(mode)?.Uuid ?? "";
+        var key = mode + ":" + (mode == "mua" ? MuaAccountService.Api : "minecraft") + ":" + (uuid.Length > 0 ? uuid : player) +
+            (mode == "offline" ? ":" + skinFile : "");
+        long read;
+        lock (requestGate)
+            latestReads[key] = read = ++nextRead;
+        bool Current()
         {
-            Send(saved);
-            return;
+            lock (requestGate)
+                return revision == context.AccountRevision && latestReads.GetValueOrDefault(key) == read;
         }
-        if (force || !pending.TryGetValue(key, out var work))
+        var cached = await disk.ReadAsync(key, context.Token);
+        if (!Current())
+            return;
+        if (cached != null)
         {
-            work = LoadAsync(mode, skinFile);
-            pending[key] = work;
+            Send(new(cached.Image, "本地缓存头像", false));
+            var age = DateTimeOffset.UtcNow - cached.Checked;
+            lock (requestGate)
+                if (!force && age >= TimeSpan.Zero && age < TimeSpan.FromMinutes(5) && !pending.ContainsKey(key))
+                    return;
+        }
+        else if (mode != "offline" || string.IsNullOrEmpty(skinFile))
+            Send(Default());
+
+        Task<Portrait> work;
+        long generation;
+        lock (requestGate)
+        {
+            if (force || !pending.TryGetValue(key, out work!))
+            {
+                generations[key] = ++nextGeneration;
+                work = LoadAsync(mode, skinFile, force);
+                pending[key] = work;
+            }
+            generation = generations[key];
         }
         Portrait portrait;
         try
         {
             portrait = await work;
         }
-        finally { if (pending.TryGetValue(key, out var current) && ReferenceEquals(current, work)) pending.Remove(key); }
-        if (revision != context.AccountRevision)
-            return;
-        cache[key] = portrait;
-        if (cache.Count > 24)
-            cache.Remove(cache.Keys.First());
-        Send(portrait);
-
-        void Send(Portrait value) => context.Send(new
+        finally
         {
-            type = "avatar",
-            image = value.Image,
-            label = value.Label,
-            fallback = value.Fallback,
-            account = mode,
-            player
-        });
+            lock (requestGate)
+                if (pending.TryGetValue(key, out var current) && ReferenceEquals(current, work))
+                    pending.Remove(key);
+        }
+        if (!Current())
+            return;
+        // A failed refresh retains the last good on-disk portrait, including across application restarts.
+        if (portrait.Fallback && cached != null)
+            return;
+        Send(portrait);
+        if (!portrait.Fallback)
+        {
+            try
+            {
+                await disk.SaveAsync(key, portrait.Source, portrait.Image, generation, context.Token);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or FormatException)
+            {
+                context.Log("头像缓存未能保存，本次显示不受影响");
+            }
+        }
+
+        void Send(Portrait value)
+        {
+            if (!Current())
+                return;
+            context.Send(new
+            {
+                type = "avatar",
+                image = value.Image,
+                label = value.Label,
+                fallback = value.Fallback,
+                account = mode,
+                player
+            });
+        }
+    }
+    Portrait Default()
+    {
+        lock (requestGate)
+            return new(defaultImage ??= encode(null), "史蒂夫默认头像", true);
     }
 
-    async Task<Portrait> LoadAsync(string mode, string skinFile)
+    async Task<Portrait> LoadAsync(string mode, string skinFile, bool force)
     {
-        // Dispatch account selection notifications before starting local metadata and skin work.
         await Task.Yield();
-        var label = "史蒂夫默认头像";
         try
         {
             byte[]? bytes = null;
-            if (mode == "offline" && File.Exists(skinFile))
+            string source;
+            string label;
+            Uri? uri = null;
+            if (mode == "offline")
             {
-                bytes = await ReadLocalAsync(skinFile);
+                if (!File.Exists(skinFile))
+                    return Default();
+                source = "local:" + skinFile + ":" + File.GetLastWriteTimeUtc(skinFile).Ticks;
                 label = Path.GetFileName(skinFile);
             }
             else if (mode == "microsoft")
             {
-                var saved = context.Microsoft?.ReadSavedAccount();
-                if (!string.IsNullOrWhiteSpace(saved?.SkinUrl))
-                {
-                    bytes = await SkinAssets.Download(context.Http, SkinAssets.SkinUri(saved.SkinUrl), context.Token);
-                    label = "正版皮肤";
-                }
+                var saved = await Task.Run(() => context.Microsoft?.ReadSavedAccount(), context.Token);
+                if (string.IsNullOrWhiteSpace(saved?.SkinUrl))
+                    return Default();
+                uri = SkinAssets.SkinUri(saved.SkinUrl);
+                source = uri.AbsoluteUri;
+                label = "正版皮肤";
             }
-            else if (mode == "mua" && context.Mua?.Read() is { } saved)
+            else
             {
+                var saved = await Task.Run(() => context.Mua?.Read(), context.Token);
+                if (saved == null || context.Mua == null)
+                    return Default();
                 var metadata = await context.Mua.Metadata(context.Token);
-                var uri = await context.Mua.Skin(saved, metadata, context.Token);
-                if (uri != null)
-                    bytes = await SkinAssets.Download(context.Http, uri, context.Token);
-                if (bytes != null)
-                    label = "MUA 皮肤";
+                uri = await context.Mua.Skin(saved, metadata, context.Token);
+                if (uri == null)
+                    return Default();
+                source = uri.AbsoluteUri;
+                label = "MUA 皮肤";
             }
-            if (bytes != null)
-                return new(encode(bytes), label, false, DateTimeOffset.UtcNow);
+            if (!force && await disk.ReadSourceAsync(source, context.Token) is { } existing)
+                return new(existing.Image, label, false, source);
+            bytes = uri == null ? await ReadLocalAsync(skinFile) : await SkinAssets.Download(context.Http, uri, context.Token);
+            return new(encode(bytes), label, false, source);
         }
         catch (OperationCanceledException) when (context.Token.IsCancellationRequested) { throw; }
-        catch { label = "皮肤读取失败，使用史蒂夫头像"; }
-        return new(defaultImage ??= encode(null), label, true, DateTimeOffset.UtcNow);
+        catch { return Default(); }
     }
 
     public async Task SetAsync(JsonElement message)

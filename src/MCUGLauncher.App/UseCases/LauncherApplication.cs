@@ -82,7 +82,8 @@ internal sealed class LauncherApplication : IDisposable
             switch (type)
             {
                 case "ready":
-                    // The browser can request fresh state after every navigation.
+                    // Resolve local UUIDs before the first state triggers avatar lookup; no network authentication.
+                    await accountModes.PreloadIdentitiesAsync();
                     context.RefreshState();
                     context.SendTasks();
                     context.SendGames();

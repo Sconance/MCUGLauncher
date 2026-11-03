@@ -124,6 +124,7 @@ using (var emptyHttp = new HttpClient())
 await ResourceScenarios.Run(fixture);
 await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
+await AvatarCacheScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await SettingsScenarios.Run(fixture);
 await LocalImportScenarios.Run(fixture);
