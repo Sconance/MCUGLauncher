@@ -13,10 +13,8 @@ internal static class AvaloniaAvatarImage
     public static string Encode(byte[]? skin)
     {
         using var output = new MemoryStream();
-        if (skin is null)
-            RenderDefault().Save(output);
-        else
-            RenderSkin(skin).Save(output);
+        using var bitmap = skin is null ? RenderDefault() : RenderSkin(skin);
+        bitmap.Save(output);
         return "data:image/png;base64," + Convert.ToBase64String(output.ToArray());
     }
 
@@ -35,24 +33,37 @@ internal static class AvaloniaAvatarImage
         using var source = new Bitmap(input);
         var scale = source.PixelSize.Width / 64;
         var size = 8 * scale;
-        var target = new RenderTargetBitmap(new PixelSize(size * 7, size * 7), new Vector(96, 96));
-        var options = new RenderOptions
-        {
-            BitmapInterpolationMode = BitmapInterpolationMode.None
-        };
-        using (var context = target.CreateDrawingContext())
-        using (context.PushRenderOptions(options))
-        {
-            context.DrawImage(source, new Rect(8 * scale, 8 * scale, size, size), new Rect(4, 4, size * 6, size * 6));
-            context.DrawImage(source, new Rect(40 * scale, 8 * scale, size, size), new Rect(0, 0, size * 7, size * 7));
-        }
+        return ComposeHead(
+            source,
+            new Rect(8 * scale, 8 * scale, size, size),
+            new Rect(40 * scale, 8 * scale, size, size));
+    }
 
-        return target;
+    static Bitmap ComposeHead(Bitmap source, Rect face, Rect? outerLayer = null)
+    {
+        var scale = face.Width / 8;
+        var edge = (int)(72 * scale);
+        var target = new RenderTargetBitmap(new PixelSize(edge, edge), new Vector(96, 96));
+        try
+        {
+            using var context = target.CreateDrawingContext();
+            using var options = context.PushRenderOptions(
+                new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.None });
+            context.DrawImage(source, face, new Rect(4 * scale, 4 * scale, 64 * scale, 64 * scale));
+            if (outerLayer is { } layer)
+                context.DrawImage(source, layer, new Rect(0, 0, edge, edge));
+            return target;
+        }
+        catch
+        {
+            target.Dispose();
+            throw;
+        }
     }
 
     static Bitmap RenderDefault()
     {
-        var bitmap = new WriteableBitmap(new PixelSize(8, 8), new Vector(96, 96), PixelFormat.Bgra8888,
+        using var bitmap = new WriteableBitmap(new PixelSize(8, 8), new Vector(96, 96), PixelFormat.Bgra8888,
             AlphaFormat.Unpremul);
         using (var buffer = bitmap.Lock())
         {
@@ -76,6 +87,6 @@ internal static class AvaloniaAvatarImage
             }
         }
 
-        return bitmap;
+        return ComposeHead(bitmap, new Rect(0, 0, 8, 8));
     }
 }

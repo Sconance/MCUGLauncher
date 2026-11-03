@@ -84,6 +84,8 @@
                     <StackPanel Spacing="10">
                         <TextBlock Text="选择 .mrpack 或 .zip 整合包，先预览再确认导入。" Classes="muted" />
                         <Button x:Name="PickPackButton" Content="选择整合包文件" Classes="ghost" HorizontalAlignment="Left" />
+                        <TextBlock Text="也可导入模组、资源包、光影或世界存档；拖入启动器窗口即可检查。" Classes="muted" />
+                        <Button x:Name="LocalImportButton" Content="选择本地文件" Classes="ghost" HorizontalAlignment="Left" />
                         <Border x:Name="PackPreviewCard" Classes="card" IsVisible="False">
                             <StackPanel Spacing="10">
                                 <TextBlock x:Name="PackTitle" Classes="h2" TextWrapping="Wrap" />

@@ -21,6 +21,7 @@ public partial class ShellWindow : Window
     readonly ExtrasView extrasView;
     readonly HomeView homeView;
     readonly DownloadView downloadView;
+    readonly FileDropView fileDropView;
     readonly Dictionary<string, Button> navigation = new(StringComparer.Ordinal);
     readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     string page = "home";
@@ -42,6 +43,9 @@ public partial class ShellWindow : Window
             action => Dispatcher.UIThread.Post(action),
             _ => new MicrosoftLoginWebUi(),
             AvaloniaAvatarImage.Encode);
+        fileDropView = new FileDropView(service, this);
+        ShellRoot.Children.Add(fileDropView);
+        Grid.SetRowSpan(fileDropView, 2);
         settingsView = new SettingsView(service);
         extrasView = new ExtrasView(service);
         homeView = new HomeView(service);
@@ -86,7 +90,11 @@ public partial class ShellWindow : Window
             await service.StartAsync();
             homeView.Activate();
         };
-        Closed += (_, _) => service.Dispose();
+        Closed += (_, _) =>
+        {
+            fileDropView.Dispose();
+            service.Dispose();
+        };
     }
 
     void Show(string next)

@@ -6,12 +6,15 @@
             <Grid RowDefinitions="*,Auto">
                 <StackPanel Spacing="8">
                     <TextBlock Text="账号" Classes="h2" />
-                    <Grid>
-                        <Border Width="75" Height="78" Background="Transparent" IsHitTestVisible="False"
-                                BoxShadow="0 0 15 0 DarkGray" />
-                        <Border Width="91" Height="91" Background="Transparent" HorizontalAlignment="Center">
+                    <Grid Width="100" Height="100">
+                        <Border Width="82" Height="82" Background="Transparent" IsHitTestVisible="False"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                BoxShadow="0 3 10 0 #220E2B3F" />
+                        <Button x:Name="AvatarButton" Classes="avatar" Width="94" Height="94" Padding="0"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                ToolTip.Tip="查看或更换头像" AutomationProperties.Name="查看或更换头像">
                             <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AvatarImage" Stretch="Uniform" />
-                        </Border>
+                        </Button>
                     </Grid>
                     <TextBlock x:Name="PlayerName" FontSize="18" FontWeight="Bold"
                                HorizontalAlignment="Center" TextWrapping="Wrap" />

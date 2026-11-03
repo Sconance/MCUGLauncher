@@ -36,12 +36,36 @@ internal sealed class DownloadExecutor(HttpClient http, Func<string, bool>? inUs
         }
         if (request.Kind == "pack")
         {
-            await using (var input = File.OpenRead(request.File))
-                if (!Convert.ToHexString(await SHA256.HashDataAsync(input, task.Token)).Equals(request.SourceHash, StringComparison.OrdinalIgnoreCase))
-                    throw new IOException("整合包文件在排队后发生变化，请重新导入。");
+            await VerifySource(request.File, request.SourceHash, task.Token, "整合包");
             var installer = new GameInstaller(http, record.Root, request.Java, progress.Message, task.Token, overallProgress: value => progress.Advance(InstallationStages.PackFiles + value * (InstallationStages.BeforeCommit - InstallationStages.PackFiles) / 100));
             await new PackService(http, task.Token).Import(request.File, record.Root, installer.Install, false,
                 progress.Message, request.PackInstance, progress.Advance);
+            return;
+        }
+        if (request.Kind == "local")
+        {
+            var key = ContentService.SafeFile(request.Version);
+            if (!File.Exists(Path.Combine(record.Root, "versions", key, key + ".json")))
+                throw new IOException("导入目标实例已被移除。");
+            if (inUse?.Invoke(record.Target) == true || preparingRoot?.Invoke(record.Root) == true)
+                throw new IOException("实例正在运行或准备启动，暂不能导入。");
+            progress.Message("正在校验本地导入文件");
+            await VerifySource(request.File, request.SourceHash, task.Token, "本地文件");
+            progress.Advance(5);
+            if (request.ResourceKind == "world")
+                await WorldArchives.Import(record.Target, request.File, progress: progress.Message, token: task.Token);
+            else
+            {
+                var count = await new ContentService(http, task.Token).ImportFiles(
+                    record.Target,
+                    request.ResourceKind,
+                    [request.File],
+                    value => progress.Advance(5 + value * .9));
+                if (count == 0)
+                    throw new IOException("同名文件已存在，未覆盖原文件。");
+            }
+            progress.Advance(95);
+            progress.Message("本地文件导入完成");
             return;
         }
         var version = request.Content ?? throw new IOException("任务缺少资源版本。");
@@ -59,5 +83,13 @@ internal sealed class DownloadExecutor(HttpClient http, Func<string, bool>? inUs
         var plan = await service.Resolve(version, request.GameVersion, request.Loader);
         progress.Message("已解析必需依赖，准备安装…");
         await service.Install(plan, record.Target, progress.Message, overallProgress: progress.Advance);
+    }
+
+    static async Task VerifySource(string file, string expectedHash, CancellationToken token, string name)
+    {
+        await using var input = File.OpenRead(file);
+        if (!Convert.ToHexString(await SHA256.HashDataAsync(input, token))
+                .Equals(expectedHash, StringComparison.OrdinalIgnoreCase))
+            throw new IOException(name + "在排队后发生变化，请重新导入。");
     }
 }

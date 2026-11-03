@@ -7,7 +7,7 @@
         Background="{StaticResource AppBg}"
         SystemDecorations="BorderOnly"
         WindowStartupLocation="CenterScreen">
-    <Grid RowDefinitions="52,*">
+    <Grid x:Name="ShellRoot" RowDefinitions="52,*">
         <Border x:Name="TitleBar"
                 Background="#FFFFFF"
                 BorderBrush="{StaticResource AppLine}"

@@ -136,6 +136,7 @@ internal partial class DownloadView : UserControl
             LoaderHint.Text = $"安装请求已提交：{game} / {LoaderLabels[LoaderTypeBox.SelectedIndex]} {loaderVersion}";
         };
         PickPackButton.Click += async (_, _) => await service!.PickFileAsync("pack");
+        LocalImportButton.Click += async (_, _) => await service!.PickFileAsync("localImport");
         PickPackRootButton.Click += async (_, _) => await service!.PickFolderAsync("packRoot");
         ConfirmPackButton.Click += async (_, _) =>
         {
@@ -384,6 +385,10 @@ internal partial class DownloadView : UserControl
         if (info.Target == "pack")
         {
             _ = PreviewPack(info.Path);
+        }
+        else if (info.Target == "localImport" && TopLevel.GetTopLevel(this) is Window owner)
+        {
+            _ = LocalImportDialog.Open(service, owner, info.Path);
         }
         else if (info.Target == "packRoot")
         {

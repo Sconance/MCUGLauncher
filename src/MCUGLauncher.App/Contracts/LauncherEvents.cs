@@ -274,6 +274,16 @@ public sealed record PackPreviewResultInfo(bool Ok, PackPreviewInfo? Preview, st
     public static PackPreviewResultInfo Failure(string error) => new(false, null, error);
 }
 
+public sealed record LocalImportPreviewInfo(
+    string Token,
+    string Kind,
+    string Path,
+    string Name,
+    string Target,
+    bool CanImport,
+    IReadOnlyList<string> Choices,
+    IReadOnlyList<string> Warnings);
+
 public sealed record AvatarInfo(string Image, string Label, bool Fallback, string Account, string Player)
 {
     internal static AvatarInfo From(JsonElement element) => new(

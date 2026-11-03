@@ -214,7 +214,7 @@ Views（UI，不属于后端）
 
 ## 8. 当前组件类别划分
 
-统计范围：`src/MCUGLauncher.App` 的后端组件（Contracts 除外，UseCases、Services、Authentication、Models），不含 `ShellWindow` 与 Core。共 **45 个**：A 类 14 个、B 类 27 个、C 类 4 个。
+统计范围：`src/MCUGLauncher.App` 的后端组件（Contracts 除外，UseCases、Services、Authentication、Models），不含 `ShellWindow` 与 Core。共 **46 个**：A 类 14 个、B 类 28 个、C 类 4 个。
 
 ### 8.1 C 类（集成层，4 个）
 
@@ -247,6 +247,7 @@ Views（UI，不属于后端）
 | `InstanceMaintenanceCommands` | 实例克隆与导出 | `LauncherContext.Config/Tasks` |
 | `LaunchOptionsCommands` | 启动选项读写 | `LauncherContext.Config/RefreshState/Send/Store` |
 | `LauncherContext` | 共享运行时（配置、HTTP、队列、会话、状态回推） | `ConfigStore`、`NetworkPolicyHandler`、`CommunityService`、`DownloadExecutor`、`LauncherTaskQueue`、`RunningGameRegistry`、`AccountSessionCache`、`MicrosoftAccountService`、`MuaAccountService`、`AvatarCommands` |
+| `LocalImportCommands` | 本地文件分类预览、冻结导入目标并排入任务队列 | `LauncherContext.Config/Tasks/Games/IsRootPreparing/IsInstanceInUse/Token`；`InstanceSnapshot`；`LauncherTaskQueue`；`RunningGameRegistry`；`PreviewCache<Choice>`；Core `LocalImportClassifier`、`ContentService`、`WorldArchives` |
 | `MuaProfileSelection` | MUA 多角色选择的短期状态 | `LauncherContext.Send/Token` |
 | `ResourceChoiceCommands` | 资源版本列表与排队 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `ResourceCommands` | 原版/Modrinth 搜索与安装 | `LauncherContext.Config/Http/Send/Store/Tasks/Token` |

@@ -118,7 +118,38 @@ var resource = Archive("resource", ("pack.mcmeta", "{}"), ("assets/test/file", "
 var dataPack = Archive("datapack", ("pack.mcmeta", "{}"), ("data/test/file", "d"));
 var shader = Archive("shader", ("shaders/main.fsh", "shader"));
 var modpack = Archive("modpack", ("modrinth.index.json", "{}"));
-Assert(LocalImportClassifier.Identify(backup) == LocalImportKind.World && LocalImportClassifier.Identify(resource) == LocalImportKind.ResourcePack && LocalImportClassifier.Identify(dataPack) == LocalImportKind.DataPack && LocalImportClassifier.Identify(shader) == LocalImportKind.ShaderPack && LocalImportClassifier.Identify(modpack) == LocalImportKind.Modpack && LocalImportClassifier.Identify("example.jar") == LocalImportKind.Mod, "DRAG_IMPORT_CLASSIFICATION");
+var ambiguous = Archive("ambiguous", ("pack.mcmeta", "{}"), ("assets/test/file", "a"), ("shaders/main.fsh", "s"));
+var mod = Path.Combine(root, "fabric-mod.jar");
+using (var zip = ZipFile.Open(mod, ZipArchiveMode.Create))
+{
+    using var writer = new StreamWriter(zip.CreateEntry("fabric.mod.json").Open());
+    writer.Write("{}");
+}
+var unknownMod = Path.Combine(root, "unknown.jar");
+using (var zip = ZipFile.Open(unknownMod, ZipArchiveMode.Create))
+{
+    using var writer = new StreamWriter(zip.CreateEntry("readme.txt").Open());
+    writer.Write("not a mod");
+}
+Assert(LocalImportClassifier.Identify(backup) == LocalImportKind.World
+    && LocalImportClassifier.Identify(resource) == LocalImportKind.ResourcePack
+    && LocalImportClassifier.Identify(dataPack) == LocalImportKind.DataPack
+    && LocalImportClassifier.Identify(shader) == LocalImportKind.ShaderPack
+    && LocalImportClassifier.Identify(modpack) == LocalImportKind.Modpack
+    && LocalImportClassifier.Inspect(mod).Loaders.SequenceEqual(["fabric"])
+    && LocalImportClassifier.Identify(unknownMod) == LocalImportKind.Unknown
+    && LocalImportClassifier.Identify(ambiguous) == LocalImportKind.AmbiguousPack,
+    "DRAG_IMPORT_CLASSIFICATION");
+var unsafeImport = Archive("unsafe-import", ("../outside.txt", "bad"));
+try
+{
+    LocalImportClassifier.Identify(unsafeImport);
+    throw new Exception("Unsafe import archive accepted");
+}
+catch (IOException)
+{
+    Assert(true, "LOCAL_IMPORT_REJECTS_UNSAFE_PATHS");
+}
 var shots = Path.Combine(instance, "screenshots");
 Directory.CreateDirectory(shots);
 File.WriteAllText(Path.Combine(shots, "test.png"), "fixture");

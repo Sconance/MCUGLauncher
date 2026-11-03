@@ -69,6 +69,14 @@ internal sealed class LauncherContext : IDisposable
     {
         get;
     }
+    public InstallationCommands Installations
+    {
+        get;
+    }
+    public LocalImportCommands LocalImports
+    {
+        get;
+    }
     public RunningGameRegistry Games { get; } = new();
     public void SendGames() => Send(new { type = "games", items = Games.Active.Select(g => new { id = g.Id.ToString("N"), version = g.Version, player = g.PlayerName, pid = g.Session.Process.Id }) });
 
@@ -104,6 +112,8 @@ internal sealed class LauncherContext : IDisposable
         var executor = new DownloadExecutor(Http, IsInstanceInUse, IsRootPreparing);
         Tasks = new LauncherTaskQueue(Path.Combine(Store.DataDirectory, "operations"),
             async (record, task) => { await executor.ExecuteAsync(record, task); RefreshState(); }, SendTasks, Log);
+        Installations = new InstallationCommands(this);
+        LocalImports = new LocalImportCommands(this);
         var authDirectory = Path.Combine(Store.DataDirectory, "auth");
         try
         {

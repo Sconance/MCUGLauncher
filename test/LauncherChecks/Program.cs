@@ -242,6 +242,7 @@ await ResourceScenarios.Run(fixture);
 await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
 await AvatarScenarios.Run(fixture);
+await LocalImportScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);
 using (var service = new LauncherService(

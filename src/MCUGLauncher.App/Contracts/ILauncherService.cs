@@ -194,6 +194,20 @@ public interface ILauncherService : IDisposable
             path
         });
     Task ConfirmPackAsync(string token, string name, string directory);
+    [FeatureOperation]
+    Task<LocalImportPreviewInfo> PreviewLocalImportAsync(string path, string instance, string resourceKind = "") =>
+        FeatureRequest.InvokeAsync<LocalImportPreviewInfo>(this, nameof(PreviewLocalImportAsync), new
+        {
+            path,
+            instance,
+            resourceKind
+        });
+    [FeatureOperation]
+    Task<SavedInfo> ConfirmLocalImportAsync(string token) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ConfirmLocalImportAsync), new
+        {
+            token
+        });
     Task CloneInstanceAsync(string version, string name, bool saves = false, bool servers = false);
     Task ExportInstanceAsync(string version, string path, bool servers = false, bool saves = false);
     [FeatureOperation]

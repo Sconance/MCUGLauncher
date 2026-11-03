@@ -154,6 +154,14 @@
         <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
     </Style>
 
+    <Style Selector="Button.avatar">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.avatar:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+    </Style>
+
     <Style Selector="Button.topnav">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />

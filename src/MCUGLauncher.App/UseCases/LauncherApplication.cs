@@ -42,7 +42,7 @@ internal sealed class LauncherApplication : IDisposable
         updateCommands = new ContentUpdateCommands(context);
         saveCommands = new SaveCommands(context);
         bookmarkCommands = new BookmarkCommands(context);
-        installationCommands = new InstallationCommands(context);
+        installationCommands = context.Installations;
         accountCommands = new AccountCommands(context);
         accountModes = new AccountModeCommands(context);
         gameCommands = new GameCommands(context);

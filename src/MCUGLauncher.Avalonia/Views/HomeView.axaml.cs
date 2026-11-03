@@ -54,6 +54,7 @@ internal partial class HomeView : UserControl
     void WireButtons()
     {
         AccountButton.Click += (_, _) => AccountRequested?.Invoke();
+        AvatarButton.Click += (_, _) => AccountRequested?.Invoke();
         LaunchButton.Click += async (_, _) =>
         {
             var target = state?.SelectedInstance is { Length: > 0 } instance ? instance : state?.SelectedVersion ?? "";
