@@ -131,7 +131,7 @@ MCUGL-storage/
 打开 `设置 → 社区 → 数据源`，选择「自定义」，分别填入四个 Raw 地址：
 
 ```text
-https://raw.githubusercontent.com/Sconance/MCUGLauncher/main/community/announcements.md
+https://raw.githubusercontent.com/Sconance/MCUGLauncher/0.22.3-Avalonia/community/announcements.md
 https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/servers.json
 https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/recommendations.json
 https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/quotes.json

@@ -89,24 +89,35 @@ var codeMarkdownAnnouncement = CommunityService.ParseMarkdownAnnouncement(
 Check(codeMarkdownAnnouncement.Title.Length == 0
     && codeMarkdownAnnouncement.Markdown.Contains("# preview_title", StringComparison.Ordinal),
     "markdown announcement ignores metadata-like headings inside code fences");
-const string legacyAnnouncementsUrl =
-    "https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/announcements.json";
-var legacyDefaultStore = new ConfigStore(Path.Combine(fixture, "legacy-default-announcements"));
-legacyDefaultStore.Save(new MCUGLauncher.Models.AppConfig
+const string missingMarkdownAnnouncementsUrl =
+    "https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/announcements.md";
+const string unpublishedMainAnnouncementsUrl =
+    "https://raw.githubusercontent.com/Sconance/MCUGLauncher/main/community/announcements.md";
+var missingMarkdownStore = new ConfigStore(Path.Combine(fixture, "missing-markdown-announcements"));
+missingMarkdownStore.Save(new MCUGLauncher.Models.AppConfig
 {
-    DataSources = new MCUGLauncher.Models.DataSourceConfig { Announcements = legacyAnnouncementsUrl },
+    DataSources = new MCUGLauncher.Models.DataSourceConfig { Announcements = missingMarkdownAnnouncementsUrl },
     DataSourceMode = "default"
 });
-Check(legacyDefaultStore.Load().DataSources.Announcements == new MCUGLauncher.Models.DataSourceConfig().Announcements,
-    "legacy default JSON announcement source migrates to Markdown");
-var customAnnouncementStore = new ConfigStore(Path.Combine(fixture, "custom-json-announcements"));
+Check(missingMarkdownStore.Load().DataSources.Announcements == new MCUGLauncher.Models.DataSourceConfig().Announcements,
+    "missing default Markdown announcement source migrates to the published source");
+var unpublishedMainStore = new ConfigStore(Path.Combine(fixture, "unpublished-main-announcements"));
+unpublishedMainStore.Save(new MCUGLauncher.Models.AppConfig
+{
+    DataSources = new MCUGLauncher.Models.DataSourceConfig { Announcements = unpublishedMainAnnouncementsUrl },
+    DataSourceMode = "default"
+});
+Check(unpublishedMainStore.Load().DataSources.Announcements == new MCUGLauncher.Models.DataSourceConfig().Announcements,
+    "unpublished main announcement source migrates to the published branch");
+const string customAnnouncementsUrl = "https://example.test/custom-announcements.md";
+var customAnnouncementStore = new ConfigStore(Path.Combine(fixture, "custom-markdown-announcements"));
 customAnnouncementStore.Save(new MCUGLauncher.Models.AppConfig
 {
-    DataSources = new MCUGLauncher.Models.DataSourceConfig { Announcements = legacyAnnouncementsUrl },
+    DataSources = new MCUGLauncher.Models.DataSourceConfig { Announcements = customAnnouncementsUrl },
     DataSourceMode = "custom"
 });
-Check(customAnnouncementStore.Load().DataSources.Announcements == legacyAnnouncementsUrl,
-    "custom announcement source is preserved during migration");
+Check(customAnnouncementStore.Load().DataSources.Announcements == customAnnouncementsUrl,
+    "custom Markdown announcement source is preserved during migration");
 try
 {
     _ = CommunityService.ParseMarkdownAnnouncement(

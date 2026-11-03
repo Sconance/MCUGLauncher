@@ -11,8 +11,10 @@ namespace MCUGLauncher.Services;
 /// </remarks>
 public sealed class ConfigStore
 {
-    const string LegacyDefaultAnnouncementsUrl =
-        "https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/announcements.json";
+    const string MissingMarkdownAnnouncementsUrl =
+        "https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/announcements.md";
+    const string UnpublishedMainAnnouncementsUrl =
+        "https://raw.githubusercontent.com/Sconance/MCUGLauncher/main/community/announcements.md";
     readonly string _file;
     readonly bool dataDirectoryIsolated;
 
@@ -60,10 +62,14 @@ public sealed class ConfigStore
 
         config.DataSources ??= new DataSourceConfig();
         if (config.DataSourceMode != "custom"
-            && string.Equals(
-                config.DataSources.Announcements,
-                LegacyDefaultAnnouncementsUrl,
-                StringComparison.OrdinalIgnoreCase))
+            && (string.Equals(
+                    config.DataSources.Announcements,
+                    MissingMarkdownAnnouncementsUrl,
+                    StringComparison.OrdinalIgnoreCase)
+                || string.Equals(
+                    config.DataSources.Announcements,
+                    UnpublishedMainAnnouncementsUrl,
+                    StringComparison.OrdinalIgnoreCase)))
         {
             config.DataSources.Announcements = new DataSourceConfig().Announcements;
         }
