@@ -36,11 +36,12 @@ internal static class AvaloniaAvatarImage
         var scale = source.PixelSize.Width / 64;
         var size = 8 * scale;
         var target = new RenderTargetBitmap(new PixelSize(size * 7, size * 7), new Vector(96, 96));
+        var options = new RenderOptions
+        {
+            BitmapInterpolationMode = BitmapInterpolationMode.None
+        };
         using (var context = target.CreateDrawingContext())
-        using (context.PushRenderOptions(new RenderOptions
-               {
-                   BitmapInterpolationMode = BitmapInterpolationMode.None
-               }))
+        using (context.PushRenderOptions(options))
         {
             context.DrawImage(source, new Rect(8 * scale, 8 * scale, size, size), new Rect(4, 4, size * 6, size * 6));
             context.DrawImage(source, new Rect(40 * scale, 8 * scale, size, size), new Rect(0, 0, size * 7, size * 7));
