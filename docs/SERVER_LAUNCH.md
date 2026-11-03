@@ -1,11 +1,11 @@
 # 无界面服务器启动接口
 
-实现位于 `src/MCUGLauncher.Core/Application/ServerLaunch/`，命名空间为 `BlockLaunch`，不依赖 WPF。
+实现位于 `src/MCUGLauncher.Core/Application/ServerLaunch/`，命名空间为 `MCUGLauncher`，不依赖 Avalonia 或其他 UI 框架。
 
 ## 调用示例
 
 ```csharp
-using BlockLaunch;
+using MCUGLauncher;
 using CmlLib.Core.Auth;
 
 var request = new ServerLaunchRequest(
@@ -33,7 +33,9 @@ game.Process.Dispose();
 
 `ServerLaunch.Prepare()` 可单独解析并检查请求，返回现有 `LaunchRequest` 而不启动进程。准备过程可能为已有的旧版游戏创建实例元数据，与 `InstanceCatalog.GetOrCreate()` 一致。
 
-基础接口不安装或修复游戏、不执行登录刷新、不扫描 Mod 兼容性，也不接入 UI 的忙碌状态或任务队列；需要这些能力的调用方应在外层协调，UI 长任务仍应走现有 `Run` 入口。接口复用已有直连参数机制，不保证所有 Minecraft 版本兼容；服务器版本、认证、白名单及网络仍可能导致连接失败。现有 UI 启动路径尚未迁移至此接口。
+基础接口不安装或修复游戏、不执行登录刷新、不扫描 Mod 兼容性，也不接入 UI 的忙碌状态或任务队列；需要这些能力的调用方应在外层协调，UI 通过 `ILauncherService` 调用业务并沿用现有任务管理，不直接调用 Core。接口复用已有直连参数机制，不保证所有 Minecraft 版本兼容；服务器版本、认证、白名单及网络仍可能导致连接失败。现有 UI 启动路径尚未迁移至此接口。
+
+合并新版后沿用统一命名规范，实例配置读取 `.mcuglauncher-instance.json`，不探测或自动导入历史名称的元数据，也不改写或删除旧数据。配置字段格式保持不变，详见 [命名与数据位置](NAMING.md)。
 
 ## 收藏组件的后端入口
 

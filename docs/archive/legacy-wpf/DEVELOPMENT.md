@@ -56,7 +56,6 @@ MCUG Launcher 是 .NET 8 / WPF 应用。先从本文件定位功能，再阅读�
 
 ## 如何扩展
 
-- 无界面服务器启动接口及调用示例见 [SERVER_LAUNCH.md](SERVER_LAUNCH.md)，入口为 Core `Application/ServerLaunch/ServerLaunch.cs`。
 - 先在 Core 定义业务操作，接收明确参数、取消令牌和进度回调；不要让服务访问 WPF 控件。
 - UI 负责读取输入、调用操作和展示结果。长时间任务沿用现有 `Run` / 下载队列入口。
 - 账号面板的三种内容分别在 `BuildOfflineIdentity`、`BuildMicrosoftIdentity`、`BuildMuaIdentity` 中构建；

@@ -15,3 +15,5 @@ ShellWindow（窗口和导航）
 队列和运行游戏由 App/Core 管理，页面导航不取消后台业务。ShellDesktopHost 是异步确认和原生文件选择的适配器。微软授权是唯一保留的独立网页用途，业务页面不使用浏览器。
 
 详细迁移对照见 [迁移记录](MIGRATION_0.24.0-codex.md)，后端组件依赖见 [后端规范](../BACKEND_DEVELOPMENT.md)。
+
+Core 的无界面服务器直连接口与收藏适配入口见 [服务器启动接口](SERVER_LAUNCH.md)，尚未绑定 UI 按钮。

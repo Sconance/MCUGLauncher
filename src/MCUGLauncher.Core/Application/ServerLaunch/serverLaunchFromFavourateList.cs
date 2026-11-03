@@ -1,7 +1,8 @@
 using CmlLib.Core.Auth;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>将调用方提供的服务器收藏与配置转换为直连请求，并委托 ServerLaunch 启动游戏。</summary>
 public sealed class ServerLaunchFromFavourateList(
     ServerFavorite favorite,
     Preferences preferences,
@@ -23,7 +24,7 @@ public sealed class ServerLaunchFromFavourateList(
         ArgumentException.ThrowIfNullOrWhiteSpace(outputFile);
         var root = Path.GetFullPath(preferences.Root);
         var catalog = new InstanceCatalog(root);
-        var metadata = Path.Combine(catalog.MetadataDirectory(favorite.Profile), ".blocklaunch-instance.json");
+        var metadata = Path.Combine(catalog.MetadataDirectory(favorite.Profile), ".mcuglauncher-instance.json");
         var settings = File.Exists(metadata) ? AtomicFile.ReadJson<InstanceDescriptor>(metadata).Launch : null;
         cancellationToken.ThrowIfCancellationRequested();
         return new(root, favorite.Profile, favorite.Address, session, outputFile,

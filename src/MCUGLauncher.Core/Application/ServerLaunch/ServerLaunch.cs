@@ -1,7 +1,8 @@
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>根据实例、会话与服务器请求准备启动参数，或启动并返回游戏会话；不依赖界面。</summary>
 public static class ServerLaunch
 {
     public static LaunchRequest Prepare(ServerLaunchRequest request, CancellationToken cancellationToken = default)
@@ -20,7 +21,7 @@ public static class ServerLaunch
         if (!Directory.Exists(root))
             throw new DirectoryNotFoundException("The game root does not exist.");
         var catalog = new InstanceCatalog(root);
-        var metadata = Path.Combine(catalog.MetadataDirectory(request.InstanceId), ".blocklaunch-instance.json");
+        var metadata = Path.Combine(catalog.MetadataDirectory(request.InstanceId), ".mcuglauncher-instance.json");
         var localProfile = Path.Combine(root, "versions", request.InstanceId, request.InstanceId + ".json");
         if (!File.Exists(metadata) && !File.Exists(localProfile))
             throw new FileNotFoundException("The requested instance is not installed.");

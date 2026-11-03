@@ -1,7 +1,7 @@
-using BlockLaunch;
+using MCUGLauncher;
 using CmlLib.Core.Auth;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-server-launch-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-server-launch-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 
 void Check(bool value, string name)
@@ -69,7 +69,7 @@ try
     descriptor.DataDirectory = Path.Combine(root, "custom-data");
     descriptor.Launch = settings;
     catalog.Save(descriptor);
-    var metadataFile = Path.Combine(catalog.MetadataDirectory(descriptor.Key), ".blocklaunch-instance.json");
+    var metadataFile = Path.Combine(catalog.MetadataDirectory(descriptor.Key), ".mcuglauncher-instance.json");
     var originalMetadata = File.ReadAllText(metadataFile);
     var custom = ServerLaunch.Prepare(request with
     {

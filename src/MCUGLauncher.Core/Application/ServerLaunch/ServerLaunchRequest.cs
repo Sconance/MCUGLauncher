@@ -1,7 +1,8 @@
 using CmlLib.Core.Auth;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>携带服务器直连所需的实例标识、会话、日志路径及可选启动设置。</summary>
 public sealed record ServerLaunchRequest(
     string Root,
     string InstanceId,
