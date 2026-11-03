@@ -500,3 +500,6 @@ internal sealed class SaveCommands(LauncherContext context)
 | DownloadExecutor（B，修订） | 复用原队列执行本地事务导入及进度回报 | InstallationProgress.Message(string)/Advance(double)、InstanceOperationExecutor.ExecuteAsync(OperationRecord,OperationContext)、VersionCatalog.InstanceDirectory(string,string)，其余 Core/BCL；ContentService.ImportFiles 新增可选进度回调，旧调用保持兼容 |
 
 详细行为和验证范围见 docs/local-import.md。本轮用户授权同时完善导入业务及对应 UI；未借机修改其他页面布局或插件化架构。
+
+## 账号切换性能修订
+AccountModeCommands（B）新增 Store.SaveAsync(AppConfig) 快照保存依赖，身份选择与启动前验证仍分离；AvatarCommands（B）增加本地编码缓存和请求合并，不引入 UI 依赖。逐成员登记见 docs/components/AccountModeCommands.md、docs/components/AvatarCommands.md 和 ConfigStore.md；行为及验证边界见 docs/account-switch-performance.md。

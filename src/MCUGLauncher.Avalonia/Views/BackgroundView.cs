@@ -8,8 +8,12 @@ namespace MCUGLauncher.Avalonia.Views;
 internal sealed class BackgroundView : Image, IDisposable
 {
     string loaded = "";
+    PreferencesInfo? displayed;
     public void Update(PreferencesInfo preferences)
     {
+        if (ReferenceEquals(displayed, preferences))
+            return;
+        displayed = preferences;
         Opacity = Math.Clamp(preferences.BackgroundOpacity, 0, 1);
         Stretch = preferences.BackgroundFit switch
         {

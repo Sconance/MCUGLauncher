@@ -3,7 +3,13 @@ using CmlLib.Core.Auth;
 
 namespace MCUGLauncher.UseCases;
 
-// Mode selection preserves credentials. Only explicit removal deletes an account.
+/// <summary>切换账号优先使用会话缓存；启动前另行验证，只有明确移除才删除凭据。</summary>
+/// <remarks>
+/// B 类：LauncherContext.Config.AccountType/Player/OfflinePlayer、OnlineSession、AccountRevision 维护选择；
+/// AccountSessions.Find/Fresh/Remember/Forget 管理进程缓存；Microsoft.ReadSavedAccount/Authenticate/Forget、
+/// Mua.Ensure/Forget 恢复和移除账号；Store.Save/SaveAsync 保存选择，SendAccountState/Send 回推结果。
+/// 依赖文档见 docs/components/AccountModeCommands.md。无视图或控件依赖。
+/// </remarks>
 internal sealed class AccountModeCommands(LauncherContext context, Func<string, Task<MSession>>? restore = null)
 {
     public Task RestoreSelectedAsync() => SwitchAsync(context.Config.AccountType, false);
@@ -15,13 +21,13 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         var revision = Interlocked.Increment(ref context.AccountRevision);
         if (mode == "offline")
         {
-            Apply(context, mode, null);
+            await ApplySelectionAsync(mode, null);
             return;
         }
         var cached = context.AccountSessions.Find(mode);
         if (cached != null)
         {
-            Apply(context, mode, cached, false);
+            await ApplySelectionAsync(mode, cached, false);
             return;
         }
 
@@ -30,7 +36,9 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
             var session = restore != null ? await restore(mode) : await RestoreAsync(mode);
             if (revision != context.AccountRevision)
                 return;
-            Apply(context, mode, session);
+            await ApplySelectionAsync(mode, session);
+            if (revision != context.AccountRevision)
+                return;
             context.Send(new
             {
                 type = "authResult",
@@ -90,7 +98,17 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         return MuaAccountService.Session(await mua.Ensure(false, context.Token));
     }
 
-    public static void Apply(LauncherContext context, string mode, MSession? session, bool verified = true)
+    async Task ApplySelectionAsync(string mode, MSession? session, bool verified = true)
+    {
+        Apply(context, mode, session, verified, persist: false);
+        try
+        {
+            await context.Store.SaveAsync(context.Config);
+        }
+        catch (IOException) { context.Send(new { type = "toast", message = "账号已切换，但设置未能保存，重启后可能恢复上次选择" }); }
+        catch (UnauthorizedAccessException) { context.Send(new { type = "toast", message = "账号已切换，但配置目录不可写，请检查目录权限" }); }
+    }
+    public static void Apply(LauncherContext context, string mode, MSession? session, bool verified = true, bool persist = true)
     {
         var player = mode == "offline" ? context.Config.OfflinePlayer : session?.Username;
         if (string.IsNullOrWhiteSpace(player))
@@ -102,7 +120,8 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         context.OnlineSession = session;
         context.Config.AccountType = mode;
         context.Config.Player = player;
-        context.Store.Save(context.Config);
+        if (persist)
+            context.Store.Save(context.Config);
         context.SendAccountState();
     }
 

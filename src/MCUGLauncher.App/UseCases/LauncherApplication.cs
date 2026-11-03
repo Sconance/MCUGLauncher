@@ -156,7 +156,7 @@ internal sealed class LauncherApplication : IDisposable
                     await communityCommands.SendCommunityAsync(notify: true);
                     break;
                 case "readAvatar":
-                    await avatars.ReadAsync();
+                    await avatars.ReadAsync(!root.TryGetProperty("force", out var force) || force.GetBoolean());
                     break;
                 case "setOfflineSkin":
                     await avatars.SetAsync(root);

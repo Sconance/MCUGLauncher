@@ -262,7 +262,20 @@ public sealed class LauncherService : ILauncherService
         State = state;
         StateChanged?.Invoke(state);
         if (oldKey != State.AccountType + ":" + State.Player)
-            _ = ReadAvatarAsync();
+            _ = RefreshAvatarAsync();
+    }
+    async Task RefreshAvatarAsync()
+    {
+        try
+        {
+            await Command(new
+            {
+                type = "readAvatar",
+                force = false
+            });
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+        catch (Exception) { /* Automatic skin refresh must not undo a completed account selection. */ }
     }
     static string String(JsonElement message, string name) => message.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() ?? "" : "";
     static T[] Items<T>(JsonElement message) => message.GetProperty("items").Deserialize<T[]>(Json) ?? [];

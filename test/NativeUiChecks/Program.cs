@@ -21,6 +21,7 @@ internal static class Program
     static int code;
     static bool rejectNextAuth;
     static bool rejectNextImport;
+    static TaskCompletionSource? pendingModeSwitch;
     [STAThread]
     public static int Main()
     {
@@ -45,6 +46,9 @@ internal static class Program
         var item = JsonSerializer.SerializeToElement(message, Json);
         Sent.Add(item);
         var type = item.GetProperty("type").GetString();
+        if (type == "switchAccountMode" && pendingModeSwitch != null)
+            return pendingModeSwitch.Task;
+
         if (type == "vanillaVersions")
             Deliver(new
             {
@@ -342,6 +346,65 @@ internal static class Program
             await Task.Delay(20);
             Check(window.GetVisualDescendants().OfType<NativePage>().Any(), "native route " + entry.Id);
         }
+        window.Navigate("home");
+        await Task.Delay(25);
+        var stableAvatar = Controls<Button>(window).Single(b => b.Content is Image);
+        var stableLaunch = Controls<Button>(window).Single(b => b.Name == "HomeLaunchButton");
+        var stableFeeds = Controls<HomeFeedPanel>(window).Select(p => p.Content).ToArray();
+        var originalState = Session.State;
+        pendingModeSwitch = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var modeRequestsBefore = Sent.Count(m => m.GetProperty("type").GetString() == "switchAccountMode");
+        await Click(Find(window, "MUA 登录"));
+        await Click(Find(window, "正版"));
+        await Click(Find(window, "MUA 登录"));
+        Check(Sent.Count(m => m.GetProperty("type").GetString() == "switchAccountMode") == modeRequestsBefore + 3,
+            "rapid A-B-A clicks preserve the final intent while earlier mode commands await IO");
+        pendingModeSwitch.SetResult();
+        pendingModeSwitch = null;
+
+        for (var iteration = 0; iteration < 12; iteration++)
+            Deliver(new
+            {
+                type = "accountState",
+                accountType = iteration % 2 == 0 ? "mua" : "microsoft",
+                player = "SwitchFixture"
+            });
+        await Task.Delay(25);
+        Check(ReferenceEquals(stableAvatar, Controls<Button>(window).Single(b => b.Content is Image)), "rapid account switches preserve the avatar button and account controls");
+        Check(ReferenceEquals(stableLaunch, Controls<Button>(window).Single(b => b.Name == "HomeLaunchButton")), "account-only state changes do not rebuild launch controls");
+        Check(stableFeeds.SequenceEqual(Controls<HomeFeedPanel>(window).Select(p => p.Content)), "account-only state changes do not rebuild community cards");
+        Deliver(new
+        {
+            type = "accountState",
+            accountType = originalState.AccountType,
+            player = originalState.Player
+        });
+        Deliver(new
+        {
+            type = "accountState",
+            accountType = "microsoft",
+            player = "AvatarA"
+        });
+        var cachedBitmap = ((Image)stableAvatar.Content!).Source;
+        Deliver(new
+        {
+            type = "accountState",
+            accountType = "mua",
+            player = "AvatarB"
+        });
+        Deliver(new
+        {
+            type = "accountState",
+            accountType = "microsoft",
+            player = "AvatarA"
+        });
+        Check(ReferenceEquals(cachedBitmap, ((Image)stableAvatar.Content!).Source), "switching back reuses the decoded avatar bitmap");
+        Deliver(new
+        {
+            type = "accountState",
+            accountType = originalState.AccountType,
+            player = originalState.Player
+        });
         await CodexParity(window);
         await DialogParity(window);
         await WindowAndVanillaParity(window);

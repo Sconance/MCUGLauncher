@@ -8,7 +8,8 @@ internal sealed class UiContext : IDisposable, INotifyPropertyChanged
     readonly ILauncherService service;
     readonly Dictionary<string, string> avatars = [];
     string identity = "";
-    public string Avatar { get; private set; } = AvaloniaAvatarImage.Encode(null);
+    static readonly Lazy<string> defaultAvatar = new(() => AvaloniaAvatarImage.Encode(null));
+    public string Avatar { get; private set; } = defaultAvatar.Value;
     public string Status { get; private set; } = "";
     public Action<string>? Navigate
     {
@@ -40,7 +41,7 @@ internal sealed class UiContext : IDisposable, INotifyPropertyChanged
         if (key != identity)
         {
             identity = key;
-            Avatar = avatars.GetValueOrDefault(key) ?? AvaloniaAvatarImage.Encode(null);
+            Avatar = avatars.GetValueOrDefault(key) ?? defaultAvatar.Value;
             AvatarChanged?.Invoke();
         }
         PropertyChanged?.Invoke(this, new(null));
@@ -54,11 +55,13 @@ internal sealed class UiContext : IDisposable, INotifyPropertyChanged
         var key = info.Account + ":" + info.Player;
         if (info.Fallback && avatars.ContainsKey(key) && info.Account != "offline")
             return;
+        var changed = Avatar != info.Image;
         Avatar = info.Image;
         avatars[key] = Avatar;
         if (avatars.Count > 24)
             avatars.Remove(avatars.Keys.First());
-        AvatarChanged?.Invoke();
+        if (changed)
+            AvatarChanged?.Invoke();
     }
     public void Report(string text)
     {

@@ -55,6 +55,47 @@ internal static class AccountModeScenarios
         await new AccountModeCommands(context, _ => throw new AccountLoginException("expired", true)).SwitchAsync("mua");
         Check(messages.Last().GetProperty("needsLogin").GetBoolean(), "expired MUA authorization requests login");
         Check(store.Load().OfflinePlayer == "OfflineName", "offline player persists independently");
+        var pendingWrites = new List<Task>();
+        for (var i = 0; i < 20; i++)
+        {
+            context.Config.Player = "Saved" + i;
+            pendingWrites.Add(store.SaveAsync(context.Config));
+        }
+        context.Config.Player = "FinalSaved";
+        store.Save(context.Config);
+        await Task.WhenAll(pendingWrites);
+        Check(store.Load().Player == "FinalSaved", "older asynchronous snapshots cannot overwrite a newer synchronous save");
+        context.Config.Player = "OfflineName";
+        context.Config.AccountType = "offline";
+        var encoded = 0;
+        var portraits = new AvatarCommands(context, bytes => "fixture-" + (++encoded));
+        await portraits.ReadAsync(force: false);
+        var firstImage = messages.Last().GetProperty("image").GetString();
+        await portraits.ReadAsync(force: false);
+        Check(encoded == 1 && messages.Last().GetProperty("image").GetString() == firstImage, "automatic repeated avatar reads reuse the rendered cache");
+        await portraits.ReadAsync(force: true);
+        Check(messages.Last().GetProperty("image").GetString() == firstImage, "manual fallback refresh preserves the reusable default portrait");
+        var delayedReads = new AvatarCommands(context, _ => "coalesced-" + (++encoded));
+        var initialEncodes = encoded;
+        await Task.WhenAll(delayedReads.ReadAsync(false), delayedReads.ReadAsync(false));
+        Check(encoded == initialEncodes + 1, "concurrent automatic skin reads share one render task");
+        var beforeLate = messages.Count;
+        await new AvatarCommands(context, _ =>
+        {
+            Interlocked.Increment(ref context.AccountRevision);
+            return "late";
+        }).ReadAsync(false);
+        Check(messages.Count == beforeLate, "late skin load cannot publish over a newer account revision");
+        var skin = Path.Combine(directory, "mock-skin.png");
+        File.WriteAllBytes(skin, new byte[] { 1, 2, 3 });
+        context.Config.SkinFile = skin;
+        var localReads = new AvatarCommands(context, _ => "local-" + (++encoded));
+        await localReads.ReadAsync(false);
+        var beforeForce = messages.Last().GetProperty("image").GetString();
+        await localReads.ReadAsync(true);
+        Check(messages.Last().GetProperty("image").GetString() != beforeForce, "explicit skin refresh bypasses the automatic rendered cache");
+
+
     }
 
     static void Check(bool condition, string name)

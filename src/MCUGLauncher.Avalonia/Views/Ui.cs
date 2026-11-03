@@ -110,7 +110,7 @@ internal static class Ui
         MinWidth = 160,
         HorizontalAlignment = HorizontalAlignment.Stretch
     };
-    public static Button Button(string label, Func<Task> action, bool primary = false)
+    public static Button Button(string label, Func<Task> action, bool primary = false, bool allowConcurrent = false)
     {
         var button = new Button
         {
@@ -121,10 +121,13 @@ internal static class Ui
         var busy = false;
         button.Click += async (_, _) =>
         {
-            if (busy)
+            if (busy && !allowConcurrent)
                 return;
-            busy = true;
-            button.Classes.Add("busy");
+            if (!allowConcurrent)
+            {
+                busy = true;
+                button.Classes.Add("busy");
+            }
             try
             {
                 await action();
@@ -138,8 +141,11 @@ internal static class Ui
             }
             finally
             {
-                busy = false;
-                button.Classes.Remove("busy");
+                if (!allowConcurrent)
+                {
+                    busy = false;
+                    button.Classes.Remove("busy");
+                }
             }
         };
         return button;

@@ -69,7 +69,7 @@ internal static class AccountDialogs
             actions.Insert(0, Ui.Button("恢复默认头像", () => session.SetOfflineSkinAsync(path: "")));
         }
         content.Children.Add(Ui.Text("本地皮肤仅用于启动器头像；正版/MUA 皮肤来自认证站。暂不支持上传披风。"));
-        void Update(AvatarInfo message)
+        void Update()
         {
             var previous = preview.Source as IDisposable;
             preview.Source = Ui.Bitmap(ui.Avatar);
@@ -78,12 +78,12 @@ internal static class AccountDialogs
         return Show();
         async Task Show()
         {
-            session.AvatarReceived += Update;
+            ui.AvatarChanged += Update;
             try
             {
                 await Ui.Show(owner, "皮肤与披风", content, 600, 450, Ui.DialogActions(content, actions.ToArray()), "管理启动器头像和角色皮肤预览。");
             }
-            finally { session.AvatarReceived -= Update; (preview.Source as IDisposable)?.Dispose(); }
+            finally { ui.AvatarChanged -= Update; (preview.Source as IDisposable)?.Dispose(); }
         }
     }
     public static async Task SelectProfile(ILauncherService session, UiContext ui, Window owner, MuaProfilesInfo message)

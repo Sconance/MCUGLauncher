@@ -8,6 +8,7 @@ internal sealed class HomeFeedPanel : NativePage
     readonly string kind;
     readonly Dictionary<string, ServerPingInfo> pings = [];
     int index;
+    ServerInfo[]? renderedServers;
     readonly HashSet<string> queried = [];
     public HomeFeedPanel(ILauncherService session, UiContext ui, string kind) : base(session, ui)
     {
@@ -28,6 +29,7 @@ internal sealed class HomeFeedPanel : NativePage
     }
     void Draw()
     {
+        renderedServers = State.Servers;
         var card = Ui.Card(kind switch
         {
             "servers" => Servers(),
@@ -195,8 +197,11 @@ internal sealed class HomeFeedPanel : NativePage
     }
     protected override void OnStateChanged()
     {
-        Draw();
-        PingMissing();
+        if (kind == "servers" && !ReferenceEquals(renderedServers, State.Servers))
+        {
+            Draw();
+            PingMissing();
+        }
     }
     void OnCommunity(IReadOnlyDictionary<string, CommunityEntry[]> entries)
     {

@@ -10,6 +10,7 @@ internal sealed class InstancePickerView : NativePage
     readonly TextBox search = Ui.Input("", "点此处搜索实例");
     readonly StackPanel list = Ui.Stack();
     bool updating;
+    LauncherState? renderedState;
     public InstancePickerView(ILauncherService session, UiContext ui, Action close) : base(session, ui)
     {
         Body.Children.Add(Ui.Beside(Ui.Stack(Ui.Heading("游戏目录"), Ui.Muted("选择实例后可直接启动，或进入版本设置。")), Ui.Row(Ui.Button("导入整合包", () => InstallDialogs.Import(Session, UI, Owner)), Ui.Button("刷新版本", () => Session.RequestStateAsync()), Ui.Action("收起", close))));
@@ -35,6 +36,7 @@ internal sealed class InstancePickerView : NativePage
     }
     void Draw()
     {
+        renderedState = State;
         updating = true;
         roots.ItemsSource = State.GameRoots.Length > 0 ? State.GameRoots : new[] { State.Root };
         roots.SelectedItem = State.Root;
@@ -89,6 +91,8 @@ internal sealed class InstancePickerView : NativePage
     }
     protected override void OnStateChanged()
     {
-        Draw();
+        if (renderedState is not { } previous || previous.Root != State.Root || previous.SelectedInstance != State.SelectedInstance ||
+            !ReferenceEquals(previous.Instances, State.Instances) || !ReferenceEquals(previous.GameRoots, State.GameRoots))
+            Draw();
     }
 }

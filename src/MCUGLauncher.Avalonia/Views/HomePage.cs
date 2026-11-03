@@ -1,6 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.LogicalTree;
+using Avalonia.Media.Imaging;
 using MCUGLauncher.Avalonia.Presentation;
 namespace MCUGLauncher.Avalonia.Views;
 
@@ -18,6 +18,13 @@ internal sealed class HomePage : NativePage
     readonly Grid layout;
     readonly Border accountCard;
     bool expanded;
+    readonly Dictionary<string, Button> accountTabs = [];
+    readonly Dictionary<string, Bitmap> decodedAvatars = [];
+    Image avatarImage = null!;
+    TextBlock playerName = null!, accountIdentity = null!;
+    Button changeAccount = null!;
+    string displayedAvatar = "";
+    (string Version, int Ram, bool Auto)? launchState;
     public HomePage(ILauncherService session, UiContext ui) : base(session, ui)
     {
         picker = new InstancePickerView(session, ui, () => Toggle(false));
@@ -61,9 +68,9 @@ internal sealed class HomePage : NativePage
         AttachedToVisualTree += (_, _) => UpdateDimensions();
         Toggle(ui.HomeInstancePanelOpen);
         session.GamesChanged += OnGames;
-        ui.AvatarChanged += DrawAccount;
-        UnsubscribeWith(() => { session.GamesChanged -= OnGames; ui.AvatarChanged -= DrawAccount; });
-        DrawAccount();
+        ui.AvatarChanged += UpdateAvatar;
+        UnsubscribeWith(() => { session.GamesChanged -= OnGames; ui.AvatarChanged -= UpdateAvatar; });
+        BuildAccount();
     }
     void Toggle(bool value)
     {
@@ -82,22 +89,20 @@ internal sealed class HomePage : NativePage
         // rather than letting the account card overlap the bottom launch controls.
         layout.Height = Math.Max(570, (TopLevel.GetTopLevel(this)?.ClientSize.Height ?? 780) - 92);
     }
-    void DrawAccount()
+    void BuildAccount()
     {
-        foreach (var image in account.GetLogicalDescendants().OfType<Image>())
-            (image.Source as IDisposable)?.Dispose();
-        account.Children.Clear();
         var details = Ui.Stack();
         details.Spacing = 0;
         var tabs = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*"), Height = 29 };
         var column = 0;
         foreach (var (label, mode) in new[] { ("正版", "microsoft"), ("离线", "offline"), ("MUA 登录", "mua") })
         {
-            var tab = Ui.Button(label, () => Session.SwitchAccountModeAsync(account: mode));
+            var tab = Ui.Button(label, () => Session.SwitchAccountModeAsync(account: mode), allowConcurrent: true);
             tab.Classes.Add("account-tab");
             tab.Height = 25;
             tab.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
             tab.Classes.Set("active", State.AccountType == mode);
+            accountTabs[mode] = tab;
             Grid.SetColumn(tab, column++);
             tabs.Children.Add(tab);
         }
@@ -115,7 +120,11 @@ internal sealed class HomePage : NativePage
             BoxShadow = global::Avalonia.Media.BoxShadows.Parse("0 3 10 0 #220E2B3F"),
             IsHitTestVisible = false
         });
-        avatar.Content = Ui.Avatar(UI.Avatar, 94);
+        avatarImage = Ui.Avatar(UI.Avatar, 94);
+        displayedAvatar = UI.Avatar;
+        if (avatarImage.Source is Bitmap initialAvatar)
+            decodedAvatars[displayedAvatar] = initialAvatar;
+        avatar.Content = avatarImage;
         portrait.Children.Add(avatar);
         ToolTip.SetTip(avatar, "查看或更换头像");
         global::Avalonia.Automation.AutomationProperties.SetName(avatar, "查看或更换头像");
@@ -124,16 +133,16 @@ internal sealed class HomePage : NativePage
         portrait.Margin = new Thickness(0, 13, 0, 0);
         portrait.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         details.Children.Add(portrait);
-        var name = Ui.Text(State.Player, 18);
+        var name = playerName = Ui.Text(State.Player, 18);
         name.FontWeight = global::Avalonia.Media.FontWeight.Bold;
         name.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         name.Margin = new Thickness(0, 10, 0, 0);
         details.Children.Add(name);
-        var identity = Ui.Muted(Ui.AccountLabel(State.AccountType), 10.5);
+        var identity = accountIdentity = Ui.Muted(Ui.AccountLabel(State.AccountType), 10.5);
         identity.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         identity.Margin = new Thickness(0, 3, 0, 0);
         details.Children.Add(identity);
-        var change = Ui.Button(State.AccountType == "offline" ? "切换本地账号" : "切换账号", () => AccountDialogs.Open(Session, UI, Owner, State.AccountType));
+        var change = changeAccount = Ui.Button(State.AccountType == "offline" ? "切换本地账号" : "切换账号", () => AccountDialogs.Open(Session, UI, Owner, State.AccountType));
         change.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
         change.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
         change.Classes.Add("soft");
@@ -157,8 +166,38 @@ internal sealed class HomePage : NativePage
         Grid.SetRow(footer, 2);
         account.Children.Add(footer);
     }
+    void UpdateAccount()
+    {
+        foreach (var (mode, tab) in accountTabs)
+            tab.Classes.Set("active", State.AccountType == mode);
+        playerName.Text = State.Player;
+        accountIdentity.Text = Ui.AccountLabel(State.AccountType);
+        changeAccount.Content = State.AccountType == "offline" ? "切换本地账号" : "切换账号";
+        UpdateAvatar();
+    }
+    void UpdateAvatar()
+    {
+        if (avatarImage == null || displayedAvatar == UI.Avatar)
+            return;
+        if (!decodedAvatars.TryGetValue(UI.Avatar, out var bitmap))
+        {
+            bitmap = Ui.Bitmap(UI.Avatar);
+            if (bitmap != null)
+                decodedAvatars[UI.Avatar] = bitmap;
+        }
+        avatarImage.Source = bitmap;
+        displayedAvatar = UI.Avatar;
+        // The page owns these decoded images. Switching back reuses a bitmap, not another PNG decode.
+        if (decodedAvatars.Count > 6)
+        {
+            var oldest = decodedAvatars.Keys.First();
+            decodedAvatars[oldest].Dispose();
+            decodedAvatars.Remove(oldest);
+        }
+    }
     void DrawLaunch()
     {
+        launchState = (State.SelectedVersion, State.Ram, State.AutoMemory);
         launch.Children.Clear();
         var button = Ui.Button("启动游戏", () => Session.LaunchAsync(version: State.SelectedVersion), true);
         var title = Ui.Text("启动游戏", 17);
@@ -222,12 +261,18 @@ internal sealed class HomePage : NativePage
     }
     protected override void OnStateChanged()
     {
-        DrawAccount();
-        DrawLaunch();
+        UpdateAccount();
+        if (launchState != (State.SelectedVersion, State.Ram, State.AutoMemory))
+            DrawLaunch();
     }
     void OnGames(GameInfo[] value) => DrawLaunch();
     public override void Dispose()
     {
+        foreach (var bitmap in decodedAvatars.Values)
+            bitmap.Dispose();
+        decodedAvatars.Clear();
+        if (avatarImage != null)
+            avatarImage.Source = null;
         picker.Dispose();
         servers.Dispose();
         announcements.Dispose();

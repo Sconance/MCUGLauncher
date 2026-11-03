@@ -17,6 +17,8 @@ namespace MCUGLauncher.Services;
 public sealed class ConfigStore
 {
     readonly string _file;
+    readonly object writeGate = new();
+    long nextWrite, committedWrite;
 
     public ConfigStore(string? dataDirectory = null)
     {
@@ -80,7 +82,15 @@ public sealed class ConfigStore
     /// <remarks>
     /// 不校验字段，调用方负责保证 Root 等路径有效。
     /// </remarks>
-    public void Save(AppConfig config)
+    public void Save(AppConfig config) => Commit(Capture(config));
+
+    /// <summary>在调用线程捕获独立快照，后台原子写入；旧快照不得覆盖较新的同步或异步保存。</summary>
+    public Task SaveAsync(AppConfig config)
+    {
+        var snapshot = Capture(config);
+        return Task.Run(() => Commit(snapshot));
+    }
+    (long Revision, JsonElement Data) Capture(AppConfig config)
     {
         config.LegacyPreferences.Root = config.Root;
         config.LegacyPreferences.Player = config.Player;
@@ -89,7 +99,17 @@ public sealed class ConfigStore
         config.LegacyPreferences.Width = config.Width;
         config.LegacyPreferences.Height = config.Height;
         config.LegacyPreferences.LastVersion = config.LastVersion;
-        AtomicFile.WriteJson(_file, config);
+        return (Interlocked.Increment(ref nextWrite), JsonSerializer.SerializeToElement(config));
+    }
+    void Commit((long Revision, JsonElement Data) snapshot)
+    {
+        lock (writeGate)
+        {
+            if (snapshot.Revision < committedWrite)
+                return;
+            AtomicFile.WriteJson(_file, snapshot.Data);
+            committedWrite = snapshot.Revision;
+        }
     }
 
     static string FindDefaultRoot()
