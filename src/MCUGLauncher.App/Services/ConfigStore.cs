@@ -1,4 +1,5 @@
 using System.Text.Json;
+using BlockLaunch;
 using MCUGLauncher.Models;
 
 namespace MCUGLauncher.Services;
@@ -17,6 +18,9 @@ public sealed class ConfigStore
         "https://raw.githubusercontent.com/Sconance/MCUGLauncher/main/community/announcements.md";
     readonly string _file;
     readonly bool dataDirectoryIsolated;
+    readonly object writeGate = new();
+    long nextWrite;
+    long committedWrite;
 
     public ConfigStore(string? dataDirectory = null)
     {
@@ -97,6 +101,17 @@ public sealed class ConfigStore
     /// </remarks>
     public void Save(AppConfig config)
     {
+        Commit(Capture(config));
+    }
+
+    public Task SaveAsync(AppConfig config)
+    {
+        var snapshot = Capture(config);
+        return Task.Run(() => Commit(snapshot));
+    }
+
+    (long Revision, JsonElement Data) Capture(AppConfig config)
+    {
         config.LegacyPreferences.Root = config.Root;
         config.LegacyPreferences.Player = config.Player;
         config.LegacyPreferences.Java = config.Java;
@@ -104,9 +119,18 @@ public sealed class ConfigStore
         config.LegacyPreferences.Width = config.Width;
         config.LegacyPreferences.Height = config.Height;
         config.LegacyPreferences.LastVersion = config.LastVersion;
-        var temp = _file + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
-        File.Move(temp, _file, true);
+        return (Interlocked.Increment(ref nextWrite), JsonSerializer.SerializeToElement(config));
+    }
+
+    void Commit((long Revision, JsonElement Data) snapshot)
+    {
+        lock (writeGate)
+        {
+            if (snapshot.Revision < committedWrite)
+                return;
+            AtomicFile.WriteJson(_file, snapshot.Data);
+            committedWrite = snapshot.Revision;
+        }
     }
 
     AppConfig? ImportLegacy()

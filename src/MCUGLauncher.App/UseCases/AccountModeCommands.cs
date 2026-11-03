@@ -1,16 +1,37 @@
 using BlockLaunch;
 using CmlLib.Core.Auth;
 using MCUGLauncher.Contracts;
+using MCUGLauncher.Services;
 
 namespace MCUGLauncher.UseCases;
 
 // Mode selection preserves credentials. Only explicit removal deletes an account.
-internal sealed class AccountModeCommands(LauncherContext context, Func<string, Task<MSession>>? restore = null)
+internal sealed class AccountModeCommands(
+    LauncherContext context,
+    Func<string, Task<MSession>>? restore = null,
+    Func<string, Task<AccountIdentity?>>? readIdentity = null)
 {
     public async Task<AccountSwitchResultInfo> RestoreSelectedAsync()
     {
+        var revision = context.AccountRevision;
         var mode = context.Config.AccountType;
-        var result = await SwitchAsync(mode, false);
+        foreach (var accountMode in new[] { "microsoft", "mua" })
+        {
+            try
+            {
+                var identity = await ReadIdentityAsync(accountMode);
+                if (revision != context.AccountRevision)
+                    return new(mode, false, "账号恢复已被更新的账号操作取代。");
+                if (identity is not null)
+                    context.AccountSessions.RememberIdentity(accountMode, identity);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or AccountStorageException)
+            {
+            }
+        }
+        var result = revision == context.AccountRevision
+            ? await SwitchAsync(mode, false)
+            : new AccountSwitchResultInfo(mode, false, "账号恢复已被更新的账号操作取代。");
         if (mode != "offline")
         {
             if (context.Config.AccountType == mode && context.OnlineSession != null)
@@ -32,6 +53,19 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         return result;
     }
 
+    Task<AccountIdentity?> ReadIdentityAsync(string mode) => readIdentity is not null
+        ? readIdentity(mode)
+        : Task.Run<AccountIdentity?>(() =>
+        {
+            if (mode == "microsoft")
+            {
+                var saved = context.Microsoft?.ReadSavedAccount();
+                return saved is null ? null : new AccountIdentity(saved.Username, saved.Uuid);
+            }
+            var mua = context.Mua?.Read();
+            return mua is null ? null : new AccountIdentity(mua.Profile.Name, mua.Profile.Id);
+        }, context.Token);
+
     public async Task<AccountSwitchResultInfo> SwitchAsync(string mode, bool prompt = true)
     {
         if (mode is not ("offline" or "microsoft" or "mua"))
@@ -39,23 +73,28 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         var revision = Interlocked.Increment(ref context.AccountRevision);
         if (mode == "offline")
         {
-            Apply(context, mode, null);
+            await ApplySelectionAsync(mode, null);
             return new(mode, false, "已切换到离线账号。");
         }
         var cached = context.AccountSessions.Find(mode);
         if (cached != null)
         {
-            Apply(context, mode, cached, false);
+            await ApplySelectionAsync(mode, cached, false);
             return new(mode, false, "已切换到 " + cached.Username);
         }
 
         try
         {
-            var session = restore != null ? await restore(mode) : await RestoreAsync(mode);
+            var identity = context.AccountSessions.Identity(mode) ?? await ReadIdentityAsync(mode);
             if (revision != context.AccountRevision)
                 return new(mode, false, "账号切换已被更新的账号操作取代。");
-            Apply(context, mode, session);
-            return new(mode, false, "已切换到 " + session.Username);
+            if (identity is null)
+                throw new AccountLoginException("本机尚未保存此账号，请先登录。", true);
+            context.AccountSessions.RememberIdentity(mode, identity);
+            await ApplySelectionAsync(mode, null, false, identity);
+            if (revision != context.AccountRevision)
+                return new(mode, false, "账号切换已被更新的账号操作取代。");
+            return new(mode, false, "已切换到 " + identity.Player);
         }
         catch (Exception error)
         {
@@ -77,7 +116,11 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         {
             var session = restore != null ? await restore(mode) : await RestoreAsync(mode);
             if (revision == context.AccountRevision)
+            {
                 context.AccountSessions.Remember(mode, session);
+                if (context.Config.AccountType == mode)
+                    context.OnlineSession = session;
+            }
             return session;
         }
         catch (AccountLoginException error) when (error.RequiresInteractive)
@@ -104,9 +147,44 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         return MuaAccountService.Session(await mua.Ensure(false, context.Token));
     }
 
-    public static void Apply(LauncherContext context, string mode, MSession? session, bool verified = true)
+    async Task ApplySelectionAsync(
+        string mode,
+        MSession? session,
+        bool verified = true,
+        AccountIdentity? identity = null)
     {
-        var player = mode == "offline" ? context.Config.OfflinePlayer : session?.Username;
+        Apply(context, mode, session, verified, persist: false, identity: identity);
+        try
+        {
+            await context.Store.SaveAsync(context.Config);
+        }
+        catch (IOException)
+        {
+            context.Send(new
+            {
+                type = "toast",
+                message = "账号已切换，但设置未能保存，重启后可能恢复上次选择"
+            });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            context.Send(new
+            {
+                type = "toast",
+                message = "账号已切换，但配置目录不可写，请检查目录权限"
+            });
+        }
+    }
+
+    public static void Apply(
+        LauncherContext context,
+        string mode,
+        MSession? session,
+        bool verified = true,
+        bool persist = true,
+        AccountIdentity? identity = null)
+    {
+        var player = mode == "offline" ? context.Config.OfflinePlayer : identity?.Player ?? session?.Username;
         if (string.IsNullOrWhiteSpace(player))
             throw new AccountLoginException("账号没有有效的玩家名，请重新登录。", true);
         if (context.Config.AccountType == "offline")
@@ -116,7 +194,8 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         context.OnlineSession = session;
         context.Config.AccountType = mode;
         context.Config.Player = player;
-        context.Store.Save(context.Config);
+        if (persist)
+            context.Store.Save(context.Config);
         context.SendAccountState();
     }
 

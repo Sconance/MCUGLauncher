@@ -329,6 +329,7 @@ void SendAccountState()
 ```text
 ConfigStore.Load() : AppConfig
 ConfigStore.Save(AppConfig config) : void
+ConfigStore.SaveAsync(AppConfig config) : Task
 
 LauncherTaskQueue.Enqueue(string name, string root, string target, DownloadRequest request) : void
 LauncherTaskQueue.History() : List<OperationRecord>
@@ -342,6 +343,8 @@ RunningGameRegistry.UsesDirectory(string directory) : bool
 RunningGameRegistry.UsesRoot(string root) : bool
 
 AccountSessionCache.Remember(string mode, MSession session) : void
+AccountSessionCache.Identity(string mode) : AccountIdentity?
+AccountSessionCache.RememberIdentity(string mode, AccountIdentity identity) : void
 AccountSessionCache.Find(string mode) : MSession?
 AccountSessionCache.Fresh(string mode) : MSession?
 AccountSessionCache.Forget(string mode) : void
@@ -362,7 +365,7 @@ MuaAccountService.Login(string account, string password,
 MuaAccountService.Metadata(CancellationToken token) : Task<MuaMetadata>
 MuaAccountService.Session(MuaCredential credential) : MSession
 
-AccountModeCommands.Apply(LauncherContext context, string mode, MSession? session, bool verified = true) : void
+AccountModeCommands.Apply(LauncherContext context, string mode, MSession? session, bool verified = true, bool persist = true, AccountIdentity? identity = null) : void
 ```
 
 ## 9. 后端与 UI 的协同边界

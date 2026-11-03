@@ -25,34 +25,33 @@ internal sealed class GameCommands(LauncherContext context,
                 throw new IOException("还没有可启动的版本。");
             var player = context.Config.Player;
             var mode = context.Config.AccountType;
-            var online = context.OnlineSession;
-            if (mode != "offline" && online == null)
-                throw new IOException("在线账号尚未验证完成，请完成登录后再启动。");
             var instance = InstanceSnapshot.Capture(context.Config, key);
             context.Tasks.RequireLaunchAvailable(instance.Root, key, instance.Directory);
             context.Games.RequireAvailable(instance.Directory, player, mode == "offline");
             context.MarkPreparing(instance.Root, instance.Directory);
             reservedDirectory = instance.Directory;
-            var session = mode == "offline" ? new MSession
+            MSession session;
+            if (mode == "offline")
+                session = new MSession
+                {
+                    Username = player,
+                    UUID = OfflineUuid(player),
+                    AccessToken = "0",
+                    ClientToken = Guid.NewGuid().ToString("N"),
+                    UserType = "legacy"
+                };
+            else
             {
-                Username = player,
-                UUID = OfflineUuid(player),
-                AccessToken = "0",
-                ClientToken = Guid.NewGuid().ToString("N"),
-                UserType = "legacy"
-            } : online!;
+                session = await new AccountModeCommands(context).EnsureFreshAsync(mode);
+                if (!string.Equals(session.Username, player, StringComparison.Ordinal))
+                    throw new IOException("账号身份已改变，请重新选择账号后启动。");
+            }
             AuthlibLaunch? external = null;
             if (mode == "mua" && context.Mua != null)
             {
                 var metadata = await context.Mua.Metadata(context.Token);
                 var jar = await AuthlibLaunch.Prepare(Path.Combine(context.Store.DataDirectory, "authlib-injector"), context.Http, context.Token);
                 external = new AuthlibLaunch(jar, metadata.Json);
-            }
-            if (mode != "offline")
-            {
-                session = await new AccountModeCommands(context).EnsureFreshAsync(mode);
-                if (!string.Equals(session.Username, player, StringComparison.Ordinal))
-                    throw new IOException("账号身份已改变，请重新选择账号后启动。");
             }
             var settings = instance.Settings;
             settings.VersionInfo = "MCUGLauncher";
