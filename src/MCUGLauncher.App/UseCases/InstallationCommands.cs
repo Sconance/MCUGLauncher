@@ -15,17 +15,7 @@ internal sealed class InstallationCommands(LauncherContext context, Action<strin
         var game = ReadString(root, "version");
         InstancePath(context.Config.Root, game);
         var loader = ReadString(root, "loader");
-        List<string> versions;
-        if (loader is "forge" or "neoforge")
-            versions = (await LoaderCatalog.Get(context.Http, game, loader, context.Token)).Select(v => v.Version).ToList();
-        else if (loader is "fabric" or "quilt")
-        {
-            var endpoint = loader == "fabric" ? "https://meta.fabricmc.net/v2" : "https://meta.quiltmc.org/v3";
-            using var doc = JsonDocument.Parse(await context.Http.GetStringAsync(endpoint + "/versions/loader/" + Uri.EscapeDataString(game), context.Token));
-            versions = doc.RootElement.EnumerateArray().Select(v => v.GetProperty("loader").GetProperty("version").GetString()!).Distinct().ToList();
-        }
-        else
-            throw new ArgumentException("不支持的加载器。");
+        var versions = (await LoaderCatalog.Get(context.Http, game, loader, context.Token)).Select(v => v.Version).ToList();
         context.Send(new
         {
             type = "loaderList",

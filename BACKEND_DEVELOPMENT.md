@@ -509,3 +509,5 @@ AccountModeCommands（B）新增 Store.SaveAsync(AppConfig) 快照保存依赖�
 头像持久化：AvatarDiskCache（A）仅依赖 Core/BCL；AvatarCommands（B）调用其 ReadAsync、ReadSourceAsync、SaveAsync，移除重复的后端编码历史缓存。LauncherApplication.ready 在首次状态前调用 AccountModeCommands.PreloadIdentitiesAsync。成员与存储边界见 docs/components/AvatarDiskCache.md、AvatarCommands.md。
 
 审查补充：AccountCommands（B）完整签名见 docs/components/AccountCommands.md；LauncherContext.AvatarIdentity 聚合 Config.AccountType/Player/SkinFile、OnlineSession.UUID、AccountSessions.Identity(mode).Uuid 与 MuaAccountService.Api，不含凭据。AvatarCommands 使用该键和 AvatarDiskCache.IsFresh/SaveAsync 的来源时间参数；LauncherService 传播契约身份并调用 LauncherApplication.LogFailure(string,Exception) 记录自动刷新的意外错误。详见 docs/AVATAR_REVIEW.md。
+
+加载器目录修复：InstallationCommands.LoadersAsync 统一调用 Core LoaderCatalog.Get(HttpClient,string,string,CancellationToken)，移除 App 的 Fabric/Quilt JSON 解析副本。Core 先查询提供方支持列表，网络错误不当作空兼容结果；CompatibilityChecks 覆盖旧版、正常版本、快照、HTTP 故障和取消。
