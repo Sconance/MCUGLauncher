@@ -35,7 +35,9 @@ public partial class ShellWindow : Window
         session.AccountSwitchResultReceived += OnAccountSwitch;
         session.MuaProfilesReceived += OnProfiles;
         BrandPanel.Children.Add(Ui.Logo(30));
-        BrandPanel.Children.Add(Ui.Text("MCUG Launcher", 16));
+        var brandName = Ui.Text("MCUG Launcher", 16);
+        brandName.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
+        BrandPanel.Children.Add(brandName);
         foreach (var (label, id) in new[] { ("▷ 启动", "home"), ("↓ 下载", "community"), ("⚙ 设置", "settings") })
         {
             var button = Ui.Action(label, () => Navigate(id));

@@ -3,7 +3,7 @@
         Width="1200" Height="780" MinWidth="960" MinHeight="640" Icon="/Assets/MCUGLauncher.ico"
         ExtendClientAreaToDecorationsHint="True" ExtendClientAreaChromeHints="NoChrome" ExtendClientAreaTitleBarHeightHint="52" SystemDecorations="BorderOnly">
   <Grid RowDefinitions="52,*">
-    <Border x:Name="TitleBar" Background="White" BorderBrush="#DFE8EF" BorderThickness="0,0,0,1" Padding="18,8">
+    <Border x:Name="TitleBar" Background="White" BorderBrush="#DFE8EF" BorderThickness="0,0,0,1" Padding="24,8,18,8">
       <Grid ColumnDefinitions="Auto,*,Auto,Auto">
         <StackPanel x:Name="BrandPanel" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" />
         <StackPanel x:Name="TopNavigation" Grid.Column="1" Orientation="Horizontal" Spacing="3" Margin="16,0" VerticalAlignment="Center" />
