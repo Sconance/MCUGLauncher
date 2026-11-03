@@ -70,6 +70,16 @@ public sealed class LauncherService : ILauncherService
     public Task<ServerResultInfo> SaveServerAsync(string name = "", string address = "", string oldAddress = "") => Request<ServerResultInfo>("serverResult", new { type = "saveServer", name, address, oldAddress });
     public Task SwitchAccountModeAsync(string account = "") => Command(new { type = "switchAccountMode", account });
     public Task LaunchAsync(string version = "") => Command(new { type = "launch", version });
+    public Task LaunchServerAsync(ServerLaunchInfo request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return Command(new
+        {
+            type = "launchServer",
+            instanceId = request.InstanceId,
+            serverAddress = request.ServerAddress
+        });
+    }
     public Task<PackPreviewInfo> PreviewPackAsync(string path = "") => Request<PackPreviewInfo>("packPreview", new { type = "previewPack", path });
     public Task<OperationReceipt> ConfirmPackAsync(string token = "", string name = "", string directory = "") => Request<OperationReceipt>("packQueued", new { type = "confirmPack", token, name, directory });
     public Task<OperationReceipt> InstallLoaderAsync(string version = "", string loader = "", string loaderVersion = "") => Request<OperationReceipt>("loaderQueued", new { type = "installLoader", version, loader, loaderVersion });

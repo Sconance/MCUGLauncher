@@ -40,6 +40,12 @@ try
 catch (IOException) { Check(store.Load().Player == "After", "typed operation errors do not report success or mutate unrelated values"); }
 var server = await service.SaveServerAsync("Fixture", "localhost:25565");
 Check(server.Ok && service.State.Servers.Single().Address == "localhost:25565", "typed server operation updates state");
+var feedback = new List<string>();
+service.FeedbackReceived += feedback.Add;
+await service.LaunchServerAsync(new ServerLaunchInfo("1.21.1", "host:70000"));
+Check(feedback.Count == 1, "typed server launch routes validation failures to existing feedback");
+await service.LaunchServerAsync(new ServerLaunchInfo("", "localhost:25565"));
+Check(feedback.Count == 2 && service.Games.Length == 0, "server launch requires an explicit instance instead of falling back to selection");
 Check(typeof(ILauncherService).GetMethods().All(m => !m.GetParameters().Any(p => p.ParameterType == typeof(object))), "UI service has no object command escape hatch");
 Console.WriteLine("ALL_LAUNCHER_CHECKS_PASSED (real local use cases, no account/network/game)");
 

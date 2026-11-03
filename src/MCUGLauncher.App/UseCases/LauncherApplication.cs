@@ -212,6 +212,9 @@ internal sealed class LauncherApplication : IDisposable
                 case "launch":
                     await gameCommands.LaunchAsync(ReadString(root, "version"));
                     break;
+                case "launchServer":
+                    await gameCommands.LaunchServerAsync(new ServerLaunchInfo(ReadString(root, "instanceId"), ReadString(root, "serverAddress")));
+                    break;
                 case "window":
                     desktop.Window(ReadString(root, "action"));
                     break;

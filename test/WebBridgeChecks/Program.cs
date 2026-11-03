@@ -9,6 +9,19 @@ using MCUGLauncher;
 
 var fixture = Path.Combine(Path.GetTempPath(), "mcug-web-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(fixture);
+if (args.Contains("--server-launch-only"))
+{
+    try
+    {
+        await ServerLaunchScenarios.Run(fixture);
+        Console.WriteLine("ALL_APP_SERVER_LAUNCH_CHECKS_PASSED (no real login or game process)");
+    }
+    finally
+    {
+        Directory.Delete(fixture, true);
+    }
+    return;
+}
 var store = new ConfigStore(fixture);
 var gameRoot = Path.Combine(fixture, "game");
 var versionDir = Path.Combine(gameRoot, "versions", "custom-fabric");
@@ -124,6 +137,7 @@ using (var emptyHttp = new HttpClient())
 await ResourceScenarios.Run(fixture);
 await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
+await ServerLaunchScenarios.Run(fixture);
 await AvatarCacheScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await SettingsScenarios.Run(fixture);

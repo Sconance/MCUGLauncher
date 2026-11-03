@@ -511,3 +511,5 @@ AccountModeCommands（B）新增 Store.SaveAsync(AppConfig) 快照保存依赖�
 审查补充：AccountCommands（B）完整签名见 docs/components/AccountCommands.md；LauncherContext.AvatarIdentity 聚合 Config.AccountType/Player/SkinFile、OnlineSession.UUID、AccountSessions.Identity(mode).Uuid 与 MuaAccountService.Api，不含凭据。AvatarCommands 使用该键和 AvatarDiskCache.IsFresh/SaveAsync 的来源时间参数；LauncherService 传播契约身份并调用 LauncherApplication.LogFailure(string,Exception) 记录自动刷新的意外错误。详见 docs/AVATAR_REVIEW.md。
 
 加载器目录修复：InstallationCommands.LoadersAsync 统一调用 Core LoaderCatalog.Get(HttpClient,string,string,CancellationToken)，移除 App 的 Fabric/Quilt JSON 解析副本。Core 先查询提供方支持列表，网络错误不当作空兼容结果；CompatibilityChecks 覆盖旧版、正常版本、快照、HTTP 故障和取消。
+
+服务器直连接口：Contracts 新增 ServerLaunchInfo(InstanceId,ServerAddress) 与 ILauncherService.LaunchServerAsync(ServerLaunchInfo)。LauncherService / LauncherApplication（C）仅做内部命令适配；GameCommands（B）读取 ServerLaunchInfo.InstanceId/ServerAddress，复用既有账号、任务检查与运行会话管理，并调用 Core ServerEndpoint.Parse(string)、ServerLaunch.Prepare(ServerLaunchRequest,CancellationToken)。不新增 B 类组件，不改动 Avalonia；完整依赖见 docs/components/GameCommands.md，调用与验证范围见 docs/SERVER_LAUNCH.md。

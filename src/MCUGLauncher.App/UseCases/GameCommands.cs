@@ -2,6 +2,7 @@ using System.Diagnostics;
 using MCUGLauncher;
 using CmlLib.Core.Auth;
 using MCUGLauncher.Services;
+using MCUGLauncher.Contracts;
 using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
@@ -12,13 +13,22 @@ namespace MCUGLauncher.UseCases;
 /// LauncherContext.Config/Mua/Token/Http/Store/Tasks/Games 提供启动快照与运行环境；
 /// MarkPreparing(string,string)/ReleasePreparing(string) 保留准备状态；Send(object)/SendGames()/Log(string) 回推结果。
 /// 不依赖任何 View、窗口或控件；语言设置复用 Core GameDefaults.EnsureChinese。
+/// ServerLaunchInfo.InstanceId/ServerAddress 提供显式直连目标；Core ServerLaunch.Prepare 校验并解析直连参数。
 /// </remarks>
 internal sealed class GameCommands(LauncherContext context,
     Func<LaunchRequest, CancellationToken, Task<Process>>? buildProcess = null)
 {
     bool preparing;
 
-    public async Task LaunchAsync(string version)
+    public Task LaunchAsync(string version) => LaunchCoreAsync(version, null);
+
+    public Task LaunchServerAsync(ServerLaunchInfo request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return LaunchCoreAsync(request.InstanceId, request.ServerAddress ?? "");
+    }
+
+    async Task LaunchCoreAsync(string version, string? serverAddress)
     {
         if (preparing)
         {
@@ -29,12 +39,23 @@ internal sealed class GameCommands(LauncherContext context,
         string? reservedDirectory = null;
         try
         {
+            if (serverAddress != null)
+            {
+                ArgumentException.ThrowIfNullOrWhiteSpace(version);
+                ArgumentException.ThrowIfNullOrWhiteSpace(serverAddress);
+                serverAddress = ServerEndpoint.Parse(serverAddress).ToString();
+            }
             var key = string.IsNullOrWhiteSpace(version) ? context.Config.LastVersion : version;
             if (string.IsNullOrWhiteSpace(key))
                 throw new IOException("还没有可启动的版本。");
             var player = context.Config.Player;
             var mode = context.Config.AccountType;
             var instance = InstanceSnapshot.Capture(context.Config, key);
+            if (serverAddress != null && instance.Settings.Isolation == "共享根目录")
+                instance = instance with
+                {
+                    Directory = instance.Root
+                };
             context.Tasks.RequireLaunchAvailable(instance.Root, key, instance.Directory);
             context.Games.RequireAvailable(instance.Directory, player, mode == "offline");
             context.MarkPreparing(instance.Root, instance.Directory);
@@ -74,6 +95,17 @@ internal sealed class GameCommands(LauncherContext context,
             }
             var request = new LaunchRequest(instance.Root, instance.Directory, key, settings.Java, settings.RamMb,
                 settings.Width, settings.Height, session, settings, external);
+            if (serverAddress != null)
+            {
+                var direct = ServerLaunch.Prepare(new ServerLaunchRequest(instance.Root, key, serverAddress, session,
+                    Path.Combine(context.Store.DataDirectory, "game-logs", "server-launch.log"), settings, external), context.Token);
+                if (!Path.GetFullPath(direct.InstanceDirectory).Equals(Path.GetFullPath(instance.Directory), StringComparison.OrdinalIgnoreCase))
+                    throw new IOException("实例目录已改变，请重新启动。");
+                request = direct with
+                {
+                    Ram = settings.RamMb
+                };
+            }
             var process = buildProcess == null ? await LaunchService.Build(request, context.Token, context.Http)
                 : await buildProcess(request, context.Token);
             context.Token.ThrowIfCancellationRequested();

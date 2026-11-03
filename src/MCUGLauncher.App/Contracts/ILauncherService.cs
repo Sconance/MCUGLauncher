@@ -60,6 +60,8 @@ public interface ILauncherService : IDisposable
     Task<ServerResultInfo> SaveServerAsync(string name = "", string address = "", string oldAddress = "");
     Task SwitchAccountModeAsync(string account = "");
     Task LaunchAsync(string version = "");
+    /// <summary>启动指定实例并尝试直连；启动结果沿用 FeedbackReceived，不代表已连接服务器。</summary>
+    Task LaunchServerAsync(ServerLaunchInfo request);
     Task<PackPreviewInfo> PreviewPackAsync(string path = "");
     Task<OperationReceipt> ConfirmPackAsync(string token = "", string name = "", string directory = "");
     Task<OperationReceipt> InstallLoaderAsync(string version = "", string loader = "", string loaderVersion = "");

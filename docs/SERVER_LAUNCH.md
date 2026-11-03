@@ -39,6 +39,20 @@ game.Process.Dispose();
 
 ## 收藏组件的后端入口
 
+### App 层类型化接口
+
+UI 接入时通过 `MCUGLauncher.Contracts.ILauncherService` 调用，不直接操作 Core 或传入账号令牌：
+
+```csharp
+await Session.LaunchServerAsync(new ServerLaunchInfo(
+    InstanceId: selectedInstanceId,
+    ServerAddress: favorite.Address));
+```
+
+实例标识和地址都必须显式提供，空实例不会回退到首页选择。App 负责读取配置、刷新账号、检查安装/运行占用并登记游戏进程。内部复用 `ServerLaunch.Prepare()`，再沿用既有进程构建与会话管理，不重复调用会启动进程的 Core `LaunchAsync()`。本次地址不保存至配置，普通启动行为保持不变。失败沿用 `FeedbackReceived`；返回的 `Task` 不保证启动成功，更不代表已连接服务器。尚未创建或绑定 UI 按钮。
+
+### Core 收藏适配器
+
 `serverLaunchFromFavourateList.cs` 定义 `ServerLaunchFromFavourateList` 类。每个收藏组件可持有一个实例，构造时传入该组件绑定的 `ServerFavorite`、当前 `Preferences`、已认证会话和日志路径，按钮响应调用其 `LaunchAsync()`：
 
 ```csharp
@@ -58,3 +72,14 @@ dotnet run --project test/ServerLaunchChecks/ServerLaunchChecks.csproj -c Releas
 ```
 
 检查使用临时目录、合成实例及离线会话，覆盖请求解析、实例映射、设置隔离、地址校验、安装状态和启动前取消，不下载或启动真实游戏。真实服务器直连需要在 Windows 上使用完整实例另行验收。
+
+App 接口由 `test/LauncherChecks` 检查类型化调用和失败反馈，由 `test/WebBridgeChecks/ServerLaunchScenarios.cs` 检查参数传递、实例选择、配置不变、失败清理、IPv6、共享目录、在线授权保护及普通启动回归。进程构建注入测试在启动前终止，不替代真实 App 登录/启动验收；Core 真实直连已由用户独立验证。
+
+Windows 上单独运行 App 接口检查：
+
+```powershell
+dotnet run --project test/LauncherChecks/LauncherChecks.csproj -c Release
+dotnet run --project test/WebBridgeChecks/WebBridgeChecks.csproj -c Release -- --server-launch-only
+```
+
+本次在 Linux 交叉编译 App 与上述测试项目通过；使用仅 .NET Core 的临时运行配置执行隔离测试。全量 WebBridgeChecks 运行至既有 CustomizationScenarios 自动内存用例失败，该流程依赖 Windows kernel32 内存 API，不能视为全量回归通过。未修改该平台逻辑，也未在本次验证中进行真实 App 登录或游戏启动。
