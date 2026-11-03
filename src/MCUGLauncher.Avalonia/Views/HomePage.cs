@@ -25,25 +25,37 @@ internal sealed class HomePage : NativePage
         announcements = new HomeFeedPanel(session, ui, "announcements");
         recommendations = new HomeFeedPanel(session, ui, "recommendations");
         quotes = new HomeFeedPanel(session, ui, "quotes");
-        feeds = new Grid { RowDefinitions = new RowDefinitions("*,112,*"), RowSpacing = 14 };
+        // Community cards keep their content height instead of filling the viewport.
+        feeds = new Grid
+        {
+            RowDefinitions = new RowDefinitions("188,112,Auto,100"),
+            RowSpacing = 14,
+            VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Top
+        };
         feeds.Children.Add(servers);
         Grid.SetRow(announcements, 1);
         feeds.Children.Add(announcements);
         Grid.SetRow(recommendations, 2);
+        recommendations.MinHeight = 128;
         feeds.Children.Add(recommendations);
+        Grid.SetRow(quotes, 3);
+        feeds.Children.Add(quotes);
         accountCard = Ui.Card(account);
         accountCard.Padding = new Thickness(16, 15, 16, 12);
         accountCard.Height = 426;
         accountCard.Name = "HomeAccountCard";
         accountCard.Margin = default;
-        var left = Ui.Stack(accountCard, launch);
-        left.Spacing = 14;
-        layout = new Grid { ColumnDefinitions = new ColumnDefinitions("320,*"), ColumnSpacing = 18, MinHeight = 560 };
+        // The stretch row is intentional breathing room between account and launch actions.
+        var left = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto") };
+        left.Children.Add(accountCard);
+        launch.Margin = new Thickness(0, 24, 0, 0);
+        Grid.SetRow(launch, 2);
+        left.Children.Add(launch);
+        layout = new Grid { ColumnDefinitions = new ColumnDefinitions("320,*"), ColumnSpacing = 18, MinHeight = 570 };
         layout.Children.Add(left);
         Grid.SetColumn(right, 1);
         layout.Children.Add(right);
         Body.Children.Add(layout);
-        Body.Children.Add(quotes);
         Body.Spacing = 14;
         SizeChanged += (_, _) => UpdateDimensions();
         AttachedToVisualTree += (_, _) => UpdateDimensions();
@@ -66,8 +78,9 @@ internal sealed class HomePage : NativePage
         var compact = Bounds.Width < 1032;
         layout.ColumnDefinitions[0].Width = new GridLength(compact ? 280 : 320);
         layout.ColumnSpacing = compact ? 14 : 18;
-        // The original dashboard grows with the viewport, while its account card stays compact.
-        layout.Height = Math.Max(560, (TopLevel.GetTopLevel(this)?.ClientSize.Height ?? 780) - 220);
+        // Header (52) and page margins (40) are outside this grid. Short windows scroll
+        // rather than letting the account card overlap the bottom launch controls.
+        layout.Height = Math.Max(570, (TopLevel.GetTopLevel(this)?.ClientSize.Height ?? 780) - 92);
     }
     void DrawAccount()
     {
