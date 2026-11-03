@@ -71,13 +71,13 @@ internal static class CustomizationScenarios
             windowTitle = "Custom title",
             server = "localhost:25565"
         };
-        settings.Read(Message(new
+        var launchOptions = settings.Read(Message(new
         {
             version = "",
             requestId = "global"
         }));
-        var token = messages.Last().GetProperty("token").GetString();
-        settings.Save(Message(new
+        var token = launchOptions.Token;
+        var saveResult = settings.Save(Message(new
         {
             token,
             name = "",
@@ -85,16 +85,16 @@ internal static class CustomizationScenarios
             settings = Options(true, 2048)
         }));
         Check(store.Load().AutoMemory && InstanceSnapshot.Capture(context.Config, "1.21.1").Settings.AutoMemory, "global automatic memory is saved and used by launch snapshot");
-        settings.Read(Message(new
+        launchOptions = settings.Read(Message(new
         {
             version = "1.21.1",
             requestId = "instance"
         }));
-        token = messages.Last().GetProperty("token").GetString();
+        token = launchOptions.Token;
         var other = Path.Combine(fixture, "custom-other");
         Directory.CreateDirectory(other);
         context.Config.Root = other;
-        settings.Save(Message(new
+        saveResult = settings.Save(Message(new
         {
             token,
             name = "My instance",
@@ -104,13 +104,13 @@ internal static class CustomizationScenarios
         var descriptor = new InstanceCatalog(root).GetOrCreate("1.21.1");
         Check(descriptor.DisplayName == "My instance" && descriptor.Launch!.RamMb == 1536 && descriptor.Launch.JvmArguments == "-Dfixture=true", "instance options retain original directory and custom name");
         context.Config.Root = root;
-        settings.Read(Message(new
+        launchOptions = settings.Read(Message(new
         {
             version = "1.21.1",
             requestId = "inherit"
         }));
-        token = messages.Last().GetProperty("token").GetString();
-        settings.Save(Message(new
+        token = launchOptions.Token;
+        saveResult = settings.Save(Message(new
         {
             token,
             name = "My instance",
@@ -123,14 +123,14 @@ internal static class CustomizationScenarios
         var queued = new List<(string Root, string Target, DownloadRequest Request)>();
         void Queue(string name, string gameRoot, string target, DownloadRequest request) => queued.Add((gameRoot, target, request));
         var resources = new ResourceChoiceCommands(context, http, Queue);
-        await resources.ListAsync(Message(new
+        var resourcesResult = await resources.ListAsync(Message(new
         {
             id = "fixture",
             category = "mod",
             instance = "1.21.1",
             requestId = "resource"
         }));
-        token = messages.Last().GetProperty("token").GetString();
+        token = resourcesResult.Result!.Token;
         context.Config.Root = other;
         try
         {
@@ -159,11 +159,11 @@ internal static class CustomizationScenarios
             writer.Write("""{"formatVersion":1,"game":"minecraft","name":"Pack default","dependencies":{"minecraft":"1.21.1"},"files":[]}""");
         var imports = new InstallationCommands(context, Queue);
         var before = queued.Count;
-        await imports.PreviewPackAsync(Message(new
+        var packResult = await imports.PreviewPackAsync(Message(new
         {
             path = archive
         }));
-        token = messages.Last().GetProperty("token").GetString();
+        token = packResult.Preview!.Token;
         Check(queued.Count == before, "pack selection previews metadata without installing");
         imports.ConfirmPack(Message(new
         {

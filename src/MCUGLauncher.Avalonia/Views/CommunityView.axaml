@@ -4,7 +4,7 @@
   <Grid RowDefinitions="Auto,*">
     <StackPanel Spacing="6">
       <TextBlock Text="社区管理" Classes="pageTitle" />
-      <TextBlock Text="管理员发布公告；内容会先保存到本机，配置写入接口后同步到社区数据源。"
+      <TextBlock Text="公告由社区数据源提供并在此展示；管理员密钥仅用于管理推荐内容。"
                  Classes="muted" TextWrapping="Wrap" />
     </StackPanel>
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
@@ -23,39 +23,8 @@
 
         <Border Classes="card">
           <StackPanel Spacing="8">
-            <TextBlock Text="发布公告" Classes="h2" />
-            <TextBlock Text="标题" FontWeight="SemiBold" />
-            <TextBox x:Name="TitleBox" Watermark="公告标题" />
-            <TextBlock Text="正文" FontWeight="SemiBold" />
-            <TextBox x:Name="BodyBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="110"
-                     Watermark="公告正文" />
-            <TextBlock Text="过期时间（可选）" FontWeight="SemiBold" />
-            <TextBox x:Name="ExpiresBox" Watermark="例如 2026-12-31 23:59" />
-            <TextBlock Text="配图（可选）" FontWeight="SemiBold" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button x:Name="PickImageButton" Content="选择图片" Classes="ghost" />
-              <Button x:Name="ClearImageButton" Content="移除图片" Classes="ghost" IsEnabled="False" />
-              <TextBlock x:Name="ImageLabel" Classes="muted" VerticalAlignment="Center" />
-            </StackPanel>
-            <Image RenderOptions.BitmapInterpolationMode="None" x:Name="ImagePreview" MaxHeight="160" Stretch="Uniform" HorizontalAlignment="Left" />
-            <Button x:Name="PublishButton" Content="保存并发布" Classes="primary" HorizontalAlignment="Left" />
-            <TextBlock x:Name="PublishStatus" Classes="status" TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card">
-          <StackPanel Spacing="8">
             <TextBlock Text="当前公告" Classes="h2" />
             <StackPanel x:Name="AnnouncementsPanel" Spacing="6" />
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card">
-          <StackPanel Spacing="8">
-            <TextBlock Text="管理公告" Classes="h2" />
-            <TextBlock Text="删除会重写本机公告列表，保留未删除项及其原始字段；需要管理员密钥。"
-                       Classes="muted" TextWrapping="Wrap" />
-            <StackPanel x:Name="AnnouncementManagePanel" Spacing="6" />
           </StackPanel>
         </Border>
 
@@ -65,6 +34,7 @@
             <TextBlock Text="删除会重写本机推荐列表，保留未删除项及其原始字段；需要管理员密钥。"
                        Classes="muted" TextWrapping="Wrap" />
             <StackPanel x:Name="RecommendationManagePanel" Spacing="6" />
+            <TextBlock x:Name="ManageStatus" Classes="status" TextWrapping="Wrap" />
           </StackPanel>
         </Border>
       </StackPanel>

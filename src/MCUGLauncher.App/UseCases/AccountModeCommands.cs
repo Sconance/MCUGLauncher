@@ -1,14 +1,38 @@
 using BlockLaunch;
 using CmlLib.Core.Auth;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.UseCases;
 
 // Mode selection preserves credentials. Only explicit removal deletes an account.
 internal sealed class AccountModeCommands(LauncherContext context, Func<string, Task<MSession>>? restore = null)
 {
-    public Task RestoreSelectedAsync() => SwitchAsync(context.Config.AccountType, false);
+    public async Task<AccountSwitchResultInfo> RestoreSelectedAsync()
+    {
+        var mode = context.Config.AccountType;
+        var result = await SwitchAsync(mode, false);
+        if (mode != "offline")
+        {
+            if (context.Config.AccountType == mode && context.OnlineSession != null)
+                context.Send(new
+                {
+                    type = "authResult",
+                    ok = true,
+                    message = result.Message
+                });
+            else
+                context.Send(new
+                {
+                    type = "accountSwitchResult",
+                    account = result.Account,
+                    needsLogin = result.NeedsLogin,
+                    message = result.Message
+                });
+        }
+        return result;
+    }
 
-    public async Task SwitchAsync(string mode, bool prompt = true)
+    public async Task<AccountSwitchResultInfo> SwitchAsync(string mode, bool prompt = true)
     {
         if (mode is not ("offline" or "microsoft" or "mua"))
             throw new ArgumentException("未知的账号模式。");
@@ -16,40 +40,30 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         if (mode == "offline")
         {
             Apply(context, mode, null);
-            return;
+            return new(mode, false, "已切换到离线账号。");
         }
         var cached = context.AccountSessions.Find(mode);
         if (cached != null)
         {
             Apply(context, mode, cached, false);
-            return;
+            return new(mode, false, "已切换到 " + cached.Username);
         }
 
         try
         {
             var session = restore != null ? await restore(mode) : await RestoreAsync(mode);
             if (revision != context.AccountRevision)
-                return;
+                return new(mode, false, "账号切换已被更新的账号操作取代。");
             Apply(context, mode, session);
-            context.Send(new
-            {
-                type = "authResult",
-                ok = true,
-                message = "已切换到 " + session.Username
-            });
+            return new(mode, false, "已切换到 " + session.Username);
         }
         catch (Exception error)
         {
             if (revision != context.AccountRevision)
-                return;
+                return new(mode, false, "账号切换已被更新的账号操作取代。");
             var needsLogin = error is AccountLoginException { RequiresInteractive: true };
-            context.Send(new
-            {
-                type = "accountSwitchResult",
-                account = mode,
-                needsLogin = prompt && needsLogin,
-                message = needsLogin ? "账号授权需要重新确认，请登录。" : "暂时无法恢复账号，请检查网络后重试。已保存的账号仍然保留。"
-            });
+            return new(mode, prompt && needsLogin,
+                needsLogin ? "账号授权需要重新确认，请登录。" : "暂时无法恢复账号，请检查网络后重试。已保存的账号仍然保留。");
         }
     }
 
@@ -106,7 +120,7 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         context.SendAccountState();
     }
 
-    public async Task ForgetAsync(string mode)
+    public async Task<AuthResultInfo> ForgetAsync(string mode)
     {
         var revision = Interlocked.Increment(ref context.AccountRevision);
         context.AccountSessions.Forget(mode);
@@ -117,14 +131,9 @@ internal sealed class AccountModeCommands(LauncherContext context, Func<string, 
         else
             throw new ArgumentException("未知的在线账号模式。");
         if (revision != context.AccountRevision)
-            return;
+            return new(false, false, "账号移除已被更新的账号操作取代。");
         if (context.Config.AccountType == mode)
             Apply(context, "offline", null);
-        context.Send(new
-        {
-            type = "authResult",
-            ok = true,
-            message = "已移除本机保存的账号。"
-        });
+        return new(true, false, "已移除本机保存的账号。");
     }
 }

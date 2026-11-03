@@ -21,6 +21,7 @@ WebView2 的唯一用途是 `MicrosoftLoginWindow` 承载微软 OAuth 页面；�
 ## 行为约定
 
 - 页面只调用 `ILauncherService` 的强类型方法并订阅 `StateChanged`、`TasksChanged` 等领域事件；
+- 一次性请求/响应通过接口默认方法返回 `Task<TResponse>`，由 `[FeatureOperation]` 与自动发现的 UseCase handler 配对；无需增加服务消息解析与应用命令分支；
   不得读取 `AppConfig`、不得拼 JSON、不得调用 `HandleAsync`。
 - 状态、请求和事件 DTO 位于 `App/Contracts`；`LauncherStateBuilder` 直接生成 `LauncherState`，
   不再维护第二份匿名 JSON schema。

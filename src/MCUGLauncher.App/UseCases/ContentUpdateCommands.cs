@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BlockLaunch;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Services;
 using static MCUGLauncher.UseCases.ProtocolValues;
 
@@ -13,7 +14,7 @@ internal sealed class ContentUpdateCommands(LauncherContext context, Func<Cancel
     readonly PreviewCache<Previewed> previews = new();
     IResourceProvider Provider(CancellationToken token) => createProvider?.Invoke(token) ?? new ContentService(context.Http, token);
 
-    public async Task CheckAsync(string version)
+    public async Task<ContentUpdatesInfo> CheckAsync(string version)
     {
         var instance = InstanceSnapshot.Capture(context.Config, version);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
@@ -21,24 +22,19 @@ internal sealed class ContentUpdateCommands(LauncherContext context, Func<Cancel
         var items = await ContentUpdates.Check(Provider(timeout.Token), instance.Directory,
             instance.Requirements.Minecraft, instance.Requirements.Loader, timeout.Token);
         var token = checks.Add(new(instance, items));
-        context.Send(new
-        {
-            type = "contentUpdates",
+        return new(
             token,
             version,
-            items = items.Select(i => new
-            {
-                id = i.Current.ProjectId,
-                name = i.Current.Name,
-                before = i.Current.VersionId,
-                after = i.Latest?.VersionNumber,
-                available = i.Latest != null,
-                error = i.Error
-            })
-        });
+            items.Select(item => new ContentUpdateInfo(
+                item.Current.ProjectId,
+                item.Current.Name,
+                item.Current.VersionId,
+                item.Latest?.VersionNumber ?? "",
+                item.Latest != null,
+                item.Error)).ToArray());
     }
 
-    public async Task PreviewAsync(JsonElement root)
+    public async Task<ContentUpdatePreviewInfo> PreviewAsync(JsonElement root)
     {
         var check = checks.Get(ReadString(root, "token"));
         var ids = root.GetProperty("projects").EnumerateArray().Select(i => i.GetString() ?? "").ToHashSet();
@@ -53,14 +49,16 @@ internal sealed class ContentUpdateCommands(LauncherContext context, Func<Cancel
         var preview = await ContentUpdates.Preview(Provider(timeout.Token), instance.Directory, selected,
             instance.Requirements.Minecraft, instance.Requirements.Loader, timeout.Token);
         var token = previews.Add(new(instance, preview));
-        context.Send(new
-        {
-            type = "contentUpdatePreview",
+        return new(
             token,
-            version = instance.Key,
-            bytes = preview.Bytes,
-            changes = preview.Changes.Select(c => new { c.Project, c.Before, c.After, c.Path, c.OldPath })
-        });
+            instance.Key,
+            preview.Bytes,
+            preview.Changes.Select(change => new ContentChangeInfo(
+                change.Project,
+                change.Before,
+                change.After,
+                change.Path,
+                change.OldPath ?? "")).ToArray());
     }
 
     public void Apply(string token)

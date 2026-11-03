@@ -70,7 +70,7 @@
 - 不写账号、下载、安装、启动、实例维护等业务算法；
 - 不把 C 层作为 B 组件的依赖；B 组件不得 `using`/调用 `LauncherService` 或 `LauncherApplication`；
 - `LauncherService` 的 JSON/命令协议只能作为内部实现，不得暴露给 View；
-- `LauncherApplication` 现有 68 条字符串命令是过渡实现；新增业务应落在 Commands/Services/Core，不要继续把业务塞进 `LauncherApplication`；
+- `LauncherApplication` 内部字符串命令是过渡实现；新增一次性请求/响应优先使用第 3.4 节的声明式强类型 handler，不再增加字符串分发分支；
 - `IDesktopHost` 的文件选择方法返回路径，由 App 侧产生类型化 `PathPicked`，不允许 UI 直接发送原始消息。
 
 `LauncherContext` 是共享运行时上下文（B 类），不是新的业务入口；Commands 依赖它时应按第 4 节声明成员。
@@ -89,6 +89,18 @@
 - 占位实例使用 `InstanceInfo.IsPlaceholder`，不得用中文展示字符串做业务过滤；
 - 契约中不得出现 Avalonia、WebView2、`Window`、`Control`、`AppConfig` 等 UI/可变配置类型；
 - 修改 `ILauncherService`、状态 DTO 或事件 DTO 属于 API 变更，必须同时评估所有 View 消费者、`LauncherChecks` 和边界检查。
+
+### 强类型功能返回
+
+新增一次性查询/操作结果时，优先使用 `Task<TResponse>`，不要再增加请求 ID、结果事件、`LauncherService` 消息解析分支和 `LauncherApplication` 命令分支。
+
+1. 在 `ILauncherService` 声明带 `[FeatureOperation]` 的默认接口方法。方法体将现有参数组成匿名对象，并调用 `FeatureRequest.InvokeAsync<TResponse>(this, nameof(MethodName), arguments)`。
+2. 在 `Contracts` 增加共享的结果 DTO，并让接口方法直接返回 `Task<该 DTO>`。
+3. 实现一个 UseCase handler，标记 `[FeatureHandler(nameof(ILauncherService.MethodName))]`，实现 `IFeatureHandler<TResponse>`，并通过 `LauncherContext` 构造函数接收依赖。
+4. handler 会由 `FeatureDispatcher` 自动发现。启动时校验每个接口声明恰有一个 handler，且 handler 的 `TResponse` 与接口 `Task<TResponse>` 一致；缺失或重复注册会明确失败，不会静默丢弃结果。
+5. View 直接 `await` 接口方法取得结果。`LauncherChecks` 应检查接口声明与 handler 的一一对应及响应类型，并至少验证一个真实调用返回声明的 DTO。
+
+因此，增加一项功能时，集成层通常不需要逐处登记；除实际 handler 外，只需修改接口契约文件和结果 DTO 文件。需要长期订阅的状态流仍使用事件与状态快照；长时间后台任务继续使用现有任务队列/协调器，不应伪装成一次性结果。
 
 ## 4. 依赖声明规范（B 类）
 
@@ -202,22 +214,23 @@ Views（UI，不属于后端）
 
 ## 8. 当前组件类别划分
 
-统计范围：`src/MCUGLauncher.App` 的后端组件（Contracts 除外，UseCases、Services、Authentication、Models），不含 `ShellWindow` 与 Core。共 **43 个**：A 类 14 个、B 类 26 个、C 类 3 个。
+统计范围：`src/MCUGLauncher.App` 的后端组件（Contracts 除外，UseCases、Services、Authentication、Models），不含 `ShellWindow` 与 Core。共 **45 个**：A 类 14 个、B 类 27 个、C 类 4 个。
 
-### 8.1 C 类（集成层，3 个）
+### 8.1 C 类（集成层，4 个）
 
 | 组件 | 位置 | 说明 |
 | --- | --- | --- |
 | `LauncherService` | `UseCases/LauncherService.cs` | 实现 `ILauncherService`，统一 UI 入口、线程调度、状态缓存与事件解码；只装配，不写业务算法 |
 | `LauncherApplication` | `UseCases/LauncherApplication.cs` | 内部命令协议入口、命令分发、启动恢复与状态回推；只装配，不写业务 |
+| `FeatureDispatcher` | `UseCases/FeatureDispatcher.cs` | 自动发现并校验 `Task<TResponse>` handler，然后分发声明式功能调用 |
 | `IDesktopHost` | `UseCases/IDesktopHost.cs` | 原生窗口/文件对话框契约，由 Avalonia 的 `ShellDesktopHost` 实现；选择方法返回路径 |
 
 > `ShellWindow` 是宿主壳，不计入后端组件；它只依赖 `ILauncherService` 与 `IDesktopHost`。
 > `MicrosoftLoginWindow` / `MicrosoftLoginWebUi` 是 UI 侧 OAuth 适配，不计入后端组件。
 
-### 8.2 B 类（26 个）
+### 8.2 B 类（27 个）
 
-#### 8.2.1 UseCases（19 个）
+#### 8.2.1 UseCases（20 个）
 
 | 组件 | 说明 | 依赖面 |
 | --- | --- | --- |
@@ -225,7 +238,7 @@ Views（UI，不属于后端）
 | `AccountModeCommands` | 账号模式恢复、切换、忘记 | `LauncherContext.AccountRevision/AccountSessions/Config/Microsoft/Mua/OnlineSession/Send/SendAccountState/Store/Token` |
 | `AvatarCommands` | 头像读取与离线皮肤 | `LauncherContext.AccountRevision/Config/Http/Microsoft/Mua/Send/Store/Token` |
 | `BookmarkCommands` | 资源收藏切换 | `LauncherContext.RefreshState/Store` |
-| `CommunityCommands` | 公告/推荐/服务器收藏/发布 | `LauncherContext.Community/Config/Http/RefreshState/Send/Store/Token` |
+| `CommunityCommands` | 公告图片下载、推荐/服务器收藏 | `LauncherContext.Community/Config/Http/RefreshState/Send/Store/Token` |
 | `ContentUpdateCommands` | 内容更新检查、预览、应用 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `DiagnosticCommands` | 日志读取与系统信息 | `LauncherContext.Config/Send/Store` |
 | `GameCommands` | 启动/停止游戏、进程观察 | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |
@@ -239,6 +252,8 @@ Views（UI，不属于后端）
 | `ResourceCommands` | 原版/Modrinth 搜索与安装 | `LauncherContext.Config/Http/Send/Store/Tasks/Token` |
 | `SaveCommands` | 存档备份与恢复 | `LauncherContext.Config/Games/Send/Store/Token` |
 | `SettingsCommands` | 设置、Java 扫描、数据源保存/启用 | `LauncherContext.Config/RefreshState/Send/Store/Token` |
+| `DownloadImageFeatureHandler` | 公告图片下载的强类型结果 handler | `LauncherContext.Http/Token` → `CommunityCommands.DownloadImageAsync` |
+| `TestSourceFeatureHandler` | 数据源连通性测试的强类型结果 handler | `LauncherContext.Community` → `CommunityService.TestAsync(url, token)` |
 | `UninstallCommands` | 卸载预览与应用 | `LauncherContext.Config/Games/Send/Tasks/Token` |
 
 #### 8.2.2 Services（5 个）

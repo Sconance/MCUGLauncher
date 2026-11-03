@@ -8,7 +8,7 @@ namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class BookmarksView : UserControl
 {
-    ILauncherService? service;
+    ILauncherService service = EmptyServiceFallback.Instance;
     LauncherState? state;
     FavoriteInfo? selected;
     ResourceVersionsInfo? versions;
@@ -30,9 +30,8 @@ internal partial class BookmarksView : UserControl
 
     public void Attach(ILauncherService value)
     {
-        service = value;
+        service = value ?? EmptyServiceFallback.Instance;
         service.StateChanged += ApplyState;
-        service.ResourceVersionsReceived += OnVersions;
         service.PathPicked += OnPathPicked;
         service.ToastReceived += info => Status(info.Message);
         service.ErrorReceived += message => Status("操作失败：" + message);
@@ -68,7 +67,7 @@ internal partial class BookmarksView : UserControl
                 });
             var install = new Button { Content = "选择版本安装", Classes = { "primary" } };
             var current = favorite;
-            install.Click += (_, _) => OpenInstall(current);
+            install.Click += async (_, _) => await OpenInstall(current);
             var remove = new Button { Content = "取消收藏", Classes = { "ghost" } };
             var id = favorite.Id;
             var name = favorite.Name;
@@ -78,8 +77,7 @@ internal partial class BookmarksView : UserControl
             {
                 if (selected?.Id == id)
                     CloseInstall();
-                await service!.ToggleBookmarkAsync(id, name, description, "", kind);
-                Status("已取消收藏：" + name);
+                Status((await service!.ToggleBookmarkAsync(id, name, description, "", kind)).Message + " " + name);
             };
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
             actions.Children.Add(install);
@@ -93,7 +91,7 @@ internal partial class BookmarksView : UserControl
         }
     }
 
-    void OpenInstall(FavoriteInfo favorite)
+    async Task OpenInstall(FavoriteInfo favorite)
     {
         if (service is null)
             return;
@@ -106,15 +104,16 @@ internal partial class BookmarksView : UserControl
         InstallVersions.ItemsSource = null;
         InstallMode.ItemsSource = null;
         StartInstallButton.IsEnabled = false;
-        _ = service.ListContentVersionsAsync(
+        var result = await service.ListContentVersionsAsync(
             favorite.Id,
             favorite.Kind,
             state?.SelectedInstance ?? "",
             requestId: favorite.Id);
-    }
-
-    void OnVersions(ResourceVersionsInfo info)
-    {
+        if (!result.Ok || result.Result is not { } info)
+        {
+            InstallHint.Text = "读取版本失败：" + result.Error;
+            return;
+        }
         if (info.RequestId != requestId || selected is null)
             return;
         versions = info;

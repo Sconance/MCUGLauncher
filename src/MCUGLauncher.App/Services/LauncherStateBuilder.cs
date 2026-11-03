@@ -64,8 +64,7 @@ internal static class LauncherStateBuilder
             ToSet(config.DataSources),
             ToSet(new DataSourceConfig()),
             ToSet(config.CustomDataSources ?? config.DataSources),
-            config.EffectiveDataSourceMode,
-            config.WriteEndpoint);
+            config.EffectiveDataSourceMode);
     }
 
     static DataSourceSet ToSet(DataSourceConfig sources) => new(

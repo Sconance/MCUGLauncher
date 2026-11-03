@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BlockLaunch;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Services;
 using static MCUGLauncher.UseCases.ProtocolValues;
 
@@ -8,7 +9,7 @@ namespace MCUGLauncher.UseCases;
 // Handles resource use cases; no WPF controls or browser access.
 internal sealed class ResourceCommands(LauncherContext context)
 {
-    public async Task SendVanillaVersionsAsync()
+    public async Task<VanillaVersionsResultInfo> SendVanillaVersionsAsync()
     {
         try
         {
@@ -17,27 +18,16 @@ internal sealed class ResourceCommands(LauncherContext context)
             var items = doc.RootElement.GetProperty("versions").EnumerateArray()
                 .Where(v => v.GetProperty("type").GetString() == "release")
                 .Take(24)
-                .Select(v => new
-                {
-                    id = v.GetProperty("id").GetString() ?? "",
-                    type = v.GetProperty("type").GetString() ?? "release",
-                    released = v.GetProperty("releaseTime").GetDateTimeOffset().ToString("yyyy-MM-dd")
-                })
+                .Select(v => new VanillaVersionInfo(
+                    v.GetProperty("id").GetString() ?? "",
+                    v.GetProperty("type").GetString() ?? "release",
+                    v.GetProperty("releaseTime").GetDateTimeOffset().ToString("yyyy-MM-dd")))
                 .ToList();
-            context.Send(new
-            {
-                type = "vanillaList",
-                items
-            });
+            return VanillaVersionsResultInfo.Success(items);
         }
         catch (Exception ex)
         {
-            context.Send(new
-            {
-                type = "contentError",
-                category = "vanilla",
-                message = "读取原版版本列表失败：" + ex.Message
-            });
+            return VanillaVersionsResultInfo.Failure("读取原版版本列表失败：" + ex.Message);
         }
     }
 
@@ -49,7 +39,7 @@ internal sealed class ResourceCommands(LauncherContext context)
         return Task.CompletedTask;
     }
 
-    public async Task SearchContentAsync(JsonElement root)
+    public async Task<ContentSearchResultInfo> SearchContentAsync(JsonElement root)
     {
         var category = ReadString(root, "category");
         var requestId = ReadString(root, "requestId");
@@ -64,32 +54,22 @@ internal sealed class ResourceCommands(LauncherContext context)
             using var browse = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
             browse.CancelAfter(TimeSpan.FromSeconds(15));
             var page = await new ContentService(context.Http, browse.Token).Search(ReadString(root, "query"), game, loader, category);
-            context.Send(new
-            {
-                type = "contentList",
+            return new(
                 category,
                 requestId,
-                items = page.Items.Select(p => new
-                {
-                    id = p.Id,
-                    name = p.Title,
-                    author = p.Author,
-                    description = p.Description,
-                    icon = p.IconUrl,
-                    downloads = p.Downloads,
-                    tags = p.Tags
-                })
-            });
+                page.Items.Select(project => new ContentItem(
+                    project.Id,
+                    project.Title,
+                    project.Description,
+                    project.Author,
+                    project.IconUrl,
+                    project.Downloads.ToString(),
+                    project.Tags.Split(" · ", StringSplitOptions.RemoveEmptyEntries))).ToArray(),
+                "");
         }
         catch (Exception ex)
         {
-            context.Send(new
-            {
-                type = "contentError",
-                category,
-                requestId,
-                message = "读取资源失败：" + ex.Message
-            });
+            return new(category, requestId, Array.Empty<ContentItem>(), "读取资源失败：" + ex.Message);
         }
     }
 

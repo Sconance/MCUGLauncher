@@ -47,13 +47,13 @@ internal static class AccountModeScenarios
         pending.SetResult(new MSession { Username = "LateName" });
         await switchTask;
         Check(context.Config.AccountType == "offline" && context.Config.Player == "OfflineName", "late restoration cannot overwrite a newer selection");
-        messages.Clear();
         context.AccountSessions.Forget("microsoft");
-        await new AccountModeCommands(context, _ => throw new HttpRequestException("private payload")).SwitchAsync("microsoft");
-        Check(!messages.Last().GetProperty("needsLogin").GetBoolean(), "network failure does not request reauthentication");
-        messages.Clear();
-        await new AccountModeCommands(context, _ => throw new AccountLoginException("expired", true)).SwitchAsync("mua");
-        Check(messages.Last().GetProperty("needsLogin").GetBoolean(), "expired MUA authorization requests login");
+        var networkFailure = await new AccountModeCommands(context, _ => throw new HttpRequestException("private payload"))
+            .SwitchAsync("microsoft");
+        Check(!networkFailure.NeedsLogin, "network failure does not request reauthentication");
+        var expired = await new AccountModeCommands(context, _ => throw new AccountLoginException("expired", true))
+            .SwitchAsync("mua");
+        Check(expired.NeedsLogin, "expired MUA authorization requests login");
         Check(store.Load().OfflinePlayer == "OfflineName", "offline player persists independently");
     }
 

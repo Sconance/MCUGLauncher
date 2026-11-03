@@ -11,8 +11,7 @@ namespace MCUGLauncher.Avalonia.Views;
 internal partial class HomeView : UserControl
 {
     readonly Dictionary<string, ServerPingInfo> pings = new(StringComparer.OrdinalIgnoreCase);
-    readonly HashSet<string> requestedPings = new(StringComparer.OrdinalIgnoreCase);
-    ILauncherService? service;
+    ILauncherService service = EmptyServiceFallback.Instance;
     LauncherState? state;
     CommunityData community = CommunityData.Empty;
     Bitmap? announcementImage;
@@ -40,12 +39,9 @@ internal partial class HomeView : UserControl
 
     public void Attach(ILauncherService value)
     {
-        service = value;
+        service = value ?? EmptyServiceFallback.Instance;
         service.StateChanged += ApplyState;
         service.CommunityChanged += OnCommunity;
-        service.AvatarReceived += OnAvatar;
-        service.ServerPingReceived += OnServerPing;
-        service.ServerResultReceived += OnServerResult;
         service.ToastReceived += info => Status(info.Message);
         service.ErrorReceived += message => Status("操作失败：" + message);
         community = service.Community;
@@ -54,7 +50,7 @@ internal partial class HomeView : UserControl
     }
 
     /// <summary>账号恢复完成后由外壳调用，避免在 ready 之前读取头像。</summary>
-    public void Activate() => _ = service?.ReadAvatarAsync();
+    public void Activate() => _ = ReadAvatar();
 
     void WireButtons()
     {
@@ -69,7 +65,7 @@ internal partial class HomeView : UserControl
             }
 
             Status("正在准备启动…");
-            await service!.LaunchAsync(target);
+            Status((await service!.LaunchAsync(target)).Message);
         };
         RefreshButton.Click += async (_, _) => await service!.RequestStateAsync();
         InstanceSelector.SelectionChanged += async (_, _) =>
@@ -102,7 +98,10 @@ internal partial class HomeView : UserControl
             }
 
             ServerStatus.Text = "正在保存…";
-            await service!.SaveServerAsync(ServerNameBox.Text?.Trim() ?? "", address, editingServer);
+            var result = await service!.SaveServerAsync(ServerNameBox.Text?.Trim() ?? "", address, editingServer);
+            ServerStatus.Text = result.Message;
+            if (result.Ok)
+                HideServerForm();
         };
         PrevAnnouncementButton.Click += (_, _) =>
         {
@@ -143,7 +142,7 @@ internal partial class HomeView : UserControl
         if (avatarKey != avatarAccount)
         {
             avatarAccount = avatarKey;
-            _ = service?.ReadAvatarAsync();
+            _ = ReadAvatar();
         }
 
         var current = snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)
@@ -161,10 +160,9 @@ internal partial class HomeView : UserControl
         {
             serverSignature = signature;
             pings.Clear();
-            requestedPings.Clear();
             foreach (var server in snapshot.Servers)
                 if (server.Address.Length > 0)
-                    _ = service!.PingServerAsync(server.Address, server.Address);
+                    _ = PingServer(server.Address);
         }
 
         RenderServers();
@@ -258,15 +256,15 @@ internal partial class HomeView : UserControl
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
             var current = server;
             var query = new Button { Content = "查询", Classes = { "link" } };
-            query.Click += async (_, _) => await service!.PingServerAsync(current.Address, current.Address);
+            query.Click += async (_, _) => await PingServer(current.Address);
             var edit = new Button { Content = "编辑", Classes = { "link" } };
             edit.Click += (_, _) => ShowServerForm(current);
             var delete = new Button { Content = "删除", Classes = { "link" } };
             delete.Click += async (_, _) =>
             {
-                await service!.DeleteServerAsync(current.Address);
+                var result = await service!.DeleteServerAsync(current.Address);
                 pings.Remove(current.Address);
-                Status("已删除 " + current.Address);
+                Status(result.Message);
             };
             actions.Children.Add(query);
             actions.Children.Add(edit);
@@ -487,7 +485,8 @@ internal partial class HomeView : UserControl
         }
 
         Status("正在收藏 " + address + "…");
-        await service!.SaveServerAsync(item.Name.Trim(), address, "");
+        var result = await service!.SaveServerAsync(item.Name.Trim(), address, "");
+        Status(result.Message);
     }
 
     void RenderQuote()
@@ -512,6 +511,15 @@ internal partial class HomeView : UserControl
         AvatarImage.Source = avatar;
     }
 
+    async Task ReadAvatar()
+    {
+        if (service is null)
+            return;
+        var info = await service.ReadAvatarAsync();
+        if (info is not null)
+            OnAvatar(info);
+    }
+
     static Bitmap? Decode(string dataUrl)
     {
         var comma = dataUrl.IndexOf(',');
@@ -529,24 +537,11 @@ internal partial class HomeView : UserControl
         }
     }
 
-    void OnServerPing(ServerPingInfo info)
+    async Task PingServer(string address)
     {
+        var info = await service!.PingServerAsync(address, address);
         pings[info.Id] = info;
         RenderServers();
-    }
-
-    void OnServerResult(ServerResultInfo info)
-    {
-        // 添加表单收起时（例如从推荐右键收藏）结果没有落点，改投页面状态栏
-        if (!ServerForm.IsVisible)
-        {
-            Status(info.Message);
-            return;
-        }
-
-        ServerStatus.Text = info.Message;
-        if (info.Ok)
-            HideServerForm();
     }
 
     void ShowServerForm(SavedServerInfo server)

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BlockLaunch;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Services;
 using static MCUGLauncher.UseCases.ProtocolValues;
 
@@ -11,38 +12,46 @@ internal sealed class ResourceChoiceCommands(LauncherContext context, HttpClient
     sealed record Choice(string Root, string Instance, string Target, string Category, string Game, string Loader, List<ContentVersion> Versions);
     readonly PreviewCache<Choice> choices = new();
 
-    public async Task ListAsync(JsonElement message)
+    public async Task<ResourceVersionsResultInfo> ListAsync(JsonElement message)
     {
-        var root = context.Config.Root;
-        var category = ReadString(message, "category");
-        if (category is not ("mod" or "modpack" or "resourcepack" or "shader" or "datapack"))
-            throw new ArgumentException("未知资源分类。");
-        var instance = ReadString(message, "instance");
-        var target = "";
-        var game = ReadString(message, "game");
-        var loader = ReadString(message, "loader");
-        if (instance.Length > 0)
+        try
         {
-            var snapshot = InstanceSnapshot.Capture(context.Config, instance);
-            target = snapshot.Directory;
-            game = snapshot.Requirements.Minecraft;
-            loader = snapshot.Requirements.Loader;
+            var root = context.Config.Root;
+            var category = ReadString(message, "category");
+            if (category is not ("mod" or "modpack" or "resourcepack" or "shader" or "datapack"))
+                throw new ArgumentException("未知资源分类。");
+            var instance = ReadString(message, "instance");
+            var target = "";
+            var game = ReadString(message, "game");
+            var loader = ReadString(message, "loader");
+            if (instance.Length > 0)
+            {
+                var snapshot = InstanceSnapshot.Capture(context.Config, instance);
+                target = snapshot.Directory;
+                game = snapshot.Requirements.Minecraft;
+                loader = snapshot.Requirements.Loader;
+            }
+            if (loader.Length > 0 && loader is not ("vanilla" or "fabric" or "forge" or "neoforge" or "quilt"))
+                throw new ArgumentException("未知加载器。");
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(20));
+            var versions = (await new ContentService(browseHttp ?? context.Http, timeout.Token)
+                .Versions(ReadString(message, "id"), game, loader, category)).Take(200).ToList();
+            var token = choices.Add(new(root, instance, target, category, game, loader, versions));
+            return ResourceVersionsResultInfo.Success(new(
+                ReadString(message, "requestId"),
+                token,
+                game,
+                loader,
+                versions.Select(version => new ResourceVersionInfo(
+                    version.Id,
+                    version.Name,
+                    version.Files.Select(file => file.Filename).ToArray())).ToArray()));
         }
-        if (loader.Length > 0 && loader is not ("vanilla" or "fabric" or "forge" or "neoforge" or "quilt"))
-            throw new ArgumentException("未知加载器。");
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(20));
-        var versions = (await new ContentService(browseHttp ?? context.Http, timeout.Token).Versions(ReadString(message, "id"), game, loader, category)).Take(200).ToList();
-        var token = choices.Add(new(root, instance, target, category, game, loader, versions));
-        context.Send(new
+        catch (Exception error)
         {
-            type = "resourceVersions",
-            requestId = ReadString(message, "requestId"),
-            token,
-            game,
-            loader,
-            items = versions.Select(v => new { id = v.Id, name = v.Name, files = v.Files.Select(f => f.Filename) })
-        });
+            return ResourceVersionsResultInfo.Failure(error.Message);
+        }
     }
 
     public void Queue(JsonElement message)

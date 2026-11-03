@@ -9,7 +9,6 @@ public sealed record AppSettingsPatch(
     bool? AutoMemory = null,
     bool? Anonymous = null,
     string? Player = null,
-    string? WriteEndpoint = null,
     DataSourceSet? DataSources = null);
 
 public sealed record LaunchOptionsSettings(

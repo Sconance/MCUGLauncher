@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using MCUGLauncher.Models;
 using MCUGLauncher.Services;
+using SavedInfo = MCUGLauncher.Contracts.SavedInfo;
 
 namespace MCUGLauncher.UseCases;
 
@@ -24,22 +25,24 @@ internal sealed class InstanceCommands(LauncherContext context)
         Process.Start(new ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true });
     }
 
-    public void ToggleMod(string file, bool enabled)
+    public SavedInfo ToggleMod(string file, bool enabled)
     {
         var mod = FindMod(file);
         if (mod == null)
-            return;
+            throw new FileNotFoundException("找不到模组文件：" + file);
         VersionCatalog.SetEnabled(mod, enabled);
         context.RefreshState();
+        return new(enabled ? "已启用模组。" : "已禁用模组。");
     }
 
-    public void DeleteMod(string file)
+    public SavedInfo DeleteMod(string file)
     {
         var mod = FindMod(file);
         if (mod == null)
-            return;
+            throw new FileNotFoundException("找不到模组文件：" + file);
         VersionCatalog.Delete(mod);
         context.RefreshState();
+        return new("已删除模组。");
     }
 
     public ModInfo? FindMod(string file)

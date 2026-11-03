@@ -83,14 +83,6 @@ public sealed record SavedInfo(string Message)
     internal static SavedInfo From(JsonElement element) => new(JsonRead.String(element, "message"));
 }
 
-public sealed record PublishResultInfo(bool Ok, bool Pending, string Message)
-{
-    internal static PublishResultInfo From(JsonElement element) => new(
-        JsonRead.Bool(element, "ok"),
-        JsonRead.Bool(element, "pending"),
-        JsonRead.String(element, "message"));
-}
-
 public sealed record LaunchResultInfo(bool Ok, string Message)
 {
     internal static LaunchResultInfo From(JsonElement element) => new(
@@ -195,21 +187,11 @@ public sealed record ServerResultInfo(bool Ok, string Message)
 }
 
 public sealed record TestResultInfo(
-    string RequestId,
     string Name,
     string Url,
     bool Ok,
     string Message,
-    int Ms)
-{
-    internal static TestResultInfo From(JsonElement element) => new(
-        JsonRead.String(element, "requestId"),
-        JsonRead.String(element, "name"),
-        JsonRead.String(element, "url"),
-        JsonRead.Bool(element, "ok"),
-        JsonRead.String(element, "message"),
-        JsonRead.Int(element, "ms"));
-}
+    int Ms);
 
 public sealed record KeyResultInfo(string Role, bool Ok, string Message)
 {
@@ -242,12 +224,24 @@ public sealed record ResourceVersionsInfo(
         JsonRead.Items(element, "items", ResourceVersionInfo.From));
 }
 
+public sealed record ResourceVersionsResultInfo(bool Ok, ResourceVersionsInfo? Result, string Error)
+{
+    public static ResourceVersionsResultInfo Success(ResourceVersionsInfo result) => new(true, result, "");
+    public static ResourceVersionsResultInfo Failure(string error) => new(false, null, error);
+}
+
 public sealed record LoaderListInfo(string Version, string Loader, IReadOnlyList<string> Versions)
 {
     internal static LoaderListInfo From(JsonElement element) => new(
         JsonRead.String(element, "version"),
         JsonRead.String(element, "loader"),
         JsonRead.Strings(element, "versions"));
+}
+
+public sealed record LoaderListResultInfo(bool Ok, LoaderListInfo? Result, string Error)
+{
+    public static LoaderListResultInfo Success(LoaderListInfo result) => new(true, result, "");
+    public static LoaderListResultInfo Failure(string error) => new(false, null, error);
 }
 
 public sealed record VanillaVersionInfo(string Id, string Type, string Released)
@@ -258,6 +252,12 @@ public sealed record VanillaVersionInfo(string Id, string Type, string Released)
         JsonRead.String(element, "released"));
 }
 
+public sealed record VanillaVersionsResultInfo(bool Ok, IReadOnlyList<VanillaVersionInfo> Items, string Error)
+{
+    public static VanillaVersionsResultInfo Success(IReadOnlyList<VanillaVersionInfo> items) => new(true, items, "");
+    public static VanillaVersionsResultInfo Failure(string error) => new(false, Array.Empty<VanillaVersionInfo>(), error);
+}
+
 public sealed record PackPreviewInfo(string Token, string Name, string Root, string Game, string Loader)
 {
     internal static PackPreviewInfo From(JsonElement element) => new(
@@ -266,6 +266,12 @@ public sealed record PackPreviewInfo(string Token, string Name, string Root, str
         JsonRead.String(element, "root"),
         JsonRead.String(element, "game"),
         JsonRead.String(element, "loader"));
+}
+
+public sealed record PackPreviewResultInfo(bool Ok, PackPreviewInfo? Preview, string Error)
+{
+    public static PackPreviewResultInfo Success(PackPreviewInfo preview) => new(true, preview, "");
+    public static PackPreviewResultInfo Failure(string error) => new(false, null, error);
 }
 
 public sealed record AvatarInfo(string Image, string Label, bool Fallback, string Account, string Player)

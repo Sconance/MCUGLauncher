@@ -13,7 +13,7 @@ internal partial class DownloadView : UserControl
     static readonly string[] LoaderValues = ["fabric", "quilt", "forge", "neoforge"];
     static readonly string[] LoaderLabels = ["Fabric", "Quilt", "Forge", "NeoForge"];
 
-    ILauncherService? service;
+    ILauncherService service = EmptyServiceFallback.Instance;
     LauncherState? state;
     IReadOnlyList<ContentItem> results = [];
     ContentItem? selected;
@@ -47,13 +47,8 @@ internal partial class DownloadView : UserControl
 
     public void Attach(ILauncherService value)
     {
-        service = value;
+        service = value ?? EmptyServiceFallback.Instance;
         service.StateChanged += ApplyState;
-        service.ContentChanged += OnContent;
-        service.ResourceVersionsReceived += OnResourceVersions;
-        service.VanillaListReceived += OnVanilla;
-        service.LoaderListReceived += OnLoaders;
-        service.PackPreviewReceived += OnPackPreview;
         service.ContentErrorReceived += OnContentError;
         service.PathPicked += OnPathPicked;
         service.ToastReceived += info => Status(info.Message);
@@ -64,7 +59,7 @@ internal partial class DownloadView : UserControl
     public void Activate()
     {
         if (!vanillaLoaded && !loadingVanilla)
-            LoadVanilla();
+            _ = LoadVanilla();
     }
 
     void WireButtons()
@@ -79,9 +74,13 @@ internal partial class DownloadView : UserControl
             ResultsPanel.Children.Add(Muted("正在搜索…"));
             downloadCategory = CategoryValues[Math.Max(0, CategoryBox.SelectedIndex)];
             Status("正在搜索 Modrinth…");
-            await service!.SearchContentAsync(downloadCategory, QueryBox.Text?.Trim() ?? "");
+            var search = await service!.SearchContentAsync(downloadCategory, QueryBox.Text?.Trim() ?? "");
+            if (search.Ok)
+                OnContent(search.Items);
+            else
+                OnContentError(new ContentErrorInfo(search.Category, search.RequestId, search.Error));
         };
-        ChooseVersionButton.Click += (_, _) => LoadVersions();
+        ChooseVersionButton.Click += async (_, _) => await LoadVersions();
         DownloadButton.Click += async (_, _) => await QueueDownload();
         BackButton.Click += (_, _) =>
         {
@@ -92,7 +91,7 @@ internal partial class DownloadView : UserControl
             ResultsPanel.IsVisible = true;
             RenderResults();
         };
-        LoadVanillaButton.Click += (_, _) => LoadVanilla();
+        LoadVanillaButton.Click += async (_, _) => await LoadVanilla();
         InstallVanillaButton.Click += async (_, _) =>
         {
             if (VanillaList.SelectedIndex < 0 || VanillaList.SelectedIndex >= vanilla.Count)
@@ -105,7 +104,7 @@ internal partial class DownloadView : UserControl
             await service!.InstallVanillaAsync(version);
             VanillaHint.Text = "原版安装请求已提交：" + version;
         };
-        LoadGameVersionsButton.Click += (_, _) => LoadVanilla();
+        LoadGameVersionsButton.Click += async (_, _) => await LoadVanilla();
         LoadLoaderVersionsButton.Click += async (_, _) =>
         {
             var game = LoaderGameBox.SelectedItem as string ?? "";
@@ -117,7 +116,11 @@ internal partial class DownloadView : UserControl
             var loader = LoaderValues[Math.Max(0, LoaderTypeBox.SelectedIndex)];
             LoaderVersionBox.ItemsSource = null;
             LoaderHint.Text = "正在读取 " + LoaderLabels[LoaderTypeBox.SelectedIndex] + " 版本…";
-            await service!.ListLoadersAsync(game, loader);
+            var result = await service!.ListLoadersAsync(game, loader);
+            if (result.Ok && result.Result is { } loaders)
+                OnLoaders(loaders);
+            else
+                LoaderHint.Text = "读取加载器版本失败：" + result.Error;
         };
         InstallLoaderButton.Click += async (_, _) =>
         {
@@ -166,14 +169,21 @@ internal partial class DownloadView : UserControl
             RenderResults();
     }
 
-    void LoadVanilla()
+    async Task LoadVanilla()
     {
         if (service is null || loadingVanilla)
             return;
         loadingVanilla = true;
         vanillaLoaded = false;
         VanillaHint.Text = "正在读取 Mojang 版本列表…";
-        _ = service.ListVanillaVersionsAsync();
+        var result = await service.ListVanillaVersionsAsync();
+        if (result.Ok)
+            OnVanilla(result.Items.ToArray());
+        else
+        {
+            loadingVanilla = false;
+            VanillaHint.Text = result.Error;
+        }
     }
 
     void OnVanilla(VanillaVersionInfo[] items)
@@ -248,10 +258,10 @@ internal partial class DownloadView : UserControl
             var current = item;
             detail.Click += (_, _) => ShowDetail(current);
             var choose = new Button { Content = "选择版本", Classes = { "ghost" } };
-            choose.Click += (_, _) =>
+            choose.Click += async (_, _) =>
             {
                 ShowDetail(current);
-                LoadVersions();
+                await LoadVersions();
             };
             var bookmarked = service?.State?.Favorites.Any(favorite => favorite.Id == item.Id) == true;
             var bookmark = new Button
@@ -266,8 +276,7 @@ internal partial class DownloadView : UserControl
             var itemKind = downloadCategory;
             bookmark.Click += async (_, _) =>
             {
-                await service!.ToggleBookmarkAsync(itemId, itemName, itemDescription, itemAuthor, itemKind);
-                Status(bookmarked ? "已取消收藏：" + itemName : "已收藏：" + itemName);
+                Status((await service!.ToggleBookmarkAsync(itemId, itemName, itemDescription, itemAuthor, itemKind)).Message + " " + itemName);
             };
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(0, 10, 0, 0) };
             actions.Children.Add(detail);
@@ -307,18 +316,22 @@ internal partial class DownloadView : UserControl
         DownloadButton.IsVisible = false;
     }
 
-    void LoadVersions()
+    async Task LoadVersions()
     {
         if (service is null || selected is null)
             return;
         versionRequest = selected.Id;
         DetailVersionsHint.Text = "正在读取兼容版本…";
         ChooseVersionButton.IsVisible = false;
-        _ = service.ListContentVersionsAsync(
+        var result = await service.ListContentVersionsAsync(
             selected.Id,
             downloadCategory,
             state?.SelectedInstance ?? "",
             requestId: selected.Id);
+        if (result.Ok && result.Result is { } info)
+            OnResourceVersions(info);
+        else
+            OnContentError(new ContentErrorInfo(downloadCategory, selected.Id, result.Error));
     }
 
     void OnResourceVersions(ResourceVersionsInfo info)
@@ -370,8 +383,7 @@ internal partial class DownloadView : UserControl
     {
         if (info.Target == "pack")
         {
-            Status("正在读取整合包…");
-            _ = service!.PreviewPackAsync(info.Path);
+            _ = PreviewPack(info.Path);
         }
         else if (info.Target == "packRoot")
         {
@@ -414,6 +426,16 @@ internal partial class DownloadView : UserControl
         PackNameBox.Text = info.Name;
         PackRootBox.Text = info.Root;
         PackHint.Text = "已读取整合包信息，确认后加入导入队列。";
+    }
+
+    async Task PreviewPack(string path)
+    {
+        Status("正在读取整合包…");
+        var result = await service!.PreviewPackAsync(path);
+        if (result.Ok && result.Preview is { } preview)
+            OnPackPreview(preview);
+        else
+            PackHint.Text = "读取整合包失败：" + result.Error;
     }
 
     void OnContentError(ContentErrorInfo info)

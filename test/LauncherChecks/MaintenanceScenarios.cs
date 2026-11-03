@@ -102,22 +102,20 @@ internal static class MaintenanceScenarios
         var messages = new List<JsonElement>();
         using var context = new LauncherContext(value => messages.Add(JsonSerializer.SerializeToElement(value)), store);
         var commands = new ContentUpdateCommands(context, _ => new FakeUpdates());
-        await commands.CheckAsync("fabric-fixture");
-        var check = messages.Last();
-        await commands.PreviewAsync(JsonSerializer.SerializeToElement(new
+        var check = await commands.CheckAsync("fabric-fixture");
+        var preview = await commands.PreviewAsync(JsonSerializer.SerializeToElement(new
         {
-            token = check.GetProperty("token").GetString(),
+            token = check.Token,
             projects = new[] { "fixture-project" }
         }));
-        var preview = messages.Last();
-        Check(preview.GetProperty("type").GetString() == "contentUpdatePreview", "content updates expose an explicit file-change preview");
+        Check(preview.Changes.Count == 1, "content updates expose an explicit file-change preview");
         File.WriteAllText(Path.Combine(source, "mods", "fixture.jar"), "user-changed-after-preview");
-        commands.Apply(preview.GetProperty("token").GetString()!);
+        commands.Apply(preview.Token);
         await context.Tasks.Completion.WaitAsync(TimeSpan.FromSeconds(5));
         Check(context.Tasks.History().Single().State == OperationState.Failed && File.ReadAllText(Path.Combine(source, "mods", "fixture.jar")) == "user-changed-after-preview", "stale update fingerprint fails before replacing user content");
         try
         {
-            commands.Apply(preview.GetProperty("token").GetString()!);
+            commands.Apply(preview.Token);
             throw new Exception("preview token reused");
         }
         catch (InvalidOperationException) { Check(true, "applied preview token cannot be reused"); }

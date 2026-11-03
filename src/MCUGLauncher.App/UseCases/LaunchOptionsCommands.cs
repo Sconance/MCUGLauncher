@@ -11,7 +11,7 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
     sealed record Target(string Root, string Version);
     readonly PreviewCache<Target> targets = new();
 
-    public void Read(JsonElement message)
+    public LaunchOptionsInfo Read(JsonElement message)
     {
         var version = ReadString(message, "version");
         var root = context.Config.Root;
@@ -35,19 +35,25 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
             settings.Width = context.Config.Width;
             settings.Height = context.Config.Height;
         }
-        context.Send(new
-        {
-            type = "launchOptions",
-            requestId = ReadString(message, "requestId"),
-            token = targets.Add(new(root, version)),
+        return new LaunchOptionsInfo(
+            ReadString(message, "requestId"),
+            targets.Add(new(root, version)),
             version,
             name,
             inherited,
-            settings
-        });
+            new LaunchSettingsInfo(
+                settings.AutoMemory,
+                settings.FullScreen,
+                settings.RamMb,
+                settings.Width,
+                settings.Height,
+                settings.Java,
+                settings.JvmArguments,
+                settings.WindowTitle,
+                settings.Server));
     }
 
-    public void Save(JsonElement message)
+    public SavedInfo Save(JsonElement message)
     {
         var token = ReadString(message, "token");
         var target = targets.Get(token);
@@ -88,11 +94,8 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
             catalog.Save(descriptor);
         }
         targets.Get(token, true);
-        context.Send(new
-        {
-            type = "launchOptionsSaved"
-        });
         context.RefreshState();
+        return new("启动设置已保存。");
     }
 
     MCUGLauncher.Models.AppConfig ConfigAt(string root)

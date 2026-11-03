@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BlockLaunch;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Models;
 using MCUGLauncher.Services;
 using static MCUGLauncher.UseCases.ProtocolValues;
@@ -9,12 +10,34 @@ namespace MCUGLauncher.UseCases;
 // Handles community use cases; no WPF controls or browser access.
 internal sealed class CommunityCommands(LauncherContext context)
 {
+    public async Task<byte[]> DownloadImageAsync(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || uri.Scheme is not ("http" or "https")
+            || uri.UserInfo.Length > 0)
+            throw new ArgumentException("图片地址无效。");
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(8));
+        using var response = await context.Http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+        response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength > 4 * 1024 * 1024)
+            throw new InvalidDataException("公告配图不能超过 4 MB。");
+        await using var input = await response.Content.ReadAsStreamAsync(timeout.Token);
+        using var output = new MemoryStream();
+        var buffer = new byte[8192];
+        int read;
+        while ((read = await input.ReadAsync(buffer, timeout.Token)) > 0)
+        {
+            if (output.Length + read > 4 * 1024 * 1024)
+                throw new InvalidDataException("公告配图不能超过 4 MB。");
+            await output.WriteAsync(buffer.AsMemory(0, read), timeout.Token);
+        }
+        return output.ToArray();
+    }
+
     public async Task SendCommunityAsync(bool notify = false)
     {
         var items = new Dictionary<string, string>();
-        var localAnn = Path.Combine(context.Store.DataDirectory, "announcements.local.json");
-        if (File.Exists(localAnn))
-            items["announcements"] = File.ReadAllText(localAnn);
         var localRecs = Path.Combine(context.Store.DataDirectory, "recommendations.local.json");
         if (File.Exists(localRecs))
             items["recommendations"] = File.ReadAllText(localRecs);
@@ -46,38 +69,19 @@ internal sealed class CommunityCommands(LauncherContext context)
             });
     }
 
-    public async Task PingAsync(string address, string id)
+    public async Task<ServerPingInfo> PingAsync(string address, string id)
     {
         var result = await ServerPingService.PingAsync(address, context.Token);
-        context.Send(new
-        {
-            type = "serverPing",
-            id,
-            online = result.Online,
-            players = result.OnlinePlayers,
-            max = result.MaxPlayers,
-            ping = result.Ping,
-            motd = result.Motd,
-            version = result.Version,
-            error = result.Error
-        });
+        return new(id, result.Online, result.OnlinePlayers, result.MaxPlayers,
+            result.Ping, result.Motd, result.Version, result.Error);
     }
 
-    public void SaveServer(JsonElement root)
+    public ServerResultInfo SaveServer(string name, string address, string oldAddress)
     {
-        var name = ReadString(root, "name");
-        var address = ReadString(root, "address").Trim();
-        var oldAddress = ReadString(root, "oldAddress").Trim();
+        address = address.Trim();
+        oldAddress = oldAddress.Trim();
         if (address.Length == 0)
-        {
-            context.Send(new
-            {
-                type = "serverResult",
-                ok = false,
-                message = "请填写服务器地址。"
-            });
-            return;
-        }
+            return new(false, "请填写服务器地址。");
         if (name.Length == 0)
             name = address.Split(':')[0];
         if (!string.IsNullOrWhiteSpace(oldAddress) &&
@@ -86,183 +90,56 @@ internal sealed class CommunityCommands(LauncherContext context)
         context.Config.Servers.RemoveAll(s => s.Address.Equals(address, StringComparison.OrdinalIgnoreCase));
         context.Config.Servers.Add(new SavedServer { Name = name, Address = address });
         context.Store.Save(context.Config);
-        context.Send(new
-        {
-            type = "serverResult",
-            ok = true,
-            message = (oldAddress.Length > 0 ? "已更新 " : "已添加 ") + name
-        });
         context.RefreshState();
+        return new(true, (oldAddress.Length > 0 ? "已更新 " : "已添加 ") + name);
     }
 
-    public void DeleteServer(string address)
+    public SavedInfo DeleteServer(string address)
     {
         context.Config.Servers.RemoveAll(s => s.Address.Equals(address, StringComparison.OrdinalIgnoreCase));
         context.Store.Save(context.Config);
         context.RefreshState();
+        return new("已删除服务器 " + address);
     }
 
-    public async Task TestSourceAsync(string name, string url, string requestId = "")
-    {
-        var result = await context.Community.TestAsync(url, context.Token);
-        context.Send(new
-        {
-            type = "testResult",
-            requestId,
-            name,
-            url,
-            ok = result.Ok,
-            message = result.Text,
-            ms = result.Ms
-        });
-    }
-
-    public void VerifyKey(string role, string key)
+    public KeyResultInfo VerifyKey(string role, string key)
     {
         if (string.IsNullOrWhiteSpace(key) || key.Trim().Length < 8)
-        {
-            context.Send(new
-            {
-                type = "keyResult",
-                role,
-                ok = false,
-                message = "密钥格式不正确，请向群管理员确认。"
-            });
-            return;
-        }
+            return new(role, false, "密钥格式不正确，请向群管理员确认。");
         if (role == "admin")
         {
             if (string.IsNullOrWhiteSpace(context.Config.AdminKey))
             {
                 context.Config.AdminKey = key.Trim();
                 context.Store.Save(context.Config);
-                context.Send(new
-                {
-                    type = "keyResult",
-                    role,
-                    ok = true,
-                    message = "已设置本机管理员密钥。"
-                });
                 context.RefreshState();
-                return;
+                return new(role, true, "已设置本机管理员密钥。");
             }
             if (!string.Equals(context.Config.AdminKey, key.Trim(), StringComparison.Ordinal))
-            {
-                context.Send(new
-                {
-                    type = "keyResult",
-                    role,
-                    ok = false,
-                    message = "管理员密钥不匹配。"
-                });
-                return;
-            }
+                return new(role, false, "管理员密钥不匹配。");
         }
         else
         {
             context.Config.CommunityKey = key.Trim();
         }
         context.Store.Save(context.Config);
-        context.Send(new
-        {
-            type = "keyResult",
-            role,
-            ok = true,
-            message = "验证成功"
-        });
         context.RefreshState();
+        return new(role, true, "验证成功");
     }
 
-    public void SaveCommunityLocal(string fileName, JsonElement root, string property)
+    public SavedInfo SaveRecommendationsLocal(JsonElement root)
     {
-        var items = root.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Array
+        var items = root.TryGetProperty("items", out var value) && value.ValueKind == JsonValueKind.Array
             ? value.GetRawText()
             : "[]";
-        var file = Path.Combine(context.Store.DataDirectory, fileName);
+        var file = Path.Combine(context.Store.DataDirectory, "recommendations.local.json");
         File.WriteAllText(file, items);
-        var key = fileName.StartsWith("announcements", StringComparison.OrdinalIgnoreCase) ? "announcements" : "recommendations";
         context.Send(new
         {
             type = "community",
-            payload = new Dictionary<string, string> { [key] = items }
+            payload = new Dictionary<string, string> { ["recommendations"] = items }
         });
-        context.Send(new
-        {
-            type = "saved",
-            message = "本地内容已更新。"
-        });
+        return new("本地内容已更新。");
     }
 
-    public async Task PublishAsync(JsonElement root)
-    {
-        var title = ReadString(root, "title");
-        var body = ReadString(root, "body");
-        if (title.Length == 0 || body.Length == 0)
-        {
-            context.Send(new
-            {
-                type = "publishResult",
-                ok = false,
-                message = "标题和正文不能为空。"
-            });
-            return;
-        }
-
-        var imageData = ReadString(root, "imageData");
-        var record = new
-        {
-            id = Guid.NewGuid().ToString("N"),
-            title,
-            body,
-            tag = "公告",
-            author = context.Config.Player,
-            publishedAt = DateTimeOffset.Now.ToString("O"),
-            expiresAt = ReadString(root, "expiresAt"),
-            imageUrl = imageData.StartsWith("data:image/", StringComparison.Ordinal) ? imageData : ""
-        };
-        var file = Path.Combine(context.Store.DataDirectory, "announcements.local.json");
-        var list = File.Exists(file)
-            ? JsonSerializer.Deserialize<List<JsonElement>>(File.ReadAllText(file)) ?? []
-            : [];
-        list.Add(JsonSerializer.SerializeToElement(record));
-        var localJson = JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(file, localJson);
-        context.Send(new
-        {
-            type = "community",
-            payload = new Dictionary<string, string> { ["announcements"] = localJson }
-        });
-
-        if (!string.IsNullOrWhiteSpace(context.Config.WriteEndpoint))
-        {
-            try
-            {
-                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
-                deadline.CancelAfter(TimeSpan.FromSeconds(8));
-                using var response = await context.Http.PostAsync(
-                    context.Config.WriteEndpoint,
-                    new StringContent(JsonSerializer.Serialize(record), System.Text.Encoding.UTF8, "application/json"), deadline.Token);
-                if (!response.IsSuccessStatusCode)
-                    throw new IOException($"HTTP {(int)response.StatusCode}");
-            }
-            catch (Exception ex)
-            {
-                context.Send(new
-                {
-                    type = "publishResult",
-                    ok = false,
-                    message = "已保存到本机，但同步失败：" + ex.Message
-                });
-                return;
-            }
-        }
-
-        context.Send(new
-        {
-            type = "publishResult",
-            ok = true,
-            pending = string.IsNullOrWhiteSpace(context.Config.WriteEndpoint),
-            message = string.IsNullOrWhiteSpace(context.Config.WriteEndpoint) ? "已保存为待发布" : "公告已发布"
-        });
-    }
 }

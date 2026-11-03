@@ -43,6 +43,15 @@ public sealed record ContentItem(
         JsonRead.Strings(element, "tags"));
 }
 
+public sealed record ContentSearchResultInfo(
+    string Category,
+    string RequestId,
+    IReadOnlyList<ContentItem> Items,
+    string Error)
+{
+    public bool Ok => Error.Length == 0;
+}
+
 public sealed record TaskInfo(
     string Id,
     string Name,
@@ -105,7 +114,6 @@ public sealed record LauncherState(
     DataSourceSet DataSources,
     DataSourceSet DefaultDataSources,
     DataSourceSet CustomDataSources,
-    string DataSourceMode,
-    string WriteEndpoint)
+    string DataSourceMode)
 {
 }

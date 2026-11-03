@@ -8,7 +8,7 @@ namespace MCUGLauncher.UseCases;
 // Handles settings use cases; no WPF controls or browser access.
 internal sealed class SettingsCommands(LauncherContext context)
 {
-    public void SaveSettings(JsonElement root)
+    public SavedInfo SaveSettings(JsonElement root)
     {
         // Validate the directory before changing any setting in this message.
         var requestedRoot = ReadString(root, "root").Trim();
@@ -27,8 +27,6 @@ internal sealed class SettingsCommands(LauncherContext context)
         }
         if (root.TryGetProperty("anonymous", out var anonymous))
             context.Config.Anonymous = anonymous.GetBoolean();
-        if (root.TryGetProperty("writeEndpoint", out var endpoint))
-            context.Config.WriteEndpoint = endpoint.GetString() ?? "";
         if (root.TryGetProperty("dataSources", out var sources))
         {
             context.Config.DataSources.Announcements = ReadString(sources, "announcements");
@@ -55,16 +53,13 @@ internal sealed class SettingsCommands(LauncherContext context)
         if (root.TryGetProperty("height", out var height) && height.TryGetInt32(out var heightValue))
             context.Config.Height = Math.Clamp(heightValue, LaunchLimits.WindowHeightMin, LaunchLimits.WindowHeightMax);
         context.Store.Save(context.Config);
-        context.Send(new
-        {
-            type = "settingsSaved"
-        });
         context.RefreshState();
+        return new("设置已保存。");
     }
 
-    public void ResetDataSources()
+    public SavedInfo ResetDataSources()
     {
-        UseDataSources("default");
+        return UseDataSources("default");
     }
 
     static MCUGLauncher.Models.DataSourceConfig CopySources(MCUGLauncher.Models.DataSourceConfig sources) => new()
@@ -75,7 +70,7 @@ internal sealed class SettingsCommands(LauncherContext context)
         Quotes = sources.Quotes
     };
 
-    public void SaveCustomSources(JsonElement message)
+    public SavedInfo SaveCustomSources(JsonElement message)
     {
         var sources = message.GetProperty("dataSources");
         // Retain the active mode before saving a separate editable preset.
@@ -88,14 +83,11 @@ internal sealed class SettingsCommands(LauncherContext context)
             Quotes = ReadString(sources, "quotes").Trim()
         };
         context.Store.Save(context.Config);
-        context.Send(new
-        {
-            type = "settingsSaved"
-        });
         context.RefreshState();
+        return new("自定义数据源已保存。");
     }
 
-    public void UseDataSources(string mode)
+    public SavedInfo UseDataSources(string mode)
     {
         if (mode is not ("default" or "custom"))
             throw new ArgumentException("未知数据源类型。");
@@ -104,23 +96,18 @@ internal sealed class SettingsCommands(LauncherContext context)
         context.Config.DataSourceMode = mode;
         context.Store.Save(context.Config);
         context.RefreshState();
+        return new(mode == "default" ? "已切换到默认数据源。" : "已切换到自定义数据源。");
     }
 
-    public async Task ScanJavaAsync()
+    public async Task<IReadOnlyList<JavaInfo>> ScanJavaAsync()
     {
         var list = await JavaDiscovery.Scan(context.Config.Root, new[] { context.Config.Java }, context.Token);
-        context.Send(new
-        {
-            type = "javaList",
-            items = list.Select(item => new
-            {
-                path = item.Path,
-                major = item.Major,
-                arch = item.Architecture,
-                vendor = item.Vendor,
-                error = item.Error
-            })
-        });
+        return list.Select(item => new JavaInfo(
+            item.Path,
+            item.Major,
+            item.Architecture,
+            item.Vendor,
+            item.Error)).ToArray();
     }
 
 }

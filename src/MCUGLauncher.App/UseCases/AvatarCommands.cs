@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BlockLaunch;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Services;
 using static MCUGLauncher.UseCases.ProtocolValues;
 
@@ -8,7 +9,7 @@ namespace MCUGLauncher.UseCases;
 // Reuses bounded skin download and PNG validation. Skin selection changes launcher appearance only.
 internal sealed class AvatarCommands(LauncherContext context, Func<byte[]?, string> encode)
 {
-    public async Task ReadAsync()
+    public async Task<AvatarInfo?> ReadAsync()
     {
         var revision = context.AccountRevision;
         var mode = context.Config.AccountType;
@@ -48,19 +49,11 @@ internal sealed class AvatarCommands(LauncherContext context, Func<byte[]?, stri
         }
         catch { label = "皮肤读取失败，使用史蒂夫头像"; }
         if (revision != context.AccountRevision)
-            return;
-        context.Send(new
-        {
-            type = "avatar",
-            image,
-            label,
-            fallback,
-            account = mode,
-            player = context.Config.Player
-        });
+            return null;
+        return new(image, label, fallback, mode, context.Config.Player);
     }
 
-    public async Task SetAsync(JsonElement message)
+    public async Task<AvatarInfo?> SetAsync(JsonElement message)
     {
         if (context.Config.AccountType != "offline")
             throw new InvalidOperationException("本地皮肤仅可在离线模式选择；在线账号读取认证站皮肤。");
@@ -76,7 +69,7 @@ internal sealed class AvatarCommands(LauncherContext context, Func<byte[]?, stri
             context.Config.SkinFile = destination;
         }
         context.Store.Save(context.Config);
-        await ReadAsync();
+        return await ReadAsync();
     }
 
     async Task<byte[]> ReadLocalAsync(string path)

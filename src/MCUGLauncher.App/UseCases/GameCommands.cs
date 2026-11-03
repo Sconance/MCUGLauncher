@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using BlockLaunch;
 using CmlLib.Core.Auth;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Services;
 using static MCUGLauncher.UseCases.ProtocolValues;
 
@@ -11,13 +12,10 @@ internal sealed class GameCommands(LauncherContext context,
 {
     bool preparing;
 
-    public async Task LaunchAsync(string version)
+    public async Task<LaunchResultInfo> LaunchAsync(string version)
     {
         if (preparing)
-        {
-            Result(false, "游戏正在准备启动，请稍候。");
-            return;
-        }
+            return new(false, "游戏正在准备启动，请稍候。");
         preparing = true;
         string? reservedDirectory = null;
         try
@@ -80,9 +78,9 @@ internal sealed class GameCommands(LauncherContext context,
                 context.Config.LastInstance = key;
                 context.Store.Save(context.Config);
             }
-            Result(true, "已启动 " + key);
+            return new(true, "已启动 " + key);
         }
-        catch (Exception ex) { Result(false, ex.Message); }
+        catch (Exception ex) { return new(false, ex.Message); }
         finally
         {
             if (reservedDirectory != null)
@@ -90,8 +88,6 @@ internal sealed class GameCommands(LauncherContext context,
             preparing = false;
         }
     }
-
-    void Result(bool ok, string message) => context.Send(new { type = "launchResult", ok, message });
 
     async Task ObserveAsync(RunningGame game)
     {

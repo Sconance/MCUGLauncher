@@ -68,8 +68,6 @@ public partial class ShellWindow : Window
             ToastLayer.IsVisible = false;
             toastTimer.Stop();
         };
-        service.LaunchResultReceived += info => ShowToast(info.Message);
-        service.AuthResultReceived += info => ShowToast(info.Message);
         service.ErrorReceived += message => ShowToast("操作失败：" + message);
         service.ToastReceived += info => ShowToast(info.Message);
         HomeButton.Click += (_, _) => Show("home");

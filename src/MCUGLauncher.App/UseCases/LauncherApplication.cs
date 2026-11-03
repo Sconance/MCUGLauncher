@@ -29,12 +29,13 @@ internal sealed class LauncherApplication : IDisposable
     readonly SettingsCommands settingsCommands;
     readonly DiagnosticCommands diagnosticCommands;
     readonly CommunityCommands communityCommands;
+    readonly FeatureDispatcher featureDispatcher;
 
     public AppConfig Config => context.Config;
     public LauncherApplication(Action<object> send, IDesktopHost desktop, ConfigStore? store = null, Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null, Func<byte[]?, string>? avatarEncoder = null)
     {
         this.desktop = desktop;
-        context = new LauncherContext(send, store, microsoftBrowser);
+        context = new LauncherContext(send, store, microsoftBrowser, avatarEncoder);
         context.RefreshState = SendState;
         maintenanceCommands = new InstanceMaintenanceCommands(context);
         uninstallCommands = new UninstallCommands(context);
@@ -53,7 +54,11 @@ internal sealed class LauncherApplication : IDisposable
         settingsCommands = new SettingsCommands(context);
         diagnosticCommands = new DiagnosticCommands(context);
         communityCommands = new CommunityCommands(context);
+        featureDispatcher = new FeatureDispatcher(context);
     }
+
+    public Task<TResponse> ExecuteFeatureAsync<TResponse>(string operation, object arguments) =>
+        featureDispatcher.ExecuteAsync<TResponse>(operation, arguments);
 
     public void RememberWindow(double width, double height, bool maximized)
     {
@@ -101,7 +106,17 @@ internal sealed class LauncherApplication : IDisposable
                         });
                     break;
                 case "previewUninstall":
-                    await uninstallCommands.PreviewAsync(ReadString(root, "version"));
+                    var uninstallPreview = await uninstallCommands.PreviewAsync(ReadString(root, "version"));
+                    context.Send(new
+                    {
+                        type = "uninstallPreview",
+                        token = uninstallPreview.Token,
+                        version = uninstallPreview.Version,
+                        name = uninstallPreview.Name,
+                        paths = uninstallPreview.Paths,
+                        shared = uninstallPreview.Shared,
+                        notice = uninstallPreview.Notice
+                    });
                     break;
                 case "applyUninstall":
                     var uninstallToken = ReadString(root, "token");
@@ -109,22 +124,59 @@ internal sealed class LauncherApplication : IDisposable
                         uninstallCommands.Apply(uninstallToken);
                     break;
                 case "checkContentUpdates":
-                    await updateCommands.CheckAsync(ReadString(root, "version"));
+                    var updates = await updateCommands.CheckAsync(ReadString(root, "version"));
+                    context.Send(new
+                    {
+                        type = "contentUpdates",
+                        token = updates.Token,
+                        version = updates.Version,
+                        items = updates.Items.Select(item => new
+                        {
+                            id = item.Id,
+                            name = item.Name,
+                            before = item.Before,
+                            after = item.After,
+                            available = item.Available,
+                            error = item.Error
+                        })
+                    });
                     break;
                 case "previewContentUpdates":
-                    await updateCommands.PreviewAsync(root);
+                    var updatePreview = await updateCommands.PreviewAsync(root);
+                    context.Send(new
+                    {
+                        type = "contentUpdatePreview",
+                        token = updatePreview.Token,
+                        version = updatePreview.Version,
+                        bytes = updatePreview.Bytes,
+                        changes = updatePreview.Changes
+                    });
                     break;
                 case "applyContentUpdates":
                     updateCommands.Apply(ReadString(root, "token"));
                     break;
                 case "listSaveBackups":
-                    saveCommands.List();
+                    var listedBackups = saveCommands.List();
+                    context.Send(new
+                    {
+                        type = "saveBackups",
+                        items = listedBackups.Select(item => new { id = item.Id, created = item.Created, worlds = item.Worlds })
+                    });
                     break;
                 case "restoreSave":
-                    await saveCommands.RestoreAsync(root);
+                    var restoredSave = await saveCommands.RestoreAsync(root);
+                    context.Send(new
+                    {
+                        type = "toast",
+                        message = restoredSave.Message
+                    });
                     break;
                 case "toggleBookmark":
-                    bookmarkCommands.Toggle(root);
+                    context.Send(new
+                    {
+                        type = "saved",
+                        message = bookmarkCommands.Toggle(root).Message
+                    });
                     break;
                 case "requestGames":
                     context.SendGames();
@@ -134,13 +186,31 @@ internal sealed class LauncherApplication : IDisposable
                         gameCommands.Stop(ReadString(root, "id"));
                     break;
                 case "listLoaders":
-                    await installationCommands.LoadersAsync(root);
+                    var loaderList = await installationCommands.LoadersAsync(root);
+                    if (loaderList.Ok && loaderList.Result is { } loaders)
+                        context.Send(new
+                        {
+                            type = "loaderList",
+                            version = loaders.Version,
+                            loader = loaders.Loader,
+                            versions = loaders.Versions
+                        });
+                    else
+                        context.Send(new
+                        {
+                            type = "error",
+                            message = loaderList.Error
+                        });
                     break;
                 case "installLoader":
                     installationCommands.InstallLoader(root);
                     break;
                 case "saveCustomSources":
                     settingsCommands.SaveCustomSources(root);
+                    context.Send(new
+                    {
+                        type = "settingsSaved"
+                    });
                     break;
                 case "useDataSources":
                     settingsCommands.UseDataSources(ReadString(root, "mode"));
@@ -149,34 +219,119 @@ internal sealed class LauncherApplication : IDisposable
                     settingsCommands.ResetDataSources();
                     break;
                 case "readAvatar":
-                    await avatars.ReadAsync();
+                    var avatar = await avatars.ReadAsync();
+                    if (avatar is not null)
+                        context.Send(new
+                        {
+                            type = "avatar",
+                            image = avatar.Image,
+                            label = avatar.Label,
+                            fallback = avatar.Fallback,
+                            account = avatar.Account,
+                            player = avatar.Player
+                        });
                     break;
                 case "setOfflineSkin":
-                    await avatars.SetAsync(root);
+                    var skinAvatar = await avatars.SetAsync(root);
+                    if (skinAvatar is not null)
+                        context.Send(new
+                        {
+                            type = "avatar",
+                            image = skinAvatar.Image,
+                            label = skinAvatar.Label,
+                            fallback = skinAvatar.Fallback,
+                            account = skinAvatar.Account,
+                            player = skinAvatar.Player
+                        });
                     break;
                 case "readLaunchOptions":
-                    launchOptions.Read(root);
+                    var readOptions = launchOptions.Read(root);
+                    context.Send(new
+                    {
+                        type = "launchOptions",
+                        requestId = readOptions.RequestId,
+                        token = readOptions.Token,
+                        version = readOptions.Version,
+                        name = readOptions.Name,
+                        inherited = readOptions.Inherited,
+                        settings = readOptions.Settings
+                    });
                     break;
                 case "saveLaunchOptions":
-                    launchOptions.Save(root);
+                    var launchSaveResult = launchOptions.Save(root);
+                    context.Send(new
+                    {
+                        type = "launchOptionsSaved",
+                        message = launchSaveResult.Message
+                    });
                     break;
                 case "selectMuaProfile":
                     accountCommands.SelectMuaProfile(root);
                     break;
                 case "listContentVersions":
-                    await resourceChoices.ListAsync(root);
+                    var resourceVersions = await resourceChoices.ListAsync(root);
+                    if (resourceVersions.Ok && resourceVersions.Result is { } listedVersions)
+                        context.Send(new
+                        {
+                            type = "resourceVersions",
+                            requestId = listedVersions.RequestId,
+                            token = listedVersions.Token,
+                            game = listedVersions.Game,
+                            loader = listedVersions.Loader,
+                            items = listedVersions.Items
+                        });
+                    else
+                        context.Send(new
+                        {
+                            type = "contentError",
+                            category = ReadString(root, "category"),
+                            requestId = ReadString(root, "requestId"),
+                            message = resourceVersions.Error
+                        });
                     break;
                 case "queueContentVersion":
                     resourceChoices.Queue(root);
                     break;
                 case "previewPack":
-                    await installationCommands.PreviewPackAsync(root);
+                    var packPreview = await installationCommands.PreviewPackAsync(root);
+                    if (packPreview.Ok && packPreview.Preview is { } preview)
+                        context.Send(new
+                        {
+                            type = "packPreview",
+                            token = preview.Token,
+                            name = preview.Name,
+                            root = preview.Root,
+                            game = preview.Game,
+                            loader = preview.Loader
+                        });
+                    else
+                        context.Send(new
+                        {
+                            type = "error",
+                            message = packPreview.Error
+                        });
                     break;
                 case "confirmPack":
                     installationCommands.ConfirmPack(root);
                     break;
                 case "importPack":
-                    await installationCommands.ImportPackAsync(root);
+                    var importedPack = await installationCommands.ImportPackAsync(root);
+                    if (importedPack.Ok && importedPack.Preview is { } importedPreview)
+                        context.Send(new
+                        {
+                            type = "packPreview",
+                            token = importedPreview.Token,
+                            name = importedPreview.Name,
+                            root = importedPreview.Root,
+                            game = importedPreview.Game,
+                            loader = importedPreview.Loader
+                        });
+                    else
+                        context.Send(new
+                        {
+                            type = "error",
+                            message = importedPack.Error
+                        });
                     break;
                 case "requestTasks":
                     context.SendTasks();
@@ -196,7 +351,13 @@ internal sealed class LauncherApplication : IDisposable
                     await communityCommands.SendCommunityAsync(notify: true);
                     break;
                 case "launch":
-                    await gameCommands.LaunchAsync(ReadString(root, "version"));
+                    var launchResult = await gameCommands.LaunchAsync(ReadString(root, "version"));
+                    context.Send(new
+                    {
+                        type = "launchResult",
+                        ok = launchResult.Ok,
+                        message = launchResult.Message
+                    });
                     break;
                 case "window":
                     desktop.Window(ReadString(root, "action"));
@@ -219,32 +380,106 @@ internal sealed class LauncherApplication : IDisposable
                     instanceCommands.OpenFolder(ReadString(root, "kind"));
                     break;
                 case "pingServer":
-                    await communityCommands.PingAsync(ReadString(root, "address"), ReadString(root, "id"));
+                    var ping = await communityCommands.PingAsync(ReadString(root, "address"), ReadString(root, "id"));
+                    context.Send(new
+                    {
+                        type = "serverPing",
+                        id = ping.Id,
+                        online = ping.Online,
+                        players = ping.Players,
+                        max = ping.Max,
+                        ping = ping.Ping,
+                        motd = ping.Motd,
+                        version = ping.Version,
+                        error = ping.Error
+                    });
                     break;
                 case "saveServer":
-                    communityCommands.SaveServer(root);
+                    var serverResult = communityCommands.SaveServer(
+                        ReadString(root, "name"),
+                        ReadString(root, "address"),
+                        ReadString(root, "oldAddress"));
+                    context.Send(new
+                    {
+                        type = "serverResult",
+                        ok = serverResult.Ok,
+                        message = serverResult.Message
+                    });
                     break;
                 case "deleteServer":
-                    communityCommands.DeleteServer(ReadString(root, "address"));
+                    context.Send(new
+                    {
+                        type = "saved",
+                        message = communityCommands.DeleteServer(ReadString(root, "address")).Message
+                    });
                     break;
                 case "toggleMod":
-                    instanceCommands.ToggleMod(ReadString(root, "file"), root.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean());
+                    context.Send(new
+                    {
+                        type = "saved",
+                        message = instanceCommands.ToggleMod(
+                            ReadString(root, "file"),
+                            root.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean()).Message
+                    });
                     break;
                 case "deleteMod":
-                    instanceCommands.DeleteMod(ReadString(root, "file"));
+                    context.Send(new
+                    {
+                        type = "saved",
+                        message = instanceCommands.DeleteMod(ReadString(root, "file")).Message
+                    });
                     break;
                 case "deleteVersion":
-                    await uninstallCommands.PreviewAsync(ReadString(root, "version"));
+                    var versionPreview = await uninstallCommands.PreviewAsync(ReadString(root, "version"));
+                    context.Send(new
+                    {
+                        type = "uninstallPreview",
+                        token = versionPreview.Token,
+                        version = versionPreview.Version,
+                        name = versionPreview.Name,
+                        paths = versionPreview.Paths,
+                        shared = versionPreview.Shared,
+                        notice = versionPreview.Notice
+                    });
                     break;
                 case "searchContent":
                     context.Log("searchContent " + ReadString(root, "category") + " " + ReadString(root, "query"));
-                    await resourceCommands.SearchContentAsync(root);
+                    var search = await resourceCommands.SearchContentAsync(root);
+                    if (search.Ok)
+                        context.Send(new
+                        {
+                            type = "contentList",
+                            category = search.Category,
+                            requestId = search.RequestId,
+                            items = search.Items
+                        });
+                    else
+                        context.Send(new
+                        {
+                            type = "contentError",
+                            category = search.Category,
+                            requestId = search.RequestId,
+                            message = search.Error
+                        });
                     break;
                 case "installContent":
                     await resourceCommands.InstallContentAsync(root);
                     break;
                 case "vanillaVersions":
-                    await resourceCommands.SendVanillaVersionsAsync();
+                    var vanilla = await resourceCommands.SendVanillaVersionsAsync();
+                    if (vanilla.Ok)
+                        context.Send(new
+                        {
+                            type = "vanillaList",
+                            items = vanilla.Items
+                        });
+                    else
+                        context.Send(new
+                        {
+                            type = "contentError",
+                            category = "vanilla",
+                            message = vanilla.Error
+                        });
                     break;
                 case "installVanilla":
                     await resourceCommands.InstallVanillaAsync(ReadString(root, "version"));
@@ -254,6 +489,10 @@ internal sealed class LauncherApplication : IDisposable
                     break;
                 case "saveSettings":
                     settingsCommands.SaveSettings(root);
+                    context.Send(new
+                    {
+                        type = "settingsSaved"
+                    });
                     break;
                 case "pickFolder":
                     var folderTarget = ReadString(root, "target");
@@ -278,16 +517,53 @@ internal sealed class LauncherApplication : IDisposable
                         });
                     break;
                 case "scanJava":
-                    await settingsCommands.ScanJavaAsync();
+                    var javaItems = await settingsCommands.ScanJavaAsync();
+                    context.Send(new
+                    {
+                        type = "javaList",
+                        items = javaItems.Select(item => new
+                        {
+                            path = item.Path,
+                            major = item.Major,
+                            arch = item.Arch,
+                            vendor = item.Vendor,
+                            error = item.Error
+                        })
+                    });
                     break;
                 case "backupSaves":
-                    await saveCommands.BackupAsync();
+                    var savedBackup = await saveCommands.BackupAsync();
+                    context.Send(new
+                    {
+                        type = "toast",
+                        message = savedBackup.Message
+                    });
+                    var refreshedBackups = saveCommands.List();
+                    context.Send(new
+                    {
+                        type = "saveBackups",
+                        items = refreshedBackups.Select(item => new { id = item.Id, created = item.Created, worlds = item.Worlds })
+                    });
                     break;
                 case "readLog":
-                    diagnosticCommands.ReadLog();
+                    context.Send(new
+                    {
+                        type = "logText",
+                        text = diagnosticCommands.ReadLog()
+                    });
                     break;
                 case "systemInfo":
-                    diagnosticCommands.SendSystemInfo();
+                    var systemInfo = diagnosticCommands.SendSystemInfo();
+                    context.Send(new
+                    {
+                        type = "systemInfo",
+                        app = systemInfo.App,
+                        dotnet = systemInfo.Dotnet,
+                        webview = systemInfo.Webview,
+                        os = systemInfo.Os,
+                        root = systemInfo.Root,
+                        data = systemInfo.Data
+                    });
                     break;
                 case "resetWindow":
                     desktop.ResetWindow();
@@ -307,20 +583,24 @@ internal sealed class LauncherApplication : IDisposable
                 case "forgetAccount":
                     await accountModes.ForgetAsync(ReadString(root, "account"));
                     break;
-                case "testSource":
-                    await communityCommands.TestSourceAsync(ReadString(root, "name"), ReadString(root, "url"), ReadString(root, "requestId"));
-                    break;
                 case "verifyKey":
-                    communityCommands.VerifyKey(ReadString(root, "role"), ReadString(root, "key"));
+                    var keyResult = communityCommands.VerifyKey(ReadString(root, "role"), ReadString(root, "key"));
+                    context.Send(new
+                    {
+                        type = "keyResult",
+                        role = keyResult.Role,
+                        ok = keyResult.Ok,
+                        message = keyResult.Message
+                    });
                     break;
-                case "publish":
-                    await communityCommands.PublishAsync(root);
-                    break;
-                case "saveAnnouncements":
-                    communityCommands.SaveCommunityLocal("announcements.local.json", root, "items");
-                    break;
+
                 case "saveRecommendations":
-                    communityCommands.SaveCommunityLocal("recommendations.local.json", root, "items");
+                    communityCommands.SaveRecommendationsLocal(root);
+                    context.Send(new
+                    {
+                        type = "saved",
+                        message = "本地内容已更新。"
+                    });
                     break;
                 default:
                     throw new ArgumentException("不支持的消息类型：" + type);
@@ -354,32 +634,6 @@ internal sealed class LauncherApplication : IDisposable
                 message = ex.Message
             });
         }
-    }
-
-    // Bounded image fetch for community announcements; the facade only receives bytes.
-    public async Task<byte[]> DownloadImageAsync(string url)
-    {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
-            || uri.Scheme is not ("http" or "https")
-            || uri.UserInfo.Length > 0)
-            throw new ArgumentException("图片地址无效。");
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(context.Token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(8));
-        using var response = await context.Http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-        response.EnsureSuccessStatusCode();
-        if (response.Content.Headers.ContentLength > 4 * 1024 * 1024)
-            throw new InvalidDataException("公告配图不能超过 4 MB。");
-        await using var input = await response.Content.ReadAsStreamAsync(timeout.Token);
-        using var output = new MemoryStream();
-        var buffer = new byte[8192];
-        int read;
-        while ((read = await input.ReadAsync(buffer, timeout.Token)) > 0)
-        {
-            if (output.Length + read > 4 * 1024 * 1024)
-                throw new InvalidDataException("公告配图不能超过 4 MB。");
-            await output.WriteAsync(buffer.AsMemory(0, read), timeout.Token);
-        }
-        return output.ToArray();
     }
 
     public void Dispose() => context.Dispose();

@@ -8,7 +8,7 @@ namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class GamesView : UserControl
 {
-    ILauncherService? service;
+    ILauncherService service = EmptyServiceFallback.Instance;
 
     public GamesView()
     {
@@ -23,7 +23,7 @@ internal partial class GamesView : UserControl
 
     public void Attach(ILauncherService value)
     {
-        service = value;
+        service = value ?? EmptyServiceFallback.Instance;
         service.GamesChanged += OnGames;
         service.ToastReceived += info => Status(info.Message);
         service.ErrorReceived += message => Status("操作失败：" + message);

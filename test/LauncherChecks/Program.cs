@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net;
 using System.Text.Json;
 using System.Text;
+using System.Reflection;
 using MCUGLauncher.Contracts;
 using MCUGLauncher.Services;
 using MCUGLauncher.UseCases;
@@ -20,7 +21,8 @@ var messages = new List<JsonElement>();
 var desktop = new FakeDesktop();
 var wire = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 using var application = new LauncherApplication(value => messages.Add(JsonSerializer.SerializeToElement(value, wire)), desktop, store);
-bool Has(string type) => messages.Any(m => m.GetProperty("type").GetString() == type);
+bool Has(string type) => messages.Any(m =>
+    m.TryGetProperty("type", out var messageType) && messageType.GetString() == type);
 void Check(bool value, string name) { if (!value) throw new Exception(name); Console.WriteLine("PASS " + name); }
 async Task Request(string json) { messages.Clear(); await application.HandleAsync(json); }
 
@@ -51,8 +53,8 @@ await Request("""{"type":"saveServer","name":"Fixture","address":"localhost:2556
 Check(Has("serverResult") && store.Load().Servers.Any(s => s.Name == "Fixture"), "server save persists");
 await Request("""{"type":"deleteServer","address":"localhost:25565"}""");
 Check(!store.Load().Servers.Any(s => s.Name == "Fixture"), "server delete persists");
-await Request("""{"type":"saveAnnouncements","items":[{"title":"fixture"}]}""");
-Check(Has("community") && File.Exists(Path.Combine(fixture, "announcements.local.json")), "community local write and response");
+await Request("""{"type":"saveRecommendations","items":[{"name":"fixture"}]}""");
+Check(Has("community") && File.Exists(Path.Combine(fixture, "recommendations.local.json")), "recommendation local write and response");
 var modDir = Path.Combine(versionDir, "mods");
 Directory.CreateDirectory(modDir);
 File.WriteAllText(Path.Combine(modDir, "fixture.jar"), "fixture");
@@ -65,7 +67,7 @@ await Request("""{"type":"launch","version":"custom-fabric"}""");
 Check(Has("launchResult") && messages.Last().GetProperty("ok").GetBoolean() == false, "unverified online account cannot fall back to offline launch");
 application.Config.AccountType = "offline";
 await Request("""{"type":"saveAnnouncements","items":"bad"}""");
-Check(Has("error") && File.ReadAllText(Path.Combine(fixture, "announcements.local.json")).Contains("fixture"), "malformed community request cannot erase saved announcements");
+Check(Has("error") && File.ReadAllText(Path.Combine(fixture, "recommendations.local.json")).Contains("fixture"), "removed announcement management protocol is rejected");
 Check(ProtocolValues.OfflineUuid("Notch") == "b50ad385829d3141a2167e7d7539ba7f", "offline UUID uses Java byte order");
 
 var legacyDirectory = Path.Combine(fixture, "legacy");
@@ -107,6 +109,23 @@ using (var service = new LauncherService(
            _ => "",
            store))
 {
+    var featureOperations = typeof(ILauncherService).GetMethods()
+        .Where(method => method.IsDefined(typeof(FeatureOperationAttribute)))
+        .ToArray();
+    var featureHandlers = typeof(LauncherService).Assembly.GetTypes()
+        .Select(type => (Type: type, Registration: type.GetCustomAttribute<FeatureHandlerAttribute>()))
+        .Where(candidate => candidate.Registration is not null)
+        .ToArray();
+    Check(featureOperations.Length > 0
+        && featureOperations.All(operation =>
+            featureHandlers.Count(handler => handler.Registration!.Operation == operation.Name) == 1
+            && featureHandlers.Single(handler => handler.Registration!.Operation == operation.Name)
+                .Type.GetInterfaces()
+                .Single(contract => contract.IsGenericType
+                    && contract.GetGenericTypeDefinition().Name == "IFeatureHandler`1")
+                .GetGenericArguments()[0] == operation.ReturnType.GetGenericArguments()[0]),
+        "feature handlers and result types are discovered from service declarations");
+
     LauncherState? typedState = null;
     service.StateChanged += state => typedState = state;
     await service.RequestStateAsync();
@@ -114,6 +133,30 @@ using (var service = new LauncherService(
         "typed launcher service exposes state without the UI JSON protocol");
     Check(service.WindowPlacement.Width == 1400 && service.WindowPlacement.Maximized,
         "typed launcher service exposes immutable window placement");
+    ILauncherService serviceContract = service;
+    var sourceResult = await serviceContract.TestSourceAsync("Fixture", "ftp://invalid");
+    Check(sourceResult.Name == "Fixture"
+        && !sourceResult.Ok
+        && sourceResult.Message.Contains("https://", StringComparison.Ordinal),
+        "typed feature call returns its declared result without an event protocol");
+    var accountSwitch = await serviceContract.SwitchAccountModeAsync("offline");
+    Check(accountSwitch.Account == "offline" && accountSwitch.Message.Contains("离线", StringComparison.Ordinal),
+        "typed account operation returns its declared result");
+    var loginResult = await serviceContract.LoginMuaAsync("", "");
+    Check(loginResult.Ok == false && loginResult.Message.Length > 0,
+        "typed account login returns validation details");
+    var savedServer = await serviceContract.SaveServerAsync("Typed fixture", "typed.example:25565");
+    Check(savedServer.Ok && store.Load().Servers.Any(server => server.Address == "typed.example:25565"),
+        "typed community operation returns its declared result");
+    var invalidKey = await serviceContract.VerifyKeyAsync("admin", "short");
+    Check(!invalidKey.Ok && invalidKey.Role == "admin",
+        "typed key verification returns validation details");
+    var settingsResult = await serviceContract.SaveSettingsAsync(new AppSettingsPatch(Java: "typed-java"));
+    Check(settingsResult.Message.Length > 0 && store.Load().Java == "typed-java",
+        "typed settings operation returns its declared result");
+    var sourcesResult = await serviceContract.SaveCustomSourcesAsync(new DataSourceSet("", "", "", ""));
+    Check(sourcesResult.Message.Length > 0,
+        "typed data-source operation returns its declared result");
 }
 Console.WriteLine("ALL_LAUNCHER_CHECKS_PASSED (isolated fixtures; no live account or gameplay)");
 

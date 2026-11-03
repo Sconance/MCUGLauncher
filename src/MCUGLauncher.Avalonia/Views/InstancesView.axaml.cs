@@ -8,7 +8,7 @@ namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class InstancesView : UserControl
 {
-    ILauncherService? service;
+    ILauncherService service = EmptyServiceFallback.Instance;
     LauncherState? state;
     LaunchOptionsInfo? options;
     UninstallPreviewInfo? uninstall;
@@ -33,13 +33,8 @@ internal partial class InstancesView : UserControl
 
     public void Attach(ILauncherService value)
     {
-        service = value;
+        service = value ?? EmptyServiceFallback.Instance;
         service.StateChanged += ApplyState;
-        service.LaunchOptionsReceived += OnLaunchOptions;
-        service.LaunchOptionsSaved += OnLaunchOptionsSaved;
-        service.UninstallPreviewReceived += OnUninstallPreview;
-        service.ContentUpdatesReceived += OnUpdates;
-        service.ContentUpdatePreviewReceived += OnUpdatePreview;
         service.PathPicked += OnPathPicked;
         service.ToastReceived += info => Status(info.Message);
         service.ErrorReceived += message => Status("操作失败：" + message);
@@ -54,12 +49,12 @@ internal partial class InstancesView : UserControl
             if (selected.Length == 0)
                 return;
             Status("正在准备启动…");
-            await service!.LaunchAsync(selected);
+            Status((await service!.LaunchAsync(selected)).Message);
         };
         OpenVersionFolderButton.Click += async (_, _) => await service!.OpenFolderAsync("version");
         RefreshButton.Click += async (_, _) => await service!.RequestStateAsync();
         BrowseJavaButton.Click += async (_, _) => await service!.PickFileAsync("java");
-        LoadOptionsButton.Click += (_, _) => LoadOptions(force: true);
+        LoadOptionsButton.Click += async (_, _) => await LoadOptions(force: true);
         SaveOptionsButton.Click += async (_, _) => await SaveOptions();
         InheritCheck.Click += (_, _) => ApplyInheritState();
         CloneButton.Click += async (_, _) =>
@@ -84,7 +79,10 @@ internal partial class InstancesView : UserControl
             pendingExport = (selected, ExportSavesCheck.IsChecked == true, ExportServersCheck.IsChecked == true);
             await service!.PickSaveFileAsync("export");
         };
-        PreviewUninstallButton.Click += async (_, _) => await service!.PreviewUninstallAsync(selected);
+        PreviewUninstallButton.Click += async (_, _) =>
+        {
+            OnUninstallPreview(await service!.PreviewUninstallAsync(selected));
+        };
         CheckUpdatesButton.Click += async (_, _) =>
         {
             if (selected.Length == 0)
@@ -94,7 +92,7 @@ internal partial class InstancesView : UserControl
             UpdatesPanel.Children.Clear();
             UpdatePreviewPanel.Children.Clear();
             Status("正在检查内容更新…");
-            await service!.CheckUpdatesAsync(selected);
+            OnUpdates(await service!.CheckUpdatesAsync(selected));
         };
     }
 
@@ -138,7 +136,7 @@ internal partial class InstancesView : UserControl
         }
         RenderMods(current);
         if (current is not null && (options is null || options.Version != selected))
-            LoadOptions();
+            _ = LoadOptions();
     }
 
     static IReadOnlyList<InstanceInfo> ValidInstances(LauncherState snapshot) =>
@@ -166,10 +164,10 @@ internal partial class InstancesView : UserControl
         RenderUpdatePreview();
         Status("正在切换实例…");
         _ = service.SelectInstanceAsync(next);
-        LoadOptions();
+        _ = LoadOptions();
     }
 
-    void LoadOptions(bool force = false)
+    async Task LoadOptions(bool force = false)
     {
         if (service is null || selected.Length == 0)
             return;
@@ -177,22 +175,12 @@ internal partial class InstancesView : UserControl
             return;
         optionsRequest = selected;
         OptionsStatus.Text = "正在读取启动设置…";
-        _ = service.ReadLaunchOptionsAsync(selected, selected);
-    }
-
-    void OnLaunchOptions(LaunchOptionsInfo info)
-    {
+        var info = await service.ReadLaunchOptionsAsync(selected, selected);
         if (info.RequestId != selected && info.Version != selected)
             return;
         optionsRequest = "";
         options = info;
         ApplyOptions(info);
-    }
-
-    void OnLaunchOptionsSaved()
-    {
-        OptionsStatus.Text = "启动设置已保存。";
-        _ = service!.RequestStateAsync();
     }
 
     void ApplyOptions(LaunchOptionsInfo info)
@@ -279,7 +267,8 @@ internal partial class InstancesView : UserControl
             WindowTitleBox.Text?.Trim() ?? "",
             ServerBox.Text?.Trim() ?? "");
         OptionsStatus.Text = "正在保存…";
-        await service.SaveLaunchOptionsAsync(options.Token, selected, name, settings, inherit);
+        OptionsStatus.Text = (await service.SaveLaunchOptionsAsync(options.Token, selected, name, settings, inherit)).Message;
+        await service.RequestStateAsync();
     }
 
     void OnPathPicked(PickedPathInfo info)
@@ -324,7 +313,7 @@ internal partial class InstancesView : UserControl
             var enabled = mod.Enabled;
             check.Click += async (_, _) =>
             {
-                await service!.ToggleModAsync(file, !enabled);
+                ContentSummary.Text = (await service!.ToggleModAsync(file, !enabled)).Message;
                 await service.RequestStateAsync();
             };
             var copy = new StackPanel { Spacing = 2 };
@@ -339,8 +328,7 @@ internal partial class InstancesView : UserControl
             var name = mod.Name;
             delete.Click += async (_, _) =>
             {
-                await service!.DeleteModAsync(file);
-                Status("已删除 " + name);
+                Status((await service!.DeleteModAsync(file)).Message + " " + name);
                 await service.RequestStateAsync();
             };
             ModsPanel.Children.Add(Row(copy, delete));
@@ -437,7 +425,7 @@ internal partial class InstancesView : UserControl
             updatePreview = null;
             UpdatePreviewPanel.Children.Clear();
             Status("正在解析更新及必需依赖…");
-            await service!.PreviewUpdatesAsync(checkedUpdates.Token, projects);
+            OnUpdatePreview(await service!.PreviewUpdatesAsync(checkedUpdates.Token, projects));
         };
         UpdatesPanel.Children.Add(preview);
     }

@@ -8,7 +8,7 @@ namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class TasksView : UserControl
 {
-    ILauncherService? service;
+    ILauncherService service = EmptyServiceFallback.Instance;
 
     public TasksView()
     {
@@ -23,7 +23,7 @@ internal partial class TasksView : UserControl
 
     public void Attach(ILauncherService value)
     {
-        service = value;
+        service = value ?? EmptyServiceFallback.Instance;
         service.TasksChanged += Render;
         service.ToastReceived += info => StatusText.Text = info.Message;
         service.ErrorReceived += message => StatusText.Text = "操作失败：" + message;

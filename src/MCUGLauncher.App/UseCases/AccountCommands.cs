@@ -1,4 +1,5 @@
 using BlockLaunch;
+using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.UseCases;
 
@@ -8,100 +9,45 @@ internal sealed class AccountCommands(LauncherContext context)
     readonly MuaProfileSelection profiles = new(context);
     public void SelectMuaProfile(System.Text.Json.JsonElement message) => profiles.Select(message);
 
-    public async Task LoginMicrosoftAsync()
+    public async Task<AuthResultInfo> LoginMicrosoftAsync()
     {
         if (context.Microsoft == null)
-        {
-            context.Send(new
-            {
-                type = "authResult",
-                ok = false,
-                message = "登录组件未就绪。"
-            });
-            return;
-        }
-        context.Send(new
-        {
-            type = "authResult",
-            pending = true,
-            message = "已打开微软登录页，请完成授权…"
-        });
+            return new(false, false, "登录组件未就绪。");
         try
         {
             var revision = Interlocked.Increment(ref context.AccountRevision);
             var session = await context.Microsoft.Authenticate(true, context.Token);
             if (revision != context.AccountRevision)
-                return;
+                return new(false, false, "登录已被更新的账号操作取代。");
             AccountModeCommands.Apply(context, "microsoft", session);
-            context.Send(new
-            {
-                type = "authResult",
-                ok = true,
-                message = $"已登录正版账号 {session.Username}"
-            });
+            return new(true, false, $"已登录正版账号 {session.Username}");
         }
         catch (Exception ex)
         {
-            context.Send(new
-            {
-                type = "authResult",
-                ok = false,
-                message = ex is AccountLoginException ? ex.Message : MicrosoftAccountService.Translate(ex, false).Message
-            });
+            return new(false, false,
+                ex is AccountLoginException ? ex.Message : MicrosoftAccountService.Translate(ex, false).Message);
         }
     }
 
-    public async Task LoginMuaAsync(string account, string password)
+    public async Task<AuthResultInfo> LoginMuaAsync(string account, string password)
     {
         if (context.Mua == null)
-        {
-            context.Send(new
-            {
-                type = "authResult",
-                ok = false,
-                message = "登录组件未就绪。"
-            });
-            return;
-        }
+            return new(false, false, "登录组件未就绪。");
         if (string.IsNullOrWhiteSpace(account) || string.IsNullOrEmpty(password))
-        {
-            context.Send(new
-            {
-                type = "authResult",
-                ok = false,
-                message = "请填写 MUA 账号和密码。"
-            });
-            return;
-        }
-        context.Send(new
-        {
-            type = "authResult",
-            pending = true,
-            message = "正在登录 MUA…"
-        });
+            return new(false, false, "请填写 MUA 账号和密码。");
         try
         {
             var revision = Interlocked.Increment(ref context.AccountRevision);
             var credential = await context.Mua.Login(account.Trim(), password,
                 profiles.ChooseAsync, context.Token);
             if (revision != context.AccountRevision)
-                return;
+                return new(false, false, "登录已被更新的账号操作取代。");
             AccountModeCommands.Apply(context, "mua", MuaAccountService.Session(credential));
-            context.Send(new
-            {
-                type = "authResult",
-                ok = true,
-                message = $"已登录 MUA 账号 {credential.Profile.Name}"
-            });
+            return new(true, false, $"已登录 MUA 账号 {credential.Profile.Name}");
         }
         catch (Exception)
         {
-            context.Send(new
-            {
-                type = "authResult",
-                ok = false,
-                message = "MUA 登录失败。请检查账号、密码和网络后重试。"
-            });
+            return new(false, false, "MUA 登录失败。请检查账号、密码和网络后重试。");
         }
     }
 }

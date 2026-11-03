@@ -7,7 +7,7 @@ namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class AccountView : UserControl
 {
-    ILauncherService? service;
+    ILauncherService service = EmptyServiceFallback.Instance;
     LauncherState? state;
     Bitmap? avatar;
 
@@ -24,9 +24,8 @@ internal partial class AccountView : UserControl
 
     public void Attach(ILauncherService value)
     {
-        service = value;
+        service = value ?? EmptyServiceFallback.Instance;
         service.StateChanged += ApplyState;
-        service.AvatarReceived += OnAvatar;
         service.AuthResultReceived += OnAuth;
         service.AccountSwitchResultReceived += OnSwitchResult;
         service.MuaProfilesReceived += OnProfiles;
@@ -41,7 +40,7 @@ internal partial class AccountView : UserControl
         if (service is null)
             return;
         Status("正在读取头像…");
-        _ = service.ReadAvatarAsync();
+        _ = ReadAvatar();
     }
 
     void WireButtons()
@@ -49,7 +48,7 @@ internal partial class AccountView : UserControl
         MicrosoftLoginButton.Click += async (_, _) =>
         {
             AuthStatus.Text = "正在打开微软登录页…";
-            await service!.LoginMicrosoftAsync();
+            ApplyAuthResult(await service!.LoginMicrosoftAsync());
         };
         MuaLoginButton.Click += async (_, _) =>
         {
@@ -61,19 +60,27 @@ internal partial class AccountView : UserControl
             }
 
             AuthStatus.Text = "正在登录 MUA…";
-            await service!.LoginMuaAsync(account, MuaPasswordBox.Text ?? "");
+            ApplyAuthResult(await service!.LoginMuaAsync(account, MuaPasswordBox.Text ?? ""));
         };
         OfflineSwitchButton.Click += async (_, _) =>
         {
             AuthStatus.Text = "正在切换到离线账号…";
-            await service!.SwitchAccountModeAsync("offline");
+            var result = await service!.SwitchAccountModeAsync("offline");
+            AuthStatus.Text = result.Message;
+            if (!result.NeedsLogin)
+            {
+                _ = service.RequestStateAsync();
+                _ = ReadAvatar();
+            }
         };
         ForgetMicrosoftButton.Click += async (_, _) => await Forget("microsoft");
         ForgetMuaButton.Click += async (_, _) => await Forget("mua");
         ChooseSkinButton.Click += async (_, _) => await service!.PickFileAsync("offlineSkin");
         ClearSkinButton.Click += async (_, _) =>
         {
-            await service!.SetOfflineSkinAsync("");
+            var info = await service!.SetOfflineSkinAsync("");
+            if (info is not null)
+                OnAvatar(info);
             Status("已清除本地皮肤。");
         };
     }
@@ -83,7 +90,7 @@ internal partial class AccountView : UserControl
         if (service is null)
             return;
         AuthStatus.Text = "正在移除本机保存的账号…";
-        await service.ForgetAccountAsync(mode);
+        ApplyAuthResult(await service.ForgetAccountAsync(mode));
     }
 
     void ApplyState(LauncherState? snapshot)
@@ -116,16 +123,27 @@ internal partial class AccountView : UserControl
                 : "在线账号皮肤来自认证站";
     }
 
-    void OnAuth(AuthResultInfo info)
+    void ApplyAuthResult(AuthResultInfo info)
     {
         AuthStatus.Text = info.Message;
-        if (!info.Pending)
-            ProfilesCard.IsVisible = false;
+        ProfilesCard.IsVisible = false;
         if (info.Ok == true)
         {
             _ = service!.RequestStateAsync();
-            _ = service.ReadAvatarAsync();
+            _ = ReadAvatar();
         }
+    }
+
+    async Task ReadAvatar()
+    {
+        var info = await service!.ReadAvatarAsync();
+        if (info is not null)
+            OnAvatar(info);
+    }
+
+    void OnAuth(AuthResultInfo info)
+    {
+        ApplyAuthResult(info);
     }
 
     void OnSwitchResult(AccountSwitchResultInfo info)
@@ -167,7 +185,14 @@ internal partial class AccountView : UserControl
         if (info.Target != "offlineSkin")
             return;
         AuthStatus.Text = "正在应用本地皮肤…";
-        _ = service!.SetOfflineSkinAsync(info.Path);
+        _ = ApplySkin(info.Path);
+    }
+
+    async Task ApplySkin(string path)
+    {
+        var info = await service!.SetOfflineSkinAsync(path);
+        if (info is not null)
+            OnAvatar(info);
     }
 
     void Status(string message) => AuthStatus.Text = message;

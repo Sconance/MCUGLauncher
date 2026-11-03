@@ -2,17 +2,14 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class CommunityView : UserControl
 {
-    ILauncherService? service;
+    ILauncherService service = EmptyServiceFallback.Instance;
     CommunityData community = CommunityData.Empty;
-    string imageData = "";
-    Bitmap? image;
     bool canManage;
 
     public CommunityView()
@@ -28,15 +25,11 @@ internal partial class CommunityView : UserControl
 
     public void Attach(ILauncherService value)
     {
-        service = value;
+        service = value ?? EmptyServiceFallback.Instance;
         service.StateChanged += ApplyState;
         service.CommunityChanged += OnCommunity;
-        service.PublishResultReceived += OnPublishResult;
-        service.SavedReceived += info => PublishStatus.Text = info.Message;
-        service.KeyResultReceived += OnKeyResult;
-        service.PathPicked += OnPathPicked;
-        service.ToastReceived += info => PublishStatus.Text = info.Message;
-        service.ErrorReceived += message => PublishStatus.Text = "操作失败：" + message;
+        service.ToastReceived += info => ManageStatus.Text = info.Message;
+        service.ErrorReceived += message => ManageStatus.Text = "操作失败：" + message;
         ApplyState(service.State);
         OnCommunity(service.Community);
     }
@@ -52,21 +45,13 @@ internal partial class CommunityView : UserControl
                 return;
             }
             AdminStatus.Text = "正在验证…";
-            await service!.VerifyKeyAsync("admin", key);
-        };
-        PickImageButton.Click += async (_, _) => await service!.PickFileAsync("announcementImage");
-        ClearImageButton.Click += (_, _) => ClearImage();
-        PublishButton.Click += async (_, _) =>
-        {
-            var title = TitleBox.Text?.Trim() ?? "";
-            var body = BodyBox.Text?.Trim() ?? "";
-            if (title.Length == 0 || body.Length == 0)
+            var result = await service!.VerifyKeyAsync("admin", key);
+            AdminStatus.Text = result.Message;
+            if (result.Ok)
             {
-                PublishStatus.Text = "标题和正文不能为空。";
-                return;
+                AdminKeyBox.Text = "";
+                _ = service.RequestStateAsync();
             }
-            PublishStatus.Text = "正在保存公告…";
-            await service!.PublishAsync(title, body, ExpiresBox.Text?.Trim() ?? "", imageData);
         };
     }
 
@@ -79,9 +64,6 @@ internal partial class CommunityView : UserControl
         AdminHint.Text = hasKey
             ? "本机已设置管理员密钥。密钥只保存在本机，不会上传。"
             : "尚未设置管理员密钥。首次输入任意 8 位以上密钥即设置本机管理员密钥。";
-        PublishButton.IsEnabled = hasKey;
-        if (!hasKey)
-            PublishStatus.Text = "请先设置管理员密钥后再发布公告。";
         RenderManagement();
     }
 
@@ -126,32 +108,6 @@ internal partial class CommunityView : UserControl
 
     void RenderManagement()
     {
-        AnnouncementManagePanel.Children.Clear();
-        if (community.Announcements.Count == 0)
-            AnnouncementManagePanel.Children.Add(Muted("没有可管理的公告。"));
-        else
-            for (var index = 0; index < community.Announcements.Count; index++)
-            {
-                var item = community.Announcements[index];
-                var copy = new StackPanel { Spacing = 2 };
-                copy.Children.Add(new TextBlock
-                {
-                    Text = "[" + item.Tag + "] " + item.Title,
-                    FontWeight = FontWeight.SemiBold,
-                    TextWrapping = TextWrapping.Wrap
-                });
-                copy.Children.Add(new TextBlock
-                {
-                    Text = (item.Author.Length > 0 ? item.Author + " · " : "")
-                        + (item.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "未注明时间"),
-                    Classes = { "muted" }
-                });
-                var remove = new Button { Content = "删除", Classes = { "ghost" }, IsEnabled = canManage };
-                var position = index;
-                remove.Click += async (_, _) => await RemoveAnnouncement(position);
-                AnnouncementManagePanel.Children.Add(SeparatedRow(copy, remove));
-            }
-
         RecommendationManagePanel.Children.Clear();
         if (community.Recommendations.Count == 0)
             RecommendationManagePanel.Children.Add(Muted("没有可管理的推荐。"));
@@ -178,89 +134,14 @@ internal partial class CommunityView : UserControl
             }
     }
 
-    async Task RemoveAnnouncement(int index)
-    {
-        if (!canManage || index < 0 || index >= community.Announcements.Count)
-            return;
-        PublishStatus.Text = "正在保存公告列表…";
-        var remaining = community.Announcements.Where((_, position) => position != index).ToArray();
-        await service!.SaveAnnouncementsAsync(remaining);
-    }
-
     async Task RemoveRecommendation(int index)
     {
         if (!canManage || index < 0 || index >= community.Recommendations.Count)
             return;
-        PublishStatus.Text = "正在保存推荐列表…";
+        ManageStatus.Text = "正在保存推荐列表…";
         var remaining = community.Recommendations.Where((_, position) => position != index).ToArray();
-        await service!.SaveRecommendationsAsync(remaining);
+        ManageStatus.Text = (await service!.SaveRecommendationsAsync(remaining)).Message;
     }
-
-    async void OnPathPicked(PickedPathInfo info)
-    {
-        if (info.Target != "announcementImage")
-            return;
-        try
-        {
-            var bytes = await File.ReadAllBytesAsync(info.Path);
-            if (bytes.Length > 5 * 1024 * 1024)
-            {
-                PublishStatus.Text = "公告配图不能超过 5 MB。";
-                return;
-            }
-            image?.Dispose();
-            using var stream = new MemoryStream(bytes);
-            image = new Bitmap(stream);
-            ImagePreview.Source = image;
-            imageData = "data:" + Mime(info.Path) + ";base64," + Convert.ToBase64String(bytes);
-            ImageLabel.Text = Path.GetFileName(info.Path) + " · " + (bytes.Length / 1024) + " KB";
-            ClearImageButton.IsEnabled = true;
-            PublishStatus.Text = "公告配图已选择。";
-        }
-        catch (Exception ex)
-        {
-            PublishStatus.Text = "读取公告配图失败：" + ex.Message;
-        }
-    }
-
-    void OnPublishResult(PublishResultInfo info)
-    {
-        PublishStatus.Text = info.Message;
-        if (!info.Ok)
-            return;
-        TitleBox.Text = "";
-        BodyBox.Text = "";
-        ExpiresBox.Text = "";
-        ClearImage();
-        _ = service!.RefreshCommunityAsync();
-    }
-
-    void OnKeyResult(KeyResultInfo info)
-    {
-        AdminStatus.Text = info.Message;
-        if (info.Ok)
-        {
-            AdminKeyBox.Text = "";
-            _ = service!.RequestStateAsync();
-        }
-    }
-
-    void ClearImage()
-    {
-        imageData = "";
-        image?.Dispose();
-        image = null;
-        ImagePreview.Source = null;
-        ImageLabel.Text = "";
-        ClearImageButton.IsEnabled = false;
-    }
-
-    static string Mime(string path) => Path.GetExtension(path).ToLowerInvariant() switch
-    {
-        ".jpg" or ".jpeg" => "image/jpeg",
-        ".webp" => "image/webp",
-        _ => "image/png"
-    };
 
     static Control SeparatedRow(Control copy, Control action)
     {

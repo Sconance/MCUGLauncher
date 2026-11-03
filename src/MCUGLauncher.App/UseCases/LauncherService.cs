@@ -7,7 +7,7 @@ namespace MCUGLauncher.UseCases;
 /// <summary>
 /// 应用服务：对 UI 暴露统一类型化接口，内部命令协议与桌面适配保持隐藏。
 /// </summary>
-public sealed class LauncherService : ILauncherService
+public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
 {
     static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
     readonly LauncherApplication application;
@@ -15,40 +15,17 @@ public sealed class LauncherService : ILauncherService
 
     public event Action<LauncherState>? StateChanged;
     public event Action<IReadOnlyList<TaskInfo>>? TasksChanged;
-    public event Action<IReadOnlyList<ContentItem>>? ContentChanged;
     public event Action<IReadOnlyList<GameInfo>>? GamesChanged;
-    public event Action<IReadOnlyList<JavaInfo>>? JavaListChanged;
-    public event Action<IReadOnlyList<SaveBackupInfo>>? SaveBackupsChanged;
-    public event Action<string>? LogTextReceived;
-    public event Action<SystemInfoInfo>? SystemInfoReceived;
     public event Action<AuthResultInfo>? AuthResultReceived;
     public event Action<AccountStateInfo>? AccountStateChanged;
     public event Action<AccountSwitchResultInfo>? AccountSwitchResultReceived;
     public event Action<PickedPathInfo>? PathPicked;
     public event Action<ToastInfo>? ToastReceived;
     public event Action<string>? ErrorReceived;
-    public event Action<LaunchResultInfo>? LaunchResultReceived;
-    public event Action<UninstallPreviewInfo>? UninstallPreviewReceived;
-    public event Action<ContentUpdatesInfo>? ContentUpdatesReceived;
-    public event Action<ContentUpdatePreviewInfo>? ContentUpdatePreviewReceived;
-    public event Action<ServerPingInfo>? ServerPingReceived;
-    public event Action<ServerResultInfo>? ServerResultReceived;
-    public event Action<TestResultInfo>? TestResultReceived;
-    public event Action<KeyResultInfo>? KeyResultReceived;
     public event Action<CommunityPayload>? CommunityReceived;
     public event Action<CommunityData>? CommunityChanged;
-    public event Action<AvatarInfo>? AvatarReceived;
-    public event Action<LoaderListInfo>? LoaderListReceived;
-    public event Action<VanillaVersionInfo[]>? VanillaListReceived;
-    public event Action<ResourceVersionsInfo>? ResourceVersionsReceived;
-    public event Action<PackPreviewInfo>? PackPreviewReceived;
     public event Action<ContentErrorInfo>? ContentErrorReceived;
     public event Action<MuaProfilesInfo>? MuaProfilesReceived;
-    public event Action<LaunchOptionsInfo>? LaunchOptionsReceived;
-    public event Action? LaunchOptionsSaved;
-    public event Action<PublishResultInfo>? PublishResultReceived;
-    public event Action<SavedInfo>? SavedReceived;
-    public event Action? SettingsSaved;
 
     public WindowPlacement WindowPlacement => new(
         application.Config.WindowWidth,
@@ -87,7 +64,11 @@ public sealed class LauncherService : ILauncherService
     public void RememberWindow(double width, double height, bool maximized) =>
         application.RememberWindow(width, height, maximized);
 
-    public Task LaunchAsync(string version) => CommandAsync(new { type = "launch", version });
+    public Task<LaunchResultInfo> LaunchAsync(string version) =>
+        FeatureRequest.InvokeAsync<LaunchResultInfo>(this, nameof(LaunchAsync), new
+        {
+            version
+        });
 
     public Task RequestStateAsync() => application.HandleAsync("""{"type":"requestState"}""");
 
@@ -95,12 +76,18 @@ public sealed class LauncherService : ILauncherService
 
     public Task SelectVersionAsync(string version) => CommandAsync(new { type = "selectVersion", version });
 
-    public Task ScanJavaAsync() => application.HandleAsync("""{"type":"scanJava"}""");
+    public async Task<IReadOnlyList<JavaInfo>> ScanJavaAsync()
+    {
+        JavaList = await FeatureRequest.InvokeAsync<IReadOnlyList<JavaInfo>>(this, nameof(ScanJavaAsync), new
+        {
+        });
+        return JavaList;
+    }
 
-    public Task SaveSettingsAsync(string root, string java, int ram, string? player = null) =>
+    public Task<SavedInfo> SaveSettingsAsync(string root, string java, int ram, string? player = null) =>
         SaveSettingsAsync(new AppSettingsPatch(root, java, ram, Player: player));
 
-    public Task SaveSettingsAsync(AppSettingsPatch patch)
+    public Task<SavedInfo> SaveSettingsAsync(AppSettingsPatch patch)
     {
         var payload = new Dictionary<string, object> { ["type"] = "saveSettings" };
         if (patch.Root is not null)
@@ -119,8 +106,6 @@ public sealed class LauncherService : ILauncherService
             payload["anonymous"] = anonymous;
         if (patch.Player is not null)
             payload["player"] = patch.Player;
-        if (patch.WriteEndpoint is not null)
-            payload["writeEndpoint"] = patch.WriteEndpoint;
         if (patch.DataSources is { } sources)
             payload["dataSources"] = new Dictionary<string, string>
             {
@@ -129,47 +114,56 @@ public sealed class LauncherService : ILauncherService
                 ["recommendations"] = sources.Recommendations,
                 ["quotes"] = sources.Quotes
             };
-        return CommandAsync(payload);
+        return FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SaveSettingsAsync), payload);
     }
 
     public Task RequestTasksAsync() => application.HandleAsync("""{"type":"requestTasks"}""");
 
     public Task TaskActionAsync(string id, string action) => CommandAsync(new { type = "taskAction", id, action });
 
-    public Task LoginMicrosoftAsync() => application.HandleAsync("""{"type":"loginMicrosoft"}""");
-
-    public Task LoginMuaAsync(string account, string password) =>
-        CommandAsync(new
+    public Task<AuthResultInfo> LoginMicrosoftAsync() =>
+        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LoginMicrosoftAsync), new
         {
-            type = "loginMua",
+        });
+
+    public Task<AuthResultInfo> LoginMuaAsync(string account, string password) =>
+        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LoginMuaAsync), new
+        {
             account,
             password
         });
 
-    public Task SwitchAccountModeAsync(string mode) =>
-        CommandAsync(new
+    public Task<AccountSwitchResultInfo> SwitchAccountModeAsync(string mode) =>
+        FeatureRequest.InvokeAsync<AccountSwitchResultInfo>(this, nameof(SwitchAccountModeAsync), new
         {
-            type = "switchAccountMode",
-            account = mode
+            mode
         });
 
-    public Task ForgetAccountAsync(string mode) =>
-        CommandAsync(new
+    public Task<AuthResultInfo> ForgetAccountAsync(string mode) =>
+        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(ForgetAccountAsync), new
         {
-            type = "forgetAccount",
-            account = mode
+            mode
         });
 
-    public Task LogoutAccountAsync() => application.HandleAsync("""{"type":"logoutAccount"}""");
-
-    public Task SearchContentAsync(string category, string query, string requestId = "") =>
-        CommandAsync(new
+    public Task<AuthResultInfo> LogoutAccountAsync() =>
+        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LogoutAccountAsync), new
         {
-            type = "searchContent",
-            category,
-            query,
-            requestId
         });
+
+    public async Task<ContentSearchResultInfo> SearchContentAsync(string category, string query, string requestId = "")
+    {
+        var result = await FeatureRequest.InvokeAsync<ContentSearchResultInfo>(
+            this,
+            nameof(SearchContentAsync),
+            new
+            {
+                category,
+                query,
+                requestId
+            });
+        ContentItems = result.Items;
+        return result;
+    }
 
     public Task InstallContentAsync(
         string id,
@@ -197,23 +191,25 @@ public sealed class LauncherService : ILauncherService
             path
         });
 
-    public Task ListContentVersionsAsync(
+    public Task<ResourceVersionsResultInfo> ListContentVersionsAsync(
         string id,
         string category,
         string instance = "",
         string game = "",
         string loader = "",
         string requestId = "") =>
-        CommandAsync(new
-        {
-            type = "listContentVersions",
-            id,
-            category,
-            instance,
-            game,
-            loader,
-            requestId
-        });
+        FeatureRequest.InvokeAsync<ResourceVersionsResultInfo>(
+            this,
+            nameof(ListContentVersionsAsync),
+            new
+            {
+                id,
+                category,
+                instance,
+                game,
+                loader,
+                requestId
+            });
 
     public Task QueueContentVersionAsync(string token, string versionId, string mode = "instance", string path = "") =>
         CommandAsync(new
@@ -225,14 +221,16 @@ public sealed class LauncherService : ILauncherService
             path
         });
 
-    public Task ListVanillaVersionsAsync() => application.HandleAsync("""{"type":"vanillaVersions"}""");
+    public Task<VanillaVersionsResultInfo> ListVanillaVersionsAsync() =>
+        FeatureRequest.InvokeAsync<VanillaVersionsResultInfo>(this, nameof(ListVanillaVersionsAsync), new
+        {
+        });
 
     public Task InstallVanillaAsync(string version) => CommandAsync(new { type = "installVanilla", version });
 
-    public Task ListLoadersAsync(string version, string loader) =>
-        CommandAsync(new
+    public Task<LoaderListResultInfo> ListLoadersAsync(string version, string loader) =>
+        FeatureRequest.InvokeAsync<LoaderListResultInfo>(this, nameof(ListLoadersAsync), new
         {
-            type = "listLoaders",
             version,
             loader
         });
@@ -246,7 +244,11 @@ public sealed class LauncherService : ILauncherService
             loaderVersion
         });
 
-    public Task PreviewPackAsync(string path) => CommandAsync(new { type = "previewPack", path });
+    public Task<PackPreviewResultInfo> PreviewPackAsync(string path) =>
+        FeatureRequest.InvokeAsync<PackPreviewResultInfo>(this, nameof(PreviewPackAsync), new
+        {
+            path
+        });
 
     public Task ConfirmPackAsync(string token, string name, string directory) =>
         CommandAsync(new
@@ -277,25 +279,48 @@ public sealed class LauncherService : ILauncherService
             saves
         });
 
-    public Task PreviewUninstallAsync(string version) => CommandAsync(new { type = "previewUninstall", version });
+    public Task<UninstallPreviewInfo> PreviewUninstallAsync(string version) =>
+        FeatureRequest.InvokeAsync<UninstallPreviewInfo>(this, nameof(PreviewUninstallAsync), new
+        {
+            version
+        });
 
-    public Task PreviewDeleteVersionAsync(string version) => CommandAsync(new { type = "deleteVersion", version });
+    public Task<UninstallPreviewInfo> PreviewDeleteVersionAsync(string version) =>
+        FeatureRequest.InvokeAsync<UninstallPreviewInfo>(this, nameof(PreviewDeleteVersionAsync), new
+        {
+            version
+        });
 
     public Task ApplyUninstallAsync(string token) => CommandAsync(new { type = "applyUninstall", token });
 
-    public Task ToggleModAsync(string file, bool enabled) => CommandAsync(new { type = "toggleMod", file, enabled });
-
-    public Task DeleteModAsync(string file) => CommandAsync(new { type = "deleteMod", file });
-
-    public Task CheckUpdatesAsync(string version) => CommandAsync(new { type = "checkContentUpdates", version });
-
-    public Task PreviewUpdatesAsync(string token, IReadOnlyList<string> projects) =>
-        CommandAsync(new
+    public Task<SavedInfo> ToggleModAsync(string file, bool enabled) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ToggleModAsync), new
         {
-            type = "previewContentUpdates",
-            token,
-            projects
+            file,
+            enabled
         });
+
+    public Task<SavedInfo> DeleteModAsync(string file) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(DeleteModAsync), new
+        {
+            file
+        });
+
+    public Task<ContentUpdatesInfo> CheckUpdatesAsync(string version) =>
+        FeatureRequest.InvokeAsync<ContentUpdatesInfo>(this, nameof(CheckUpdatesAsync), new
+        {
+            version
+        });
+
+    public Task<ContentUpdatePreviewInfo> PreviewUpdatesAsync(string token, IReadOnlyList<string> projects) =>
+        FeatureRequest.InvokeAsync<ContentUpdatePreviewInfo>(
+            this,
+            nameof(PreviewUpdatesAsync),
+            new
+            {
+                token,
+                projects
+            });
 
     public Task ApplyUpdatesAsync(string token) => CommandAsync(new { type = "applyContentUpdates", token });
 
@@ -303,128 +328,138 @@ public sealed class LauncherService : ILauncherService
 
     public Task StopGameAsync(string id) => CommandAsync(new { type = "stopGame", id });
 
-    public Task BackupSavesAsync() => application.HandleAsync("""{"type":"backupSaves"}""");
-
-    public Task ListSaveBackupsAsync() => application.HandleAsync("""{"type":"listSaveBackups"}""");
-
-    public Task RestoreSaveAsync(string id, string world) =>
-        CommandAsync(new
+    public Task<SavedInfo> BackupSavesAsync() =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(BackupSavesAsync), new
         {
-            type = "restoreSave",
+        });
+
+    public async Task<IReadOnlyList<SaveBackupInfo>> ListSaveBackupsAsync()
+    {
+        SaveBackups = await FeatureRequest.InvokeAsync<IReadOnlyList<SaveBackupInfo>>(
+            this,
+            nameof(ListSaveBackupsAsync),
+            new
+            {
+            });
+        return SaveBackups;
+    }
+
+    public Task<SavedInfo> RestoreSaveAsync(string id, string world) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(RestoreSaveAsync), new
+        {
             id,
             world
         });
 
     public Task OpenFolderAsync(string kind) => CommandAsync(new { type = "openFolder", kind });
 
-    public Task ReadLogAsync() => application.HandleAsync("""{"type":"readLog"}""");
-
-    public Task SystemInfoAsync() => application.HandleAsync("""{"type":"systemInfo"}""");
-
-    public Task SaveServerAsync(string name, string address, string oldAddress = "") =>
-        CommandAsync(new
+    public Task<string> ReadLogAsync() =>
+        FeatureRequest.InvokeAsync<string>(this, nameof(ReadLogAsync), new
         {
-            type = "saveServer",
-            name,
-            address,
-            oldAddress
         });
 
-    public Task DeleteServerAsync(string address) => CommandAsync(new { type = "deleteServer", address });
-
-    public Task PingServerAsync(string address, string id) =>
-        CommandAsync(new
+    public Task<SystemInfoInfo> SystemInfoAsync() =>
+        FeatureRequest.InvokeAsync<SystemInfoInfo>(this, nameof(SystemInfoAsync), new
         {
-            type = "pingServer",
+        });
+
+    public Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "") =>
+        FeatureRequest.InvokeAsync<ServerResultInfo>(
+            this,
+            nameof(SaveServerAsync),
+            new
+            {
+                name,
+                address,
+                oldAddress
+            });
+
+    public Task<SavedInfo> DeleteServerAsync(string address) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(DeleteServerAsync), new
+        {
+            address
+        });
+
+    public Task<ServerPingInfo> PingServerAsync(string address, string id) =>
+        FeatureRequest.InvokeAsync<ServerPingInfo>(this, nameof(PingServerAsync), new
+        {
             address,
             id
         });
 
-    public Task TestSourceAsync(string name, string url, string requestId = "") =>
-        CommandAsync(new
-        {
-            type = "testSource",
-            name,
-            url,
-            requestId
-        });
-
-    public Task SaveCustomSourcesAsync(DataSourceSet sources) =>
-        CommandAsync(new
-        {
-            type = "saveCustomSources",
-            dataSources = new Dictionary<string, string>
+    public Task<SavedInfo> SaveCustomSourcesAsync(DataSourceSet sources) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(
+            this,
+            nameof(SaveCustomSourcesAsync),
+            new
             {
-                ["announcements"] = sources.Announcements,
-                ["servers"] = sources.Servers,
-                ["recommendations"] = sources.Recommendations,
-                ["quotes"] = sources.Quotes
-            }
+                dataSources = new Dictionary<string, string>
+                {
+                    ["announcements"] = sources.Announcements,
+                    ["servers"] = sources.Servers,
+                    ["recommendations"] = sources.Recommendations,
+                    ["quotes"] = sources.Quotes
+                }
+            });
+
+    public Task<SavedInfo> UseDataSourcesAsync(string mode) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(UseDataSourcesAsync), new
+        {
+            mode
         });
 
-    public Task UseDataSourcesAsync(string mode) => CommandAsync(new { type = "useDataSources", mode });
+    public Task<SavedInfo> ResetDataSourcesAsync() =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ResetDataSourcesAsync), new
+        {
+        });
 
-    public Task ResetDataSourcesAsync() => application.HandleAsync("""{"type":"resetDataSources"}""");
-
-    public Task VerifyKeyAsync(string role, string key) => CommandAsync(new { type = "verifyKey", role, key });
+    public Task<KeyResultInfo> VerifyKeyAsync(string role, string key) =>
+        FeatureRequest.InvokeAsync<KeyResultInfo>(this, nameof(VerifyKeyAsync), new
+        {
+            role,
+            key
+        });
 
     public Task RefreshCommunityAsync() => application.HandleAsync("""{"type":"refreshCommunity"}""");
 
-    public Task PublishAsync(string title, string body, string expiresAt, string imageData = "") =>
-        CommandAsync(new
+    public Task<SavedInfo> SaveRecommendationsAsync(IReadOnlyList<RecommendationInfo> items) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(
+            this,
+            nameof(SaveRecommendationsAsync),
+            new
+            {
+                items = items.Select(item => item.Raw).ToArray()
+            });
+
+    public Task<SavedInfo> ToggleBookmarkAsync(string id, string name, string description, string author, string kind) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(
+            this,
+            nameof(ToggleBookmarkAsync),
+            new
+            {
+                id,
+                name,
+                description,
+                author,
+                kind
+            });
+
+    public Task<byte[]> DownloadImageAsync(string url) =>
+        FeatureRequest.InvokeAsync<byte[]>(this, nameof(DownloadImageAsync), new
         {
-            type = "publish",
-            title,
-            body,
-            expiresAt,
-            imageData
+            url
         });
 
-    public Task SaveAnnouncementsAsync(IReadOnlyList<AnnouncementInfo> items) =>
-        CommandAsync(new
+    public Task<AvatarInfo?> ReadAvatarAsync() =>
+        FeatureRequest.InvokeAsync<AvatarInfo?>(this, nameof(ReadAvatarAsync), new
         {
-            type = "saveAnnouncements",
-            items = items.Select(item => ParseRaw(item.Raw)).OfType<JsonElement>().ToArray()
         });
 
-    public Task SaveRecommendationsAsync(IReadOnlyList<RecommendationInfo> items) =>
-        CommandAsync(new
+    public Task<AvatarInfo?> SetOfflineSkinAsync(string path) =>
+        FeatureRequest.InvokeAsync<AvatarInfo?>(this, nameof(SetOfflineSkinAsync), new
         {
-            type = "saveRecommendations",
-            items = items.Select(item => ParseRaw(item.Raw)).OfType<JsonElement>().ToArray()
+            path
         });
-
-    static JsonElement? ParseRaw(string raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw))
-            return null;
-        try
-        {
-            using var document = JsonDocument.Parse(raw);
-            return document.RootElement.Clone();
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    public Task ToggleBookmarkAsync(string id, string name, string description, string author, string kind) =>
-        CommandAsync(new
-        {
-            type = "toggleBookmark",
-            id,
-            name,
-            description,
-            author,
-            kind
-        });
-
-    public Task<byte[]> DownloadImageAsync(string url) => application.DownloadImageAsync(url);
-
-    public Task ReadAvatarAsync() => application.HandleAsync("""{"type":"readAvatar"}""");
-
-    public Task SetOfflineSkinAsync(string path) => CommandAsync(new { type = "setOfflineSkin", path });
 
     public Task SelectMuaProfileAsync(string token, string profileId) =>
         CommandAsync(new
@@ -442,26 +477,35 @@ public sealed class LauncherService : ILauncherService
 
     public Task ResetWindowAsync() => application.HandleAsync("""{"type":"resetWindow"}""");
 
-    public Task SaveLaunchOptionsAsync(string token, string version, string name, LaunchOptionsSettings settings, bool inherit) =>
-        CommandAsync(new
-        {
-            type = "saveLaunchOptions",
-            token,
-            version,
-            name,
-            inherit,
-            settings
-        });
+    public Task<SavedInfo> SaveLaunchOptionsAsync(string token, string version, string name, LaunchOptionsSettings settings, bool inherit) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(
+            this,
+            nameof(SaveLaunchOptionsAsync),
+            new
+            {
+                token,
+                version,
+                name,
+                inherit,
+                settings
+            });
 
-    public Task ReadLaunchOptionsAsync(string version, string requestId = "") =>
-        CommandAsync(new
-        {
-            type = "readLaunchOptions",
-            version,
-            requestId
-        });
+    public Task<LaunchOptionsInfo> ReadLaunchOptionsAsync(string version, string requestId = "") =>
+        FeatureRequest.InvokeAsync<LaunchOptionsInfo>(
+            this,
+            nameof(ReadLaunchOptionsAsync),
+            new
+            {
+                version,
+                requestId
+            });
 
     Task CommandAsync(object payload) => application.HandleAsync(JsonSerializer.Serialize(payload, Options));
+
+    Task<TResponse> IFeatureRequestInvoker.InvokeFeatureAsync<TResponse>(
+        string operation,
+        object arguments) =>
+        application.ExecuteFeatureAsync<TResponse>(operation, arguments);
 
     void Send(object payload)
     {
@@ -492,25 +536,13 @@ public sealed class LauncherService : ILauncherService
                 break;
             case "contentList":
                 ContentItems = ParseItems(root, "items", ContentItem.From);
-                ContentChanged?.Invoke(ContentItems);
                 break;
             case "games":
                 Games = ParseItems(root, "items", GameInfo.From);
                 GamesChanged?.Invoke(Games);
                 break;
-            case "javaList":
-                JavaList = ParseItems(root, "items", JavaInfo.From);
-                JavaListChanged?.Invoke(JavaList);
-                break;
             case "saveBackups":
                 SaveBackups = ParseItems(root, "items", SaveBackupInfo.From);
-                SaveBackupsChanged?.Invoke(SaveBackups);
-                break;
-            case "logText":
-                LogTextReceived?.Invoke(JsonRead.String(root, "text"));
-                break;
-            case "systemInfo":
-                SystemInfoReceived?.Invoke(SystemInfoInfo.From(root));
                 break;
             case "authResult":
                 AuthResultReceived?.Invoke(AuthResultInfo.From(root));
@@ -530,71 +562,17 @@ public sealed class LauncherService : ILauncherService
             case "error":
                 ErrorReceived?.Invoke(JsonRead.String(root, "message"));
                 break;
-            case "publishResult":
-                PublishResultReceived?.Invoke(PublishResultInfo.From(root));
-                break;
-            case "launchResult":
-                LaunchResultReceived?.Invoke(LaunchResultInfo.From(root));
-                break;
-            case "uninstallPreview":
-                UninstallPreviewReceived?.Invoke(UninstallPreviewInfo.From(root));
-                break;
-            case "contentUpdates":
-                ContentUpdatesReceived?.Invoke(ContentUpdatesInfo.From(root));
-                break;
-            case "contentUpdatePreview":
-                ContentUpdatePreviewReceived?.Invoke(ContentUpdatePreviewInfo.From(root));
-                break;
-            case "serverPing":
-                ServerPingReceived?.Invoke(ServerPingInfo.From(root));
-                break;
-            case "serverResult":
-                ServerResultReceived?.Invoke(ServerResultInfo.From(root));
-                break;
-            case "testResult":
-                TestResultReceived?.Invoke(TestResultInfo.From(root));
-                break;
-            case "keyResult":
-                KeyResultReceived?.Invoke(KeyResultInfo.From(root));
-                break;
             case "community":
                 var payload = CommunityPayload.From(root);
                 Community = CommunityData.From(payload);
                 CommunityChanged?.Invoke(Community);
                 CommunityReceived?.Invoke(payload);
                 break;
-            case "avatar":
-                AvatarReceived?.Invoke(AvatarInfo.From(root));
-                break;
-            case "loaderList":
-                LoaderListReceived?.Invoke(LoaderListInfo.From(root));
-                break;
-            case "vanillaList":
-                VanillaListReceived?.Invoke(ParseItems(root, "items", VanillaVersionInfo.From).ToArray());
-                break;
-            case "resourceVersions":
-                ResourceVersionsReceived?.Invoke(ResourceVersionsInfo.From(root));
-                break;
-            case "packPreview":
-                PackPreviewReceived?.Invoke(PackPreviewInfo.From(root));
-                break;
             case "contentError":
                 ContentErrorReceived?.Invoke(ContentErrorInfo.From(root));
                 break;
             case "muaProfiles":
                 MuaProfilesReceived?.Invoke(MuaProfilesInfo.From(root));
-                break;
-            case "launchOptions":
-                LaunchOptionsReceived?.Invoke(LaunchOptionsInfo.From(root));
-                break;
-            case "launchOptionsSaved":
-                LaunchOptionsSaved?.Invoke();
-                break;
-            case "saved":
-                SavedReceived?.Invoke(SavedInfo.From(root));
-                break;
-            case "settingsSaved":
-                SettingsSaved?.Invoke();
                 break;
         }
     }

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using BlockLaunch;
+using MCUGLauncher.Contracts;
 using MCUGLauncher.Services;
 using static MCUGLauncher.UseCases.ProtocolValues;
 
@@ -8,29 +9,30 @@ namespace MCUGLauncher.UseCases;
 
 internal sealed class InstallationCommands(LauncherContext context, Action<string, string, string, DownloadRequest>? enqueue = null)
 {
-    public async Task LoadersAsync(JsonElement root)
+    public async Task<LoaderListResultInfo> LoadersAsync(JsonElement root)
     {
-        var game = ReadString(root, "version");
-        InstancePath(context.Config.Root, game);
-        var loader = ReadString(root, "loader");
-        List<string> versions;
-        if (loader is "forge" or "neoforge")
-            versions = (await LoaderCatalog.Get(context.Http, game, loader, context.Token)).Select(v => v.Version).ToList();
-        else if (loader is "fabric" or "quilt")
+        try
         {
-            var endpoint = loader == "fabric" ? "https://meta.fabricmc.net/v2" : "https://meta.quiltmc.org/v3";
-            using var doc = JsonDocument.Parse(await context.Http.GetStringAsync(endpoint + "/versions/loader/" + Uri.EscapeDataString(game), context.Token));
-            versions = doc.RootElement.EnumerateArray().Select(v => v.GetProperty("loader").GetProperty("version").GetString()!).Distinct().ToList();
+            var game = ReadString(root, "version");
+            InstancePath(context.Config.Root, game);
+            var loader = ReadString(root, "loader");
+            List<string> versions;
+            if (loader is "forge" or "neoforge")
+                versions = (await LoaderCatalog.Get(context.Http, game, loader, context.Token)).Select(v => v.Version).ToList();
+            else if (loader is "fabric" or "quilt")
+            {
+                var endpoint = loader == "fabric" ? "https://meta.fabricmc.net/v2" : "https://meta.quiltmc.org/v3";
+                using var doc = JsonDocument.Parse(await context.Http.GetStringAsync(endpoint + "/versions/loader/" + Uri.EscapeDataString(game), context.Token));
+                versions = doc.RootElement.EnumerateArray().Select(v => v.GetProperty("loader").GetProperty("version").GetString()!).Distinct().ToList();
+            }
+            else
+                throw new ArgumentException("不支持的加载器。");
+            return LoaderListResultInfo.Success(new(game, loader, versions));
         }
-        else
-            throw new ArgumentException("不支持的加载器。");
-        context.Send(new
+        catch (Exception error)
         {
-            type = "loaderList",
-            version = game,
-            loader,
-            versions
-        });
+            return LoaderListResultInfo.Failure(error.Message);
+        }
     }
 
     public void InstallLoader(JsonElement root)
@@ -48,23 +50,27 @@ internal sealed class InstallationCommands(LauncherContext context, Action<strin
     sealed record ImportChoice(string Root, string File, string Hash, PackOverview Overview);
     readonly PreviewCache<ImportChoice> imports = new();
 
-    public async Task PreviewPackAsync(JsonElement message)
+    public async Task<PackPreviewResultInfo> PreviewPackAsync(JsonElement message)
     {
-        var root = context.Config.Root;
-        var file = Path.GetFullPath(ReadString(message, "path"));
-        var overview = await Task.Run(() => PackService.ReadOverview(file), context.Token);
-        await using var input = File.OpenRead(file);
-        var hash = Convert.ToHexString(await SHA256.HashDataAsync(input, context.Token));
-        var token = imports.Add(new(root, file, hash, overview));
-        context.Send(new
+        try
         {
-            type = "packPreview",
-            token,
-            name = overview.Name,
-            root,
-            game = overview.Requirements.Minecraft,
-            loader = overview.Requirements.Loader
-        });
+            var root = context.Config.Root;
+            var file = Path.GetFullPath(ReadString(message, "path"));
+            var overview = await Task.Run(() => PackService.ReadOverview(file), context.Token);
+            await using var input = File.OpenRead(file);
+            var hash = Convert.ToHexString(await SHA256.HashDataAsync(input, context.Token));
+            var token = imports.Add(new(root, file, hash, overview));
+            return PackPreviewResultInfo.Success(new(
+                token,
+                overview.Name,
+                root,
+                overview.Requirements.Minecraft,
+                overview.Requirements.Loader));
+        }
+        catch (Exception error)
+        {
+            return PackPreviewResultInfo.Failure(error.Message);
+        }
     }
 
     public void ConfirmPack(JsonElement message)
@@ -91,5 +97,6 @@ internal sealed class InstallationCommands(LauncherContext context, Action<strin
     }
 
     // Legacy callers receive the same confirmation step; picking a file never starts installation.
-    public Task ImportPackAsync(JsonElement message) => PreviewPackAsync(message);
+    public async Task<PackPreviewResultInfo> ImportPackAsync(JsonElement message) =>
+        await PreviewPackAsync(message);
 }

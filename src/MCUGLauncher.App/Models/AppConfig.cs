@@ -68,7 +68,7 @@ public sealed class AppConfig
     /// </summary>
     public string AdminKey { get; set; } = "";
     /// <summary>
-    /// 获取或设置 WriteEndpoint。
+    /// 保留旧配置字段以兼容现有配置；公告写入功能已移除。
     /// </summary>
     public string WriteEndpoint { get; set; } = "";
     /// <summary>

@@ -21,8 +21,8 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-Avalonia 分支使用
 - **版本内容管理**：横向分类标签，模组表格支持更新、禁止更新、禁用、启动、删除；可切换当前实例。
 - **模组下载链路**：「下载 → 模组」列表进入模组详情，支持安装到实例，或下载到自定义目录。
 - **社区功能**：群公告、群友推荐、群友语录、正在开设的服务器。
-- **设置**：匿名模式、社区身份密钥、管理员认证、四类独立数据源、写入接口。
-- **公告配图**：管理员发布公告时可选择本地图片，随公告一起保存；配置写入接口后会一并提交。
+- **设置**：匿名模式、社区身份密钥、管理员认证、四类独立数据源。
+- **公告**：从配置的社区数据源读取并展示；公告内容在数据仓库中维护。
 - **账号**：离线账号直接进入游戏；皮肤 / 披风入口位于账号头像。
 
 ## 功能说明
@@ -65,8 +65,8 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-Avalonia 分支使用
 - 诊断与反馈：读取 .NET / WebView2 / 系统 / 路径信息并复制。
 - 关于与许可：版本、社区数据仓库、管理员文档入口。
 - 社区 → 更多选项：匿名模式、社区身份密钥。
-- 社区 → 管理员：未设置时首次输入即设置本机管理员密钥；之后必须输入同一密钥才能发布公告。
-- 社区 → 数据源：四类 URL 独立配置、逐项测试、保存、恢复默认、可选写入接口。
+- 社区 → 管理员：本机管理员密钥用于管理群友推荐；公告以数据源内容为准。
+- 社区 → 数据源：四类 URL 独立配置、逐项测试、保存与恢复默认。
 
 ## 数据源
 
@@ -82,8 +82,7 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-Avalonia 分支使用
 默认地址集中在 `Models/AppConfig.cs` 的 `DataSourceConfig`，当前指向 `waibibabu1239/MCUGL-storage`。首次使用的旧配置不会自动覆盖；如仍指向示例仓库，请在「设置 → 数据源」点「恢复默认」再保存。
 
 - 读取超时 8 秒；单个地址失败不会阻塞其他区块。
-- 管理员写入接口可选；未配置时公告只保存在本机，并显示「待发布」。
-- 公告配图以 data URL 保存/提交；如果写入接口有对象存储，建议在服务端转存并替换为图片 URL。
+- 公告只从配置的数据源读取；在托管仓库中编辑公告并刷新即可更新。
 - 管理员认证、删除边界与 GitHub 托管步骤见 [docs/admin-and-community.md](docs/admin-and-community.md)。
 
 本轮继续接回实例克隆、整合包 ZIP 导出、卸载路径预览和内容更新预览；结构与格式检查结论见 [代码风格复查](docs/CODE_STYLE_REVIEW.md)。
@@ -158,7 +157,6 @@ dotnet build MCUGLauncher.sln -c Release
 - 配置：`%LOCALAPPDATA%\MCUGLauncher\config.json`
 - 界面缓存：`%LOCALAPPDATA%\MCUGLauncher\ui-0.22.3\`
 - WebView2 数据：`%LOCALAPPDATA%\MCUGLauncher\WebView2\`
-- 本地公告：`%LOCALAPPDATA%\MCUGLauncher\announcements.local.json`
 - 本地推荐：`%LOCALAPPDATA%\MCUGLauncher\recommendations.local.json`
 - 账号令牌：`%LOCALAPPDATA%\MCUGLauncher\auth\`
 
@@ -182,7 +180,6 @@ dotnet build MCUGLauncher.sln -c Release
 ## 许可
 
 本项目未附带新的开源许可证；发布前请沿用原仓库的许可策略。
-
 
 
 

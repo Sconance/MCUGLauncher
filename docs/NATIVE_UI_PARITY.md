@@ -33,14 +33,14 @@
 | 内容更新检查 / 预览 / 执行 | `instance-tools.js` | 已完成界面接入，待真实内容验收 |
 | 设置：启动参数 | `settings-page.js` | 已完成（目录、Java、内存、窗口、离线名） |
 | 设置：Java 扫描 | `settings-actions.js` | 已完成 |
-| 设置：网络 / 数据源 | `settings-page.js`、`data-sources.js` | 已完成（编辑、测试、默认/自定义切换、写入接口） |
+| 设置：网络 / 数据源 | `settings-page.js`、`data-sources.js` | 已完成（编辑、测试、默认/自定义切换） |
 | 设置：界面 / 恢复窗口 | `settings-actions.js` | 已完成 |
 | 设置：服务器收藏 | `settings-page.js` | 已完成（增删改、查询） |
 | 设置：存档备份 / 恢复 | `saves.js` | 已完成 |
 | 设置：运行日志 / 诊断 | `settings-actions.js` | 已完成 |
 | 设置：关于与许可 | `settings-page.js` | 已完成 |
 | 社区：匿名 / 身份密钥 | `community-pages.js` | 已完成 |
-| 社区：管理员发布 | `community-pages.js` | 已完成（管理员密钥、发布公告、公告/推荐删除管理） |
+| 社区：管理员管理 | `community-pages.js` | 已完成（管理员密钥、推荐删除管理；公告只读） |
 | 任务：排队 / 暂停 / 继续 / 取消 / 删除 | `tasks.js` | 基础完成 |
 | 运行中的游戏 | `games.js` | 已完成（列表与关闭；真实游戏验收待做） |
 | 资源收藏 | `bookmarks.js` | 已完成（列表、取消收藏、按兼容版本安装到实例或目录） |

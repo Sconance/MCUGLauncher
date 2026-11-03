@@ -50,6 +50,10 @@ internal sealed class LauncherContext : IDisposable
     {
         get;
     }
+    public Func<byte[]?, string> AvatarEncoder
+    {
+        get;
+    }
     public RunningGameRegistry Games { get; } = new();
     public void SendGames() => Send(new { type = "games", items = Games.Active.Select(g => new { id = g.Id.ToString("N"), version = g.Version, player = g.PlayerName, pid = g.Session.Process.Id }) });
 
@@ -69,9 +73,14 @@ internal sealed class LauncherContext : IDisposable
 
     public Action RefreshState { get; set; } = () => { };
 
-    public LauncherContext(Action<object> send, ConfigStore? store = null, Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null)
+    public LauncherContext(
+        Action<object> send,
+        ConfigStore? store = null,
+        Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null,
+        Func<byte[]?, string>? avatarEncoder = null)
     {
         Send = send;
+        AvatarEncoder = avatarEncoder ?? (_ => "");
         Store = store ?? new ConfigStore();
         Config = Store.Load();
         Http = NetworkPolicyHandler.Create(Config.LegacyPreferences.Network);
