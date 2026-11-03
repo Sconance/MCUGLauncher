@@ -17,6 +17,8 @@ if (args.Contains("--emit"))
     return;
 }
 
+await LoaderCatalogScenarios.Run();
+
 var root = Path.Combine(Path.GetTempPath(), "BlockLaunch 兼容与恢复 " + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 void Check(bool value, string name)

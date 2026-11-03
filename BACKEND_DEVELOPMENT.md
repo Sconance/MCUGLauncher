@@ -505,3 +505,7 @@ internal sealed class SaveCommands(LauncherContext context)
 | B 组件 `using MCUGLauncher.Ui` | 依赖 UI，破坏分层 |
 | 把 `%LOCALAPPDATA%` 路径逻辑放进 Core | Core 不应知道应用配置 |
 | 在三个组件里复制“实例目录解析” | 应归纳后下沉 Core |
+
+## 加载器目录复用
+
+InstallationCommands.LoadersAsync 统一调用 Core LoaderCatalog.Get，避免在 App 重复解析 Fabric/Quilt 数据。先检查提供方的游戏支持列表，再查询对应加载器版本。
