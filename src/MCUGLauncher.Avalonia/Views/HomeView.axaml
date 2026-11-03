@@ -6,11 +6,13 @@
             <Grid RowDefinitions="*,Auto">
                 <StackPanel Spacing="8">
                     <TextBlock Text="账号" Classes="h2" />
-                    <Border Width="100" Height="100" CornerRadius="14" Padding="3"
-                            Background="{StaticResource AppAccentWash}" BorderBrush="{StaticResource AppLine}"
-                            BorderThickness="1" HorizontalAlignment="Center">
-                        <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AvatarImage" Stretch="Uniform" />
-                    </Border>
+                    <Grid>
+                        <Border Width="75" Height="78" Background="Transparent" IsHitTestVisible="False"
+                                BoxShadow="0 0 15 0 DarkGray"/>
+                        <Border Width="91" Height="91" Background="Transparent" HorizontalAlignment="Center">
+                            <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AvatarImage" Stretch="Uniform" />
+                        </Border>
+                    </Grid>
                     <TextBlock x:Name="PlayerName" FontSize="18" FontWeight="Bold"
                                HorizontalAlignment="Center" TextWrapping="Wrap" />
                     <TextBlock x:Name="AccountMeta" Classes="muted" HorizontalAlignment="Center"
@@ -62,6 +64,14 @@
                             <TextBlock x:Name="ServerStatus" Classes="status" />
                         </StackPanel>
                         <WrapPanel x:Name="ServerPanel" Orientation="Horizontal" />
+                        <Border x:Name="ServerEmptyPanel" Height="120" IsVisible="False">
+                            <TextBlock Classes="muted"
+                                       Text="还没有收藏服务器。&#10;填入 host:port 或服务器网址，就能看到实时人数与延迟。"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Stretch"
+                                       VerticalAlignment="Center" />
+                        </Border>
                     </StackPanel>
                 </Border>
 
