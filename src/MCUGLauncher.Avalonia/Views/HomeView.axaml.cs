@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -10,6 +11,7 @@ namespace MCUGLauncher.Avalonia.Views;
 internal partial class HomeView : UserControl
 {
     readonly Dictionary<string, ServerPingInfo> pings = new(StringComparer.OrdinalIgnoreCase);
+    readonly HashSet<string> requestedPings = new(StringComparer.OrdinalIgnoreCase);
     ILauncherService? service;
     LauncherState? state;
     CommunityData community = CommunityData.Empty;
@@ -65,6 +67,7 @@ internal partial class HomeView : UserControl
                 Status("请先安装或选择实例。");
                 return;
             }
+
             Status("正在准备启动…");
             await service!.LaunchAsync(target);
         };
@@ -97,6 +100,7 @@ internal partial class HomeView : UserControl
                 ServerStatus.Text = "请填写服务器地址。";
                 return;
             }
+
             ServerStatus.Text = "正在保存…";
             await service!.SaveServerAsync(ServerNameBox.Text?.Trim() ?? "", address, editingServer);
         };
@@ -141,8 +145,9 @@ internal partial class HomeView : UserControl
             avatarAccount = avatarKey;
             _ = service?.ReadAvatarAsync();
         }
+
         var current = snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)
-            ?? snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedVersion);
+                      ?? snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedVersion);
         LaunchTarget.Text = current is null
             ? "请选择实例"
             : $"{current.DisplayName} · {current.Minecraft} · {current.Loader}";
@@ -156,10 +161,12 @@ internal partial class HomeView : UserControl
         {
             serverSignature = signature;
             pings.Clear();
+            requestedPings.Clear();
             foreach (var server in snapshot.Servers)
                 if (server.Address.Length > 0)
                     _ = service!.PingServerAsync(server.Address, server.Address);
         }
+
         RenderServers();
     }
 
@@ -194,6 +201,7 @@ internal partial class HomeView : UserControl
             ServerSummary.Text = "0 台服务器";
             return;
         }
+
         ServerPanel.IsVisible = true;
         ServerEmptyPanel.IsVisible = false;
         var online = state.Servers.Count(server => pings.TryGetValue(server.Address, out var ping) && ping.Online);
@@ -308,6 +316,7 @@ internal partial class HomeView : UserControl
             _ = ShowAnnouncementImage("");
             return;
         }
+
         var item = community.Announcements[announcementIndex];
         AnnouncementTitle.Text = "[" + item.Tag + "] " + item.Title;
         AnnouncementBody.Text = item.Body;
@@ -349,6 +358,7 @@ internal partial class HomeView : UserControl
             }
             else
                 return;
+
             if (version != imageVersion)
                 return;
             using var input = new MemoryStream(bytes);
@@ -374,8 +384,10 @@ internal partial class HomeView : UserControl
             RecommendationPanel.Children.Add(Muted("暂无群友推荐。"));
             return;
         }
+
         foreach (var item in community.Recommendations.Take(5))
         {
+            var isServer = item.Type is not ("material" or "shader");
             var type = item.Type switch
             {
                 "material" => "材质包",
@@ -386,11 +398,13 @@ internal partial class HomeView : UserControl
             copy.Children.Add(new TextBlock { Text = item.Name, FontWeight = FontWeight.SemiBold });
             copy.Children.Add(new TextBlock
             {
-                Text = $"{type} · 由 {item.Author} 推荐" + (item.Tags.Count > 0 ? " · " + string.Join(" / ", item.Tags) : ""),
+                Text = $"{type} · 由 {item.Author} 推荐" +
+                       (item.Tags.Count > 0 ? " · " + string.Join(" / ", item.Tags) : ""),
                 Classes = { "muted" }
             });
             if (item.Description.Length > 0)
-                copy.Children.Add(new TextBlock { Text = item.Description, TextWrapping = TextWrapping.Wrap, Classes = { "muted" } });
+                copy.Children.Add(new TextBlock
+                    { Text = item.Description, TextWrapping = TextWrapping.Wrap, Classes = { "muted" } });
             var icon = new Border
             {
                 Width = 30,
@@ -416,14 +430,60 @@ internal partial class HomeView : UserControl
             Grid.SetColumn(copy, 1);
             copy.Margin = new Thickness(9, 0, 0, 0);
             row.Children.Add(copy);
-            RecommendationPanel.Children.Add(new Border
+            var card = new Border
             {
+                // 透明背景只为可命中：Border 没有背景时空白处收不到右键
+                Background = Brushes.Transparent,
                 BorderBrush = new SolidColorBrush(Color.Parse("#E7EEF4")),
                 BorderThickness = new Thickness(0, 0, 0, 1),
                 Padding = new Thickness(0, 6),
                 Child = row
-            });
+            };
+            // 只有服务器类推荐才能收藏，材质包/光影不挂右键菜单
+            if (isServer)
+                WireFavoriteMenu(card, item);
+            RecommendationPanel.Children.Add(card);
         }
+    }
+
+    /// <summary>
+    /// 给整行挂右键菜单。没用 ContextFlyout：Control 只在按下点正好落在控件本身时才自动弹出
+    /// （OnPointerReleased 里要求 e.Source == this），点在文字或图标上就没有反应。
+    /// </summary>
+    void WireFavoriteMenu(Border card, RecommendationInfo item)
+    {
+        var favorite = new MenuItem { Header = "收藏" };
+        favorite.Click += async (_, _) => await FavoriteServerAsync(item);
+        var flyout = new MenuFlyout();
+        flyout.Items.Add(favorite);
+        card.PointerReleased += (_, e) =>
+        {
+            if (e.InitialPressMouseButton != MouseButton.Right)
+                return;
+            flyout.ShowAt(card, true);
+            e.Handled = true;
+        };
+    }
+
+    /// <summary>走「添加服务器」同一套后台逻辑：SaveServerAsync(名称, 地址, 空旧地址) 即新增收藏。</summary>
+    async Task FavoriteServerAsync(RecommendationInfo item)
+    {
+        var address = item.Url.Trim();
+        if (address.Length == 0)
+        {
+            Status("这条推荐没有附带服务器地址，无法收藏。");
+            return;
+        }
+
+        if (state is not null &&
+            state.Servers.Any(server => server.Address.Equals(address, StringComparison.OrdinalIgnoreCase)))
+        {
+            Status("「" + (item.Name.Length > 0 ? item.Name : address) + "」已经在收藏里了。");
+            return;
+        }
+
+        Status("正在收藏 " + address + "…");
+        await service!.SaveServerAsync(item.Name.Trim(), address, "");
     }
 
     void RenderQuote()
@@ -435,6 +495,7 @@ internal partial class HomeView : UserControl
             QuoteMeta.Text = "";
             return;
         }
+
         var quote = community.Quotes[quoteIndex];
         QuoteText.Text = quote.Type == "image" ? "[图片语录] " + quote.Text : quote.Text;
         QuoteMeta.Text = string.Join(" · ", new[] { quote.Author, quote.Source }.Where(value => value.Length > 0));
@@ -472,6 +533,13 @@ internal partial class HomeView : UserControl
 
     void OnServerResult(ServerResultInfo info)
     {
+        // 添加表单收起时（例如从推荐右键收藏）结果没有落点，改投页面状态栏
+        if (!ServerForm.IsVisible)
+        {
+            Status(info.Message);
+            return;
+        }
+
         ServerStatus.Text = info.Message;
         if (info.Ok)
             HideServerForm();

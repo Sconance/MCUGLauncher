@@ -8,7 +8,7 @@
                     <TextBlock Text="账号" Classes="h2" />
                     <Grid>
                         <Border Width="75" Height="78" Background="Transparent" IsHitTestVisible="False"
-                                BoxShadow="0 0 15 0 DarkGray"/>
+                                BoxShadow="0 0 15 0 DarkGray" />
                         <Border Width="91" Height="91" Background="Transparent" HorizontalAlignment="Center">
                             <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AvatarImage" Stretch="Uniform" />
                         </Border>
