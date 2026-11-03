@@ -1,6 +1,6 @@
 # refactor 分支整合记录
 
-> 历史归档：本文记录 refactor 时期的一次性过程，`refactor` 分支已废弃。现行文档见 [开发导览](../../DEVELOPMENT.md) 与 [合并到主分支前的说明](../../MERGE_TO_MAIN.md)。
+> 历史归档：本文记录 refactor 时期的一次性过程，`refactor` 分支已废弃。现行文档见 [开发导览](../legacy-wpf/DEVELOPMENT.md) 与 合并到主分支前的说明（历史文件已退役）。
 
 
 ## 结论
@@ -25,7 +25,7 @@ test 主干：0eaf5ec + 合并提交 145bf37（父提交 0eaf5ec、db0ab6a）
 | refactor 内容 | 处理 | 说明与去向 |
 | --- | --- | --- |
 | 86 个 `MainWindow/**` partial 文件 | 退役 | 功能已由 `Components/`、`Views/`、`Presentation/`、`Composition/` 承接，不再引入 `partial class MainWindow` |
-| 51 篇 `docs/MainWindow/**` 逐类文档、`docs/CONTROLLERS.md` | 退役 | 描述已删除的 partial 结构；历史内容保留在 `refactor` `db0ab6a`，现行结构见 [MainWindow 职责拆分](../../MAINWINDOW_REFACTOR.md) 与 [开发导览](../../DEVELOPMENT.md) |
+| 51 篇 `docs/MainWindow/**` 逐类文档、`docs/CONTROLLERS.md` | 退役 | 描述已删除的 partial 结构；历史内容保留在 `refactor` `db0ab6a`，现行结构见 [MainWindow 职责拆分](../legacy-wpf/MAINWINDOW_REFACTOR.md) 与 [开发导览](../legacy-wpf/DEVELOPMENT.md) |
 | `TODO.md` | 重写 | 保留「整合与拆分检查要点」，待办改为 `test` 结构下剩余的主窗口拆分 |
 | `update_refactor.md` | 吸收 | 合并为本文件 |
 | `compare_develop_refactor.md` | 迁移 | [develop 与 refactor 功能对照](COMPARE_DEVELOP_REFACTOR.md)，补充历史说明 |
@@ -40,7 +40,7 @@ test 主干：0eaf5ec + 合并提交 145bf37（父提交 0eaf5ec、db0ab6a）
 - Release 构建：0 警告、0 错误；程序集版本 `0.21.0`，`InformationalVersion` 与合并提交一致。
 - 源码格式、布局、UI 边界、复用基线（仍以 `db0ab6a` 为准）与版本元数据检查全部通过。
 - 通过检查：`InlineUiChecks`、`VersionUiChecks`、`WorkflowUiChecks`、`CollectionChecks`、`AuthChecks`、`MuaChecks`、`DownloadChecks`、`QueueChecks`、`CompatibilityChecks`、`MiniDownloadChecks`、`StabilityChecks`、`UninstallChecks`、`UpgradeChecks`、`ExperienceChecks`、`ContentSafetyChecks`、`DependencyChecks`、`LibraryChecks`、`ResourceDownloadChecks`、`CompactUiChecks`、`DownloadUiChecks`。
-- `DiagnosticChecks` 在本机因缺少符号链接特权停在 `File.CreateSymbolicLink`，属环境限制；详细记录见 [验证记录](../../TESTING.md)。
+- `DiagnosticChecks` 在本机因缺少符号链接特权停在 `File.CreateSymbolicLink`，属环境限制；详细记录见 [验证记录](../legacy-wpf/TESTING.md)。
 - 未执行 `IntegrationChecks`、真实微软 / MUA 授权与完整游戏启动矩阵。
 
 ## 后续

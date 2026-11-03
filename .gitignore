@@ -11,9 +11,11 @@ publish/
 .env.*
 accounts.bin
 settings.json
+!.vscode/settings.json
 token.json
 .minecraft/
 runtime/
 /work/
 /outputs/
 __pycache__/
+node_modules/

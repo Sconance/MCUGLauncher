@@ -1,7 +1,13 @@
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 解析游戏目录并写入版本适用的默认选项。
+/// </summary>
 public static class GameDefaults
 {
+    /// <summary>
+    /// 解析根目录。
+    /// </summary>
     public static string ResolveRoot(string input, bool requireExisting = false)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -19,6 +25,9 @@ public static class GameDefaults
     }
 
     // Only seed a missing language; a player's later language choice survives launches and repairs.
+    /// <summary>
+    /// 按游戏版本写入简体中文语言键，保留其他选项。
+    /// </summary>
     public static void EnsureChinese(string directory, string minecraft, bool overwrite = false)
     {
         Directory.CreateDirectory(directory);
@@ -29,7 +38,7 @@ public static class GameDefaults
         lines.RemoveAll(line => line.StartsWith("lang:", StringComparison.Ordinal));
         var legacy = Version.TryParse(minecraft, out var version) && version < new Version(1, 11);
         lines.Add("lang:" + (legacy ? "zh_CN" : "zh_cn"));
-        var temporary = path + ".blocklaunch-" + Guid.NewGuid().ToString("N");
+        var temporary = path + ".mcuglauncher-" + Guid.NewGuid().ToString("N");
         try
         {
             File.WriteAllLines(temporary, lines, new System.Text.UTF8Encoding(false));

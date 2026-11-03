@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MCUGLauncher.Avalonia.ShellWindow" Title="MCUG Launcher"
+        Width="1200" Height="780" MinWidth="960" MinHeight="640" Icon="/Assets/MCUGLauncher.ico"
+        ExtendClientAreaToDecorationsHint="True" ExtendClientAreaChromeHints="NoChrome" ExtendClientAreaTitleBarHeightHint="52" SystemDecorations="BorderOnly">
+  <Grid RowDefinitions="52,*">
+    <Border x:Name="TitleBar" Background="White" BorderBrush="#DFE8EF" BorderThickness="0,0,0,1" Padding="24,8,18,8">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+        <StackPanel x:Name="BrandPanel" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" />
+        <StackPanel x:Name="TopNavigation" Grid.Column="1" Orientation="Horizontal" Spacing="3" Margin="16,0" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="2" Width="120" Spacing="4" VerticalAlignment="Center">
+          <Button x:Name="TaskButton" Content="↓ 下载任务" HorizontalAlignment="Stretch" />
+          <ProgressBar x:Name="TaskProgress" Width="120" MinWidth="0" Height="3" Minimum="0" Maximum="100" IsVisible="False" />
+        </StackPanel>
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="12,0,0,0">
+          <Button x:Name="MinimizeButton" Classes="window-control" Content="—" ToolTip.Tip="最小化" AutomationProperties.Name="最小化" />
+          <Button x:Name="MaximizeButton" Classes="window-control" Content="□" ToolTip.Tip="最大化" AutomationProperties.Name="最大化或还原" />
+          <Button x:Name="CloseButton" Classes="window-control close-window" Content="×" ToolTip.Tip="关闭启动器" AutomationProperties.Name="关闭启动器" />
+        </StackPanel>
+      </Grid>
+    </Border>
+    <ContentControl Grid.Row="1" x:Name="BackgroundHost" IsHitTestVisible="False" ClipToBounds="True" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+    <Grid Grid.Row="1" x:Name="PageGrid" ColumnDefinitions="190,*">
+      <Border Grid.Column="0" Background="#F7FAFC" BorderBrush="#DFE8EF" BorderThickness="0,0,1,0">
+        <ScrollViewer><StackPanel x:Name="Sidebar" Spacing="5" Margin="10,18" /></ScrollViewer>
+      </Border>
+      <ScrollViewer Grid.Column="1" x:Name="PageScroll" HorizontalScrollBarVisibility="Disabled"><ContentControl x:Name="PageHost" HorizontalContentAlignment="Stretch" Margin="24,20" /></ScrollViewer>
+    </Grid>
+    <ContentControl Grid.Row="1" x:Name="DropHost" IsHitTestVisible="False" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+    <ContentControl Grid.Row="1" x:Name="NoticeHost" HorizontalAlignment="Right" VerticalAlignment="Top" MaxWidth="520" Margin="16" />
+  </Grid>
+</Window>

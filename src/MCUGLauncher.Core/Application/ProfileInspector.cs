@@ -1,10 +1,13 @@
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
 /// <summary>Reads installed metadata, not display names, so renamed profiles retain their loader identity.</summary>
 public static class ProfileInspector
 {
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public static PackRequirements Read(string root, string profile)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -63,6 +66,7 @@ public static class ProfileInspector
                         ("net.minecraftforge", "forge") => "forge",
                         ("net.fabricmc", "fabric-loader") => "fabric",
                         ("org.quiltmc", "quilt-loader") => "quilt",
+                        ("optifine", "OptiFine") => "optifine",
                         _ => ""
                     };
                     if (kind.Length > 0)
@@ -80,6 +84,14 @@ public static class ProfileInspector
 
             if (json.TryGetProperty("inheritsFrom", out var parent) && parent.ValueKind == JsonValueKind.String)
                 return Visit(parent.GetString()!);
+            foreach (var property in new[] { "clientVersion", "minecraftVersion", "jar" })
+                if (json.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String && value.GetString() is { Length: > 0 } version)
+                {
+                    ContentService.SafeFile(version);
+                    return version;
+                }
+            if (loader == "optifine" && loaderVersion.Contains('_'))
+                return loaderVersion.Split('_')[0];
             var baseVersion = Argument("--fml.mcVersion");
             if (baseVersion.Length > 0)
             {
@@ -92,6 +104,8 @@ public static class ProfileInspector
 
         var minecraft = Visit(profile);
         if (loader is "forge" or "neoforge" && loaderVersion.StartsWith(minecraft + "-", StringComparison.Ordinal))
+            loaderVersion = loaderVersion[(minecraft.Length + 1)..];
+        if (loader == "optifine" && loaderVersion.StartsWith(minecraft + "_", StringComparison.Ordinal))
             loaderVersion = loaderVersion[(minecraft.Length + 1)..];
         return new(minecraft, loader, loaderVersion);
     }

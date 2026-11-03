@@ -1,142 +1,49 @@
-<p align="center"><img src="src/MCUGLauncher/Assets/MCUGLogo.png" width="112" alt="MCUG Launcher Logo"></p>
-<h1 align="center">MCUG Launcher</h1>
-<p align="center">面向 Windows 的 Minecraft Java 版启动器</p>
-<p align="center"><a href="https://github.com/Sconance/MCUGLauncher/releases/latest">下载最新版</a> · <a href="docs/USAGE.md">使用指南</a> · <a href="https://github.com/Sconance/MCUGLauncher/issues">反馈问题</a> · <a href="CHANGELOG.md">更新记录</a></p>
+# MCUG Launcher · 0.24.0-codex
 
-MCUG Launcher 提供游戏启动、分类下载、账号登录和实例内容管理，采用 MCUG 蓝白主题，支持浅深配色与本地背景。升级保留现有账号、配置和实例数据。
+**AI 迁移框架尝试**：把启动器主界面从 HTML/CSS/JS + WebView2 改成 Avalonia 原生控件。本分支是实验性迁移，未发布 Release，不代表真实账号和所有游戏环境已经验收。
 
-## 界面预览
+当前版本为 **0.24.0**，实验频道为 `codex`。
 
-![启动与版本列表](docs/images/home.png)
+![原生界面布局检查，使用模拟数据](docs/images/native-home.png)
 
-![版本内容管理](docs/images/manager.png)
+## 来源与范围
 
-<details><summary>下载任务与整合包确认</summary>
+产品功能与布局以 `0.22.3-codex` 的 `6c091c6` 为基线。`0.22.3-Avalonia` 仅作为 App/Core 分层及框架适配参考，不能替代原版页面与入口。上轮重排和遗漏已按 [对照修订](docs/UI_PARITY_0.22.3-codex.md) 纠正；不把菜单能创建等同于完整迁移。包含 `0.22.3-codex` 的账号缓存、自定义启动参数、数据源保存与启用分离等行为。没有合入用户提供的 `0.24.0-deepseek.zip`，也没有改动 `0.23.x` 或其他远端分支。
 
-![下载任务](docs/images/download-tasks.png)
-![整合包导入](docs/images/pack-import.png)
+- 启动：账号、目录、实例筛选、实例启动、社区动态。
+- 下载：原版、加载器、模组、整合包、资源包、光影、数据包；选择实际版本和固定目标后加入原 Core 队列。
+- 设置：账号与皮肤、Java、全局和单实例启动参数、实例与模组管理、存档、服务器、收藏、数据源、任务、运行游戏、诊断和本地公告编辑。
+- 默认源 / 自定义源：进入页签自动测试；保存不启用，单独使用按钮显示当前状态；不显示写入接口栏。
+- 保留 MCUG 透明标志和蓝白配色，分类图标可在 `NavigationCatalog` 的 `IconPath` 中替换成资源图片。
 
-</details>
+微软官方授权页面仍放在独立的 Avalonia 登录窗口中，使用 WebView2 展示第三方网页；它不是旧主界面的回退。启动器其他页面不使用浏览器。当前仍只支持 Windows x64，不宣称已实现跨平台。
 
-<details><summary>Java 管理与个性化</summary>
+## 构建与检查
 
-![Java 管理](docs/images/java.png)
-![个性化](docs/images/appearance.png)
-
-</details>
-
-截图来自隔离测试环境，实例与账号信息仅用于演示。
-
-## 功能
-
-
-| 方向       | 已有能力                                                |
-| ---------- | ------------------------------------------------------- |
-| 账号与启动 | 微软正版、离线角色、MUA 认证，头像与会话刷新            |
-| 游戏下载   | 原版分类、模组加载器安装相关流程                        |
-| 资源中心   | Modrinth 模组、整合包、资源包、光影、数据包，收藏与标签 |
-| 实例管理   | 多目录、隔离、分类、搜索、直接启动、启动参数与内容管理  |
-| 整合包     | Modrinth、MultiMC / Prism 导入，清单预检与可选内容导出  |
-| Java       | 常见位置扫描、指定目录与全盘搜索、手动指定、版本匹配    |
-| 下载任务   | 紧凑进度与速度、暂停继续、失败重试、任务恢复            |
-| 辅助工具   | 存档备份、截图预览、日志、崩溃线索与诊断导出            |
-
-当前资源平台以 Modrinth 为主，CurseForge 在线服务未接入。蓝图入口浏览实例的 schematics 目录。社区、在线公告及新闻尚未实现。
-
-## 下载与运行
-
-在 [Releases](https://github.com/Sconance/MCUGLauncher/releases/latest) 下载对应 EXE，直接运行。完整版文件名保持 Windows-x64.exe，内置 .NET 运行库；精简版文件名以 Windows-x64-Lite.exe 结尾，需要电脑安装 .NET 8 Desktop Runtime x64。游戏需匹配版本的 Java；内嵌微软授权页面需要 WebView2 Runtime。
-
-升级前关闭启动器，再替换 EXE，保留原有配置和游戏目录。删除版本前检查确认框，重要存档先备份。
-
-## 源码与构建
-
-当前版本为 **0.22.0**，最终产品名确定为 **MCUG Launcher**。使用 Windows x64 与 .NET 8 SDK：
+需要 `global.json` 指定的 .NET SDK。
 
 ```powershell
-git clone https://github.com/Sconance/MCUGLauncher.git
-cd MCUGLauncher
-dotnet build src/MCUGLauncher/MCUGLauncher.csproj -c Release
-dotnet publish src/MCUGLauncher/MCUGLauncher.csproj -c Release -o artifacts/publish
+dotnet build src/MCUGLauncher.Avalonia/MCUGLauncher.Avalonia.csproj -c Release
+python scripts/check-layout.py
+python scripts/check-web-boundaries.py
+python scripts/check-version.py
+dotnet run --project tools/SourceFormatter
+./scripts/run-checks.ps1 -Name MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks,WebBridgeChecks,NativeUiChecks
 ```
 
-详见 [构建与目录说明](docs/BUILD.md)。历史版本源码仍保留在各 Release 的手动 Source.zip 附件中；旧标签未移动，旧版自动生成的 Source code 归档可能仅含原仓库文件。
+原生界面检查使用 Avalonia Headless + Skia，模拟应用响应并输出三档布局截图。这些检查不代替真实 Microsoft/MUA 登录、文件选择对话框和 Minecraft 验收。
 
-版本号只有一个来源（`Directory.Build.props` 的 `McugVersion`），发版、标签与检查规则见 [版本号控制](docs/VERSIONING.md)。0.22.0 在 `test` 分支准备合并到 `main`：`Components/` 已按九个功能域重组，`MainWindow` 拆成窗口 shell、九个独立 XAML 页面与功能模块；合并步骤、验证结果与风险见 [合并到主分支前的说明](docs/MERGE_TO_MAIN.md)，发布说明与文件哈希见 [发布说明](docs/releases/README.md)，后续计划见 [重构路线图](TODO.md)，历史材料在 [历史归档](docs/archive/branch_refactor/README.md)，类型说明在 [类文档目录](docs/classes/README.md)。
+## 目录
 
-```text
-src/       主程序与核心逻辑（2 个项目）
-test/      功能、界面与集成检查（22 个项目）
-tools/     隔离界面预览（4 个）和源码格式工具
-scripts/   构建与检查脚本
-docs/      使用、构建、类文档（classes/）、历史归档（archive/）与截图
-```
+- `src/MCUGLauncher.Core`：复用的启动、下载、校验、实例能力。
+- `src/MCUGLauncher.App`：无 WPF/Avalonia 控件的应用用例、认证和配置服务。
+- `src/MCUGLauncher.Avalonia/Presentation`：类型化界面契约和菜单注册。
+- `src/MCUGLauncher.Avalonia/Views`：分功能原生视图与对话框。
+- `ILauncherService / UiContext`：原生状态与现有用例之间的适配；内部保留 JSON 命令兼容层。
+- `test/NativeUiChecks`：原生控件交互与渲染检查。
 
-## 反馈与贡献
+详细范围、限制与验证见 [迁移说明](docs/MIGRATION_0.24.0-codex.md)。
 
-请在 [Issues](https://github.com/Sconance/MCUGLauncher/issues) 提供软件版本、系统版本、复现步骤和脱敏日志。不要上传密码、Token、账号缓存或私人存档。参阅 [贡献说明](CONTRIBUTING.md)。
+开发须遵循 [AGENTS.md](AGENTS.md) 与 [交付流程](docs/DEVELOPMENT_WORKFLOW.md)。本地测试版按分支名命名，保存文档、检查风格、推送分支和更新 Lite 均属于交付步骤。
 
-## 近期更新
-
-### [0.22.0](https://github.com/Sconance/MCUGLauncher/releases/tag/v0.22.0)
-
-准备合并到 `main` 的结构与文档版本。`refactor` 分支已废弃，相关记录归档到 [docs/archive/branch_refactor/](docs/archive/branch_refactor/README.md)。
-
-- `Components/` 按 Accounts、Shell、Downloads、Resources、Instances、Launch、Experience、Bookmarks、Support 九个功能域重组；10 个控制器按职责改名（`Sketch`→`InstanceContent`、`Content`→`ResourceBrowser`、`Pack`→`Modpack`、`Stability`→`TaskRecovery` 等）。
-- 补齐 `src/MCUGLauncher` 全部 142 个顶层类型的类文档，归档到 [docs/classes/](docs/classes/README.md)，新增 `scripts/check-class-docs.py` 与 CI 检查。
-- 文档体系整理：refactor 时代的对照、迁移与合并记录移入 [历史归档](docs/archive/branch_refactor/README.md)；新增 [合并到主分支前的说明](docs/MERGE_TO_MAIN.md)。
-- 记录前后端分界评估结论与后续项，写入 [重构路线图](TODO.md)。
-
-### [0.21.0]
-
-- warning 由于test的更新，refactor分支废弃，本版本不发布，仅用于声明连续性
-`test` 主干与 `refactor` 全量整合后的版本。结构以 `test` 的原生窗口 shell、九个独立 XAML 页面与组合根为准；`refactor` 的文档规则、版本控制与 0.20.1 / 0.20.2 功能内容全部并入，`refactor` 不再单独递增版本号。
-
-- 合并 `refactor`（`db0ab6a`）：86 个 `MainWindow` partial 与 51 篇逐类文档按结构退役，历史内容保留在 `refactor` 分支，迁移去向见 [refactor 分支整合记录](docs/archive/branch_refactor/REFACTOR_INTEGRATION.md)。
-- 版本号改为单一来源 `Directory.Build.props` 的 `McugVersion`，运行期统一读取 `ProductInfo.Version`。
-- 修复诊断信息 `0.20.0`、导航区 `0.15.2`、关于区 `0.20.2` 与两处 User-Agent 的写死版本。
-- 新增 `scripts/check-version.py` 与 CI 版本校验，发版标签、CHANGELOG、README 与程序集元数据必须一致。
-- 新增 [版本号控制](docs/VERSIONING.md)、[refactor 分支整合记录](docs/archive/branch_refactor/REFACTOR_INTEGRATION.md)、[重构路线图](TODO.md) 与 [develop 与 refactor 功能对照](docs/archive/branch_refactor/COMPARE_DEVELOP_REFACTOR.md)，把整合与拆分检查要点沉淀为长期规则。
-- 保留 `test` 的 Esc 关闭页内选择器、嵌套改名后实例列表与首页名称同步修复
-
-### [0.20.2](https://github.com/Sconance/MCUGLauncher/releases/tag/v0.20.2)
-
-- 按蓝白效果图完善多列资源卡片、心形收藏和详情布局。
-- 增加仅显示收藏、资源排序以及卡片/列表切换。
-- 为顶部、下载、设置、更多、主页、资源详情、版本设置和实例分类提供统一菜单注册接口。
-- 开发者可参考 [菜单扩展说明](docs/MENU_EXTENSIONS.md) 增加栏目和图片图标。
-
-### [0.20.1](https://github.com/Sconance/MCUGLauncher/releases/tag/v0.20.1)
-
-- 下载分类增加统一图标区域，并为替换图片保留配置接口；资源列表改为随窗口宽度变化的多列卡片。
-- 资源列表和页内详情分离，提供介绍、版本和依赖切换，展示实际项目截图及正文预览。
-- 加载器按横向配置行排列，可选择游戏与加载器版本；保留品牌配色和透明背景 MCUG Logo。
-
-### [0.20.0](https://github.com/Sconance/MCUGLauncher/releases/tag/v0.20.0)
-
-源码可读性整理：统一格式，拆分账号面板与下载任务职责，加入开发导览和格式检查。
-
-### [0.19.2](https://github.com/Sconance/MCUGLauncher/releases/tag/v0.19.2)
-
-- 拖入文件显示导入提示；整合包先确认名称和目标目录，其他资源导入管理页当前实例。
-- 顶栏下载进度、任务栏进度与内嵌下载列表，支持暂停、继续、取消和失败重试。
-- 下载期间保留账号切换和版本浏览；认证操作先提示暂停下载，安装与启动仍保持互斥。
-
-### [0.19.1](https://github.com/Sconance/MCUGLauncher/releases/tag/v0.19.1)
-
-- 启动页移除 Java 筛选与搜索图标，新增搜索占位提示。
-- 大启动按钮搭配纵向展开、设置按钮。
-- 版本内容管理增加目录切换，标题整合到顶栏，列表和滚动条更紧凑。
-- 强化导入区域分隔，修复内嵌页面切换深色主题时的背景。
-
-### [0.19.0](https://github.com/Sconance/MCUGLauncher/releases/tag/v0.19.0)
-
-- 最终名称确定为 MCUG Launcher，统一界面、程序元数据、仓库与文档。
-- 源码项目目录和构建入口同步更名，保留现有账号、配置与实例兼容。
-
-
-[完整更新记录](CHANGELOG.md) · [全部历史版本](https://github.com/Sconance/MCUGLauncher/releases)
-
-MCUG Launcher 为独立项目，非 Mojang 或 Microsoft 官方产品。第三方组件见 [依赖清单](docs/DEPENDENCIES.md) 与程序内声明。项目整体许可证尚未指定，不代表自动授予任意使用或再分发许可。
-
-开发者可从 [开发导览](docs/DEVELOPMENT.md) 查看功能入口、模块边界与编码约定。
+内部命名空间、默认数据目录和元数据文件统一使用当前名称，数据影响见 [命名与数据位置](docs/NAMING.md)。

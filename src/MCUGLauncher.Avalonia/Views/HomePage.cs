@@ -1,0 +1,283 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Media.Imaging;
+using MCUGLauncher.Avalonia.Presentation;
+namespace MCUGLauncher.Avalonia.Views;
+
+internal sealed class HomePage : NativePage
+{
+    readonly Grid account = new() { RowDefinitions = new RowDefinitions("Auto,*,Auto") };
+    readonly StackPanel launch = Ui.Stack();
+    readonly ContentControl right = new();
+    readonly InstancePickerView picker;
+    readonly HomeFeedPanel servers;
+    readonly HomeFeedPanel announcements;
+    readonly HomeFeedPanel recommendations;
+    readonly HomeFeedPanel quotes;
+    readonly Grid feeds;
+    readonly Grid layout;
+    readonly Border accountCard;
+    bool expanded;
+    readonly Dictionary<string, Button> accountTabs = [];
+    readonly Dictionary<string, Bitmap> decodedAvatars = [];
+    Image avatarImage = null!;
+    TextBlock playerName = null!, accountIdentity = null!;
+    Button changeAccount = null!;
+    string displayedAvatar = "";
+    (string Version, int Ram, bool Auto)? launchState;
+    public HomePage(ILauncherService session, UiContext ui) : base(session, ui)
+    {
+        picker = new InstancePickerView(session, ui, () => Toggle(false));
+        servers = new HomeFeedPanel(session, ui, "servers");
+        announcements = new HomeFeedPanel(session, ui, "announcements");
+        recommendations = new HomeFeedPanel(session, ui, "recommendations");
+        quotes = new HomeFeedPanel(session, ui, "quotes");
+        // Community cards keep their content height instead of filling the viewport.
+        feeds = new Grid
+        {
+            RowDefinitions = new RowDefinitions("188,112,Auto,100"),
+            RowSpacing = 14,
+            VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Top
+        };
+        feeds.Children.Add(servers);
+        Grid.SetRow(announcements, 1);
+        feeds.Children.Add(announcements);
+        Grid.SetRow(recommendations, 2);
+        recommendations.MinHeight = 128;
+        feeds.Children.Add(recommendations);
+        Grid.SetRow(quotes, 3);
+        feeds.Children.Add(quotes);
+        accountCard = Ui.Card(account);
+        accountCard.Padding = new Thickness(16, 15, 16, 12);
+        accountCard.Height = 426;
+        accountCard.Name = "HomeAccountCard";
+        accountCard.Margin = default;
+        // The stretch row is intentional breathing room between account and launch actions.
+        var left = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto") };
+        left.Children.Add(accountCard);
+        launch.Margin = new Thickness(0, 24, 0, 0);
+        Grid.SetRow(launch, 2);
+        left.Children.Add(launch);
+        layout = new Grid { ColumnDefinitions = new ColumnDefinitions("320,*"), ColumnSpacing = 18, MinHeight = 570 };
+        layout.Children.Add(left);
+        Grid.SetColumn(right, 1);
+        layout.Children.Add(right);
+        Body.Children.Add(layout);
+        Body.Spacing = 14;
+        SizeChanged += (_, _) => UpdateDimensions();
+        AttachedToVisualTree += (_, _) => UpdateDimensions();
+        Toggle(ui.HomeInstancePanelOpen);
+        session.GamesChanged += OnGames;
+        ui.AvatarChanged += UpdateAvatar;
+        UnsubscribeWith(() => { session.GamesChanged -= OnGames; ui.AvatarChanged -= UpdateAvatar; });
+        BuildAccount();
+    }
+    void Toggle(bool value)
+    {
+        expanded = value;
+        UI.HomeInstancePanelOpen = value;
+        right.Content = expanded ? picker : feeds;
+        quotes.IsVisible = !expanded;
+        DrawLaunch();
+    }
+    void UpdateDimensions()
+    {
+        var compact = Bounds.Width < 1032;
+        layout.ColumnDefinitions[0].Width = new GridLength(compact ? 280 : 320);
+        layout.ColumnSpacing = compact ? 14 : 18;
+        // Header (52) and page margins (40) are outside this grid. Short windows scroll
+        // rather than letting the account card overlap the bottom launch controls.
+        layout.Height = Math.Max(570, (TopLevel.GetTopLevel(this)?.ClientSize.Height ?? 780) - 92);
+    }
+    void BuildAccount()
+    {
+        var details = Ui.Stack();
+        details.Spacing = 0;
+        var tabs = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*"), Height = 29 };
+        var column = 0;
+        foreach (var (label, mode) in new[] { ("正版", "microsoft"), ("离线", "offline"), ("MUA 登录", "mua") })
+        {
+            var tab = Ui.Button(label, () => Session.SwitchAccountModeAsync(account: mode), allowConcurrent: true);
+            tab.Classes.Add("account-tab");
+            tab.Height = 25;
+            tab.VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center;
+            tab.Classes.Set("active", State.AccountType == mode);
+            accountTabs[mode] = tab;
+            Grid.SetColumn(tab, column++);
+            tabs.Children.Add(tab);
+        }
+        details.Children.Add(new Border { Child = tabs, Background = global::Avalonia.Media.Brush.Parse("#E8F0F7"), CornerRadius = new CornerRadius(7), Padding = new Thickness(2) });
+        var avatar = Ui.Button("", () => AccountDialogs.Skin(Session, UI, Owner));
+        avatar.Classes.Add("avatar");
+        var portrait = new Grid { Width = 100, Height = 100 };
+        portrait.Children.Add(new Border
+        {
+            Width = 82,
+            Height = 82,
+            HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center,
+            Background = global::Avalonia.Media.Brushes.Transparent,
+            BoxShadow = global::Avalonia.Media.BoxShadows.Parse("0 3 10 0 #220E2B3F"),
+            IsHitTestVisible = false
+        });
+        avatarImage = Ui.Avatar(UI.Avatar, 94);
+        displayedAvatar = UI.Avatar;
+        if (avatarImage.Source is Bitmap initialAvatar)
+            decodedAvatars[displayedAvatar] = initialAvatar;
+        avatar.Content = avatarImage;
+        portrait.Children.Add(avatar);
+        ToolTip.SetTip(avatar, "查看或更换头像");
+        global::Avalonia.Automation.AutomationProperties.SetName(avatar, "查看或更换头像");
+        avatar.Padding = new Thickness(3);
+        avatar.Width = avatar.Height = 100;
+        portrait.Margin = new Thickness(0, 13, 0, 0);
+        portrait.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        details.Children.Add(portrait);
+        var name = playerName = Ui.Text(State.Player, 18);
+        name.FontWeight = global::Avalonia.Media.FontWeight.Bold;
+        name.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        name.Margin = new Thickness(0, 10, 0, 0);
+        details.Children.Add(name);
+        var identity = accountIdentity = Ui.Muted(Ui.AccountLabel(State.AccountType), 10.5);
+        identity.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        identity.Margin = new Thickness(0, 3, 0, 0);
+        details.Children.Add(identity);
+        var change = changeAccount = Ui.Button(State.AccountType == "offline" ? "切换本地账号" : "切换账号", () => AccountDialogs.Open(Session, UI, Owner, State.AccountType));
+        change.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
+        change.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        change.Classes.Add("soft");
+        change.Height = 36;
+        change.Margin = new Thickness(0, 14, 0, 0);
+        details.Children.Add(change);
+        var settings = Ui.Action("账号设置", () => UI.Navigate?.Invoke("options"));
+        settings.Classes.Add("link");
+        settings.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        settings.Margin = new Thickness(0, 7, 0, 0);
+        details.Children.Add(settings);
+        account.Children.Add(details);
+        var footer = new Border
+        {
+            Name = "HomeAccountFooter",
+            BorderBrush = global::Avalonia.Media.Brush.Parse("#E4ECF3"),
+            BorderThickness = new Thickness(0, 1, 0, 0),
+            Padding = new Thickness(0, 9, 0, 0),
+            Child = Ui.Beside(Ui.Muted("账号保存在本机", 9.5), Ui.Muted("已保存", 9.5))
+        };
+        Grid.SetRow(footer, 2);
+        account.Children.Add(footer);
+    }
+    void UpdateAccount()
+    {
+        foreach (var (mode, tab) in accountTabs)
+            tab.Classes.Set("active", State.AccountType == mode);
+        playerName.Text = State.Player;
+        accountIdentity.Text = Ui.AccountLabel(State.AccountType);
+        changeAccount.Content = State.AccountType == "offline" ? "切换本地账号" : "切换账号";
+        UpdateAvatar();
+    }
+    void UpdateAvatar()
+    {
+        if (avatarImage == null || displayedAvatar == UI.Avatar)
+            return;
+        if (!decodedAvatars.TryGetValue(UI.Avatar, out var bitmap))
+        {
+            bitmap = Ui.Bitmap(UI.Avatar);
+            if (bitmap != null)
+                decodedAvatars[UI.Avatar] = bitmap;
+        }
+        avatarImage.Source = bitmap;
+        displayedAvatar = UI.Avatar;
+        // The page owns these decoded images. Switching back reuses a bitmap, not another PNG decode.
+        if (decodedAvatars.Count > 6)
+        {
+            var oldest = decodedAvatars.Keys.First();
+            decodedAvatars[oldest].Dispose();
+            decodedAvatars.Remove(oldest);
+        }
+    }
+    void DrawLaunch()
+    {
+        launchState = (State.SelectedVersion, State.Ram, State.AutoMemory);
+        launch.Children.Clear();
+        var button = Ui.Button("启动游戏", () => Session.LaunchAsync(version: State.SelectedVersion), true);
+        var title = Ui.Text("启动游戏", 17);
+        title.FontWeight = global::Avalonia.Media.FontWeight.Bold;
+        var detail = Ui.Text((State.SelectedVersion.Length > 0 ? State.SelectedVersion : "未选择实例") + " · " + (State.AutoMemory ? "自动内存" : State.Ram + " MB"), 9.5);
+        detail.TextWrapping = global::Avalonia.Media.TextWrapping.NoWrap;
+        detail.TextTrimming = global::Avalonia.Media.TextTrimming.CharacterEllipsis;
+        detail.MaxWidth = 160;
+        detail.FontWeight = global::Avalonia.Media.FontWeight.Normal;
+        var text = Ui.Stack(title, detail);
+        text.Spacing = 4;
+        var content = new StackPanel
+        {
+            Orientation = global::Avalonia.Layout.Orientation.Horizontal,
+            Spacing = 12,
+            HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center
+        };
+        content.Children.Add(new Border
+        {
+            Width = 30,
+            Height = 30,
+            CornerRadius = new CornerRadius(15),
+            Background = global::Avalonia.Media.Brush.Parse("#30FFFFFF"),
+            Child = new TextBlock
+            {
+                Text = "▶",
+                Foreground = global::Avalonia.Media.Brushes.White,
+                HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = global::Avalonia.Layout.VerticalAlignment.Center
+            }
+        });
+        content.Children.Add(text);
+        button.Content = content;
+        button.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        button.IsEnabled = State.SelectedVersion.Length > 0;
+        button.Classes.Add("launch");
+        button.Height = 78;
+        button.Name = "HomeLaunchButton";
+        button.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,40"), ColumnSpacing = 8 };
+        row.Children.Add(button);
+        var actions = Ui.Stack(Ui.Action(expanded ? "‹" : "›", () => Toggle(!expanded)), Ui.Action("⚙", () => UI.Navigate?.Invoke("manage")));
+        actions.Spacing = 6;
+        foreach (var action in actions.Children.OfType<Button>())
+        {
+            action.Classes.Add("soft");
+            action.Height = 36;
+            action.Width = 38;
+            action.Padding = default;
+            action.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        }
+        Grid.SetColumn(actions, 1);
+        row.Children.Add(actions);
+        launch.Children.Add(row);
+        var games = Ui.Action("运行中的游戏（" + Session.Games.Length + "）", () => UI.Navigate?.Invoke("games"));
+        games.HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Stretch;
+        games.HorizontalContentAlignment = global::Avalonia.Layout.HorizontalAlignment.Center;
+        games.Height = 32;
+        launch.Children.Add(games);
+    }
+    protected override void OnStateChanged()
+    {
+        UpdateAccount();
+        if (launchState != (State.SelectedVersion, State.Ram, State.AutoMemory))
+            DrawLaunch();
+    }
+    void OnGames(GameInfo[] value) => DrawLaunch();
+    public override void Dispose()
+    {
+        foreach (var bitmap in decodedAvatars.Values)
+            bitmap.Dispose();
+        decodedAvatars.Clear();
+        if (avatarImage != null)
+            avatarImage.Source = null;
+        picker.Dispose();
+        servers.Dispose();
+        announcements.Dispose();
+        recommendations.Dispose();
+        quotes.Dispose();
+        base.Dispose();
+    }
+}

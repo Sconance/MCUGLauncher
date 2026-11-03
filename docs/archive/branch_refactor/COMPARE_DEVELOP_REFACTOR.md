@@ -1,9 +1,9 @@
 # develop 与 refactor 功能对照
 
-> 历史归档：本文记录 refactor 时期的一次性过程，`refactor` 分支已废弃。现行文档见 [开发导览](../../DEVELOPMENT.md) 与 [合并到主分支前的说明](../../MERGE_TO_MAIN.md)。
+> 历史归档：本文记录 refactor 时期的一次性过程，`refactor` 分支已废弃。现行文档见 [开发导览](../legacy-wpf/DEVELOPMENT.md) 与 合并到主分支前的说明（历史文件已退役）。
 
 
-> 本文记录 0.20.1 / 0.20.2 功能从 `develop` 迁入 `refactor` 的过程，表中的路径是 `refactor` 当时的 `MainWindow/**` 与 `UI/` 结构。`refactor` 已合入 `test`（`145bf37`），现行路径与迁移去向见 [refactor 分支整合记录](REFACTOR_INTEGRATION.md)，功能定位见 [开发导览](../../DEVELOPMENT.md)。文末验证记录属于 `refactor`，不作为 `test` 的验收依据。
+> 本文记录 0.20.1 / 0.20.2 功能从 `develop` 迁入 `refactor` 的过程，表中的路径是 `refactor` 当时的 `MainWindow/**` 与 `UI/` 结构。`refactor` 已合入 `test`（`145bf37`），现行路径与迁移去向见 [refactor 分支整合记录](REFACTOR_INTEGRATION.md)，功能定位见 [开发导览](../legacy-wpf/DEVELOPMENT.md)。文末验证记录属于 `refactor`，不作为 `test` 的验收依据。
 
 ## 比较范围
 
@@ -33,8 +33,8 @@
 
 ## 相关说明
 
-- [增加菜单栏目](../../MENU_EXTENSIONS.md)
-- [MainWindow 职责拆分](../../MAINWINDOW_REFACTOR.md)
+- [增加菜单栏目](../legacy-wpf/MENU_EXTENSIONS.md)
+- [MainWindow 职责拆分](../legacy-wpf/MAINWINDOW_REFACTOR.md)
 - [更新记录](../../../CHANGELOG.md)
 
 ## 验证记录（refactor 当时）

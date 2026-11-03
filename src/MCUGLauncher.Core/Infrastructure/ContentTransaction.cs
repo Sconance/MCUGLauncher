@@ -1,10 +1,19 @@
 using System.Security.Cryptography;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 提供 TransactionMove 相关功能。
+/// </summary>
 public class TransactionMove
 {
+    /// <summary>
+    /// 获取或设置 Relative。
+    /// </summary>
     public string Relative { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Hash。
+    /// </summary>
     public string Hash { get; set; } = "";
     public bool Backup
     {
@@ -13,13 +22,25 @@ public class TransactionMove
     }
 }
 
+/// <summary>
+/// 提供 TransactionJournal 相关功能。
+/// </summary>
 public class TransactionJournal
 {
+    /// <summary>
+    /// 获取或设置 状态。
+    /// </summary>
     public string State { get; set; } = "Preparing";
+    /// <summary>
+    /// 获取或设置 Moves。
+    /// </summary>
     public List<TransactionMove> Moves { get; set; } = [];
 }
 
 // The per-instance operation.lock must be held by the caller.
+/// <summary>
+/// 提供 内容Transaction 相关功能。
+/// </summary>
 public sealed class ContentTransaction
 {
     readonly string instance, directory, journalPath;
@@ -33,7 +54,7 @@ public sealed class ContentTransaction
     public ContentTransaction(string instance)
     {
         this.instance = Path.GetFullPath(instance);
-        directory = Path.Combine(instance, ".blocklaunch", "backups", "transaction-" + Guid.NewGuid().ToString("N"));
+        directory = Path.Combine(instance, ".mcuglauncher", "backups", "transaction-" + Guid.NewGuid().ToString("N"));
         Stage = Path.Combine(directory, "stage");
         Directory.CreateDirectory(Stage);
         journalPath = Path.Combine(directory, "transaction.json");
@@ -52,19 +73,25 @@ public sealed class ContentTransaction
 
     string Destination(string relative)
     {
-        if (relative != ".blocklaunch-content.json" && !(relative.StartsWith("mods/", StringComparison.Ordinal) || relative.StartsWith("resourcepacks/", StringComparison.Ordinal) || relative.StartsWith("shaderpacks/", StringComparison.Ordinal) || relative.StartsWith("datapacks/", StringComparison.Ordinal)))
+        if (relative != ".mcuglauncher-content.json" && !(relative.StartsWith("mods/", StringComparison.Ordinal) || relative.StartsWith("resourcepacks/", StringComparison.Ordinal) || relative.StartsWith("shaderpacks/", StringComparison.Ordinal) || relative.StartsWith("datapacks/", StringComparison.Ordinal)))
             throw new IOException("事务目标不在内容目录中。");
         return PackService.SafePath(instance, relative);
     }
 
     void Save() => AtomicFile.WriteJson(journalPath, journal);
 
+    /// <summary>
+    /// 判断是否包含。
+    /// </summary>
     public static string Hash(string file)
     {
         using var input = File.OpenRead(file);
         return Convert.ToHexString(SHA512.HashData(input));
     }
 
+    /// <summary>
+    /// 备份。
+    /// </summary>
     public void Backup(string relative)
     {
         var file = Destination(relative);
@@ -82,6 +109,9 @@ public sealed class ContentTransaction
         File.Move(file, backup);
     }
 
+    /// <summary>
+    /// 写入。
+    /// </summary>
     public void Write(string source, string relative)
     {
         var target = Destination(relative);
@@ -97,6 +127,9 @@ public sealed class ContentTransaction
         File.Move(source, target);
     }
 
+    /// <summary>
+    /// 执行 Commit。
+    /// </summary>
     public void Commit()
     {
         journal.State = "Committed";
@@ -116,6 +149,9 @@ public sealed class ContentTransaction
             Directory.Delete(Stage, true);
     }
 
+    /// <summary>
+    /// 执行 Rollback。
+    /// </summary>
     public void Rollback()
     {
         foreach (var move in journal.Moves.AsEnumerable().Reverse())
@@ -148,9 +184,12 @@ public sealed class ContentTransaction
         CleanupStage();
     }
 
+    /// <summary>
+    /// 执行 LatestCommitted。
+    /// </summary>
     public static string? LatestCommitted(string instance)
     {
-        var directory = Path.Combine(instance, ".blocklaunch", "backups");
+        var directory = Path.Combine(instance, ".mcuglauncher", "backups");
         if (!Directory.Exists(directory))
             return null;
         return Directory.GetDirectories(directory, "transaction-*").Where(d => File.Exists(Path.Combine(d, "transaction.json"))).OrderByDescending(d => File.GetLastWriteTimeUtc(Path.Combine(d, "transaction.json"))).FirstOrDefault(d =>
@@ -160,6 +199,9 @@ public sealed class ContentTransaction
         });
     }
 
+    /// <summary>
+    /// 恢复Latest。
+    /// </summary>
     public static void RestoreLatest(string instance, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
@@ -193,13 +235,16 @@ public sealed class ContentTransaction
         transaction.Rollback();
     }
 
+    /// <summary>
+    /// 执行 Recover。
+    /// </summary>
     public static List<string> Recover(string instance)
     {
         var messages = new List<string>();
-        var directory = Path.Combine(instance, ".blocklaunch", "backups");
+        var directory = Path.Combine(instance, ".mcuglauncher", "backups");
         if (!Directory.Exists(directory))
             return messages;
-        var lockPath = Path.Combine(instance, ".blocklaunch", "operation.lock");
+        var lockPath = Path.Combine(instance, ".mcuglauncher", "operation.lock");
         using var lease = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         foreach (var transaction in Directory.GetDirectories(directory, "transaction-*"))
         {

@@ -1,13 +1,31 @@
 using System.IO.Compression;
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 表示 ExportOptions 数据。
+/// </summary>
 public record ExportOptions(bool Mods, bool Servers, bool Shaders, bool Resources, bool Saves);
 
+/// <summary>
+/// 实例导出与删除。
+/// </summary>
+/// <remarks>
+/// 依赖 PackRequirements 与 ExportOptions；导出会打包实例的 mods/服务器/光影/资源/存档，删除会清理实例目录并返回被删除的路径。
+/// </remarks>
 public static class InstanceManagement
 {
-    public static async Task Export(string directory, string target, string name, PackRequirements requirements, ExportOptions options, CancellationToken token)
+    /// <summary>
+    /// 导出。
+    /// </summary>
+    /// <param name="directory">实例目录</param>
+    /// <param name="target">导出目标目录</param>
+    /// <param name="name">导出实例名</param>
+    /// <param name="requirements">版本与加载器要求</param>
+    /// <param name="options">要包含的内容</param>
+    /// <param name="token">取消令牌</param>
+    public static async Task Export(string directory, string target, string name, PackRequirements requirements, ExportOptions options, CancellationToken token, bool overwrite = true)
     {
         var source = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         target = Path.GetFullPath(target);
@@ -52,7 +70,7 @@ public static class InstanceManagement
                     formatVersion = 1,
                     components
                 });
-                await Json("blocklaunch-export.json", new
+                await Json("mcuglauncher-export.json", new
                 {
                     formatVersion = 1,
                     name,
@@ -86,7 +104,7 @@ public static class InstanceManagement
 
             token.ThrowIfCancellationRequested();
             using var guard = OperationExecution.BeginCommit();
-            File.Move(temp, target, true);
+            File.Move(temp, target, overwrite);
         }
         finally
         {
@@ -95,6 +113,12 @@ public static class InstanceManagement
         }
     }
 
+    /// <summary>
+    /// 移除。
+    /// </summary>
+    /// <param name="root">游戏根目录</param>
+    /// <param name="key">实例名</param>
+    /// <returns>被删除的实例目录</returns>
     public static string Remove(string root, string key)
     {
         ContentService.SafeFile(key);
@@ -108,7 +132,7 @@ public static class InstanceManagement
                 throw new IOException("其他实例依赖此游戏版本，请先移除依赖实例。不会删除共享游戏库。");
         }
 
-        var trash = Path.Combine(root, ".blocklaunch-trash", key + "-" + Guid.NewGuid().ToString("N"));
+        var trash = Path.Combine(root, ".mcuglauncher-trash", key + "-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(trash);
         var metadata = catalog.MetadataDirectory(key);
         var profileDir = Path.Combine(versions, key);

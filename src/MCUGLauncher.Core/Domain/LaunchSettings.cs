@@ -1,32 +1,80 @@
 using System.Runtime.InteropServices;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 全局与实例共用的游戏启动参数。
+/// </summary>
 public sealed class LaunchSettings
 {
+    /// <summary>
+    /// 获取或设置 AutoMemory。
+    /// </summary>
     public bool AutoMemory { get; set; } = true;
+    /// <summary>
+    /// 获取或设置 RamMb。
+    /// </summary>
     public int RamMb { get; set; } = 4096;
+    /// <summary>
+    /// 获取或设置 Java。
+    /// </summary>
     public string Java { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Width。
+    /// </summary>
     public int Width { get; set; } = 1280;
+    /// <summary>
+    /// 获取或设置 Height。
+    /// </summary>
     public int Height { get; set; } = 720;
+    /// <summary>启动前将未运行实例的游戏语言设置为简体中文，可按实例覆盖。</summary>
+    public bool AutoChinese { get; set; } = true;
     public bool FullScreen
     {
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 Isolation。
+    /// </summary>
     public string Isolation { get; set; } = "独立实例";
+    /// <summary>
+    /// 获取或设置 窗口Title。
+    /// </summary>
     public string WindowTitle { get; set; } = "";
-    public string VersionInfo { get; set; } = "BlockLaunch";
+    /// <summary>
+    /// 获取或设置 版本信息。
+    /// </summary>
+    public string VersionInfo { get; set; } = "MCUGLauncher";
+    /// <summary>
+    /// 获取或设置 Visibility。
+    /// </summary>
     public string Visibility { get; set; } = "保持显示";
+    /// <summary>
+    /// 获取或设置 Priority。
+    /// </summary>
     public string Priority { get; set; } = "Normal";
     public bool TrimLauncher
     {
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 JvmArguments。
+    /// </summary>
     public string JvmArguments { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 服务器。
+    /// </summary>
     public string Server { get; set; } = "";
 
+    /// <summary>返回独立的启动选项副本，供预览与启动快照使用。</summary>
+    /// <remarks>当前成员均为值类型或不可变字符串；新增可变集合时须同步深复制及隔离测试。</remarks>
+    public LaunchSettings Copy() => (LaunchSettings)MemberwiseClone();
+
+    /// <summary>
+    /// 执行 SplitArguments。
+    /// </summary>
     public static IReadOnlyList<string> SplitArguments(string text)
     {
         var result = new List<string>();
@@ -61,6 +109,9 @@ public sealed class LaunchSettings
         return result;
     }
 
+    /// <summary>
+    /// 执行 Validate。
+    /// </summary>
     public void Validate()
     {
         if (RamMb < 512 || RamMb > 131072 || Width < 320 || Width > 16384 || Height < 240 || Height > 16384)
@@ -77,6 +128,9 @@ public sealed class LaunchSettings
     }
 }
 
+/// <summary>
+/// 提供 MemoryPolicy 相关功能。
+/// </summary>
 public static class MemoryPolicy
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -98,6 +152,9 @@ public static class MemoryPolicy
         return GlobalMemoryStatusEx(ref state) ? (state.Total, state.Available) : (8UL << 30, 4UL << 30);
     }
 
+    /// <summary>
+    /// 执行 Recommend。
+    /// </summary>
     public static int Recommend()
     {
         var m = Read();

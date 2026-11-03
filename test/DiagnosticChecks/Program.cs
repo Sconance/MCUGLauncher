@@ -1,4 +1,4 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.IO.Compression;
 using System.Text;
 using System.Diagnostics;
@@ -12,7 +12,7 @@ if (args.Contains("--crash-fixture"))
     return;
 }
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-diagnostics-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-diagnostics-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(Path.Combine(root, "logs"));
 Directory.CreateDirectory(Path.Combine(root, "crash-reports"));
 Directory.CreateDirectory(Path.Combine(root, "mods"));

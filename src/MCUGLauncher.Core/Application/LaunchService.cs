@@ -3,14 +3,33 @@ using CmlLib.Core;
 using CmlLib.Core.Auth;
 using CmlLib.Core.ProcessBuilder;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 表示 启动Request 数据。
+/// </summary>
 public record LaunchRequest(string Root, string InstanceDirectory, string Profile, string Java, int Ram, int Width, int Height, MSession Session, LaunchSettings? Settings = null, AuthlibLaunch? ExternalAuthentication = null);
 
+/// <summary>
+/// 表示 GameExit 数据。
+/// </summary>
 public record GameExit(int Code, bool Requested);
 
+/// <summary>
+/// 构建游戏启动参数与进程。
+/// </summary>
+/// <remarks>
+/// 依赖 CmlLib.Core、JavaDiscovery、AuthlibLaunch、LaunchSettings 与 LaunchRequest 中的账号/内存/窗口信息；只负责构建 Process，实际启动由 GameSession.Start 完成。
+/// </remarks>
 public static class LaunchService
 {
+    /// <summary>
+    /// 构建。
+    /// </summary>
+    /// <param name="request">启动请求：根目录、实例目录、Java、内存、窗口、会话等</param>
+    /// <param name="token">取消令牌</param>
+    /// <param name="http">可选 HttpClient，用于加载器/资源请求</param>
+    /// <returns>已配置好 StartInfo 的 Process 实例</returns>
     public static async Task<Process> Build(LaunchRequest request, CancellationToken token, HttpClient? http = null)
     {
         var shared = new MinecraftPath(request.Root);
@@ -86,6 +105,9 @@ public static class LaunchService
     }
 }
 
+/// <summary>
+/// 提供 Game会话 相关功能。
+/// </summary>
 public sealed class GameSession(Process process, string outputFile, Action<string> output, IEnumerable<string> secrets)
 {
     [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "PostMessageW", SetLastError = true)]
@@ -101,8 +123,14 @@ public sealed class GameSession(Process process, string outputFile, Action<strin
         get;
         private set;
     }
+    /// <summary>
+    /// 获取或设置 Completion。
+    /// </summary>
     public Task<GameExit> Completion { get; private set; } = Task.FromResult(new GameExit(0, false));
 
+    /// <summary>
+    /// 启动。
+    /// </summary>
     public void Start()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(outputFile)!);
@@ -173,6 +201,9 @@ public sealed class GameSession(Process process, string outputFile, Action<strin
         return new(process.ExitCode, StopRequested);
     }
 
+    /// <summary>
+    /// 执行 RequestStop。
+    /// </summary>
     public bool RequestStop()
     {
         process.Refresh();

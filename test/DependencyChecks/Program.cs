@@ -1,10 +1,10 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-dependencies-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-dependencies-" + Guid.NewGuid().ToString("N"));
 var handler = new FixtureHandler();
 using var http = new HttpClient(handler);
 var service = new ContentService(http);
@@ -166,7 +166,13 @@ Check(handler.Requests == requests, "cancelled dependency resolution makes no re
 Console.WriteLine("ALL_DEPENDENCY_CHECKS_PASSED");
 sealed class FixtureHandler : HttpMessageHandler
 {
+    /// <summary>
+    /// 获取或设置 Bytes。
+    /// </summary>
     public Dictionary<string, byte[]> Bytes { get; } = new();
+    /// <summary>
+    /// 获取或设置 Json。
+    /// </summary>
     public Dictionary<string, string> Json { get; } = new();
     public int Requests
     {
@@ -174,6 +180,9 @@ sealed class FixtureHandler : HttpMessageHandler
         private set;
     }
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
         Requests++;

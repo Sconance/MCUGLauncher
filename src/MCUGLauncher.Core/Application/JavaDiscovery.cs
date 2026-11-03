@@ -2,12 +2,24 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// Java 查找与探测。
+/// </summary>
+/// <remarks>
+/// 依赖本机已安装的 Java、实例版本 JSON 与 javaw.exe 探测；结果按主版本缓存，避免重复启动进程。
+/// </remarks>
 public static partial class JavaDiscovery
 {
     static readonly Dictionary<int, string?> Cache = new();
 
+    /// <summary>
+    /// 执行 RequiredMajor。
+    /// </summary>
+    /// <param name="root">游戏根目录</param>
+    /// <param name="profile">实例名</param>
+    /// <returns>该实例要求的主版本号</returns>
     public static int RequiredMajor(string root, string profile)
     {
         var seen = new HashSet<string>();
@@ -37,6 +49,13 @@ public static partial class JavaDiscovery
         return 0;
     }
 
+    /// <summary>
+    /// 查找Compatible。
+    /// </summary>
+    /// <param name="root">游戏根目录</param>
+    /// <param name="profile">实例名</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>兼容的 Java 路径；未找到时为 null</returns>
     public static async Task<string?> FindCompatible(string root, string profile, CancellationToken token)
     {
         var required = RequiredMajor(root, profile);
@@ -45,6 +64,12 @@ public static partial class JavaDiscovery
         return (await Scan(root, Array.Empty<string>(), token)).FirstOrDefault(j => j.Major == required && j.Error.Length == 0)?.Path;
     }
 
+    /// <summary>
+    /// 查找Major。
+    /// </summary>
+    /// <param name="required">要求的主版本号</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>匹配的 Java 路径；未找到时为 null</returns>
     public static async Task<string?> FindMajor(int required, CancellationToken token)
     {
         if (required == 0)
@@ -63,6 +88,12 @@ public static partial class JavaDiscovery
         return null;
     }
 
+    /// <summary>
+    /// 执行 ProbeMajor。
+    /// </summary>
+    /// <param name="java">Java 可执行文件路径</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>探测到的主版本号；失败时为 0</returns>
     public static async Task<int> ProbeMajor(string java, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();

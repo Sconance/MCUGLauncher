@@ -1,10 +1,10 @@
-using BlockLaunch;
+using MCUGLauncher;
 using CmlLib.Core.Auth;
 using System.Diagnostics;
 
 if (args.Contains("-version"))
 {
-    if (Environment.GetEnvironmentVariable("BLOCKLAUNCH_PROBE_FIXTURE") == "hang")
+    if (Environment.GetEnvironmentVariable("MCUGLAUNCHER_PROBE_FIXTURE") == "hang")
         await Task.Delay(30000);
     Console.Error.WriteLine("java version \"17.0.1\"");
     return;
@@ -17,7 +17,9 @@ if (args.Contains("--emit"))
     return;
 }
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch 兼容与恢复 " + Guid.NewGuid().ToString("N"));
+await LoaderCatalogScenarios.Run();
+
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher 兼容与恢复 " + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 void Check(bool value, string name)
 {
@@ -133,7 +135,7 @@ catch (IOException ex)
     Check(ex.Message.Contains("Java 21") && ex.Message.Contains("Java 17"), "wrong manual Java blocked before game launch with useful message");
 }
 
-Environment.SetEnvironmentVariable("BLOCKLAUNCH_PROBE_FIXTURE", "hang");
+Environment.SetEnvironmentVariable("MCUGLAUNCHER_PROBE_FIXTURE", "hang");
 try
 {
     using var cancellation = new CancellationTokenSource(200);
@@ -149,7 +151,7 @@ try
 }
 finally
 {
-    Environment.SetEnvironmentVariable("BLOCKLAUNCH_PROBE_FIXTURE", null);
+    Environment.SetEnvironmentVariable("MCUGLAUNCHER_PROBE_FIXTURE", null);
 }
 
 try

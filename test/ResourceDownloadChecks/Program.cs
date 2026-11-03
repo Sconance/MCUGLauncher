@@ -1,10 +1,10 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-resource-check-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-resource-check-" + Guid.NewGuid().ToString("N"));
 var downloads = Path.Combine(root, "downloads");
 var game = Path.Combine(root, "minecraft");
 Directory.CreateDirectory(game);
@@ -123,6 +123,9 @@ sealed class Handler(byte[] bytes) : HttpMessageHandler
 {
     public int Calls;
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
         Calls++;

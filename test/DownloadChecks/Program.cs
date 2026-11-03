@@ -1,10 +1,10 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Xml.Linq;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-download-checks-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-download-checks-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 var bytes = Enumerable.Range(0, 4096).Select(i => (byte)(i % 251)).ToArray();
 var hash = Convert.ToHexString(SHA512.HashData(bytes));
@@ -249,6 +249,9 @@ Console.WriteLine("LOADER_VERSION_MAPPING_OK");
 Console.WriteLine("ALL_DOWNLOAD_CHECKS_PASSED");
 sealed class Handler(Func<HttpRequestMessage, HttpResponseMessage> handle) : HttpMessageHandler
 {
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token) => Task.FromResult(handle(request));
 }
 
@@ -256,6 +259,9 @@ sealed class BrokenStream(byte[] bytes, CancellationTokenSource? cancellation = 
 {
     int reads;
 
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
     {
         if (++reads == 1)
@@ -276,5 +282,8 @@ sealed class BrokenStream(byte[] bytes, CancellationTokenSource? cancellation = 
 
 sealed class DiskFullStream : MemoryStream
 {
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default) => ValueTask.FromException<int>(new IOException("simulated disk full", unchecked((int)0x80070070)));
 }

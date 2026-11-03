@@ -1,9 +1,22 @@
 using System.Security.Cryptography;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 资源文件下载。
+/// </summary>
+/// <remarks>
+/// 依赖 ContentVersion、HttpClient 与 ReliableDownloader；按资源类型选择目录并复用校验下载，支持进度回调。
+/// </remarks>
 public static class ResourceDownloads
 {
+    /// <summary>
+    /// 执行 路径For。
+    /// </summary>
+    /// <param name="directory">实例或资源根目录</param>
+    /// <param name="kind">资源类型，如 mod/resourcepack</param>
+    /// <param name="version">资源版本信息</param>
+    /// <returns>资源应保存的完整路径</returns>
     public static string PathFor(string directory, string kind, ContentVersion version)
     {
         var folder = kind switch
@@ -31,6 +44,16 @@ public static class ResourceDownloads
         return Path.Combine(Path.GetFullPath(directory), folder, version.ProjectId, version.Id, file.Filename);
     }
 
+    /// <summary>
+    /// 执行 下载。
+    /// </summary>
+    /// <param name="http">HTTP 客户端</param>
+    /// <param name="directory">保存根目录</param>
+    /// <param name="kind">资源类型</param>
+    /// <param name="version">资源版本信息</param>
+    /// <param name="progress">进度回调</param>
+    /// <param name="token">取消令牌</param>
+    /// <returns>下载文件的完整路径</returns>
     public static async Task<string> Download(HttpClient http, string directory, string kind, ContentVersion version, Action<string>? progress = null, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();

@@ -5,12 +5,21 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 表示 服务器Favorite 数据。
+/// </summary>
 public record ServerFavorite(string Id, string Name, string Address, string Profile);
 
+/// <summary>
+/// 表示 服务器Endpoint 数据。
+/// </summary>
 public record ServerEndpoint(string Host, int Port)
 {
+    /// <summary>
+    /// 解析。
+    /// </summary>
     public static ServerEndpoint Parse(string address)
     {
         address = address.Trim();
@@ -51,18 +60,34 @@ public record ServerEndpoint(string Host, int Port)
         return new(host, port);
     }
 
+    /// <summary>
+    /// 执行 ToString。
+    /// </summary>
     public override string ToString() => (Host.Contains(':') ? "[" + Host + "]" : Host) + ":" + Port;
 }
 
+/// <summary>
+/// 表示 服务器状态 数据。
+/// </summary>
 public record ServerStatus(string Description, string Version, int Online, int Maximum, long LatencyMs);
 
+/// <summary>
+/// 提供 服务器Favorites 相关功能。
+/// </summary>
 public static class ServerFavorites
 {
-    public static async Task<ServerStatus> Ping(string address, CancellationToken token = default)
+    /// <summary>
+    /// 查询。
+    /// </summary>
+    public static Task<ServerStatus> Ping(string address, CancellationToken token = default) =>
+        Ping(address, token, TimeSpan.FromSeconds(5));
+
+    /// <summary>使用调用方指定的总超时查询服务器，保留原两参数接口。</summary>
+    public static async Task<ServerStatus> Ping(string address, CancellationToken token, TimeSpan timeoutDuration)
     {
         var endpoint = ServerEndpoint.Parse(address);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+        timeout.CancelAfter(timeoutDuration);
         var ct = timeout.Token;
         using var client = new TcpClient();
         await client.ConnectAsync(endpoint.Host, endpoint.Port, ct);

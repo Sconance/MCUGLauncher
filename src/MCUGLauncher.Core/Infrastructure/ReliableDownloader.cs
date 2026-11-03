@@ -2,13 +2,32 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
-/// <summary>Hash-bound durable partial files. A failed download never replaces a valid target.</summary>
+/// <summary>
+/// 可校验、可断点续传的下载器。
+/// </summary>
+/// <remarks>
+/// 依赖 HttpClient、SHA1/SHA256 校验值、.part 临时文件与大小校验；下载完成后原子替换目标文件。
+/// </remarks>
 public static class ReliableDownloader
 {
-    public static string PartialPath(string target, string hash) => Path.Combine(Path.GetDirectoryName(Path.GetFullPath(target))!, ".blocklaunch-" + Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(target) + "\n" + hash.ToLowerInvariant()))).ToLowerInvariant() + ".part");
+    /// <summary>
+    /// 执行 Partial路径。
+    /// </summary>
+    public static string PartialPath(string target, string hash) => Path.Combine(Path.GetDirectoryName(Path.GetFullPath(target))!, ".mcuglauncher-" + Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(target) + "\n" + hash.ToLowerInvariant()))).ToLowerInvariant() + ".part");
 
+    /// <summary>
+    /// 执行 下载。
+    /// </summary>
+    /// <param name="http">HTTP 客户端</param>
+    /// <param name="uri">下载地址</param>
+    /// <param name="target">目标文件</param>
+    /// <param name="hash">期望的校验值</param>
+    /// <param name="sha1">true 表示 SHA1，否则 SHA256</param>
+    /// <param name="size">可选的文件大小</param>
+    /// <param name="progress">进度回调</param>
+    /// <param name="token">取消令牌</param>
     public static async Task Download(HttpClient http, Uri uri, string target, string hash, bool sha1 = false, long? size = null, Action<string>? progress = null, CancellationToken token = default)
     {
         try

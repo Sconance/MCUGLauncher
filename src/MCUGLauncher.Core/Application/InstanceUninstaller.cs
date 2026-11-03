@@ -1,15 +1,24 @@
 using System.Text.Json;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 表示 UninstallPlan 数据。
+/// </summary>
 public sealed record UninstallPlan(string Root, string Key, string InstanceId, string Name, bool SharedData, bool DeleteSharedData, List<string> Paths);
 
+/// <summary>
+/// 提供 实例Uninstaller 相关功能。
+/// </summary>
 public static class InstanceUninstaller
 {
     static readonly string[] SharedItems = ["saves", "mods", "config", "defaultconfigs", "resourcepacks", "shaderpacks", "screenshots", "logs", "crash-reports", "options.txt", "optionsof.txt", "servers.dat", "servers.dat_old"];
 
     static string Full(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
     static bool Same(string a, string b) => Full(a).Equals(Full(b), StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// 执行 Inside。
+    /// </summary>
     public static bool Inside(string path, string parent) => Same(path, parent) || Full(path).StartsWith(Path.EndsInDirectorySeparator(Full(parent)) ? Full(parent) : Full(parent) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
 
     static void NoLinks(string path, bool recursive = true)
@@ -31,6 +40,9 @@ public static class InstanceUninstaller
             }
     }
 
+    /// <summary>
+    /// 执行 Plan。
+    /// </summary>
     public static UninstallPlan Plan(string root, string key, LaunchSettings defaults, bool deleteSharedData = false)
     {
         root = Full(root);
@@ -82,7 +94,7 @@ public static class InstanceUninstaller
                 var other = Path.GetFileName(directory);
                 if (other.Equals(key, StringComparison.OrdinalIgnoreCase))
                     continue;
-                var file = Path.Combine(directory, ".blocklaunch-instance.json");
+                var file = Path.Combine(directory, ".mcuglauncher-instance.json");
                 if (!File.Exists(file))
                     continue;
                 var otherDescriptor = AtomicFile.ReadJson<InstanceDescriptor>(file);
@@ -91,7 +103,7 @@ public static class InstanceUninstaller
                     throw new IOException("其他实例正在共用此版本的数据目录：" + other);
             }
 
-        var marker = Path.Combine(root, ".blocklaunch-installations", key + ".json");
+        var marker = Path.Combine(root, ".mcuglauncher-installations", key + ".json");
         paths.Add(marker);
         paths = paths.Select(Full).Distinct(StringComparer.OrdinalIgnoreCase).Where(p => File.Exists(p) || Directory.Exists(p)).ToList();
         foreach (var path in paths)
@@ -104,13 +116,16 @@ public static class InstanceUninstaller
         return new(root, key, descriptor.InstanceId, descriptor.DisplayName, shared, shared && deleteSharedData, paths);
     }
 
+    /// <summary>
+    /// 删除。
+    /// </summary>
     public static void Delete(UninstallPlan confirmed, LaunchSettings defaults)
     {
         var current = Plan(confirmed.Root, confirmed.Key, defaults, confirmed.DeleteSharedData);
         if (current.InstanceId != confirmed.InstanceId || current.SharedData != confirmed.SharedData || !current.Paths.SequenceEqual(confirmed.Paths, StringComparer.OrdinalIgnoreCase))
             throw new IOException("实例身份或删除范围已变化，请重新确认卸载。");
         // Keep all targets in a journal so a locked file cannot leave untraceable remnants.
-        var journal = Path.Combine(confirmed.Root, ".blocklaunch-uninstalls", Guid.NewGuid().ToString("N") + ".json");
+        var journal = Path.Combine(confirmed.Root, ".mcuglauncher-uninstalls", Guid.NewGuid().ToString("N") + ".json");
         AtomicFile.WriteJson(journal, confirmed);
         using var commit = OperationExecution.BeginCommit();
         try

@@ -1,14 +1,26 @@
 using System.IO.Compression;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 表示 WorldEntry 数据。
+/// </summary>
 public record WorldEntry(string Name, string Directory, DateTime Modified)
 {
+    /// <summary>
+    /// 执行 ToString。
+    /// </summary>
     public override string ToString() => $"{Name}   ·   {Modified:yyyy-MM-dd HH:mm}";
 }
 
+/// <summary>
+/// 表示 ScreenshotEntry 数据。
+/// </summary>
 public record ScreenshotEntry(string Name, string File, DateTime Modified, long Bytes)
 {
+    /// <summary>
+    /// 执行 ToString。
+    /// </summary>
     public override string ToString() => $"{Name}   ·   {Bytes / 1024:N0} KB";
 }
 
@@ -35,6 +47,9 @@ public static class WorldArchives
         return world;
     }
 
+    /// <summary>
+    /// 执行 列表。
+    /// </summary>
     public static List<WorldEntry> List(string instance)
     {
         var saves = Path.Combine(instance, "saves");
@@ -54,6 +69,9 @@ public static class WorldArchives
         return result.OrderByDescending(w => w.Modified).ToList();
     }
 
+    /// <summary>
+    /// 执行 Screenshots。
+    /// </summary>
     public static List<ScreenshotEntry> Screenshots(string instance)
     {
         var directory = Path.Combine(instance, "screenshots");
@@ -94,6 +112,9 @@ public static class WorldArchives
         }
     }
 
+    /// <summary>
+    /// 备份。
+    /// </summary>
     public static async Task Backup(string world, string target, Action<string>? progress = null, CancellationToken token = default)
     {
         world = World(world);
@@ -102,7 +123,7 @@ public static class WorldArchives
             throw new IOException("备份 ZIP 请保存到存档目录之外。");
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         using var worldLock = HoldWorld(world);
-        var temp = Path.Combine(Path.GetDirectoryName(target)!, ".blocklaunch-world-" + Guid.NewGuid().ToString("N") + ".tmp");
+        var temp = Path.Combine(Path.GetDirectoryName(target)!, ".mcuglauncher-world-" + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
             using (var zip = new ZipArchive(new FileStream(temp, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None), ZipArchiveMode.Create))
@@ -138,6 +159,9 @@ public static class WorldArchives
         }
     }
 
+    /// <summary>
+    /// 导入。
+    /// </summary>
     public static async Task<string> Import(string instance, string archive, string? name = null, Action<string>? progress = null, CancellationToken token = default)
     {
         instance = Path.GetFullPath(instance);
@@ -145,7 +169,7 @@ public static class WorldArchives
         Directory.CreateDirectory(saves);
         NoLink(saves);
         // Stage next to the destination, allowing the final directory move to be atomic on this volume.
-        var staging = Path.Combine(instance, ".blocklaunch-world-staging");
+        var staging = Path.Combine(instance, ".mcuglauncher-world-staging");
         Directory.CreateDirectory(staging);
         NoLink(staging);
         var stage = Path.Combine(staging, Guid.NewGuid().ToString("N"));

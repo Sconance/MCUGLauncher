@@ -1,21 +1,23 @@
 # 参与改进
 
-欢迎提交问题与改进建议。Issue 请包含软件和系统版本、复现步骤、预期与实际结果，截图和日志先脱敏。
+Issue 请说明版本、系统、复现步骤、预期与实际结果，日志和截图先脱敏。不要提交账号、令牌、游戏文件、存档或私人路径。
 
-代码修改保持范围清晰，说明目的与验证。不要提交 bin、obj、账号文件、Token、私人路径、游戏文件或存档。涉及启动、认证、下载或实例删除时补充针对性检查。
+## 当前分支与结构
 
-源码放在 `src/`，检查项目放在 `test/`，界面预览放在 `tools/`。
-构建和检查命令见 [构建与目录说明](docs/BUILD.md)。迁移或新增项目后运行
-`python scripts/check-layout.py`，核对引用和资源路径。
+当前开发分支为 `0.24.0-codex`，属于 AI 迁移框架尝试。主界面为 Avalonia 原生控件；WebView2 仅用于微软官方授权页面。
 
-项目整体许可证尚未指定，复用或再分发前请与维护者确认。第三方组件遵循各自许可证。
+- `src/MCUGLauncher.Avalonia/Views`：页面和弹窗展示、事件。
+- `Presentation` 与 `ILauncherService / UiContext`：界面状态与消息适配。
+- `src/MCUGLauncher.App/UseCases`：校验、预览、确认和入队。
+- App 的 Services/Authentication：运行环境适配。
+- `src/MCUGLauncher.Core`：可复用的启动、安装、解析、事务和存储能力。
 
-开发入口、功能定位与编码约定见 [开发导览](docs/DEVELOPMENT.md)。提交前执行源码格式检查，并按改动范围运行行为检查。
+开发严格遵循 [AGENTS.md](AGENTS.md) 与 [后端规范](BACKEND_DEVELOPMENT.md)。不把业务放回窗口，不用 partial 隐藏业务，不为缩短文件而增加空转发层。B 类组件必须更新成员级依赖说明。历史网页前端说明仅保留在 [归档](docs/archive/webview/README.md)，不能按其旧目录新增页面。
 
-## 分支与版本
+## 验证与交付
 
-- `test` 是当前重构主干；`refactor` 已全量并入（结构以 `test` 为准），不再单独递增版本号。
-- 合并或迁移其他分支时按功能与责任组件迁移，不使用旧版整文件替换实现，不重新引入 `partial MainWindow`；检查要点见 [重构路线图](TODO.md)。
-- 版本号只改 `Directory.Build.props` 的 `McugVersion`，源码和界面读取 `ProductInfo.Version`；发版前运行 `python scripts/check-version.py`（需要标签时加 `--tag`），规则见 [版本号控制](docs/VERSIONING.md)。
-- 新增页面与栏目沿用 [菜单扩展说明](docs/MENU_EXTENSIONS.md) 与 `LauncherPage` 动作边界；源码格式、布局检查、UI 边界检查与相关 `test/*Checks` 必须通过。
-- `src/MCUGLauncher/` 的每个顶层类型在 [类文档目录](docs/classes/README.md) 有一页说明；新增、重命名或拆分类型时同步补页与索引，`python scripts/check-class-docs.py` 会校验覆盖。
+构建见 [BUILD](docs/BUILD.md)。提交前运行 SourceFormatter、布局、版本与原生边界检查，按影响范围运行 test/*Checks。页面修改运行 NativeUiChecks 并查看截图；模拟响应不替代真实账号、系统拖放及游戏验收。
+
+只推送约定分支；发布 Release 和移动标签按用户指令。版本唯一来源为 Directory.Build.props，运行期读取 ProductInfo.Version。
+
+项目整体许可证尚未指定，复用或再分发前请与维护者确认。第三方声明仍需保留在相应包或分发资源中。

@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-31T12:00:00+08:00",
+  "items": [
+    {
+      "id": "ann-20261030",
+      "title": "0.22.3 社区功能测试开启",
+      "body": "群友推荐、服务器状态与数据源切换开始试运行，欢迎在群里反馈。",
+      "tag": "更新",
+      "author": "TianXuan",
+      "publishedAt": "2026-10-30T23:10:00+08:00",
+      "expiresAt": "2026-11-30T23:59:59+08:00",
+      "imageUrl": "https://raw.githubusercontent.com/your-name/mcug-community/main/images/announcement-cover.jpg"
+    },
+    {
+      "id": "ann-20261029",
+      "title": "周五晚 8 点 · 群友合建",
+      "body": "红石小镇集合，主题是「山谷里的小镇」。",
+      "tag": "活动",
+      "author": "TianXuan",
+      "publishedAt": "2026-10-29T18:42:00+08:00"
+    }
+  ]
+}

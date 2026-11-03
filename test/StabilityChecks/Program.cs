@@ -1,4 +1,4 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
@@ -177,7 +177,7 @@ catch (OperationCanceledException)
 {
 }
 
-Assert(!File.Exists(Path.Combine(instance, "mods", "slow.jar")) && !File.Exists(Path.Combine(instance, ".blocklaunch-content.json")), "CANCELLED_DOWNLOAD_NO_LIVE_FILES");
+Assert(!File.Exists(Path.Combine(instance, "mods", "slow.jar")) && !File.Exists(Path.Combine(instance, ".mcuglauncher-content.json")), "CANCELLED_DOWNLOAD_NO_LIVE_FILES");
 await using (var stream = new FileStream(Path.Combine(root, "live.log"), FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete))
 {
     var data = Encoding.UTF8.GetBytes("{\"access_token\":\"very-private-token\"}\nline two\n");
@@ -316,11 +316,11 @@ var localJar = Path.Combine(root, "local.jar");
 File.WriteAllText(localJar, "local-content");
 Assert(await installer.ImportFiles(instance, "mods", [localJar, localJar]) == 1 && await installer.ImportFiles(instance, "mods", [localJar]) == 0, "LOCAL_IMPORT_SKIPS_DUPLICATES");
 var orphanAlias = "pack-123456789012";
-var orphanStage = Path.Combine(gameRoot, ".blocklaunch-staging", "orphan");
+var orphanStage = Path.Combine(gameRoot, ".mcuglauncher-staging", "orphan");
 Directory.CreateDirectory(orphanStage);
 var orphanInstance = Path.Combine(gameRoot, "instances", orphanAlias);
 Directory.CreateDirectory(orphanInstance);
-AtomicFile.WriteJson(Path.Combine(orphanInstance, ".blocklaunch-pack.json"), new InstalledPack("Test", "1.21.1", "vanilla", "", "1.21.1", orphanAlias));
+AtomicFile.WriteJson(Path.Combine(orphanInstance, ".mcuglauncher-pack.json"), new InstalledPack("Test", "1.21.1", "vanilla", "", "1.21.1", orphanAlias));
 AtomicFile.WriteJson(Path.Combine(orphanStage, "pack-operation.json"), new PackCommitRecord(orphanAlias, "Preparing"));
 InstallationRecovery.Recover(gameRoot);
 Assert(!Directory.Exists(orphanInstance) && Directory.Exists(Path.Combine(orphanStage, "recovered-instance")), "ORPHAN_PACK_DATA_PRESERVED_IN_RECOVERY");
@@ -359,7 +359,7 @@ Directory.CreateDirectory(Path.Combine(instance, "accounts"));
 File.WriteAllText(Path.Combine(instance, "accounts", "microsoft-account.dat"), "protected-account-fixture");
 await InstanceManagement.Export(instance, exported, "Round trip pack", new("1.21.1", "fabric", "0.16.10"), new(false, false, true, false, false), CancellationToken.None);
 using (var zip = ZipFile.OpenRead(exported))
-    Assert(zip.GetEntry("mmc-pack.json") != null && zip.GetEntry("minecraft/config/test.toml") != null && zip.GetEntry("minecraft/mods/demo.jar") == null && zip.GetEntry("minecraft/servers.dat") == null && zip.GetEntry("minecraft/shaderpacks/shader.zip") != null && zip.Entries.All(e => !e.FullName.Contains(".blocklaunch")), "PACK_EXPORT_FILTERS_AND_MANIFEST");
+    Assert(zip.GetEntry("mmc-pack.json") != null && zip.GetEntry("minecraft/config/test.toml") != null && zip.GetEntry("minecraft/mods/demo.jar") == null && zip.GetEntry("minecraft/servers.dat") == null && zip.GetEntry("minecraft/shaderpacks/shader.zip") != null && zip.Entries.All(e => !e.FullName.Contains(".mcuglauncher")), "PACK_EXPORT_FILTERS_AND_MANIFEST");
 using (var zip = ZipFile.OpenRead(exported))
     Assert(zip.Entries.All(e => !e.FullName.Contains("microsoft-account.dat")), "PACK_EXPORT_EXCLUDES_ACCOUNT_CACHE");
 var imported = await new PackService(fixtureHttp).Import(exported, gameRoot, requirements =>
@@ -420,8 +420,14 @@ async Task Child(string mode, string path)
 
 sealed class SlowHandler : HttpMessageHandler
 {
+    /// <summary>
+    /// 获取或设置 Started。
+    /// </summary>
     public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken token)
     {
         Started.TrySetResult();
@@ -437,6 +443,9 @@ sealed class FixtureHandler : HttpMessageHandler
         private set;
     }
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
         Requests++;
@@ -460,20 +469,41 @@ sealed class WaitingStream : Stream
         set => throw new NotSupportedException();
     }
 
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
     {
         await Task.Delay(Timeout.Infinite, token);
         return 0;
     }
 
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token) => ReadAsync(buffer.AsMemory(offset, count), token).AsTask();
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public override int Read(byte[] b, int o, int c) => throw new NotSupportedException();
 
+    /// <summary>
+    /// 执行 Flush。
+    /// </summary>
     public override void Flush()
     {
     }
 
+    /// <summary>
+    /// 执行 Seek。
+    /// </summary>
     public override long Seek(long o, SeekOrigin s) => throw new NotSupportedException();
+    /// <summary>
+    /// 设置Length。
+    /// </summary>
     public override void SetLength(long v) => throw new NotSupportedException();
+    /// <summary>
+    /// 写入。
+    /// </summary>
     public override void Write(byte[] b, int o, int c) => throw new NotSupportedException();
 }

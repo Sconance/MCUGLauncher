@@ -8,10 +8,21 @@ using CmlLib.Core;
 using CmlLib.Core.Auth;
 using CmlLib.Core.ProcessBuilder;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
-public sealed class GameInstaller(HttpClient http, string root, string java, Action<string>? progress = null, CancellationToken token = default, NetworkSettings? network = null)
+/// <summary>
+/// 游戏与加载器安装器。
+/// </summary>
+/// <remarks>
+/// 依赖 HttpClient、游戏根目录、Java 路径与 NetworkSettings；通过 progress 回调报告下载/解压进度，失败时抛出异常并保留可恢复状态。
+/// </remarks>
+public sealed class GameInstaller(HttpClient http, string root, string java, Action<string>? progress = null, CancellationToken token = default, NetworkSettings? network = null, Action<double>? overallProgress = null)
 {
+    /// <summary>
+    /// 安装。
+    /// </summary>
+    /// <param name="request">要安装的版本与加载器要求</param>
+    /// <returns>安装完成后的版本目录</returns>
     public async Task<string> Install(PackRequirements request)
     {
         token.ThrowIfCancellationRequested();
@@ -36,9 +47,21 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
             return new MinecraftLauncher(parameters);
         }
 
+        var baseWeight = request.Loader == "vanilla" ? InstallationStages.BeforeCommit : InstallationStages.BaseGameFiles;
+        void Track(MinecraftLauncher current, double start, double weight)
+        {
+            current.FileProgressChanged += (_, e) =>
+            {
+                if (e.TotalTasks > 0)
+                    overallProgress?.Invoke(start + weight * Math.Clamp((double)e.ProgressedTasks / e.TotalTasks, 0, 1));
+                progress?.Invoke($"{e.Name} · {e.ProgressedTasks}/{e.TotalTasks}");
+            };
+        }
+        overallProgress?.Invoke(0);
         var launcher = CreateLauncher(request.Minecraft);
-        launcher.FileProgressChanged += (_, e) => progress?.Invoke($"{e.Name} · {e.ProgressedTasks}/{e.TotalTasks}");
+        Track(launcher, 0, baseWeight);
         await VersionInstallation.Run(root, request.Minecraft, ct => launcher.InstallAsync(request.Minecraft, ct).AsTask(), token);
+        overallProgress?.Invoke(baseWeight);
         if (request.Loader == "vanilla")
             return request.Minecraft;
         if (request.Loader is "fabric" or "quilt")
@@ -51,8 +74,11 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
             {
                 ct.ThrowIfCancellationRequested();
                 AtomicFile.WriteJson(Path.Combine(root, "versions", id, id + ".json"), json.RootElement);
-                await CreateLauncher(id).InstallAsync(id, ct);
+                var loaded = CreateLauncher(id);
+                Track(loaded, InstallationStages.BaseGameFiles, InstallationStages.BeforeCommit - InstallationStages.BaseGameFiles);
+                await loaded.InstallAsync(id, ct);
             }, token);
+            overallProgress?.Invoke(InstallationStages.BeforeCommit);
             return id;
         }
 
@@ -62,7 +88,7 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
         var version = neo ? request.LoaderVersion : request.Minecraft + "-" + request.LoaderVersion;
         var artifact = neo ? "neoforge" : "forge";
         var url = neo ? $"https://maven.neoforged.net/releases/net/neoforged/neoforge/{version}/neoforge-{version}-installer.jar" : $"https://maven.minecraftforge.net/net/minecraftforge/forge/{version}/forge-{version}-installer.jar";
-        var cache = Path.Combine(root, ".blocklaunch-installers");
+        var cache = Path.Combine(root, ".mcuglauncher-installers");
         Directory.CreateDirectory(cache);
         var jar = Path.Combine(cache, artifact + "-" + ContentService.SafeFile(version) + "-installer.jar");
         progress?.Invoke("获取官方 " + request.Loader + " 安装器…");
@@ -70,6 +96,7 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
         if (expected.Length != 40 || expected.Any(c => !Uri.IsHexDigit(c)))
             throw new IOException("官方安装器校验信息无效。");
         await ReliableDownloader.Download(http, new Uri(url), jar, expected, sha1: true, progress: progress, token: token);
+        overallProgress?.Invoke(InstallationStages.LoaderDownloaded);
         using var zip = ZipFile.OpenRead(jar);
         var profileEntry = zip.GetEntry("version.json") ?? throw new IOException("此旧版 Forge 安装器暂不支持自动安装。");
         using var profileJson = await JsonDocument.ParseAsync(profileEntry.Open());
@@ -127,6 +154,7 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
                 return log.ToString();
             }
 
+            overallProgress?.Invoke(InstallationStages.OfficialInstallerStarted);
             progress?.Invoke("官方安装器运行中，请稍候…");
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
             timeout.CancelAfter(TimeSpan.FromMinutes(15));
@@ -146,8 +174,12 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
             if (process.ExitCode != 0 || !File.Exists(Path.Combine(root, "versions", launchId, launchId + ".json")))
                 throw new IOException("官方加载器安装失败，详细日志位于 " + cache);
             // Recreate to refresh the version metadata cache after the external installer.
-            await CreateLauncher(launchId).InstallAsync(launchId, ct);
+            var loaded = CreateLauncher(launchId);
+            Track(loaded, InstallationStages.LoaderFinalFiles, InstallationStages.BeforeCommit - InstallationStages.LoaderFinalFiles);
+            overallProgress?.Invoke(InstallationStages.LoaderFinalFiles);
+            await loaded.InstallAsync(launchId, ct);
         }, token);
+        overallProgress?.Invoke(InstallationStages.BeforeCommit);
         return launchId;
     }
 

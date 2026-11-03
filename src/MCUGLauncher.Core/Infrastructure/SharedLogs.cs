@@ -1,10 +1,16 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 提供 日志Privacy 相关功能。
+/// </summary>
 public static class LogPrivacy
 {
+    /// <summary>
+    /// 执行 Redact。
+    /// </summary>
     public static string Redact(string text, IEnumerable<string>? secrets = null)
     {
         if (secrets != null)
@@ -17,8 +23,14 @@ public static class LogPrivacy
     }
 }
 
+/// <summary>
+/// 提供 SharedLogs 相关功能。
+/// </summary>
 public static class SharedLogs
 {
+    /// <summary>
+    /// 读取Tail。
+    /// </summary>
     public static string ReadTail(string file, int maxBytes = 65536)
     {
         if (!File.Exists(file))

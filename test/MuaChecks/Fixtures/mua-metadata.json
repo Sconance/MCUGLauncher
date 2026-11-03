@@ -1,7 +1,7 @@
 {
   "meta": {
     "serverName": "Synthetic MUA check fixture",
-    "implementationName": "MCUGLaunch test fixture"
+    "implementationName": "MCUGLauncher test fixture"
   },
   "skinDomains": ["skin.mualliance.ltd"]
 }

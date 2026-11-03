@@ -1,0 +1,268 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <!-- Isolated theme: native Fluent state selectors must not recolor custom button content. -->
+    <ControlTheme x:Key="CodexButtonTheme" TargetType="Button">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+            Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+            CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}"
+            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+            TextElement.Foreground="{TemplateBinding Foreground}" RecognizesAccessKey="True" />
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
+  </Styles.Resources>
+  <Style Selector="Window">
+    <Setter Property="Background" Value="#F3F7F9"/>
+    <Setter Property="FontFamily" Value="Microsoft YaHei UI, Microsoft YaHei, Segoe UI"/>
+    <Setter Property="Foreground" Value="#1D2B35"/>
+    <Setter Property="FontSize" Value="12"/>
+  </Style>
+  <Style Selector="Button">
+    <Setter Property="Theme" Value="{StaticResource CodexButtonTheme}"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="14,7"/>
+    <Setter Property="MinHeight" Value="35"/>
+    <Setter Property="FontSize" Value="12.5"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Background" Value="White"/>
+    <Setter Property="Foreground" Value="#414B55"/>
+    <Setter Property="BorderBrush" Value="#D3DFE7"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="HorizontalAlignment" Value="Left"/>
+  </Style>
+  <Style Selector="Button:pointerover">
+    <Setter Property="Background" Value="#F3F8FC"/>
+    <Setter Property="BorderBrush" Value="#BECAD6"/>
+  </Style>
+  <Style Selector="Button:pressed">
+    <Setter Property="Background" Value="#DEE9F3"/>
+    <Setter Property="BorderBrush" Value="#BECAD6"/>
+  </Style>
+  <Style Selector="Button:disabled">
+    <Setter Property="Background" Value="#F1F5F8"/>
+    <Setter Property="Foreground" Value="#7B8B97"/>
+    <Setter Property="BorderBrush" Value="#E3EAF0"/>
+  </Style>
+  <Style Selector="Button.busy">
+    <Setter Property="Opacity" Value="0.6"/>
+  </Style>
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="#006DB8"/>
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+  </Style>
+  <Style Selector="Button.primary:pointerover">
+    <Setter Property="Background" Value="#2C6193"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="Button.primary:pressed">
+    <Setter Property="Background" Value="#005A99"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="Button.primary:disabled">
+    <Setter Property="Background" Value="#ACC3D9"/>
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+  </Style>
+  <Style Selector="Button.soft">
+    <Setter Property="Background" Value="#E8F2F8"/>
+    <Setter Property="Foreground" Value="#0B4F7A"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+  </Style>
+  <Style Selector="Button.soft:pointerover">
+    <Setter Property="Background" Value="#DEE9F3"/>
+  </Style>
+  <Style Selector="Button.soft:pressed">
+    <Setter Property="Background" Value="#D7EAF6"/>
+  </Style>
+  <Style Selector="Button.soft:disabled">
+    <Setter Property="Background" Value="#EFF4F7"/>
+    <Setter Property="Foreground" Value="#7B8B97"/>
+  </Style>
+  <Style Selector="Button.link">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="#005A99"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="5,3"/>
+    <Setter Property="MinHeight" Value="24"/>
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+  </Style>
+  <Style Selector="Button.link:pointerover">
+    <Setter Property="Background" Value="#E8F2F8"/>
+    <Setter Property="Foreground" Value="#0B4F7A"/>
+  </Style>
+  <Style Selector="Button.link:pressed">
+    <Setter Property="Background" Value="#D7EAF6"/>
+  </Style>
+  <Style Selector="Button.link:disabled">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="#7B8B97"/>
+  </Style>
+  <Style Selector="Button.nav">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="#545D66"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+  </Style>
+  <Style Selector="Button.nav:pointerover">
+    <Setter Property="Background" Value="#E8F0F7"/>
+    <Setter Property="Foreground" Value="#0B4F7A"/>
+  </Style>
+  <Style Selector="Button.nav.selected">
+    <Setter Property="Background" Value="#D7EAF6"/>
+    <Setter Property="Foreground" Value="#0B4F7A"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="Button.top-nav">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="#545D66"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Height" Value="34"/>
+    <Setter Property="MinHeight" Value="0"/>
+    <Setter Property="FontSize" Value="12.5"/>
+    <Setter Property="Padding" Value="15,0"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+  </Style>
+  <Style Selector="Button.top-nav:pointerover">
+    <Setter Property="Background" Value="#E8F0F7"/>
+    <Setter Property="Foreground" Value="#0B4F7A"/>
+  </Style>
+  <Style Selector="Button.top-nav.selected">
+    <Setter Property="Background" Value="#D7EAF6"/>
+    <Setter Property="Foreground" Value="#0B4F7A"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="Button.account-tab">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="#616A72"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="4,0"/>
+    <Setter Property="MinHeight" Value="0"/>
+    <Setter Property="FontSize" Value="10.5"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+  </Style>
+  <Style Selector="Button.account-tab:pointerover">
+    <Setter Property="Background" Value="#F3F8FC"/>
+  </Style>
+  <Style Selector="Button.account-tab.active">
+    <Setter Property="Background" Value="White"/>
+    <Setter Property="Foreground" Value="#0B4F7A"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="Button.instance-row">
+    <Setter Property="Background" Value="#E8F2F8"/>
+    <Setter Property="Foreground" Value="#1D2B35"/>
+    <Setter Property="BorderBrush" Value="Transparent"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+  </Style>
+  <Style Selector="Button.instance-row:pointerover">
+    <Setter Property="Background" Value="#DEE9F3"/>
+  </Style>
+  <Style Selector="Button.instance-selected">
+    <Setter Property="Background" Value="#D7EAF6"/>
+    <Setter Property="BorderBrush" Value="#006DB8"/>
+    <Setter Property="BorderThickness" Value="2"/>
+  </Style>
+  <Style Selector="Button.danger">
+    <Setter Property="Foreground" Value="#BF443B"/>
+  </Style>
+  <Style Selector="Button.bookmark">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Foreground" Value="#BF443B"/>
+    <Setter Property="FontSize" Value="23"/>
+    <Setter Property="Padding" Value="4"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+  </Style>
+  <Style Selector="Button.bookmark:pointerover">
+    <Setter Property="Background" Value="#FBEDEB"/>
+    <Setter Property="Foreground" Value="#BF443B"/>
+  </Style>
+  <Style Selector="Button.danger:pointerover">
+    <Setter Property="Background" Value="#FBEDEB"/>
+    <Setter Property="Foreground" Value="#BF443B"/>
+  </Style>
+  <Style Selector="Button.launch">
+    <Setter Property="Background"><LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%"><GradientStop Offset="0" Color="#0A7CC4"/><GradientStop Offset="1" Color="#0063A7"/></LinearGradientBrush></Setter>
+  </Style>
+  <Style Selector="Button.launch:pointerover">
+    <Setter Property="Background"><LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%"><GradientStop Offset="0" Color="#0872B4"/><GradientStop Offset="1" Color="#005A97"/></LinearGradientBrush></Setter>
+  </Style>
+  <Style Selector="Button.launch:pressed">
+    <Setter Property="Background" Value="#005A97"/>
+  </Style>
+  <Style Selector="Button.launch:disabled">
+    <Setter Property="Background" Value="#ACC3D9"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+  <Style Selector="Button:focus-visible">
+    <Setter Property="BorderBrush" Value="#006DB8"/>
+  </Style>
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="White"/>
+    <Setter Property="Foreground" Value="#1D2B35"/>
+    <Setter Property="BorderBrush" Value="#D3DFE7"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="Padding" Value="10,8"/>
+    <Setter Property="MinHeight" Value="36"/>
+  </Style>
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="White"/>
+    <Setter Property="Foreground" Value="#1D2B35"/>
+    <Setter Property="BorderBrush" Value="#D3DFE7"/>
+    <Setter Property="CornerRadius" Value="8"/>
+    <Setter Property="MinHeight" Value="36"/>
+  </Style>
+  <Style Selector="ProgressBar">
+    <Setter Property="Foreground" Value="#006DB8"/>
+  </Style>
+  <Style Selector="Button.window-control">
+    <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Width" Value="40"/><Setter Property="MinHeight" Value="34"/><Setter Property="Padding" Value="0"/>
+    <Setter Property="Foreground" Value="#414B55"/><Setter Property="FontSize" Value="17"/><Setter Property="FontWeight" Value="Normal"/>
+  </Style>
+  <Style Selector="Button.window-control:pointerover"><Setter Property="Background" Value="#E8F2F8"/></Style>
+  <Style Selector="Button.close-window:pointerover"><Setter Property="Background" Value="#C42B1C"/><Setter Property="Foreground" Value="White"/></Style>
+  <Style Selector="Button.danger-primary"><Setter Property="Background" Value="#BF443B"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="Transparent"/></Style>
+  <Style Selector="Button.danger-primary:pointerover"><Setter Property="Background" Value="#A7372F"/></Style>
+  <Style Selector="Button.danger-primary:pressed"><Setter Property="Background" Value="#8F302A"/></Style>
+  <Style Selector="Button.danger-primary:disabled"><Setter Property="Background" Value="#D7A5A1"/><Setter Property="Foreground" Value="White"/></Style>
+  <Style Selector="Button.filter-tab"><Setter Property="MinHeight" Value="30"/><Setter Property="FontSize" Value="12"/><Setter Property="Padding" Value="12,5"/></Style>
+  <!-- Stable hit area: only the thumb grows, so content does not shift on hover. -->
+  <Style Selector="ScrollBar:vertical">
+    <Setter Property="Width" Value="16"/>
+    <Setter Property="MinWidth" Value="16"/>
+    <Setter Property="Background" Value="Transparent"/>
+  </Style>
+  <Style Selector="ScrollBar:vertical /template/ Thumb">
+    <Setter Property="Width" Value="5"/>
+    <Setter Property="RenderTransform" Value="none"/>
+    <Setter Property="Background" Value="#9AABB8"/>
+  </Style>
+  <Style Selector="ScrollBar:vertical:pointerover /template/ Thumb">
+    <Setter Property="Width" Value="11"/>
+    <Setter Property="Background" Value="#52718A"/>
+  </Style>
+  <Style Selector="ScrollBar:vertical[IsExpanded=true] /template/ Thumb">
+    <Setter Property="Width" Value="11"/>
+    <Setter Property="Background" Value="#52718A"/>
+  </Style>
+  <Style Selector="Button.avatar">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+  </Style>
+  <Style Selector="Button.avatar:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#E8F2F8"/>
+  </Style>
+</Styles>

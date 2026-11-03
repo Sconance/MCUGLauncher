@@ -1,18 +1,20 @@
 <Project>
-
-  <!--
-    版本号的唯一来源。发版时只改这里：
-
-    - 程序集版本、文件版本、InformationalVersion 都由 McugVersion 派生；
-    - 运行期通过 BlockLaunch.ProductInfo.Version 读取，User-Agent、诊断信息和关于页不再写死；
-    - CHANGELOG.md、README.md 必须同步，由 python scripts/check-version.py 校验；
-    - Release 标签使用 v<McugVersion>，附件必须从同一提交构建。
-
-    规则见 docs/VERSIONING.md。
-  -->
   <PropertyGroup>
-    <McugVersion>0.22.0</McugVersion>
+    <McugVersion>0.24.0</McugVersion>
+    <McugChannel>codex</McugChannel>
+    <InformationalVersion>$(McugVersion)-$(McugChannel)</InformationalVersion>
     <Version>$(McugVersion)</Version>
   </PropertyGroup>
 
+  <!--
+    VS Code（C# Dev Kit）的设计时构建不会设置 BuildingInsideVisualStudio，
+    而 WPF 的 DesignTimeMarkupCompilation 只在该属性为 true 时挂入
+    CoreCompileDependsOn。缺少该标志时 XAML 生成的 *.g.cs 不参与设计时编译，
+    x:Name 字段与 InitializeComponent 全部缺失，语言服务器会报大量
+    CS1061 / CS0103。VS 本身以该标志运行，所以没有此问题。
+    仅在 DesignTimeBuild=true 时补上，普通 build/publish 不受影响。
+  -->
+  <PropertyGroup Condition="'$(DesignTimeBuild)' == 'true'">
+    <BuildingInsideVisualStudio>true</BuildingInsideVisualStudio>
+  </PropertyGroup>
 </Project>

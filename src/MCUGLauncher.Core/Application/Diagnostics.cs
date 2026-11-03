@@ -3,21 +3,44 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace BlockLaunch;
+namespace MCUGLauncher;
 
+/// <summary>
+/// 表示 DiagnosticContext 数据。
+/// </summary>
 public record DiagnosticContext(string Directory, string Profile, string ProcessLog = "", DateTime? StartedUtc = null, GameExit? Exit = null, string[]? Secrets = null);
 
+/// <summary>
+/// 表示 DiagnosticSource 数据。
+/// </summary>
 public record DiagnosticSource(string Name, string Text);
 
+/// <summary>
+/// 表示 DiagnosticFinding 数据。
+/// </summary>
 public record DiagnosticFinding(string Title, string Advice, string Evidence, string Source);
 
+/// <summary>
+/// 表示 DiagnosticSnapshot 数据。
+/// </summary>
 public record DiagnosticSnapshot(DateTime CreatedUtc, string Summary, IReadOnlyList<DiagnosticFinding> Findings, IReadOnlyList<DiagnosticSource> Logs, string Mods, string Environment, IReadOnlyList<string> Notices);
 
+/// <summary>
+/// 表示 FeedbackOptions 数据。
+/// </summary>
 public record FeedbackOptions(bool Logs = true, bool Mods = true, bool Environment = true);
 
+/// <summary>
+/// 表示 FeedbackDocument 数据。
+/// </summary>
 public record FeedbackDocument(string Name, string Text);
 
-/// <summary>Reads a bounded, explicit allow-list. No account/config/save files are inspected.</summary>
+/// <summary>
+/// 诊断快照与反馈包。
+/// </summary>
+/// <remarks>
+/// 依赖进程日志、实例 mods 列表、环境信息与可选密钥脱敏；输出结构化 DiagnosticSnapshot 与可附带的反馈文档。
+/// </remarks>
 public static class Diagnostics
 {
     const int MaxLogBytes = 1024 * 1024;
@@ -25,6 +48,9 @@ public static class Diagnostics
 
     static string Replace(string text, string pattern, string replacement) => Regex.Replace(text, pattern, replacement, RegexOptions.IgnoreCase, RegexLimit);
 
+    /// <summary>
+    /// 执行 Sanitize。
+    /// </summary>
     public static string Sanitize(string text, IEnumerable<string>? secrets = null)
     {
         text = Replace(text, @"\bBearer\s+[A-Za-z0-9._~+/=-]+", "Bearer [已隐藏]");
@@ -48,6 +74,9 @@ public static class Diagnostics
             throw new IOException("不读取链接文件。");
     }
 
+    /// <summary>
+    /// 执行 Capture。
+    /// </summary>
     public static DiagnosticSnapshot Capture(DiagnosticContext context, CancellationToken token = default)
     {
         var root = Path.GetFullPath(context.Directory);
@@ -177,6 +206,9 @@ public static class Diagnostics
         return new(DateTime.UtcNow, summary, findings, logs, string.Join('\n', mods.Order(StringComparer.OrdinalIgnoreCase)), environment, notices);
     }
 
+    /// <summary>
+    /// 执行 Analyze。
+    /// </summary>
     public static List<DiagnosticFinding> Analyze(IEnumerable<DiagnosticSource> sources)
     {
         var rules = new (string Pattern, string Title, string Advice)[] {
@@ -205,13 +237,16 @@ public static class Diagnostics
         return result;
     }
 
+    /// <summary>
+    /// 执行 Preview。
+    /// </summary>
     public static IReadOnlyList<FeedbackDocument> Preview(DiagnosticSnapshot snapshot, FeedbackOptions options)
     {
         var findings = options.Logs ? string.Join("\n\n", snapshot.Findings.Select(f => $"{f.Title}\n{f.Advice}\n{f.Source}: {f.Evidence}")) : "未选日志，已省略诊断证据。";
         var documents = new List<FeedbackDocument>
         {
             new("diagnosis.txt", snapshot.Summary + "\n\n" + findings + "\n\n" + string.Join('\n', snapshot.Notices)),
-            new("README.txt", "BlockLaunch 本地反馈包\n此 ZIP 不会自动上传。诊断为规则推测，请结合日志排查。\n日志为截断快照，不是完整原始文件；未收集账号缓存、配置、存档、服务器列表、模组本体或启动命令。\n已尽力过滤令牌、邮箱、IPv4 与用户目录，但不能保证完全脱敏。分享前请检查每一项文本；日志仍可能包含聊天、玩家名、服务器域名或其他私人信息。\n")
+            new("README.txt", "MCUGLauncher 本地反馈包\n此 ZIP 不会自动上传。诊断为规则推测，请结合日志排查。\n日志为截断快照，不是完整原始文件；未收集账号缓存、配置、存档、服务器列表、模组本体或启动命令。\n已尽力过滤令牌、邮箱、IPv4 与用户目录，但不能保证完全脱敏。分享前请检查每一项文本；日志仍可能包含聊天、玩家名、服务器域名或其他私人信息。\n")
         };
         if (options.Logs)
             documents.AddRange(snapshot.Logs.Select(s => new FeedbackDocument("logs/" + s.Name, s.Text)));
@@ -223,6 +258,9 @@ public static class Diagnostics
         return documents;
     }
 
+    /// <summary>
+    /// 导出。
+    /// </summary>
     public static async Task Export(IReadOnlyList<FeedbackDocument> documents, string target, CancellationToken token = default)
     {
         if (documents.Count > 16 || documents.Sum(d => (long)Encoding.UTF8.GetByteCount(d.Text)) > 16 * 1024 * 1024)
@@ -233,7 +271,7 @@ public static class Diagnostics
         var directory = Path.GetDirectoryName(target)!;
         NoLink(directory);
         System.IO.Directory.CreateDirectory(directory);
-        var temp = Path.Combine(directory, ".blocklaunch-feedback-" + Guid.NewGuid().ToString("N") + ".tmp");
+        var temp = Path.Combine(directory, ".mcuglauncher-feedback-" + Guid.NewGuid().ToString("N") + ".tmp");
         try
         {
             using (var zip = new ZipArchive(new FileStream(temp, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None), ZipArchiveMode.Create))

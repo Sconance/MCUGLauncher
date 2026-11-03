@@ -1,7 +1,7 @@
-using BlockLaunch;
+using MCUGLauncher;
 using System.IO.Compression;
 
-var root = Path.Combine(Path.GetTempPath(), "BlockLaunch-library-check-" + Guid.NewGuid().ToString("N"));
+var root = Path.Combine(Path.GetTempPath(), "MCUGLauncher-library-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
 var instance = Path.Combine(root, "instance");
 var original = Path.Combine(instance, "saves", "ExistingWorld");
@@ -44,7 +44,7 @@ foreach (var (label, file) in new[] {
     {
     }
 
-    Assert(WorldArchives.List(instance).Count == count && !Directory.EnumerateDirectories(Path.Combine(instance, ".blocklaunch-world-staging")).Any(), label + "_REJECTED_NO_COMMIT");
+    Assert(WorldArchives.List(instance).Count == count && !Directory.EnumerateDirectories(Path.Combine(instance, ".mcuglauncher-world-staging")).Any(), label + "_REJECTED_NO_COMMIT");
 }
 
 var symlink = Archive("symlink", ("level.dat", "fixture"), ("link", "../outside"));
@@ -87,7 +87,7 @@ using (var cancel = new CancellationTokenSource())
     {
     }
 
-    Assert(File.ReadAllText(lockedTarget) == "old-backup" && !Directory.EnumerateFiles(root, ".blocklaunch-world-*.tmp").Any(), "CANCEL_BACKUP_PRESERVES_TARGET");
+    Assert(File.ReadAllText(lockedTarget) == "old-backup" && !Directory.EnumerateFiles(root, ".mcuglauncher-world-*.tmp").Any(), "CANCEL_BACKUP_PRESERVES_TARGET");
 }
 
 using (var cancel = new CancellationTokenSource())
@@ -118,7 +118,7 @@ var resource = Archive("resource", ("pack.mcmeta", "{}"), ("assets/test/file", "
 var dataPack = Archive("datapack", ("pack.mcmeta", "{}"), ("data/test/file", "d"));
 var shader = Archive("shader", ("shaders/main.fsh", "shader"));
 var modpack = Archive("modpack", ("modrinth.index.json", "{}"));
-Assert(LocalImportClassifier.Identify(backup) == LocalImportKind.World && LocalImportClassifier.Identify(resource) == LocalImportKind.ResourcePack && LocalImportClassifier.Identify(dataPack) == LocalImportKind.DataPack && LocalImportClassifier.Identify(shader) == LocalImportKind.ShaderPack && LocalImportClassifier.Identify(modpack) == LocalImportKind.Modpack && LocalImportClassifier.Identify("example.jar") == LocalImportKind.Mod, "DRAG_IMPORT_CLASSIFICATION");
+Assert(LocalImportClassifier.Identify(backup) == LocalImportKind.World && LocalImportClassifier.Identify(resource) == LocalImportKind.ResourcePack && LocalImportClassifier.Identify(dataPack) == LocalImportKind.DataPack && LocalImportClassifier.Identify(shader) == LocalImportKind.ShaderPack && LocalImportClassifier.Identify(modpack) == LocalImportKind.Modpack && LocalImportClassifier.Identify(resource) != LocalImportKind.Mod, "DRAG_IMPORT_CLASSIFICATION");
 var shots = Path.Combine(instance, "screenshots");
 Directory.CreateDirectory(shots);
 File.WriteAllText(Path.Combine(shots, "test.png"), "fixture");
@@ -137,3 +137,26 @@ string Archive(string name, params (string Path, string Content)[] entries)
 
     return file;
 }
+
+var jar = Path.Combine(root, "actual-mod.jar");
+using (var zip = ZipFile.Open(jar, ZipArchiveMode.Create))
+using (var writer = new StreamWriter(zip.CreateEntry("fabric.mod.json").Open()))
+    writer.Write("{}");
+Assert(LocalImportClassifier.Inspect(jar).Kind == LocalImportKind.Mod && LocalImportClassifier.Inspect(jar).Loaders.SequenceEqual(new[] { "fabric" }), "JAR_METADATA_NOT_EXTENSION");
+var library = Path.Combine(root, "library.jar");
+using (var zip = ZipFile.Open(library, ZipArchiveMode.Create)) zip.CreateEntry("Example.class");
+Assert(LocalImportClassifier.Identify(library) == LocalImportKind.Unknown, "PLAIN_JAR_NOT_MOD");
+var ambiguous = Archive("ambiguous", ("pack.mcmeta", "{}"), ("assets/test/a", "a"), ("data/test/a", "b"));
+Assert(LocalImportClassifier.Identify(ambiguous) == LocalImportKind.AmbiguousPack, "AMBIGUOUS_PACK_NOT_GUESSED");
+var nestedPack = Archive("nested-pack", ("wrapper/deeper/modrinth.index.json", "{}"));
+Assert(LocalImportClassifier.Identify(nestedPack) == LocalImportKind.Modpack, "NESTED_PACK_MARKER");
+var unsafeZip = Archive("unsafe-import", ("../pack.mcmeta", "{}"));
+try
+{
+    LocalImportClassifier.Identify(unsafeZip);
+    throw new Exception("Unsafe import accepted");
+}
+catch (IOException) { Console.WriteLine("UNSAFE_IMPORT_PATH_REJECTED_OK"); }
+
+var resourceWithManifest = Archive("resource-manifest", ("pack.mcmeta", "{}"), ("assets/test/a", "a"), ("manifest.json", "{}"));
+Assert(LocalImportClassifier.Identify(resourceWithManifest) == LocalImportKind.ResourcePack, "UNRELATED_MANIFEST_NOT_MODPACK");
