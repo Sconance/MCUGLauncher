@@ -15,7 +15,8 @@ internal sealed class RemoteImage : UserControl
     };
     readonly TextBlock status = Ui.Text("图片加载中…", 11);
     bool loaded;
-    bool detached;
+    int generation;
+    CancellationTokenSource? requestCancellation;
     public RemoteImage(ILauncherService session, UiContext ui, string url, double size = 0)
     {
         this.session = session;
@@ -38,10 +39,15 @@ internal sealed class RemoteImage : UserControl
     protected override async void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        detached = false;
         if (loaded || url.Length == 0)
             return;
         loaded = true;
+        var request = ++generation;
+        using var cancellation = new CancellationTokenSource();
+        var token = cancellation.Token;
+        requestCancellation = cancellation;
+        status.Text = "图片加载中…";
+        status.IsVisible = true;
         try
         {
             byte[] bytes;
@@ -49,10 +55,10 @@ internal sealed class RemoteImage : UserControl
                 bytes = Convert.FromBase64String(url[(url.IndexOf(',') + 1)..]);
             else
             {
-                bytes = await session.DownloadImageAsync(url);
+                bytes = await session.DownloadImageAsync(url).WaitAsync(token);
             }
 
-            if (detached)
+            if (request != generation || token.IsCancellationRequested)
                 return;
             if (bytes.Length > 2 * 1024 * 1024 || bytes.Length < 8)
                 throw new IOException("图片大小不合适");
@@ -67,19 +73,38 @@ internal sealed class RemoteImage : UserControl
             }
 
             using var decoded = new MemoryStream(bytes);
-            image.Source = Bitmap.DecodeToWidth(decoded, 640);
+            var bitmap = Bitmap.DecodeToWidth(decoded, 640);
+            (image.Source as IDisposable)?.Dispose();
+            image.Source = bitmap;
             status.IsVisible = false;
         }
-        catch (Exception)
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception error) when (error is IOException or FormatException or ArgumentException)
         {
-            if (!detached)
+            if (request == generation)
                 status.Text = "图片不可用";
+        }
+        catch (Exception error)
+        {
+            if (request == generation)
+            {
+                status.Text = "图片不可用";
+                // Do not include URLs or image payloads in diagnostics.
+                System.Diagnostics.Trace.TraceError("RemoteImage decode failed [{0}]", error.GetType().Name);
+            }
+        }
+        finally
+        {
+            if (ReferenceEquals(requestCancellation, cancellation))
+                requestCancellation = null;
         }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        detached = true;
+        generation++;
+        requestCancellation?.Cancel();
+        requestCancellation = null;
         (image.Source as IDisposable)?.Dispose();
         image.Source = null;
         loaded = false;

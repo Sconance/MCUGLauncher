@@ -4,9 +4,11 @@
 
 - ReadAsync(identity, token)：从账号索引恢复图片及检查时间。
 - ReadSourceAsync(source, token)：复用相同来源的已渲染头像。
-- SaveAsync(identity, source, image, revision, token)：图片先写临时文件并原子替换，然后写来源索引，最后提交账号索引。同一服务对象中旧代保存不能覆盖已提交的新代。
+- SaveAsync(identity, source, image, revision, token, sourceChecked = null)：图片先写临时文件并原子替换，然后写来源索引，最后提交账号索引。同一服务对象中旧代保存不能覆盖已提交的新代。
 
 目录为数据目录下 cache/avatars/v1；accounts、sources 用 SHA-256 派生文件名，images 按 PNG 内容 SHA-256 去重。索引不保存原始 URL 或令牌。这里只保存头像预览，不保存整张皮肤，不作为游戏皮肤来源。
+
+IsFresh(entry) 统一判断五分钟新鲜度，未来时间按过期处理。SaveAsync 保留复用来源的检查时间，只更新账号索引时间，避免共享地址无限续期。
 
 读取限制索引 4 KB、图片 2 MB，校验格式版本、哈希、PNG 头和尺寸；损坏按未命中处理，不删除用户文件。写入失败不影响当前成功显示的头像。当前不自动清理历史图片；渲染格式变化时应升级缓存格式目录。
 

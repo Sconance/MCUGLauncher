@@ -4,6 +4,7 @@ namespace MCUGLauncher.Contracts;
 public sealed record LauncherState
 {
     public string AppVersion { get; init; } = "";
+    public string AvatarIdentity { get; init; } = "";
     public string Player { get; init; } = "";
     public string AccountType { get; init; } = "";
     public string SkinStation { get; init; } = "";

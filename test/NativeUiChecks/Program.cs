@@ -19,6 +19,7 @@ internal static class Program
     static LauncherService Session = null!;
     static UiContext UI = null!;
     static int code;
+    static readonly List<string> imageRequests = [];
     static bool rejectNextAuth;
     static bool rejectNextImport;
     static TaskCompletionSource? pendingModeSwitch;
@@ -46,10 +47,13 @@ internal static class Program
         var item = JsonSerializer.SerializeToElement(message, Json);
         Sent.Add(item);
         var type = item.GetProperty("type").GetString();
+        if (type == "readImage")
+            imageRequests.Add(item.GetProperty("requestId").GetString()!);
         if (type == "readAvatar")
             Deliver(new
             {
                 type = "avatar",
+                avatarIdentity = Session.State.AvatarIdentity,
                 account = Session.State.AccountType,
                 player = Session.State.Player,
                 image = AvaloniaAvatarImage.Encode(null),
@@ -325,6 +329,82 @@ internal static class Program
                 fallback = true
             });
             Check(UI.Avatar == blue, "failed refresh does not replace cached online skin");
+            Deliver(new
+            {
+                type = "accountState",
+                accountType = "microsoft",
+                player = "SameName",
+                avatarIdentity = "microsoft:uuid-one"
+            });
+            Deliver(new
+            {
+                type = "avatar",
+                account = "microsoft",
+                player = "SameName",
+                avatarIdentity = "microsoft:uuid-one",
+                image = blue
+            });
+            var reads = Sent.Count(i => i.GetProperty("type").GetString() == "readAvatar");
+            Deliver(new
+            {
+                type = "accountState",
+                accountType = "microsoft",
+                player = "SameName",
+                avatarIdentity = "microsoft:uuid-two"
+            });
+            Check(UI.Avatar != blue && Sent.Count(i => i.GetProperty("type").GetString() == "readAvatar") == reads + 1,
+                "same-name UUID change clears old display and triggers an avatar read");
+            Deliver(new
+            {
+                type = "avatar",
+                account = "microsoft",
+                player = "SameName",
+                avatarIdentity = "microsoft:uuid-one",
+                image = blue
+            });
+            Check(UI.Avatar != blue, "same-name avatar response from another UUID is ignored");
+            Deliver(new
+            {
+                type = "accountState",
+                accountType = "microsoft",
+                player = "SameName",
+                avatarIdentity = "microsoft:uuid-one"
+            });
+            Check(UI.Avatar == blue, "stable identity restores its own cached portrait");
+
+            var host = new Window();
+            var remote = new RemoteImage(Session, UI, "https://fixture.invalid/image.png");
+            host.Content = remote;
+            host.Show();
+            await Task.Delay(20);
+            var oldImageRequest = imageRequests.Last();
+            host.Content = null;
+            host.Content = remote;
+            await Task.Delay(20);
+            var newImageRequest = imageRequests.Last();
+            Check(oldImageRequest != newImageRequest, "reattached image starts a separate request generation");
+            Deliver(new
+            {
+                type = "imageData",
+                requestId = newImageRequest,
+                ok = true,
+                image = blue[22..]
+            });
+            await Task.Delay(25);
+            var displayed = Controls<Image>(remote).Single().Source;
+            Check(displayed != null, "current image request completes normally");
+            Deliver(new
+            {
+                type = "imageData",
+                requestId = oldImageRequest,
+                ok = true,
+                image = AvaloniaAvatarImage.Encode(null)[22..]
+            });
+            await Task.Delay(25);
+            Check(ReferenceEquals(Controls<Image>(remote).Single().Source, displayed), "detached image request cannot replace a newer bitmap");
+            host.Content = null;
+            Check(Controls<Image>(remote).Single().Source == null, "detaching image releases its displayed bitmap");
+            host.Close();
             Deliver(new
             {
                 type = "accountState",

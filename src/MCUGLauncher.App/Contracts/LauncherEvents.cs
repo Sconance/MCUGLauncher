@@ -81,6 +81,7 @@ public sealed record KeyResultInfo
 
 public sealed record AccountStateInfo
 {
+    public string AvatarIdentity { get; init; } = "";
     public string Player { get; init; } = "";
     public string AccountType { get; init; } = "";
 }
@@ -101,6 +102,7 @@ public sealed record AccountSwitchResultInfo
 
 public sealed record AvatarInfo
 {
+    public string AvatarIdentity { get; init; } = "";
     public string Account { get; init; } = "";
     public string Player { get; init; } = "";
     public string Image { get; init; } = "";

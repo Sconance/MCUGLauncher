@@ -351,12 +351,17 @@ internal sealed class LauncherApplication : IDisposable
             });
     }
 
+    internal void LogFailure(string operation, Exception error) => context.Log(operation + " [" + error.GetType().Name + "]");
+
     // Background completion refreshes are composed on the same thread as configuration edits.
     public void SendState() => dispatch(() =>
     {
         try
         {
-            context.Send(LauncherStateBuilder.Build(context.Config, bookmarkCommands.Snapshot()));
+            context.Send(LauncherStateBuilder.Build(context.Config, bookmarkCommands.Snapshot()) with
+            {
+                AvatarIdentity = context.AvatarIdentity
+            });
         }
         catch (Exception ex)
         {

@@ -2,7 +2,14 @@ using MCUGLauncher;
 
 namespace MCUGLauncher.UseCases;
 
-// Handles account use cases; no WPF controls or browser access.
+/// <summary>执行微软和 MUA 交互登录，提交已验证会话与登录结果。</summary>
+/// <remarks>
+/// B 类：LauncherContext.Microsoft/Mua/Token/AccountRevision/Send(object) 提供认证、取消与结果发布；
+/// MicrosoftAccountService.Authenticate(bool,CancellationToken)、Translate(Exception,bool,string?)；
+/// MuaAccountService.Login(string,string,Func&lt;IReadOnlyList&lt;MuaProfile&gt;,Task&lt;MuaProfile?&gt;&gt;,CancellationToken)/Session(MuaCredential) 提供登录及会话转换；
+/// MuaProfileSelection.ChooseAsync/Select 提供角色选择，AccountModeCommands.Apply 提交身份。
+/// 依赖的准确签名见 docs/components/AccountCommands.md；不依赖 UI 或桌面窗口。
+/// </remarks>
 internal sealed class AccountCommands(LauncherContext context)
 {
     readonly MuaProfileSelection profiles = new(context);

@@ -36,7 +36,7 @@ internal sealed class UiContext : IDisposable, INotifyPropertyChanged
     }
     void StateChanged(LauncherState state)
     {
-        var key = state.AccountType + ":" + state.Player;
+        var key = state.AvatarIdentity.Length > 0 ? state.AvatarIdentity : state.AccountType + ":" + state.Player;
         if (key != identity)
         {
             identity = key;
@@ -49,9 +49,11 @@ internal sealed class UiContext : IDisposable, INotifyPropertyChanged
     void GamesChanged(GameInfo[] value) => PropertyChanged?.Invoke(this, new(null));
     void ApplyAvatar(AvatarInfo info)
     {
+        if (service.State.AvatarIdentity.Length > 0 && info.AvatarIdentity != service.State.AvatarIdentity)
+            return;
         if (info.Account != service.State.AccountType || info.Player != service.State.Player || !info.Image.StartsWith("data:image/png;base64,"))
             return;
-        var key = info.Account + ":" + info.Player;
+        var key = info.AvatarIdentity.Length > 0 ? info.AvatarIdentity : info.Account + ":" + info.Player;
         if (info.Fallback && avatars.ContainsKey(key) && info.Account != "offline")
             return;
         var changed = Avatar != info.Image;

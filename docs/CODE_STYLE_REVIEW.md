@@ -2,7 +2,7 @@
 
 ## 当前结构
 
-ShellWindow 负责窗口和导航，Views 负责展示和交互，LauncherFacade 适配类型化状态与协议，UseCases 负责流程，Services/Core 执行。原网页页面、app.js/host.js 和相关预览工具不再存在。
+ShellWindow 负责窗口和导航，Views 负责展示和交互，LauncherService 适配类型化状态与协议，UseCases 负责流程，Services/Core 执行。原网页页面、app.js/host.js 和相关预览工具不再存在。
 
 - C# 使用 SourceFormatter；布局、版本及原生边界检查已接入 CI。
 - 当前没有 JS/CSS 页面，不保留空用的 Prettier 配置，也不宣称运行已退役的网页检查。
@@ -23,3 +23,5 @@ LauncherContext 依赖面较宽，协议分发集中，部分历史组件职责�
 - [历史记录](archive/webview/CODE_STYLE_REVIEW.md)
 
 测试范围须如实记录：NativeUiChecks 使用 Headless/Skia 和模拟响应，不能替代真实登录、系统文件拖放及游戏验收。
+
+头像审查修订：统一 AvatarIdentity；账号/来源缓存均有界过期；预期错误记录安全类别，意外异常交给集成层诊断；RemoteImage 取消离开视图的等待，并用请求代次阻止旧结果写回、释放位图。详细验证见 AVATAR_REVIEW.md。本条不表示所有历史 B 类声明均已补齐。

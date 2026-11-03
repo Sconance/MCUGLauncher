@@ -10,6 +10,17 @@ internal sealed class LauncherContext : IDisposable
 {
     readonly CancellationTokenSource lifetime = new();
     public long AccountRevision;
+    // One identity for disk lookup, state and avatar replies; never includes credentials.
+    public string AvatarIdentity
+    {
+        get
+        {
+            var mode = Config.AccountType;
+            var uuid = OnlineSession?.UUID ?? AccountSessions.Identity(mode)?.Uuid ?? "";
+            return mode + ":" + (mode == "mua" ? MuaAccountService.Api : "minecraft") + ":" +
+                (uuid.Length > 0 ? uuid : Config.Player) + (mode == "offline" ? ":" + Config.SkinFile : "");
+        }
+    }
     public AccountSessionCache AccountSessions { get; } = new();
     readonly ConcurrentDictionary<string, string> preparing = new(StringComparer.OrdinalIgnoreCase);
     static string Full(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
@@ -65,6 +76,7 @@ internal sealed class LauncherContext : IDisposable
         type = "accountState",
         player = Config.Player,
         accountType = Config.AccountType,
+        avatarIdentity = AvatarIdentity,
         accountLabel = Config.AccountType switch
         {
             "microsoft" => "正版账号 · 在线验证",

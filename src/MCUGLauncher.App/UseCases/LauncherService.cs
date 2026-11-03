@@ -195,6 +195,7 @@ public sealed class LauncherService : ILauncherService
                 var account = message.Deserialize<AccountStateInfo>(Json)!;
                 ApplyState(State with
                 {
+                    AvatarIdentity = account.AvatarIdentity,
                     AccountType = account.AccountType,
                     Player = account.Player
                 });
@@ -258,10 +259,10 @@ public sealed class LauncherService : ILauncherService
     }
     void ApplyState(LauncherState state)
     {
-        var oldKey = State.AccountType + ":" + State.Player;
+        var oldKey = (State.AvatarIdentity, State.AccountType, State.Player);
         State = state;
         StateChanged?.Invoke(state);
-        if (oldKey != State.AccountType + ":" + State.Player)
+        if (oldKey != (State.AvatarIdentity, State.AccountType, State.Player))
             _ = RefreshAvatarAsync();
     }
     async Task RefreshAvatarAsync()
@@ -275,7 +276,10 @@ public sealed class LauncherService : ILauncherService
             });
         }
         catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
-        catch (Exception) { /* Automatic skin refresh must not undo a completed account selection. */ }
+        catch (Exception error)
+        {
+            application?.LogFailure("自动头像刷新失败", error);
+        }
     }
     static string String(JsonElement message, string name) => message.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() ?? "" : "";
     static T[] Items<T>(JsonElement message) => message.GetProperty("items").Deserialize<T[]>(Json) ?? [];

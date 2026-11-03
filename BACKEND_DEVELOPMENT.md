@@ -70,7 +70,7 @@
 - 不写账号、下载、安装、启动、实例维护等业务算法；
 - 不把 C 层作为 B 组件的依赖；B 组件不得 `using`/调用 `LauncherService` 或 `LauncherApplication`；
 - `LauncherService` 的 JSON/命令协议只能作为内部实现，不得暴露给 View；
-- `LauncherApplication` 现有 68 条字符串命令是过渡实现；新增业务应落在 Commands/Services/Core，不要继续把业务塞进 `LauncherApplication`；
+- `LauncherApplication` 的字符串命令分发是过渡实现；新增业务应落在 Commands/Services/Core，不要继续把业务塞进 `LauncherApplication`；
 - `IDesktopHost` 的文件选择方法返回路径，由 App 侧产生类型化 `PathPicked`，不允许 UI 直接发送原始消息。
 
 `LauncherContext` 是共享运行时上下文（B 类），不是新的业务入口；Commands 依赖它时应按第 4 节声明成员。
@@ -202,9 +202,9 @@ Views（UI，不属于后端）
 
 ## 8. 当前组件类别划分
 
-统计范围：`src/MCUGLauncher.App` 的后端组件（Contracts 除外，UseCases、Services、Authentication、Models），不含 `ShellWindow` 与 Core。共 **43 个**：A 类 14 个、B 类 26 个、C 类 3 个。
+统计范围：`src/MCUGLauncher.App` 的后端组件（Contracts 除外，UseCases、Services、Authentication、Models），不含 `ShellWindow` 与 Core。以下表格为分级登记；新增组件与调整以逐组件文档为准，不再维护易过期的总数。
 
-### 8.1 C 类（集成层，3 个）
+### 8.1 C 类（集成层）
 
 | 组件 | 位置 | 说明 |
 | --- | --- | --- |
@@ -215,15 +215,15 @@ Views（UI，不属于后端）
 > `ShellWindow` 是宿主壳，不计入后端组件；它只依赖 `ILauncherService` 与 `IDesktopHost`。
 > `MicrosoftLoginWindow` / `MicrosoftLoginWebUi` 是 UI 侧 OAuth 适配，不计入后端组件。
 
-### 8.2 B 类（26 个）
+### 8.2 B 类
 
-#### 8.2.1 UseCases（19 个）
+#### 8.2.1 UseCases
 
 | 组件 | 说明 | 依赖面 |
 | --- | --- | --- |
-| `AccountCommands` | 微软/MUA 登录、MUA 角色选择 | `LauncherContext.AccountRevision/Microsoft/Mua/Send/Token`；`AccountModeCommands.Apply` |
+| `AccountCommands` | 微软/MUA 登录、MUA 角色选择 | `LauncherContext.AccountRevision/Microsoft/Mua/Send/Token`；`MuaProfileSelection.ChooseAsync/Select`、`AccountModeCommands.Apply`；签名见组件文档 |
 | `AccountModeCommands` | 账号模式恢复、切换、忘记 | `LauncherContext.AccountRevision/AccountSessions/Config/Microsoft/Mua/OnlineSession/Send/SendAccountState/Store/Token` |
-| `AvatarCommands` | 头像读取与离线皮肤 | `LauncherContext.AccountRevision/Config/Http/Microsoft/Mua/Send/Store/Token` |
+| `AvatarCommands` | 头像读取与离线皮肤 | `LauncherContext.AccountRevision/AvatarIdentity/Config/Http/Log/Microsoft/Mua/Send/Store/Token` |
 | `BookmarkCommands` | 资源收藏切换 | `LauncherContext.RefreshState/Store` |
 | `CommunityCommands` | 公告/推荐/服务器收藏/发布 | `LauncherContext.Community/Config/Http/RefreshState/Send/Store/Token` |
 | `ContentUpdateCommands` | 内容更新检查、预览、应用 | `LauncherContext.Config/Http/Send/Tasks/Token` |
@@ -241,29 +241,29 @@ Views（UI，不属于后端）
 | `SettingsCommands` | 设置、Java 扫描、数据源保存/启用 | `LauncherContext.Config/RefreshState/Send/Store/Token` |
 | `UninstallCommands` | 卸载预览与应用 | `LauncherContext.Config/Games/Send/Tasks/Token` |
 
-#### 8.2.2 Services（5 个）
+#### 8.2.2 Services
 
 | 组件 | 说明 | 依赖面 |
 | --- | --- | --- |
 | `ConfigStore` | `config.json` 读取、迁移、保存 | `AppConfig`（Models） |
 | `DownloadExecutor` | 按任务类型执行下载/安装/维护 | `InstanceOperationExecutor` 与 Core 的 `OperationRecord`/`OperationContext` |
 | `InstanceSnapshot` | 捕获实例根目录、名称、要求与启动设置 | `AppConfig`、Core 实例/包类型 |
-| `LauncherStateBuilder` | 直接组装强类型 `LauncherState`，不生成匿名 JSON schema | `AppConfig`、`VersionCatalog`、`FavoriteInfo`（由调用方传入）、`Contracts` DTO |
+| `LauncherStateBuilder` | 直接组装强类型 `LauncherState`，不生成匿名 JSON schema | `AppConfig`、`VersionCatalog`、`ResourceInfo[]`（由调用方传入）、`Contracts` DTO |
 | `VersionCatalog` | 版本目录扫描、实例与模组读取 | `AppConfig`、`ModInfo`/`VersionDetails` 等 Models；占位实例带 `IsPlaceholder` |
 
-#### 8.2.3 Authentication（2 个）
+#### 8.2.3 Authentication
 
 | 组件 | 说明 | 依赖面 |
 | --- | --- | --- |
-| `AvatarRenderer` | 皮肤/默认头像渲染 | WPF `BitmapSource`/`PngBitmapEncoder` |
 | `MicrosoftAccountService` | 微软登录、会话刷新、令牌存储 | `ProtectedAccountStorage`、`MinecraftOwnershipGuard`、`AuthenticationCheckpoint`、`IWebUI`、`HttpClient` |
 | `MuaAccountService` | MUA 登录、角色、元数据 | `ProtectedAccountStorage`、`HttpClient` |
 
-### 8.3 A 类（14 个）
+### 8.3 A 类
 
 | 组件 | 位置 | 说明 |
 | --- | --- | --- |
 | `ProtocolValues` | `UseCases/ProtocolValues.cs` | 协议字段类型、实例路径、离线 UUID 校验；只依赖 BCL |
+| `AvatarDiskCache` | `Services/AvatarDiskCache.cs` | 头像 PNG 持久化、账号/来源索引与新鲜度判断；只依赖 Core/BCL |
 | `AccountSessionCache` | `Services/AccountSessionCache.cs` | 进程内已验证会话缓存；依赖 CmlLib 会话类型与可注入时钟 |
 | `CommunityService` | `Services/CommunityService.cs` | 社区 URL 连通性测试与读取；只依赖 `HttpClient` |
 | `InstallationProgress` | `Services/InstallationProgress.cs` | 安装阶段的进度计算；只依赖 Core `OperationContext` |
@@ -507,3 +507,5 @@ AccountModeCommands（B）新增 Store.SaveAsync(AppConfig) 快照保存依赖�
 账号选择分离补充：AccountSessionCache（A）分别持有无令牌 AccountIdentity 与已验证 MSession；AccountModeCommands 新增 Identity/RememberIdentity 和 Mua.Read 依赖，启动时只预读本地身份。GameCommands 在创建进程前通过 EnsureFreshAsync 获取会话，移除对预先存在 OnlineSession 的要求。成员说明见对应组件文档与 docs/account-switch-performance.md。
 
 头像持久化：AvatarDiskCache（A）仅依赖 Core/BCL；AvatarCommands（B）调用其 ReadAsync、ReadSourceAsync、SaveAsync，移除重复的后端编码历史缓存。LauncherApplication.ready 在首次状态前调用 AccountModeCommands.PreloadIdentitiesAsync。成员与存储边界见 docs/components/AvatarDiskCache.md、AvatarCommands.md。
+
+审查补充：AccountCommands（B）完整签名见 docs/components/AccountCommands.md；LauncherContext.AvatarIdentity 聚合 Config.AccountType/Player/SkinFile、OnlineSession.UUID、AccountSessions.Identity(mode).Uuid 与 MuaAccountService.Api，不含凭据。AvatarCommands 使用该键和 AvatarDiskCache.IsFresh/SaveAsync 的来源时间参数；LauncherService 传播契约身份并调用 LauncherApplication.LogFailure(string,Exception) 记录自动刷新的意外错误。详见 docs/AVATAR_REVIEW.md。

@@ -15,6 +15,11 @@ internal sealed class AvatarDiskCache(string directory)
     readonly Dictionary<string, long> committed = [];
     sealed record Index(int Format, string Image, string Source, DateTimeOffset Checked);
     internal sealed record Entry(string Image, DateTimeOffset Checked);
+    internal static bool IsFresh(Entry entry)
+    {
+        var age = DateTimeOffset.UtcNow - entry.Checked;
+        return age >= TimeSpan.Zero && age < TimeSpan.FromMinutes(5);
+    }
     static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     string IndexPath(string group, string value) => Path.Combine(directory, group, Hash(value) + ".json");
     string ImagePath(string hash) => Path.Combine(directory, "images", hash + ".png");
@@ -42,10 +47,10 @@ internal sealed class AvatarDiskCache(string directory)
                 return null;
             return new("data:image/png;base64," + Convert.ToBase64String(bytes), index.Checked);
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException) { return null; }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException) { return null; }
     }, token);
 
-    public Task SaveAsync(string identity, string source, string image, long revision, CancellationToken token) => Task.Run(() =>
+    public Task SaveAsync(string identity, string source, string image, long revision, CancellationToken token, DateTimeOffset? sourceChecked = null) => Task.Run(() =>
     {
         if (!image.StartsWith("data:image/png;base64,"))
             return;
@@ -71,7 +76,11 @@ internal sealed class AvatarDiskCache(string directory)
                 }
                 token.ThrowIfCancellationRequested();
                 File.Move(temp, file, true);
-                AtomicFile.WriteJson(IndexPath("sources", source), index);
+                // Reusing a source must not extend its network validation time.
+                AtomicFile.WriteJson(IndexPath("sources", source), index with
+                {
+                    Checked = sourceChecked ?? index.Checked
+                });
                 AtomicFile.WriteJson(IndexPath("accounts", identity), index);
                 committed[identity] = revision;
             }
