@@ -88,7 +88,7 @@ Core / Services：保持不变
 - `AccountView`：头像读取、离线 PNG 皮肤选择/清除、正版/MUA/离线切换、MUA 多角色选择；
 - `GamesView`：运行中游戏列表与关闭；
 - `BookmarksView`：收藏列表、取消收藏、按兼容版本安装到实例或目录；
-- `CommunityView`：管理员密钥、公告发布（标题/正文/过期时间/配图）、公告/推荐删除管理；
+- `CommunityView`：管理员密钥与推荐本地管理；公告只读展示单篇 Markdown，并可打开完整正文；
 - 主页公告支持本地 data URL 配图；
 - 设置页：已保存游戏目录切换、添加并切换；
 - **WebView 主界面已删除**：`Ui/`、`MainWindow`、`bridge`、`WebUiChecks` 与 Web 边界脚本已移除；

@@ -109,7 +109,7 @@ public sealed class DataSourceConfig
     /// <summary>
     /// 获取或设置 Announcements。
     /// </summary>
-    public string Announcements { get; set; } = "https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/announcements.json";
+    public string Announcements { get; set; } = "https://raw.githubusercontent.com/Sconance/MCUGLauncher/main/community/announcements.md";
     /// <summary>
     /// 获取或设置 Servers。
     /// </summary>

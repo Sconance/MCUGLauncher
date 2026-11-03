@@ -253,7 +253,7 @@ Views（UI，不属于后端）
 | `SaveCommands` | 存档备份与恢复 | `LauncherContext.Config/Games/Send/Store/Token` |
 | `SettingsCommands` | 设置、Java 扫描、数据源保存/启用 | `LauncherContext.Config/RefreshState/Send/Store/Token` |
 | `DownloadImageFeatureHandler` | 公告图片下载的强类型结果 handler | `LauncherContext.Http/Token` → `CommunityCommands.DownloadImageAsync` |
-| `TestSourceFeatureHandler` | 数据源连通性测试的强类型结果 handler | `LauncherContext.Community` → `CommunityService.TestAsync(url, token)` |
+| `TestSourceFeatureHandler` | 数据源连通性与 Markdown 公告校验的强类型结果 handler | `LauncherContext.Community` → `CommunityService.TestAsync` / `TestAnnouncementAsync` |
 | `UninstallCommands` | 卸载预览与应用 | `LauncherContext.Config/Games/Send/Tasks/Token` |
 
 #### 8.2.2 Services（5 个）
@@ -280,7 +280,7 @@ Views（UI，不属于后端）
 | --- | --- | --- |
 | `ProtocolValues` | `UseCases/ProtocolValues.cs` | 协议字段类型、实例路径、离线 UUID 校验；只依赖 BCL |
 | `AccountSessionCache` | `Services/AccountSessionCache.cs` | 进程内已验证会话缓存；依赖 CmlLib 会话类型与可注入时钟 |
-| `CommunityService` | `Services/CommunityService.cs` | 社区 URL 连通性测试与读取；只依赖 `HttpClient` |
+| `CommunityService` | `Services/CommunityService.cs` | 社区 URL 读取与单篇 Markdown 公告解析；依赖 `HttpClient` 和 `Contracts.AnnouncementInfo` |
 | `InstallationProgress` | `Services/InstallationProgress.cs` | 安装阶段的进度计算；只依赖 Core `OperationContext` |
 | `InstanceOperationExecutor` | `Services/InstanceOperationExecutor.cs` | 实例级维护执行器；只依赖 Core 队列记录与回调 |
 | `InstanceRequirements` | `Services/InstanceRequirements.cs` | 读取实例安装元数据；只依赖 Core 的类型与 JSON |
@@ -348,6 +348,9 @@ AccountSessionCache.Forget(string mode) : void
 
 CommunityService.TestAsync(string url, CancellationToken token) : Task<(bool Ok, string Text, int Ms)>
 CommunityService.ReadAsync(string url, CancellationToken token) : Task<string?>
+CommunityService.ReadAnnouncementAsync(string url, CancellationToken token) : Task<(bool Ok, string Markdown, string Error, int Ms)>
+CommunityService.TestAnnouncementAsync(string url, CancellationToken token) : Task<(bool Ok, string Text, int Ms)>
+CommunityService.ParseMarkdownAnnouncement(string markdown, string source) : AnnouncementInfo
 
 MicrosoftAccountService.Authenticate(bool interactive, CancellationToken token) : Task<MSession>
 MicrosoftAccountService.ReadSavedAccount() : SavedMicrosoftAccount?

@@ -77,21 +77,15 @@
 
                 <Border Classes="card">
                     <StackPanel Spacing="8">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="群公告" Classes="h2" />
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                                <Button x:Name="PrevAnnouncementButton" Content="上一条" Classes="link" />
-                                <TextBlock x:Name="AnnouncementIndex" Classes="muted"
-                                           VerticalAlignment="Center" />
-                                <Button x:Name="NextAnnouncementButton" Content="下一条" Classes="link" />
-                            </StackPanel>
-                        </Grid>
+                        <TextBlock Text="群公告" Classes="h2" />
                         <TextBlock x:Name="AnnouncementTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
                         <TextBlock x:Name="AnnouncementBody" TextWrapping="Wrap" />
                         <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AnnouncementImage"
                                MaxHeight="180" Stretch="Uniform"
                                HorizontalAlignment="Left" IsVisible="False" />
                         <TextBlock x:Name="AnnouncementMeta" Classes="muted" />
+                        <Button x:Name="OpenAnnouncementButton" Content="查看完整公告" Classes="link"
+                                HorizontalAlignment="Left" IsVisible="False" />
                     </StackPanel>
                 </Border>
 

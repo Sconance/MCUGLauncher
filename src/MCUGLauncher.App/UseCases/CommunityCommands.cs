@@ -38,12 +38,34 @@ internal sealed class CommunityCommands(LauncherContext context)
     public async Task SendCommunityAsync(bool notify = false)
     {
         var items = new Dictionary<string, string>();
+        string? announcementError = null;
         var localRecs = Path.Combine(context.Store.DataDirectory, "recommendations.local.json");
         if (File.Exists(localRecs))
             items["recommendations"] = File.ReadAllText(localRecs);
+        var announcementResult = await context.Community.ReadAnnouncementAsync(
+            context.Config.DataSources.Announcements,
+            context.Token);
+        if (announcementResult.Ok)
+        {
+            try
+            {
+                var announcement = CommunityService.ParseMarkdownAnnouncement(
+                    announcementResult.Markdown,
+                    context.Config.DataSources.Announcements);
+                items["announcements"] = JsonSerializer.Serialize(new[] { announcement }, CommunityJsonOptions);
+            }
+            catch (InvalidDataException ex)
+            {
+                announcementError = "公告 Markdown 无效：" + ex.Message;
+            }
+        }
+        else
+        {
+            announcementError = announcementResult.Error;
+        }
+
         var jobs = new[]
         {
-            ("announcements", context.Config.DataSources.Announcements),
             ("recommendations", context.Config.DataSources.Recommendations),
             ("quotes", context.Config.DataSources.Quotes)
         };
@@ -65,9 +87,17 @@ internal sealed class CommunityCommands(LauncherContext context)
             context.Send(new
             {
                 type = "communityRefreshDone",
-                ok = items.Count == jobs.Length
+                ok = items.Count == jobs.Length + 1
+            });
+        if (announcementError is not null)
+            context.Send(new
+            {
+                type = "error",
+                message = announcementError
             });
     }
+
+    static readonly JsonSerializerOptions CommunityJsonOptions = new(JsonSerializerDefaults.Web);
 
     public async Task<ServerPingInfo> PingAsync(string address, string id)
     {

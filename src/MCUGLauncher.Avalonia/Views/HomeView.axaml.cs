@@ -20,7 +20,6 @@ internal partial class HomeView : UserControl
     string serverSignature = "";
     string editingServer = "";
     bool updatingInstances;
-    int announcementIndex;
     int quoteIndex;
     string avatarAccount = "";
 
@@ -103,20 +102,7 @@ internal partial class HomeView : UserControl
             if (result.Ok)
                 HideServerForm();
         };
-        PrevAnnouncementButton.Click += (_, _) =>
-        {
-            if (community.Announcements.Count == 0)
-                return;
-            announcementIndex = (announcementIndex - 1 + community.Announcements.Count) % community.Announcements.Count;
-            RenderAnnouncement();
-        };
-        NextAnnouncementButton.Click += (_, _) =>
-        {
-            if (community.Announcements.Count == 0)
-                return;
-            announcementIndex = (announcementIndex + 1) % community.Announcements.Count;
-            RenderAnnouncement();
-        };
+        OpenAnnouncementButton.Click += async (_, _) => await OpenAnnouncement();
         NextQuoteButton.Click += (_, _) =>
         {
             if (community.Quotes.Count == 0)
@@ -288,7 +274,6 @@ internal partial class HomeView : UserControl
     void OnCommunity(CommunityData data)
     {
         community = data;
-        announcementIndex = Math.Clamp(announcementIndex, 0, Math.Max(0, data.Announcements.Count - 1));
         quoteIndex = Math.Clamp(quoteIndex, 0, Math.Max(0, data.Quotes.Count - 1));
         RenderCommunity();
         HomeStatus.Text = "社区内容已刷新。";
@@ -303,20 +288,20 @@ internal partial class HomeView : UserControl
 
     void RenderAnnouncement()
     {
-        PrevAnnouncementButton.IsEnabled = community.Announcements.Count > 0;
-        NextAnnouncementButton.IsEnabled = community.Announcements.Count > 0;
+        OpenAnnouncementButton.IsVisible = false;
         if (community.Announcements.Count == 0)
         {
             AnnouncementTitle.Text = "暂无公告";
             AnnouncementBody.Text = "新的群公告会出现在这里。";
             AnnouncementMeta.Text = "";
-            AnnouncementIndex.Text = "0 / 0";
             _ = ShowAnnouncementImage("");
             return;
         }
 
-        var item = community.Announcements[announcementIndex];
-        AnnouncementTitle.Text = "[" + item.Tag + "] " + item.Title;
+        var item = community.Announcements[0];
+        AnnouncementTitle.Text = item.Tag.Length > 0
+            ? "[" + item.Tag + "] " + item.Title
+            : item.Title;
         AnnouncementBody.Text = item.Body;
         AnnouncementMeta.Text = string.Join(" · ", new[]
         {
@@ -324,8 +309,21 @@ internal partial class HomeView : UserControl
             item.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "",
             item.ImageUrl.Length > 0 ? "含配图" : ""
         }.Where(value => value.Length > 0));
-        AnnouncementIndex.Text = $"{announcementIndex + 1} / {community.Announcements.Count}";
+        OpenAnnouncementButton.IsVisible = item.Markdown.Length > 0;
         _ = ShowAnnouncementImage(item.ImageUrl);
+    }
+
+    async Task OpenAnnouncement()
+    {
+        if (community.Announcements.Count == 0 || community.Announcements[0].Markdown.Length == 0)
+            return;
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            Status("无法打开公告窗口。");
+            return;
+        }
+
+        await new AnnouncementWindow(community.Announcements[0]).ShowDialog(owner);
     }
 
     async Task ShowAnnouncementImage(string url)

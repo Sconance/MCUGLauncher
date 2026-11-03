@@ -20,7 +20,9 @@ internal sealed class TestSourceFeatureHandler(LauncherContext context)
     {
         var name = ReadString(arguments, "name");
         var url = ReadString(arguments, "url");
-        var result = await context.Community.TestAsync(url, token);
+        var result = name == "公告"
+            ? await context.Community.TestAnnouncementAsync(url, token)
+            : await context.Community.TestAsync(url, token);
         return new TestResultInfo(name, url, result.Ok, result.Text, result.Ms);
     }
 }

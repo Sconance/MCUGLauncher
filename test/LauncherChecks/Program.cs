@@ -47,6 +47,104 @@ foreach (var bad in new[] { "[]", "{", "{}", "{\"type\":\"unknown\"}" })
     await Request(bad);
     Check(Has("error"), "invalid protocol has observable error: " + bad);
 }
+var markdownAnnouncement = CommunityService.ParseMarkdownAnnouncement(
+    """
+    # tags
+    更新, 社区
+
+    # preview_body
+    预览正文第一行。
+    预览正文第二行。
+
+    # author
+    测试作者
+
+    # preview_title
+    测试公告
+
+    # 完整公告
+    正文保留。
+    """,
+    "https://example.test/announcement.md");
+Check(markdownAnnouncement.Title == "测试公告"
+    && markdownAnnouncement.Body == "预览正文第一行。\n预览正文第二行。"
+    && markdownAnnouncement.Tag == "更新 · 社区"
+    && markdownAnnouncement.Author == "测试作者"
+    && markdownAnnouncement.Markdown.StartsWith("# 完整公告", StringComparison.Ordinal),
+    "markdown announcement parses preview fields and preserves full article");
+var emptyMarkdownAnnouncement = CommunityService.ParseMarkdownAnnouncement(
+    "# 完整公告\n只显示在全文中的内容。",
+    "https://example.test/empty.md");
+Check(emptyMarkdownAnnouncement.Body == "一份很懒的公告"
+    && emptyMarkdownAnnouncement.Markdown.Contains("只显示在全文中的内容。", StringComparison.Ordinal),
+    "markdown announcement applies empty-preview fallback");
+var partialMarkdownAnnouncement = CommunityService.ParseMarkdownAnnouncement(
+    "# preview_title\n只有标题",
+    "https://example.test/partial.md");
+Check(partialMarkdownAnnouncement.Title == "只有标题" && partialMarkdownAnnouncement.Body.Length == 0,
+    "markdown announcement only applies fallback when every preview field is empty");
+var codeMarkdownAnnouncement = CommunityService.ParseMarkdownAnnouncement(
+    "```markdown\n# preview_title\n示例文本\n```\n",
+    "https://example.test/code.md");
+Check(codeMarkdownAnnouncement.Title.Length == 0
+    && codeMarkdownAnnouncement.Markdown.Contains("# preview_title", StringComparison.Ordinal),
+    "markdown announcement ignores metadata-like headings inside code fences");
+const string legacyAnnouncementsUrl =
+    "https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/announcements.json";
+var legacyDefaultStore = new ConfigStore(Path.Combine(fixture, "legacy-default-announcements"));
+legacyDefaultStore.Save(new MCUGLauncher.Models.AppConfig
+{
+    DataSources = new MCUGLauncher.Models.DataSourceConfig { Announcements = legacyAnnouncementsUrl },
+    DataSourceMode = "default"
+});
+Check(legacyDefaultStore.Load().DataSources.Announcements == new MCUGLauncher.Models.DataSourceConfig().Announcements,
+    "legacy default JSON announcement source migrates to Markdown");
+var customAnnouncementStore = new ConfigStore(Path.Combine(fixture, "custom-json-announcements"));
+customAnnouncementStore.Save(new MCUGLauncher.Models.AppConfig
+{
+    DataSources = new MCUGLauncher.Models.DataSourceConfig { Announcements = legacyAnnouncementsUrl },
+    DataSourceMode = "custom"
+});
+Check(customAnnouncementStore.Load().DataSources.Announcements == legacyAnnouncementsUrl,
+    "custom announcement source is preserved during migration");
+try
+{
+    _ = CommunityService.ParseMarkdownAnnouncement(
+        "# preview_title\n一\n# preview_title\n二",
+        "https://example.test/duplicate.md");
+    Check(false, "duplicate markdown preview fields are rejected");
+}
+catch (InvalidDataException)
+{
+    Check(true, "duplicate markdown preview fields are rejected");
+}
+try
+{
+    _ = CommunityService.ParseMarkdownAnnouncement(
+        """[{"title":"legacy JSON announcement"}]""",
+        "https://example.test/announcements.json");
+    Check(false, "JSON announcement lists are rejected");
+}
+catch (InvalidDataException)
+{
+    Check(true, "JSON announcement lists are rejected");
+}
+using (var markdownClient = new HttpClient(new MarkdownResponseHandler(
+           "# preview_title\n网络公告\n\n# 正文\n从 Markdown URL 读取。")))
+{
+    var markdownService = new CommunityService(markdownClient);
+    var loaded = await markdownService.ReadAnnouncementAsync(
+        "https://example.test/announcement.md",
+        CancellationToken.None);
+    var tested = await markdownService.TestAnnouncementAsync(
+        "https://example.test/announcement.md",
+        CancellationToken.None);
+    Check(loaded.Ok
+        && loaded.Markdown.Contains("# preview_title", StringComparison.Ordinal)
+        && tested.Ok
+        && tested.Text.Contains("Markdown 公告有效", StringComparison.Ordinal),
+        "announcement service loads and validates a direct Markdown URL");
+}
 await Request("""{"type":"window","action":"minimize"}""");
 Check(desktop.LastAction == "minimize", "native command routes through desktop boundary");
 await Request("""{"type":"saveServer","name":"Fixture","address":"localhost:25565"}""");
@@ -175,4 +273,15 @@ sealed class FakeDesktop : IDesktopHost
     public void ResetWindow()
     {
     }
+}
+
+sealed class MarkdownResponseHandler(string markdown) : HttpMessageHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(markdown, Encoding.UTF8, "text/markdown")
+        });
 }

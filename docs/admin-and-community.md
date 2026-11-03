@@ -36,7 +36,7 @@
 
 ## 2. 公告与推荐管理
 
-公告为只读内容：启动器从「数据源」配置的公告 JSON 地址读取并展示，不提供公告发布或删除功能。需要新增、修改或删除公告时，直接编辑托管公告数据的仓库并提交，然后在启动器刷新社区内容。
+公告为只读内容：启动器从「数据源」配置的地址读取单篇 Markdown 文件，并按约定字段生成预览；点击「查看完整公告」后，完整正文由 Markdown.Avalonia 渲染。不提供客户端公告发布或删除功能。需要新增、修改或删除公告时，编辑托管的 Markdown 文件并提交，然后在启动器刷新社区内容。
 
 公告 Markdown 文件的预览字段和完整正文格式见[公告 Markdown 编写规范](./ANNOUNCEMENT_MARKDOWN.md)。
 
@@ -50,7 +50,7 @@
 
 ```
 MCUGL-storage/
-├─ announcements.json
+├─ announcements.md
 ├─ servers.json
 ├─ recommendations.json
 ├─ quotes.json
@@ -59,24 +59,8 @@ MCUGL-storage/
    └─ quote-1.png
 ```
 
-四个 JSON 都使用 UTF-8，数组根节点。示例：
-
-### announcements.json
-
-```json
-[
-  {
-    "id": "2026-10-31-01",
-    "title": "0.22.3 社区功能测试开启",
-    "body": "群友推荐、服务器状态与数据源切换开始试运行。",
-    "tag": "更新",
-    "author": "TianXuan",
-    "publishedAt": "2026-10-31T10:00:00+08:00",
-    "expiresAt": "2026-11-30T23:59:59+08:00",
-    "imageUrl": "https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/images/announcement-1.png"
-  }
-]
-```
+公告使用 UTF-8 Markdown 单文件，格式见[公告 Markdown 编写规范](./ANNOUNCEMENT_MARKDOWN.md)。旧版默认 JSON 地址会自动迁移到 Markdown 示例；自定义地址不会覆盖，需要手动改为 `.md` 地址。
+服务器、推荐和语录 JSON 使用 UTF-8，数组根节点。示例：
 
 ### servers.json
 
@@ -147,13 +131,13 @@ MCUGL-storage/
 打开 `设置 → 社区 → 数据源`，选择「自定义」，分别填入四个 Raw 地址：
 
 ```text
-https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/announcements.json
+https://raw.githubusercontent.com/Sconance/MCUGLauncher/main/community/announcements.md
 https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/servers.json
 https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/recommendations.json
 https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/quotes.json
 ```
 
-逐项点「测试」确认 200 响应，再点「保存数据源」。
+逐项点「测试」确认公告 Markdown 格式有效、其他数据源可访问，再点「保存数据源」。
 
 注意：
 
@@ -161,14 +145,14 @@ https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/quotes.json
 - 分支名要写实际分支，默认是 `main`；如果你用 `master` 就改掉。
 - 图片同样使用 `raw.githubusercontent.com` 地址；不要使用网页 HTML 地址。
 - 四类地址可以分别指向不同仓库或服务器。
-- GitHub Raw 有缓存，更新后可能延迟几分钟；启动器自身缓存约 5 分钟。
+- GitHub Raw 有缓存，更新后可能延迟几分钟。
 - 国内网络访问 Raw 可能超时，建议准备镜像或自有域名。
 
 ---
 
 ## 5. 删除与“同步”的边界
 
-启动器里的删除操作只影响本机：群友推荐在本机删除后写入本地 JSON；公告只读，不提供启动器内的删除入口。远端数据不会被修改，需要在托管仓库中删除对应条目并提交。
+启动器里的删除操作只影响本机：群友推荐在本机删除后写入本地 JSON；公告只读，不提供启动器内的删除入口。公告源不接受 JSON 列表，单个 URL 只对应一篇 Markdown。远端数据不会被修改，需要在托管仓库中编辑 Markdown 文件并提交。
 
 这是有意设计：客户端不应该拿着 GitHub Token 去改仓库。否则任何用户都能从客户端提取 Token 并清空你的数据。
 
@@ -176,17 +160,21 @@ https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/quotes.json
 
 ## 6. 建议的 GitHub 社区工作流
 
-1. 在 `MCUGL-storage` 仓库里维护四个 JSON。
+1. 在托管仓库里维护一篇 `announcements.md` 和三个 JSON。
 2. 图片放 `images/`，用 Raw 链接。
 3. 启动器「数据源」填四个 Raw 地址并测试。
-4. 在 GitHub 网页编辑公告 JSON 并提交。
+4. 在 GitHub 网页编辑公告 Markdown 并提交。
 5. 修改后在启动器点「刷新」；GitHub 缓存未更新时等几分钟。
 
 ---
 
-## 7. 已移除的公告写入接口（历史说明）
+## 7. 公告发布边界
 
-公告写入接口已移除。`WriteEndpoint` 旧配置字段仅为读取旧配置时兼容保留，不再参与运行。以下内容为旧版实现记录，不适用于当前启动器。
+公告服务仅执行 HTTP(S) 只读加载和 Markdown 解析。启动器没有远端公告写入接口，也不会保存 GitHub Token；公告发布、修改和删除必须在托管 Markdown 文件的仓库中完成。
+
+旧配置中的 `WriteEndpoint` 字段仅为兼容读取而保留，不参与运行。公告数据源不再接受 JSON 数组。
+
+以下请求格式仅为旧版本记录，当前启动器不会调用：
 
 ```http
 POST /announcements
@@ -195,13 +183,3 @@ Content-Type: application/json
 
 { "title": "...", "body": "...", "expiresAt": "...", "imageData": "data:image/png;base64,..." }
 ```
-
-服务端职责：
-
-- 校验管理员密钥；
-- 校验图片类型和大小；
-- 把图片转存到对象存储或仓库；
-- 更新 `announcements.json`；
-- 返回 `{ "ok": true }`。
-
-不要把 GitHub PAT 写进启动器，也不要提交到仓库。

@@ -87,7 +87,9 @@ internal partial class CommunityView : UserControl
             var copy = new StackPanel { Spacing = 2 };
             copy.Children.Add(new TextBlock
             {
-                Text = "[" + item.Tag + "] " + item.Title,
+                Text = item.Tag.Length > 0
+                    ? "[" + item.Tag + "] " + item.Title
+                    : item.Title,
                 FontWeight = FontWeight.SemiBold,
                 TextWrapping = TextWrapping.Wrap
             });
@@ -102,8 +104,28 @@ internal partial class CommunityView : UserControl
                 }.Where(value => value.Length > 0)),
                 Classes = { "muted" }
             });
+            var open = new Button
+            {
+                Content = "查看完整公告",
+                Classes = { "link" },
+                HorizontalAlignment = HorizontalAlignment.Left,
+                IsVisible = item.Markdown.Length > 0
+            };
+            open.Click += async (_, _) => await OpenAnnouncement(item);
+            copy.Children.Add(open);
             AnnouncementsPanel.Children.Add(copy);
         }
+    }
+
+    async Task OpenAnnouncement(AnnouncementInfo item)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            ManageStatus.Text = "无法打开公告窗口。";
+            return;
+        }
+
+        await new AnnouncementWindow(item).ShowDialog(owner);
     }
 
     void RenderManagement()

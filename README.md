@@ -70,19 +70,21 @@ Windows 上的 Minecraft Java 版启动器。当前 0.22.3-Avalonia 分支使用
 
 ## 数据源
 
-四类数据分别读取独立 JSON：
+社区数据源按格式分别读取：公告使用单篇 Markdown 文件，服务器、推荐和语录使用 JSON：
 
 | 类型 | 示例文件 | 主要字段 |
 | --- | --- | --- |
-| 公告 | `community/announcements.json` | `id, title, body, tag, author, publishedAt, expiresAt, imageUrl?` |
+| 公告 | `community/announcements.md` | `preview_title, preview_body, preview_pic_url, tags, author` 元数据及完整 Markdown 正文 |
 | 服务器 | `community/servers.json` | `id, name, address, description, version, mode, tags, icon` |
 | 推荐 | `community/recommendations.json` | `id, type(server/material/shader), name, author, description, tags, version, size, url` |
 | 语录 | `community/quotes.json` | `id, type(text/image), text, author, source, imageUrl?, created_at` |
 
-默认地址集中在 `Models/AppConfig.cs` 的 `DataSourceConfig`，当前指向 `waibibabu1239/MCUGL-storage`。首次使用的旧配置不会自动覆盖；如仍指向示例仓库，请在「设置 → 数据源」点「恢复默认」再保存。
+默认地址集中在 `Models/AppConfig.cs` 的 `DataSourceConfig`。公告默认指向本仓库的 Markdown 示例，其余社区 JSON 指向 `waibibabu1239/MCUGL-storage`。旧版默认公告 JSON 地址会自动迁移；自定义公告地址不会覆盖，如仍指向 JSON，请在「设置 → 数据源」改为 `.md` 地址。
 
 - 读取超时 8 秒；单个地址失败不会阻塞其他区块。
-- 公告只从配置的数据源读取；在托管仓库中编辑公告并刷新即可更新。
+- 公告数据源 URL 必须直接指向一篇 `.md` 文件；JSON 公告列表不再支持。点击公告卡片的「查看完整公告」可在 Markdown.Avalonia 窗口中查看完整正文。
+- 公告字段和正文格式见 [公告 Markdown 编写规范](docs/ANNOUNCEMENT_MARKDOWN.md)。
+- 公告只从配置的数据源读取；在托管仓库中编辑 Markdown 文件并刷新即可更新。
 - 管理员认证、删除边界与 GitHub 托管步骤见 [docs/admin-and-community.md](docs/admin-and-community.md)。
 
 本轮继续接回实例克隆、整合包 ZIP 导出、卸载路径预览和内容更新预览；结构与格式检查结论见 [代码风格复查](docs/CODE_STYLE_REVIEW.md)。
@@ -171,7 +173,7 @@ dotnet build MCUGLauncher.sln -c Release
 - 群友推荐只有推荐列表；下载跳转依赖 JSON 中的 `url`。
 - 0.22.3 不含自动更新。
 
-管理员认证、公告发布和 GitHub 数据托管见 [docs/admin-and-community.md](docs/admin-and-community.md)。
+管理员认证与社区数据托管见 [docs/admin-and-community.md](docs/admin-and-community.md)。
 
 ## 变更记录
 
@@ -180,6 +182,3 @@ dotnet build MCUGLauncher.sln -c Release
 ## 许可
 
 本项目未附带新的开源许可证；发布前请沿用原仓库的许可策略。
-
-
-

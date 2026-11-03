@@ -378,6 +378,7 @@ public sealed record AnnouncementInfo(
     string ImageUrl)
 {
     public string Raw { get; init; } = "";
+    public string Markdown { get; init; } = "";
 
     internal static AnnouncementInfo From(JsonElement element)
     {
@@ -393,7 +394,8 @@ public sealed record AnnouncementInfo(
             DateTimeOffset.TryParse(date, out var published) ? published : null,
             JsonRead.String(element, "imageUrl") is { Length: > 0 } image ? image : JsonRead.String(element, "image"))
         {
-            Raw = element.GetRawText()
+            Raw = element.GetRawText(),
+            Markdown = JsonRead.String(element, "markdown")
         };
     }
 }
