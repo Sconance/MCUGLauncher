@@ -18,14 +18,9 @@ public partial class ShellWindow : Window
     ILauncherService service = null!;
     readonly ShellDesktopHost host;
     readonly SettingsView settingsView;
-    readonly InstancesView instancesView;
+    readonly ExtrasView extrasView;
     readonly HomeView homeView;
     readonly DownloadView downloadView;
-    readonly AccountView accountView;
-    readonly GamesView gamesView;
-    readonly BookmarksView bookmarksView;
-    readonly CommunityView communityView;
-    readonly TasksView tasksView;
     readonly Dictionary<string, Button> navigation = new(StringComparer.Ordinal);
     readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     string page = "home";
@@ -48,15 +43,10 @@ public partial class ShellWindow : Window
             _ => new MicrosoftLoginWebUi(),
             AvaloniaAvatarImage.Encode);
         settingsView = new SettingsView(service);
-        instancesView = new InstancesView(service);
+        extrasView = new ExtrasView(service);
         homeView = new HomeView(service);
-        homeView.AccountRequested += () => Show("account");
+        homeView.AccountRequested += () => OpenExtras("account");
         downloadView = new DownloadView(service);
-        accountView = new AccountView(service);
-        gamesView = new GamesView(service);
-        bookmarksView = new BookmarksView(service);
-        communityView = new CommunityView(service);
-        tasksView = new TasksView(service);
         var placement = service.WindowPlacement;
         Width = Math.Clamp(placement.Width, LaunchLimits.ShellWidthMin, LaunchLimits.ShellWidthMax);
         Height = Math.Clamp(placement.Height, LaunchLimits.ShellHeightMin, LaunchLimits.ShellHeightMax);
@@ -89,6 +79,7 @@ public partial class ShellWindow : Window
             Show("download");
         };
         SettingsButton.Click += (_, _) => Show("settings");
+        MoreButton.Click += (_, _) => OpenExtras();
         Render();
         Opened += async (_, _) =>
         {
@@ -113,29 +104,16 @@ public partial class ShellWindow : Window
         if (navigation.TryGetValue(page, out var active))
             active.Classes.Add("active");
         MoreButton.Classes.Remove("active");
-        if (page is not ("home" or "download" or "settings"))
+        if (page == "extras")
             MoreButton.Classes.Add("active");
     }
 
-    void OnInstancesMenu(object? sender, RoutedEventArgs e) => Show("instances");
-
-    void OnAccountMenu(object? sender, RoutedEventArgs e) => Show("account");
-
-    void OnTasksMenu(object? sender, RoutedEventArgs e)
+    void OpenExtras(string? section = null)
     {
-        tasksView.Activate();
-        Show("tasks");
+        if (section is not null)
+            extrasView.Open(section);
+        Show("extras");
     }
-
-    void OnGamesMenu(object? sender, RoutedEventArgs e)
-    {
-        gamesView.Activate();
-        Show("games");
-    }
-
-    void OnBookmarksMenu(object? sender, RoutedEventArgs e) => Show("bookmarks");
-
-    void OnCommunityMenu(object? sender, RoutedEventArgs e) => Show("community");
 
     void OnMinimizeWindow(object? sender, RoutedEventArgs e) =>
         WindowState = WindowState.Minimized;
@@ -169,45 +147,22 @@ public partial class ShellWindow : Window
             PageHost.Content = settingsView;
             return;
         }
-        if (page == "instances")
+
+        if (page == "extras")
         {
-            PageHost.Content = instancesView;
+            PageHost.Content = extrasView;
             return;
         }
+
         if (page == "home")
         {
             PageHost.Content = homeView;
             return;
         }
+
         if (page == "download")
         {
             PageHost.Content = downloadView;
-            return;
-        }
-        if (page == "account")
-        {
-            accountView.Activate();
-            PageHost.Content = accountView;
-            return;
-        }
-        if (page == "games")
-        {
-            PageHost.Content = gamesView;
-            return;
-        }
-        if (page == "bookmarks")
-        {
-            PageHost.Content = bookmarksView;
-            return;
-        }
-        if (page == "community")
-        {
-            PageHost.Content = communityView;
-            return;
-        }
-        if (page == "tasks")
-        {
-            PageHost.Content = tasksView;
             return;
         }
     }
