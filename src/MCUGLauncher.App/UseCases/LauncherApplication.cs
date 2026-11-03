@@ -50,7 +50,7 @@ internal sealed class LauncherApplication : IDisposable
         resourceCommands = new ResourceCommands(context);
         resourceChoices = new ResourceChoiceCommands(context);
         launchOptions = new LaunchOptionsCommands(context);
-        avatars = new AvatarCommands(context, avatarEncoder ?? (_ => ""));
+        avatars = context.Avatars;
         settingsCommands = new SettingsCommands(context);
         diagnosticCommands = new DiagnosticCommands(context);
         communityCommands = new CommunityCommands(context);
@@ -82,6 +82,7 @@ internal sealed class LauncherApplication : IDisposable
             {
                 case "ready":
                     // The browser can request fresh state after every navigation.
+                    await accountModes.PreloadIdentitiesAsync();
                     context.RefreshState();
                     context.SendTasks();
                     context.SendGames();

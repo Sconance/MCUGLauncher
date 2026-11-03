@@ -17,7 +17,7 @@ internal sealed class ReadAvatarFeatureHandler(LauncherContext context)
     : IFeatureHandler<AvatarInfo?>
 {
     public Task<AvatarInfo?> HandleAsync(JsonElement arguments, CancellationToken token) =>
-        new AvatarCommands(context, context.AvatarEncoder).ReadAsync();
+        context.Avatars.ReadAsync();
 }
 
 [FeatureHandler(nameof(ILauncherService.SetOfflineSkinAsync))]
@@ -25,7 +25,7 @@ internal sealed class SetOfflineSkinFeatureHandler(LauncherContext context)
     : IFeatureHandler<AvatarInfo?>
 {
     public Task<AvatarInfo?> HandleAsync(JsonElement arguments, CancellationToken token) =>
-        new AvatarCommands(context, context.AvatarEncoder).SetAsync(
+        context.Avatars.SetAsync(
             JsonSerializer.SerializeToElement(new
             {
                 path = ReadString(arguments, "path")

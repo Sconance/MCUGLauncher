@@ -235,8 +235,8 @@ Views（UI，不属于后端）
 | 组件 | 说明 | 依赖面 |
 | --- | --- | --- |
 | `AccountCommands` | 微软/MUA 登录、MUA 角色选择 | `LauncherContext.AccountRevision/Microsoft/Mua/Send/Token`；`AccountModeCommands.Apply` |
-| `AccountModeCommands` | 账号模式恢复、切换、忘记 | `LauncherContext.AccountRevision/AccountSessions/Config/Microsoft/Mua/OnlineSession/Send/SendAccountState/Store/Token` |
-| `AvatarCommands` | 头像读取与离线皮肤 | `LauncherContext.AccountRevision/Config/Http/Microsoft/Mua/Send/Store/Token` |
+| `AccountModeCommands` | 账号模式恢复、切换、忘记 | `LauncherContext.AccountRevision/AccountSessions/Config/Log/Microsoft/Mua/OnlineSession/Send/SendAccountState/Store/Token` |
+| `AvatarCommands` | 头像读取与离线皮肤 | `LauncherContext.AccountRevision/AvatarIdentity/Config/Http/Log/Microsoft/Mua/Store/Token`；`AvatarDiskCache`；`SkinAssets`；`ProtocolValues.ReadString` |
 | `BookmarkCommands` | 资源收藏切换 | `LauncherContext.RefreshState/Store` |
 | `CommunityCommands` | 公告图片下载、推荐/服务器收藏 | `LauncherContext.Community/Config/Http/RefreshState/Send/Store/Token` |
 | `ContentUpdateCommands` | 内容更新检查、预览、应用 | `LauncherContext.Config/Http/Send/Tasks/Token` |
@@ -246,7 +246,7 @@ Views（UI，不属于后端）
 | `InstanceCommands` | 目录打开、模组启停/删除 | `LauncherContext.Config/RefreshState` |
 | `InstanceMaintenanceCommands` | 实例克隆与导出 | `LauncherContext.Config/Tasks` |
 | `LaunchOptionsCommands` | 启动选项读写 | `LauncherContext.Config/RefreshState/Send/Store` |
-| `LauncherContext` | 共享运行时（配置、HTTP、队列、会话、状态回推） | `ConfigStore`、`NetworkPolicyHandler`、`CommunityService`、`DownloadExecutor`、`LauncherTaskQueue`、`RunningGameRegistry`、`AccountSessionCache`、`MicrosoftAccountService`、`MuaAccountService` |
+| `LauncherContext` | 共享运行时（配置、HTTP、队列、会话、状态回推） | `ConfigStore`、`NetworkPolicyHandler`、`CommunityService`、`DownloadExecutor`、`LauncherTaskQueue`、`RunningGameRegistry`、`AccountSessionCache`、`MicrosoftAccountService`、`MuaAccountService`、`AvatarCommands` |
 | `MuaProfileSelection` | MUA 多角色选择的短期状态 | `LauncherContext.Send/Token` |
 | `ResourceChoiceCommands` | 资源版本列表与排队 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `ResourceCommands` | 原版/Modrinth 搜索与安装 | `LauncherContext.Config/Http/Send/Store/Tasks/Token` |
@@ -274,7 +274,7 @@ Views（UI，不属于后端）
 | `MicrosoftAccountService` | 微软登录、会话刷新、令牌存储 | `ProtectedAccountStorage`、`MinecraftOwnershipGuard`、`AuthenticationCheckpoint`、`IWebUI`、`HttpClient` |
 | `MuaAccountService` | MUA 登录、角色、元数据 | `ProtectedAccountStorage`、`HttpClient` |
 
-### 8.3 A 类（14 个）
+### 8.3 A 类（15 个）
 
 | 组件 | 位置 | 说明 |
 | --- | --- | --- |
@@ -292,6 +292,7 @@ Views（UI，不属于后端）
 | `MinecraftOwnershipGuard` | `Authentication/MinecraftOwnershipGuard.cs` | 正版资格校验；依赖 CmlLib 认证上下文 |
 | `ProtectedAccountStorage` | `Authentication/ProtectedAccountStorage.cs` | DPAPI 账号存储；依赖 `IJsonStorage` 与 BCL 加密 |
 | `AppConfig` | `Models/AppConfig.cs` | 配置数据模型（叶子类型），只依赖 BCL/集合 |
+| `AvatarDiskCache` | `Services/AvatarDiskCache.cs` | 头像磁盘缓存；只依赖 Core `AtomicFile` 与 BCL |
 
 ### 8.4 `LauncherContext` 依赖成员签名
 
@@ -299,6 +300,8 @@ B 组件声明依赖时，按以下签名书写：
 
 ```text
 AppConfig Config { get; }
+string AvatarIdentity { get; }
+AvatarCommands Avatars { get; }
 ConfigStore Store { get; }
 HttpClient Http { get; }
 CommunityService Community { get; }

@@ -11,24 +11,13 @@ internal sealed class AccountModeCommands(
     Func<string, Task<MSession>>? restore = null,
     Func<string, Task<AccountIdentity?>>? readIdentity = null)
 {
+    Task? identityPreload;
+
     public async Task<AccountSwitchResultInfo> RestoreSelectedAsync()
     {
         var revision = context.AccountRevision;
         var mode = context.Config.AccountType;
-        foreach (var accountMode in new[] { "microsoft", "mua" })
-        {
-            try
-            {
-                var identity = await ReadIdentityAsync(accountMode);
-                if (revision != context.AccountRevision)
-                    return new(mode, false, "账号恢复已被更新的账号操作取代。");
-                if (identity is not null)
-                    context.AccountSessions.RememberIdentity(accountMode, identity);
-            }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or AccountStorageException)
-            {
-            }
-        }
+        await PreloadIdentitiesAsync();
         var result = revision == context.AccountRevision
             ? await SwitchAsync(mode, false)
             : new AccountSwitchResultInfo(mode, false, "账号恢复已被更新的账号操作取代。");
@@ -51,6 +40,28 @@ internal sealed class AccountModeCommands(
                 });
         }
         return result;
+    }
+
+    public Task PreloadIdentitiesAsync() => identityPreload ??= LoadIdentitiesAsync();
+
+    async Task LoadIdentitiesAsync()
+    {
+        var revision = context.AccountRevision;
+        foreach (var accountMode in new[] { "microsoft", "mua" })
+        {
+            try
+            {
+                var identity = await ReadIdentityAsync(accountMode);
+                if (revision != context.AccountRevision)
+                    return;
+                if (identity is not null)
+                    context.AccountSessions.RememberIdentity(accountMode, identity);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or AccountStorageException)
+            {
+                context.Log("账号身份预载失败 [" + error.GetType().Name + "]");
+            }
+        }
     }
 
     Task<AccountIdentity?> ReadIdentityAsync(string mode) => readIdentity is not null

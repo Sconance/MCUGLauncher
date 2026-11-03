@@ -241,6 +241,7 @@ Check(store.Load().WindowWidth == 1400 && store.Load().WindowMaximized, "window 
 await ResourceScenarios.Run(fixture);
 await QueueScenarios.Run(fixture);
 await AccountModeScenarios.Run(fixture);
+await AvatarScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);
 using (var service = new LauncherService(

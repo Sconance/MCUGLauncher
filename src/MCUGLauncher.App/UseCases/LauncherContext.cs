@@ -10,6 +10,17 @@ internal sealed class LauncherContext : IDisposable
 {
     readonly CancellationTokenSource lifetime = new();
     public long AccountRevision;
+    public string AvatarIdentity
+    {
+        get
+        {
+            var mode = Config.AccountType;
+            var uuid = OnlineSession?.UUID ?? AccountSessions.Identity(mode)?.Uuid ?? "";
+            return mode + ":" + (mode == "mua" ? MuaAccountService.Api : "minecraft") + ":"
+                + (uuid.Length > 0 ? uuid : Config.Player)
+                + (mode == "offline" ? ":" + Config.SkinFile : "");
+        }
+    }
     public AccountSessionCache AccountSessions { get; } = new();
     readonly ConcurrentDictionary<string, string> preparing = new(StringComparer.OrdinalIgnoreCase);
     static string Full(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
@@ -54,6 +65,10 @@ internal sealed class LauncherContext : IDisposable
     {
         get;
     }
+    public AvatarCommands Avatars
+    {
+        get;
+    }
     public RunningGameRegistry Games { get; } = new();
     public void SendGames() => Send(new { type = "games", items = Games.Active.Select(g => new { id = g.Id.ToString("N"), version = g.Version, player = g.PlayerName, pid = g.Session.Process.Id }) });
 
@@ -83,6 +98,7 @@ internal sealed class LauncherContext : IDisposable
         AvatarEncoder = avatarEncoder ?? (_ => "");
         Store = store ?? new ConfigStore();
         Config = Store.Load();
+        Avatars = new AvatarCommands(this, AvatarEncoder);
         Http = NetworkPolicyHandler.Create(Config.LegacyPreferences.Network);
         Community = new CommunityService(Http);
         var executor = new DownloadExecutor(Http, IsInstanceInUse, IsRootPreparing);
