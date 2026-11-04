@@ -79,11 +79,17 @@ public static class ServerFavorites
     /// <summary>
     /// 查询。
     /// </summary>
-    public static async Task<ServerStatus> Ping(string address, CancellationToken token = default)
+    public static Task<ServerStatus> Ping(string address, CancellationToken token = default) =>
+        Ping(address, token, TimeSpan.FromSeconds(5));
+
+    /// <summary>使用调用方指定的总超时查询服务器。</summary>
+    public static async Task<ServerStatus> Ping(string address, CancellationToken token, TimeSpan timeoutDuration)
     {
+        if (timeoutDuration <= TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(timeoutDuration));
         var endpoint = ServerEndpoint.Parse(address);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+        timeout.CancelAfter(timeoutDuration);
         var ct = timeout.Token;
         using var client = new TcpClient();
         await client.ConnectAsync(endpoint.Host, endpoint.Port, ct);
