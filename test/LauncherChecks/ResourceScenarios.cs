@@ -6,11 +6,18 @@ using System.Text.Json;
 using System.Text;
 using BlockLaunch;
 using MCUGLauncher.Services;
+using MCUGLauncher.UseCases;
 
 internal static class ResourceScenarios
 {
     public static async Task Run(string fixture)
     {
+        var vanilla = ResourceCommands.ParseVanillaVersions(
+            """{"versions":[{"id":"1.21.1","type":"release","releaseTime":"2024-06-13T00:00:00+00:00"},{"id":"24w20a","type":"snapshot","releaseTime":"2024-05-14T00:00:00+00:00"},{"id":"b1.7.3","type":"old_beta","releaseTime":"2011-07-08T00:00:00+00:00"},{"id":"in-20100618","type":"old_alpha","releaseTime":"2010-06-18T00:00:00+00:00"}]}""");
+        if (vanilla.Count != 4 || vanilla.Select(item => item.Type).Distinct().Count() != 4)
+            throw new Exception("vanilla catalog did not preserve release, snapshot, and old version types");
+        Console.WriteLine("PASS Mojang catalog retains release, snapshot, and old version entries");
+
         using var handler = new ResourceFixtureHandler();
         using var http = new HttpClient(handler);
         var versions = await new ContentService(http).Versions("fixture", "1.21.1", "neoforge", "mod");

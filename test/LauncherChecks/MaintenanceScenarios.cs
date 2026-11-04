@@ -28,6 +28,11 @@ internal static class MaintenanceScenarios
         new InstanceCatalog(root).Save(descriptor);
         var snapshot = InstanceSnapshot.Capture(config, "fabric-fixture");
         Check(snapshot.Requirements == new PackRequirements("1.21.1", "fabric", "0.16.0"), "installed metadata resolves inherited game and exact loader version");
+        var neo = Path.Combine(root, "versions", "neo-args");
+        Directory.CreateDirectory(neo);
+        File.WriteAllText(Path.Combine(neo, "neo-args.json"), """{"id":"neo-args","arguments":{"game":["--fml.neoForgeVersion","21.1.80","--fml.mcVersion","1.21.1"]},"libraries":[{"name":"net.neoforged:neoforge:21.1.80"}]}""");
+        Check(InstanceSnapshot.Capture(config, "neo-args").Requirements == new PackRequirements("1.21.1", "neoforge", "21.1.80"),
+            "instance requirements reuse Core metadata parsing for standalone NeoForge profiles");
         Check(snapshot.Settings.RamMb == 1536, "instance launch overrides survive snapshot capture");
         snapshot.Settings.Java = "changed-copy";
         Check(new InstanceCatalog(root).GetOrCreate("fabric-fixture").Launch!.Java == "", "captured launch settings do not mutate source settings");
@@ -91,8 +96,53 @@ internal static class MaintenanceScenarios
         File.WriteAllText(Path.Combine(optionsOnly, "options.txt"), "keep");
         var legacy = new InstanceCatalog(root).GetOrCreate("options-only");
         Check(legacy.DataDirectory == Path.GetFullPath(optionsOnly), "legacy options-only data directory is retained");
+        LaunchOptionsToken(store);
+        SaveRecommendations(store);
         await UpdatesAsync(fixture, store, source);
-        await LaunchSnapshotAsync(fixture, store);
+        await LaunchSnapshotAsync(fixture, store, source);
+    }
+
+    static void LaunchOptionsToken(ConfigStore store)
+    {
+        using var context = new LauncherContext(_ => { }, store);
+        var read = new LaunchOptionsCommands(context).Read(JsonSerializer.SerializeToElement(new
+        {
+            version = "",
+            requestId = "global"
+        }));
+        var payload = JsonSerializer.SerializeToElement(new
+        {
+            token = read.Token,
+            name = "",
+            inherit = false,
+            settings = new
+            {
+                autoMemory = false,
+                fullScreen = false,
+                ramMb = 4096,
+                width = 1280,
+                height = 720,
+                java = "",
+                jvmArguments = "",
+                windowTitle = "",
+                server = "",
+                autoChinese = false
+            }
+        });
+        new LaunchOptionsCommands(context).Save(payload);
+        Check(!context.Config.LegacyPreferences.Launch.AutoChinese,
+            "launch option tokens remain valid across feature handler instances and save AutoChinese");
+    }
+
+    static void SaveRecommendations(ConfigStore store)
+    {
+        using var context = new LauncherContext(_ => { }, store);
+        using var items = JsonDocument.Parse("""{"items":[{"id":"fixture-recommendation"}]}""");
+        new CommunityCommands(context).SaveRecommendationsLocal(items.RootElement);
+        var path = Path.Combine(store.DataDirectory, "recommendations.local.json");
+        using var saved = JsonDocument.Parse(File.ReadAllText(path));
+        Check(saved.RootElement[0].GetProperty("id").GetString() == "fixture-recommendation",
+            "local recommendations are atomically persisted as valid JSON");
     }
 
     static async Task UpdatesAsync(string fixture, ConfigStore store, string source)
@@ -103,15 +153,21 @@ internal static class MaintenanceScenarios
         using var context = new LauncherContext(value => messages.Add(JsonSerializer.SerializeToElement(value)), store);
         var commands = new ContentUpdateCommands(context, _ => new FakeUpdates());
         var check = await commands.CheckAsync("fabric-fixture");
-        var preview = await commands.PreviewAsync(JsonSerializer.SerializeToElement(new
+        var preview = await new ContentUpdateCommands(context, _ => new FakeUpdates()).PreviewAsync(JsonSerializer.SerializeToElement(new
         {
             token = check.Token,
             projects = new[] { "fixture-project" }
         }));
         Check(preview.Changes.Count == 1, "content updates expose an explicit file-change preview");
         File.WriteAllText(Path.Combine(source, "mods", "fixture.jar"), "user-changed-after-preview");
-        commands.Apply(preview.Token);
+        var apply = await new ApplyUpdatesFeatureHandler(context).HandleAsync(
+            JsonSerializer.SerializeToElement(new
+            {
+                token = preview.Token
+            }),
+            CancellationToken.None);
         await context.Tasks.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+        Check(apply.Message == "更新任务已加入队列。", "update application confirms enqueue completion");
         Check(context.Tasks.History().Single().State == OperationState.Failed && File.ReadAllText(Path.Combine(source, "mods", "fixture.jar")) == "user-changed-after-preview", "stale update fingerprint fails before replacing user content");
         try
         {
@@ -121,7 +177,7 @@ internal static class MaintenanceScenarios
         catch (InvalidOperationException) { Check(true, "applied preview token cannot be reused"); }
     }
 
-    static async Task LaunchSnapshotAsync(string fixture, ConfigStore store)
+    static async Task LaunchSnapshotAsync(string fixture, ConfigStore store, string source)
     {
         using var context = new LauncherContext(_ => { }, store);
         var expectedRoot = Path.GetFullPath(context.Config.Root);
@@ -158,6 +214,8 @@ internal static class MaintenanceScenarios
         await Task.WhenAll(context.Games.Active.Select(g => g.Session.Completion));
         Check(request.Root == expectedRoot && request.Session.Username == expectedPlayer && request.Ram == 1536,
             "launch freezes root identity and per-instance settings across asynchronous preparation");
+        Check(File.ReadAllText(Path.Combine(source, "options.txt")).Contains("lang:zh_cn", StringComparison.Ordinal),
+            "enabled AutoChinese seeds the target instance language before launch");
         Check(!context.IsRootPreparing(expectedRoot), "launch reservation releases after process start");
     }
 

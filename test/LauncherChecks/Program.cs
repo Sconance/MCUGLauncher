@@ -26,8 +26,22 @@ bool Has(string type) => messages.Any(m =>
 void Check(bool value, string name) { if (!value) throw new Exception(name); Console.WriteLine("PASS " + name); }
 async Task Request(string json) { messages.Clear(); await application.HandleAsync(json); }
 
+Check(new BlockLaunch.LaunchSettings().AutoChinese, "legacy launch settings default AutoChinese on");
+Check(new MCUGLauncher.Models.AppConfig().AutoMemory
+    && !JsonSerializer.Deserialize<MCUGLauncher.Models.AppConfig>("""{"AutoMemory":false}""")!.AutoMemory,
+    "automatic memory defaults on without overriding an explicit saved preference");
+using (var oldLaunchSettings = JsonDocument.Parse("{}"))
+    Check(LaunchSettingsInfo.From(oldLaunchSettings.RootElement).AutoChinese,
+        "launch settings DTO defaults AutoChinese for older responses");
+
 await Request("""{"type":"requestState"}""");
 Check(messages.Count > 0 && messages[0].GetProperty("selectedVersion").GetString() == "custom-fabric", "state reflects fixture instance");
+await Request("""{"type":"saveSettings","autoChinese":false}""");
+Check(Has("settingsSaved") && !application.Config.LegacyPreferences.Launch.AutoChinese
+    && !store.Load().LegacyPreferences.Launch.AutoChinese,
+    "global AutoChinese setting persists" + (Has("error") ? ": " + messages.Last().GetProperty("message").GetString() : ""));
+await Request("""{"type":"saveSettings","autoChinese":true}""");
+Check(store.Load().LegacyPreferences.Launch.AutoChinese, "global AutoChinese can be enabled again");
 await Request("""{"type":"saveSettings","player":"Changed","ram":1,"width":99999,"height":1}""");
 Check(Has("settingsSaved") && store.Load().Player == "Changed" && store.Load().Ram == 512 && store.Load().Width == 7680, "settings persist and clamp values");
 await Request("""{"type":"saveSettings","java":"fixture-java"}""");
@@ -245,6 +259,7 @@ await AvatarScenarios.Run(fixture);
 await LocalImportScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);
+await ServerPingScenarios.Run();
 using (var service = new LauncherService(
            desktop,
            action => action(),
