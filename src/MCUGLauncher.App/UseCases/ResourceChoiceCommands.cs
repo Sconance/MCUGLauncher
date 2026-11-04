@@ -10,7 +10,7 @@ namespace MCUGLauncher.UseCases;
 internal sealed class ResourceChoiceCommands(LauncherContext context, HttpClient? browseHttp = null, Action<string, string, string, DownloadRequest>? enqueue = null)
 {
     sealed record Choice(string Root, string Instance, string Target, string Category, string Game, string Loader, List<ContentVersion> Versions);
-    readonly PreviewCache<Choice> choices = new();
+    readonly PreviewCache<Choice> choices = PreviewCache<Choice>.For(context);
 
     public async Task<ResourceVersionsResultInfo> ListAsync(JsonElement message)
     {

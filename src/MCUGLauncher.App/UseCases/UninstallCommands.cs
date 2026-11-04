@@ -7,7 +7,7 @@ namespace MCUGLauncher.UseCases;
 internal sealed class UninstallCommands(LauncherContext context)
 {
     sealed record Confirmation(InstanceSnapshot Instance, UninstallPlan Plan);
-    readonly PreviewCache<Confirmation> previews = new();
+    readonly PreviewCache<Confirmation> previews = PreviewCache<Confirmation>.For(context);
 
     public async Task<UninstallPreviewInfo> PreviewAsync(string version)
     {

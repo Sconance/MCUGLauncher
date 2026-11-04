@@ -10,8 +10,8 @@ internal sealed class ContentUpdateCommands(LauncherContext context, Func<Cancel
 {
     sealed record Checked(InstanceSnapshot Instance, List<ContentUpdate> Items);
     sealed record Previewed(InstanceSnapshot Instance, ContentUpdatePreview Preview);
-    readonly PreviewCache<Checked> checks = new();
-    readonly PreviewCache<Previewed> previews = new();
+    readonly PreviewCache<Checked> checks = PreviewCache<Checked>.For(context);
+    readonly PreviewCache<Previewed> previews = PreviewCache<Previewed>.For(context);
     IResourceProvider Provider(CancellationToken token) => createProvider?.Invoke(token) ?? new ContentService(context.Http, token);
 
     public async Task<ContentUpdatesInfo> CheckAsync(string version)

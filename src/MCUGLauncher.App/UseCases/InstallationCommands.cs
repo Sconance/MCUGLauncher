@@ -40,7 +40,7 @@ internal sealed class InstallationCommands(LauncherContext context, Action<strin
     }
 
     sealed record ImportChoice(string Root, string File, string Hash, PackOverview Overview);
-    readonly PreviewCache<ImportChoice> imports = new();
+    readonly PreviewCache<ImportChoice> imports = PreviewCache<ImportChoice>.For(context);
 
     public async Task<PackPreviewResultInfo> PreviewPackAsync(JsonElement message)
     {

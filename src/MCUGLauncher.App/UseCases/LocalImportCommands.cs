@@ -22,7 +22,7 @@ internal sealed class LocalImportCommands(LauncherContext context, Action<string
 {
     sealed record Choice(InstanceSnapshot Target, string File, string Hash, string Kind);
 
-    readonly PreviewCache<Choice> choices = new();
+    readonly PreviewCache<Choice> choices = PreviewCache<Choice>.For(context);
 
     public async Task<LocalImportPreviewInfo> PreviewAsync(string path, string instance, string resourceKind)
     {

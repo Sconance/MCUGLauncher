@@ -9,7 +9,7 @@ namespace MCUGLauncher.UseCases;
 internal sealed class LaunchOptionsCommands(LauncherContext context)
 {
     sealed record Target(string Root, string Version);
-    readonly PreviewCache<Target> targets = new();
+    readonly PreviewCache<Target> targets = PreviewCache<Target>.For(context);
 
     public LaunchOptionsInfo Read(JsonElement message)
     {
