@@ -174,7 +174,8 @@ internal sealed class CommunityCommands(LauncherContext context)
             ? value.GetRawText()
             : "[]";
         var file = Path.Combine(context.Store.DataDirectory, "recommendations.local.json");
-        File.WriteAllText(file, items);
+        using (var document = JsonDocument.Parse(items))
+            AtomicFile.WriteJson(file, document.RootElement);
         context.Send(new
         {
             type = "community",
