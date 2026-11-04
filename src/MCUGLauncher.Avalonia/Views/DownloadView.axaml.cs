@@ -12,6 +12,9 @@ internal partial class DownloadView : UserControl
     static readonly string[] CategoryLabels = ["模组", "整合包", "资源包", "光影", "数据包"];
     static readonly string[] LoaderValues = ["fabric", "quilt", "forge", "neoforge"];
     static readonly string[] LoaderLabels = ["Fabric", "Quilt", "Forge", "NeoForge"];
+    static readonly string[] VanillaTypeValues = ["release", "snapshot", "old", "all"];
+    static readonly string[] VanillaTypeLabels = ["正式版", "快照版", "远古版", "全部"];
+    const int VanillaPageSize = 50;
 
     ILauncherService service = EmptyServiceFallback.Instance;
     LauncherState? state;
@@ -19,11 +22,13 @@ internal partial class DownloadView : UserControl
     ContentItem? selected;
     ResourceVersionsInfo? versions;
     IReadOnlyList<VanillaVersionInfo> vanilla = [];
+    IReadOnlyList<VanillaVersionInfo> visibleVanilla = [];
     PackPreviewInfo? pack;
     string versionRequest = "";
     string pendingVersion = "";
     string pendingToken = "";
     string downloadCategory = "mod";
+    int vanillaPage;
     bool vanillaLoaded;
     bool loadingVanilla;
 
@@ -32,10 +37,32 @@ internal partial class DownloadView : UserControl
         InitializeComponent();
         CategoryBox.ItemsSource = CategoryLabels;
         CategoryBox.SelectedIndex = 0;
+        VanillaCategoryBox.ItemsSource = VanillaTypeLabels;
+        VanillaCategoryBox.SelectedIndex = 0;
         LoaderTypeBox.ItemsSource = LoaderLabels;
         LoaderTypeBox.SelectedIndex = 0;
         LoaderTypeBox.SelectionChanged += (_, _) => LoaderVersionBox.ItemsSource = null;
         LoaderGameBox.SelectionChanged += (_, _) => LoaderVersionBox.ItemsSource = null;
+        VanillaQueryBox.TextChanged += (_, _) =>
+        {
+            vanillaPage = 0;
+            RenderVanilla();
+        };
+        VanillaCategoryBox.SelectionChanged += (_, _) =>
+        {
+            vanillaPage = 0;
+            RenderVanilla();
+        };
+        PreviousVanillaPageButton.Click += (_, _) =>
+        {
+            vanillaPage--;
+            RenderVanilla();
+        };
+        NextVanillaPageButton.Click += (_, _) =>
+        {
+            vanillaPage++;
+            RenderVanilla();
+        };
         ResultsPanel.Children.Add(Muted("输入关键词后搜索 Modrinth。"));
         WireButtons();
     }
@@ -94,12 +121,12 @@ internal partial class DownloadView : UserControl
         LoadVanillaButton.Click += async (_, _) => await LoadVanilla();
         InstallVanillaButton.Click += async (_, _) =>
         {
-            if (VanillaList.SelectedIndex < 0 || VanillaList.SelectedIndex >= vanilla.Count)
+            if (VanillaList.SelectedIndex < 0 || VanillaList.SelectedIndex >= visibleVanilla.Count)
             {
                 VanillaHint.Text = "请先读取并选择一个原版版本。";
                 return;
             }
-            var version = vanilla[VanillaList.SelectedIndex].Id;
+            var version = visibleVanilla[VanillaList.SelectedIndex].Id;
             VanillaHint.Text = "正在提交原版安装…";
             await service!.InstallVanillaAsync(version);
             VanillaHint.Text = "原版安装请求已提交：" + version;
@@ -192,11 +219,31 @@ internal partial class DownloadView : UserControl
         loadingVanilla = false;
         vanillaLoaded = true;
         vanilla = items;
-        VanillaList.ItemsSource = items.Select(item => item.Id + " · " + item.Released).ToArray();
-        if (items.Length > 0)
-            VanillaList.SelectedIndex = 0;
-        VanillaHint.Text = items.Length == 0 ? "没有读取到版本。" : $"已读取 {items.Length} 个正式版。";
+        vanillaPage = 0;
+        RenderVanilla();
+        VanillaHint.Text = items.Length == 0 ? "没有读取到版本。" : $"已读取 {items.Length} 个正式版、快照和远古版本。";
         FillLoaderGames();
+    }
+
+    void RenderVanilla()
+    {
+        var type = VanillaTypeValues[Math.Clamp(VanillaCategoryBox.SelectedIndex, 0, VanillaTypeValues.Length - 1)];
+        var query = VanillaQueryBox.Text?.Trim() ?? "";
+        var filtered = vanilla.Where(item =>
+                (type == "all" || (type == "old"
+                    ? item.Type is "old_alpha" or "old_beta"
+                    : item.Type == type))
+                && item.Id.Contains(query, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        var pageCount = Math.Max(1, (filtered.Length + VanillaPageSize - 1) / VanillaPageSize);
+        vanillaPage = Math.Clamp(vanillaPage, 0, pageCount - 1);
+        visibleVanilla = filtered.Skip(vanillaPage * VanillaPageSize).Take(VanillaPageSize).ToArray();
+        VanillaList.ItemsSource = visibleVanilla.Select(item => item.Id + " · " + item.Released).ToArray();
+        VanillaList.SelectedIndex = visibleVanilla.Count > 0 ? 0 : -1;
+        VanillaPageText.Text = $"{vanillaPage + 1} / {pageCount} 页 · {filtered.Length} 个版本";
+        PreviousVanillaPageButton.IsEnabled = vanillaPage > 0;
+        NextVanillaPageButton.IsEnabled = vanillaPage + 1 < pageCount;
+        InstallVanillaButton.IsEnabled = visibleVanilla.Count > 0;
     }
 
     void FillLoaderGames()

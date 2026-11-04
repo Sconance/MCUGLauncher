@@ -9,21 +9,23 @@ namespace MCUGLauncher.UseCases;
 // Handles resource use cases; no WPF controls or browser access.
 internal sealed class ResourceCommands(LauncherContext context)
 {
+    internal static IReadOnlyList<VanillaVersionInfo> ParseVanillaVersions(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.GetProperty("versions").EnumerateArray()
+            .Select(v => new VanillaVersionInfo(
+                v.GetProperty("id").GetString() ?? "",
+                v.GetProperty("type").GetString() ?? "",
+                v.GetProperty("releaseTime").GetDateTimeOffset().ToString("yyyy-MM-dd")))
+            .ToArray();
+    }
+
     public async Task<VanillaVersionsResultInfo> SendVanillaVersionsAsync()
     {
         try
         {
             var json = await context.Http.GetStringAsync("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json", context.Token);
-            using var doc = JsonDocument.Parse(json);
-            var items = doc.RootElement.GetProperty("versions").EnumerateArray()
-                .Where(v => v.GetProperty("type").GetString() == "release")
-                .Take(24)
-                .Select(v => new VanillaVersionInfo(
-                    v.GetProperty("id").GetString() ?? "",
-                    v.GetProperty("type").GetString() ?? "release",
-                    v.GetProperty("releaseTime").GetDateTimeOffset().ToString("yyyy-MM-dd")))
-                .ToList();
-            return VanillaVersionsResultInfo.Success(items);
+            return VanillaVersionsResultInfo.Success(ParseVanillaVersions(json));
         }
         catch (Exception ex)
         {

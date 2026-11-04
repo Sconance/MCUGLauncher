@@ -43,12 +43,22 @@
             <TabItem Header="原版游戏">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="读取 Mojang 最近 24 个正式版，并安装到当前游戏目录。" Classes="muted" />
+                        <TextBlock Text="搜索并浏览完整 Mojang 版本清单，包括正式版、快照和远古版本。" Classes="muted" />
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <TextBox x:Name="VanillaQueryBox" Watermark="搜索 Minecraft 版本" />
+                            <ComboBox x:Name="VanillaCategoryBox" Grid.Column="1" Margin="8,0" />
+                            <Button x:Name="LoadVanillaButton" Grid.Column="2" Content="刷新列表" Classes="ghost" />
+                        </Grid>
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button x:Name="LoadVanillaButton" Content="读取版本列表" Classes="ghost" />
                             <Button x:Name="InstallVanillaButton" Content="安装所选原版" Classes="primary" />
                         </StackPanel>
                         <ListBox x:Name="VanillaList" Height="300" />
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Button x:Name="PreviousVanillaPageButton" Content="上一页" Classes="ghost" />
+                            <TextBlock x:Name="VanillaPageText" Grid.Column="1" Classes="muted" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                            <Button x:Name="NextVanillaPageButton" Grid.Column="2" Content="下一页" Classes="ghost" />
+                        </Grid>
                         <TextBlock x:Name="VanillaHint" Classes="muted" TextWrapping="Wrap" />
                     </StackPanel>
                 </ScrollViewer>
