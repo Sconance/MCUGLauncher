@@ -252,7 +252,12 @@ public interface ILauncherService : IDisposable
                 token,
                 projects
             });
-    Task ApplyUpdatesAsync(string token);
+    [FeatureOperation]
+    Task<SavedInfo> ApplyUpdatesAsync(string token) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ApplyUpdatesAsync), new
+        {
+            token
+        });
     Task RequestGamesAsync();
     Task StopGameAsync(string id);
     [FeatureOperation]

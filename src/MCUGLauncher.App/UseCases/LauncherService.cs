@@ -322,7 +322,11 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
                 projects
             });
 
-    public Task ApplyUpdatesAsync(string token) => CommandAsync(new { type = "applyContentUpdates", token });
+    public Task<SavedInfo> ApplyUpdatesAsync(string token) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ApplyUpdatesAsync), new
+        {
+            token
+        });
 
     public Task RequestGamesAsync() => application.HandleAsync("""{"type":"requestGames"}""");
 

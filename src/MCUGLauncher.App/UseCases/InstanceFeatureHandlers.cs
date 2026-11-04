@@ -35,3 +35,11 @@ internal sealed class PreviewUpdatesFeatureHandler(LauncherContext context)
     public Task<ContentUpdatePreviewInfo> HandleAsync(JsonElement arguments, CancellationToken token) =>
         new ContentUpdateCommands(context).PreviewAsync(arguments);
 }
+
+[FeatureHandler(nameof(ILauncherService.ApplyUpdatesAsync))]
+internal sealed class ApplyUpdatesFeatureHandler(LauncherContext context)
+    : IFeatureHandler<SavedInfo>
+{
+    public Task<SavedInfo> HandleAsync(JsonElement arguments, CancellationToken token) =>
+        Task.FromResult(new ContentUpdateCommands(context).Apply(ReadString(arguments, "token")));
+}

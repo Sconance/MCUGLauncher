@@ -61,10 +61,11 @@ internal sealed class ContentUpdateCommands(LauncherContext context, Func<Cancel
                 change.OldPath ?? "")).ToArray());
     }
 
-    public void Apply(string token)
+    public SavedInfo Apply(string token)
     {
         var preview = previews.Get(token, consume: true);
         context.Tasks.Enqueue("更新 " + preview.Instance.Name, preview.Instance.Root, preview.Instance.Directory,
             new DownloadRequest { Kind = "update", PreparedPlan = preview.Preview.Plan, ContentFingerprint = preview.Preview.Fingerprint });
+        return new("更新任务已加入队列。");
     }
 }
