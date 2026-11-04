@@ -64,7 +64,8 @@ internal static class LauncherStateBuilder
             ToSet(config.DataSources),
             ToSet(new DataSourceConfig()),
             ToSet(config.CustomDataSources ?? config.DataSources),
-            config.EffectiveDataSourceMode);
+            config.EffectiveDataSourceMode,
+            config.LegacyPreferences.Launch.AutoChinese);
     }
 
     static DataSourceSet ToSet(DataSourceConfig sources) => new(

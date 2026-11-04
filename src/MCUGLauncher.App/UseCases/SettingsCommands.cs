@@ -36,6 +36,8 @@ internal sealed class SettingsCommands(LauncherContext context)
         }
         if (root.TryGetProperty("autoMemory", out var autoMemory))
             context.Config.AutoMemory = autoMemory.GetBoolean();
+        if (root.TryGetProperty("autoChinese", out var autoChinese))
+            context.Config.LegacyPreferences.Launch.AutoChinese = autoChinese.GetBoolean();
         if (root.TryGetProperty("ram", out var ram) && ram.TryGetInt32(out var ramValue))
             context.Config.Ram = Math.Clamp(ramValue, LaunchLimits.RamMin, LaunchLimits.RamMax);
         if (requestedRoot.Length > 0)

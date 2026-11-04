@@ -59,6 +59,7 @@
                 <TextBox x:Name="HeightBox" />
               </StackPanel>
             </Grid>
+            <CheckBox x:Name="AutoChineseBox" Content="启动时自动设置简体中文（仅缺少语言选项时）" />
             <TextBlock x:Name="PlayerLabel" Text="离线玩家名" FontWeight="SemiBold" />
             <TextBox x:Name="PlayerBox" Watermark="仅离线账号可修改" />
             <StackPanel Orientation="Horizontal" Spacing="10">

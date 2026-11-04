@@ -38,7 +38,7 @@ public sealed class AppConfig
     public bool AutoMemory
     {
         get; set;
-    }
+    } = true;
     /// <summary>
     /// 获取或设置 Width。
     /// </summary>

@@ -9,7 +9,8 @@ public sealed record AppSettingsPatch(
     bool? AutoMemory = null,
     bool? Anonymous = null,
     string? Player = null,
-    DataSourceSet? DataSources = null);
+    DataSourceSet? DataSources = null,
+    bool? AutoChinese = null);
 
 public sealed record LaunchOptionsSettings(
     bool AutoMemory,
@@ -20,4 +21,5 @@ public sealed record LaunchOptionsSettings(
     string Java,
     string JvmArguments,
     string WindowTitle,
-    string Server);
+    string Server,
+    bool AutoChinese = true);

@@ -50,7 +50,8 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
                 settings.Java,
                 settings.JvmArguments,
                 settings.WindowTitle,
-                settings.Server));
+                settings.Server,
+                settings.AutoChinese));
     }
 
     public SavedInfo Save(JsonElement message)
@@ -63,6 +64,9 @@ internal sealed class LaunchOptionsCommands(LauncherContext context)
         if (target.Version.Length > 0)
             settings = InstanceSnapshot.Capture(ConfigAt(target.Root), target.Version).Settings;
         settings.AutoMemory = options.GetProperty("autoMemory").GetBoolean();
+        settings.AutoChinese = options.TryGetProperty("autoChinese", out var autoChinese)
+            ? autoChinese.GetBoolean()
+            : true;
         settings.FullScreen = options.GetProperty("fullScreen").GetBoolean();
         settings.RamMb = Number(options, "ramMb", LaunchLimits.RamMin, LaunchLimits.RamMax);
         settings.Width = Number(options, "width", LaunchLimits.WindowWidthMin, LaunchLimits.WindowWidthMax);

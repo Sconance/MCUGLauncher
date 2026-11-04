@@ -11,6 +11,7 @@ public sealed class LaunchSettings
     /// 获取或设置 AutoMemory。
     /// </summary>
     public bool AutoMemory { get; set; } = true;
+    public bool AutoChinese { get; set; } = true;
     /// <summary>
     /// 获取或设置 RamMb。
     /// </summary>

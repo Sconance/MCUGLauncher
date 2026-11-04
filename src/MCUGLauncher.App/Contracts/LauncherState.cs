@@ -114,6 +114,7 @@ public sealed record LauncherState(
     DataSourceSet DataSources,
     DataSourceSet DefaultDataSources,
     DataSourceSet CustomDataSources,
-    string DataSourceMode)
+    string DataSourceMode,
+    bool AutoChinese = true)
 {
 }

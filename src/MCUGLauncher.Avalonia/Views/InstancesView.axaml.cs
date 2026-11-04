@@ -195,6 +195,7 @@ internal partial class InstancesView : UserControl
         WidthBox.Text = settings.Width.ToString();
         HeightBox.Text = settings.Height.ToString();
         FullScreenCheck.IsChecked = settings.FullScreen;
+        AutoChineseCheck.IsChecked = settings.AutoChinese;
         WindowTitleBox.Text = settings.WindowTitle;
         ServerBox.Text = settings.Server;
         JvmArgumentsBox.Text = settings.JvmArguments;
@@ -219,6 +220,7 @@ internal partial class InstancesView : UserControl
         WidthBox.IsEnabled = enabled;
         HeightBox.IsEnabled = enabled;
         FullScreenCheck.IsEnabled = enabled;
+        AutoChineseCheck.IsEnabled = enabled;
         WindowTitleBox.IsEnabled = enabled;
         ServerBox.IsEnabled = enabled;
         JvmArgumentsBox.IsEnabled = enabled;
@@ -265,7 +267,8 @@ internal partial class InstancesView : UserControl
             JavaBox.Text?.Trim() ?? "",
             JvmArgumentsBox.Text ?? "",
             WindowTitleBox.Text?.Trim() ?? "",
-            ServerBox.Text?.Trim() ?? "");
+            ServerBox.Text?.Trim() ?? "",
+            AutoChineseCheck.IsChecked == true);
         OptionsStatus.Text = "正在保存…";
         OptionsStatus.Text = (await service.SaveLaunchOptionsAsync(options.Token, selected, name, settings, inherit)).Message;
         await service.RequestStateAsync();
@@ -464,8 +467,7 @@ internal partial class InstancesView : UserControl
             var token = preview.Token;
             updatePreview = null;
             RenderUpdatePreview();
-            await service!.ApplyUpdatesAsync(token);
-            Status("更新请求已提交，请查看任务列表。");
+            Status((await service!.ApplyUpdatesAsync(token)).Message);
         };
         UpdatePreviewPanel.Children.Add(apply);
     }

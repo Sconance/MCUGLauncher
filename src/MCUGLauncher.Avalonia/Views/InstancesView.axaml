@@ -68,6 +68,7 @@
                                 </StackPanel>
                             </Grid>
                             <CheckBox x:Name="FullScreenCheck" Content="全屏启动" />
+                            <CheckBox x:Name="AutoChineseCheck" Content="自动设置简体中文（仅缺少语言选项时）" />
                             <TextBlock Text="窗口标题" FontWeight="SemiBold" />
                             <TextBox x:Name="WindowTitleBox" Watermark="可留空" />
                             <TextBlock Text="自动进入服务器" FontWeight="SemiBold" />

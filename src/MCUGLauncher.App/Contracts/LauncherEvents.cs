@@ -332,7 +332,8 @@ public sealed record LaunchSettingsInfo(
     string Java,
     string JvmArguments,
     string WindowTitle,
-    string Server)
+    string Server,
+    bool AutoChinese = true)
 {
     internal static LaunchSettingsInfo From(JsonElement element) => new(
         element.ValueKind == JsonValueKind.Object ? JsonRead.Bool(element, "autoMemory") : true,
@@ -343,7 +344,10 @@ public sealed record LaunchSettingsInfo(
         JsonRead.String(element, "java"),
         JsonRead.String(element, "jvmArguments"),
         JsonRead.String(element, "windowTitle"),
-        JsonRead.String(element, "server"));
+        JsonRead.String(element, "server"),
+        element.ValueKind == JsonValueKind.Object && element.TryGetProperty("autoChinese", out var autoChinese)
+            ? JsonRead.Bool(element, "autoChinese")
+            : true);
 }
 
 public sealed record LaunchOptionsInfo(

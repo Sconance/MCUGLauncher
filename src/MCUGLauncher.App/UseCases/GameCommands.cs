@@ -54,6 +54,8 @@ internal sealed class GameCommands(LauncherContext context,
                 external = new AuthlibLaunch(jar, metadata.Json);
             }
             var settings = instance.Settings;
+            if (settings.AutoChinese && !context.Games.UsesDirectory(instance.Directory))
+                GameDefaults.EnsureChinese(instance.Directory, instance.Requirements.Minecraft);
             settings.VersionInfo = "MCUGLauncher";
             if (settings.AutoMemory)
             {

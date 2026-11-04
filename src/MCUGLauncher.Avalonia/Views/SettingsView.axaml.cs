@@ -179,6 +179,7 @@ internal partial class SettingsView : UserControl
             Width: width,
             Height: height,
             AutoMemory: AutoMemoryBox.IsChecked == true,
+            AutoChinese: AutoChineseBox.IsChecked == true,
             Player: state?.AccountType == "offline" ? player : null));
         LaunchStatus.Text = result.Message;
     }
@@ -436,6 +437,8 @@ internal partial class SettingsView : UserControl
         SetText(AboutVersion, "MCUG Launcher " + snapshot.AppVersion);
         if (!AutoMemoryBox.IsFocused)
             AutoMemoryBox.IsChecked = snapshot.AutoMemory;
+        if (!AutoChineseBox.IsFocused)
+            AutoChineseBox.IsChecked = snapshot.AutoChinese;
         if (!AnonymousBox.IsFocused)
             AnonymousBox.IsChecked = snapshot.Anonymous;
         PlayerBox.IsEnabled = snapshot.AccountType == "offline";
