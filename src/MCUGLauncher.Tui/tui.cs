@@ -19,7 +19,8 @@ internal static class Program
             {
                 terminal.Write("用法：MCUGLauncher.Tui [--data-directory <配置目录>]");
                 terminal.Write("默认使用独立的 MCUGLauncher.Tui 配置目录；游戏目录仍由后端配置决定。");
-                terminal.Write("输入编号选择菜单，0 返回，q 或输入结束退出。微软交互登录暂不支持。");
+                terminal.Write("交互菜单：↑↓ 移动，→/Enter 确认，←/Esc 返回，Q 退出。");
+                terminal.Write("输入输出重定向时使用编号菜单，0 返回，q 或输入结束退出。微软交互登录暂不支持。");
                 return 0;
             }
             if (args.Length != 0 && (args.Length != 2 || args[0] != "--data-directory" || string.IsNullOrWhiteSpace(args[1])))

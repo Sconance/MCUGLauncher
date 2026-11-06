@@ -3,11 +3,26 @@ using System.Text;
 
 namespace MCUGLauncher.Tui;
 
-/// <summary>终端输入输出、编号选择及确认；不访问配置或业务服务。</summary>
+/// <summary>终端输入输出、菜单选择及确认；不访问配置或业务服务。</summary>
 internal sealed class Terminal(TextReader input, TextWriter output)
 {
-    public void Write(string text = "") => output.WriteLine(new string(text
-        .Where(c => !char.IsControl(c) || c is '\n' or '\t').ToArray()));
+    readonly Queue<string> context = new();
+
+    bool Interactive => !Console.IsInputRedirected && !Console.IsOutputRedirected
+        && ReferenceEquals(input, Console.In) && ReferenceEquals(output, Console.Out)
+        && !string.Equals(Environment.GetEnvironmentVariable("TERM"), "dumb", StringComparison.OrdinalIgnoreCase);
+
+    public void Write(string text = "")
+    {
+        var clean = new string(text.Where(c => !char.IsControl(c) || c is '\n' or '\t').ToArray());
+        output.WriteLine(clean);
+        foreach (var line in clean.Split('\n'))
+        {
+            context.Enqueue(line);
+            while (context.Count > 8)
+                context.Dequeue();
+        }
+    }
 
     public string Read(string prompt)
     {
@@ -52,10 +67,27 @@ internal sealed class Terminal(TextReader input, TextWriter output)
         }
     }
 
+    // 确认沿用文字输入，保留前面的完整预览，默认不执行破坏性操作。
     public bool Confirm(string prompt) => Read(prompt + " [y/N]").Equals("y", StringComparison.OrdinalIgnoreCase);
 
     public int Select(string title, IReadOnlyList<string> choices)
     {
+        if (Interactive)
+        {
+            try
+            {
+                return ArrowMenu.Select(title, choices, context.ToArray());
+            }
+            catch (Exception error) when (error is not EndOfStreamException
+                && error is IOException or PlatformNotSupportedException or ArgumentOutOfRangeException or InvalidOperationException)
+            {
+                Write("终端暂不支持光标菜单，已切换到编号输入。");
+            }
+            finally
+            {
+                context.Clear();
+            }
+        }
         Write();
         Write("=== " + title + " ===");
         for (var i = 0; i < choices.Count; i++)
@@ -81,5 +113,9 @@ internal sealed class Terminal(TextReader input, TextWriter output)
         }
     }
 
-    public void Pause() => Read("按回车继续（q 退出）：");
+    public void Pause()
+    {
+        Read("按回车继续（q 退出）：");
+        context.Clear();
+    }
 }
