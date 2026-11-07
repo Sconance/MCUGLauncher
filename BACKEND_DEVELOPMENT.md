@@ -238,7 +238,7 @@ Views（UI，不属于后端）
 | `AccountModeCommands` | 账号模式恢复、切换、忘记 | `LauncherContext.AccountRevision/AccountSessions/Config/Log/Microsoft/Mua/OnlineSession/Send/SendAccountState/Store/Token` |
 | `AvatarCommands` | 头像读取与离线皮肤 | `LauncherContext.AccountRevision/AvatarIdentity/Config/Http/Log/Microsoft/Mua/Store/Token`；`AvatarDiskCache`；`SkinAssets`；`ProtocolValues.ReadString` |
 | `BookmarkCommands` | 资源收藏切换 | `LauncherContext.RefreshState/Store` |
-| `CommunityCommands` | 刷新公告列表、公告图片下载、推荐与服务器收藏 | `LauncherContext.Community/Config/Http/RefreshState/Send/Store/Token`；`CommunityService.ReadAnnouncementsAsync`、`ReadAsync` |
+| `CommunityCommands` | 刷新公告列表、公告图片下载、推荐与服务器收藏（含 SavedServer.Instance 可选绑定） | `LauncherContext.Community/Config/Http/RefreshState/Send/Store/Token`；`CommunityService.ReadAnnouncementsAsync`、`ReadAsync` |
 | `ContentUpdateCommands` | 内容更新检查、预览、应用 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `DiagnosticCommands` | 日志读取与系统信息 | `LauncherContext.Config/Send/Store` |
 | `GameCommands` | 启动/停止游戏、进程观察 | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |

@@ -18,3 +18,14 @@ python scripts/check-version.py
 ```
 
 需要实际游戏文件、账号或 Windows 环境的检查不由 Python 版本回归代替。
+
+
+## 服务器收藏实例绑定
+
+```sh
+dotnet run --project test/LauncherChecks -c Release -- --server-favorites-only
+```
+
+检查旧配置、强类型接口保存、配置持久化、状态快照、旧调用保留绑定、清除绑定、删除及无编号。
+该场景也在完整 LauncherChecks 中执行，由现有 Windows CI 运行。
+它不启动游戏，不能替代真实账号、Java 和服务器进服验收。

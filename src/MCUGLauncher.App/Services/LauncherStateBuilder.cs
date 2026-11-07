@@ -53,7 +53,7 @@ internal static class LauncherStateBuilder
                 item.Enabled,
                 item.Path,
                 item.Size)).ToArray(),
-            config.Servers.Select(item => new SavedServerInfo(item.Name, item.Address)).ToArray(),
+            config.Servers.Select(item => new SavedServerInfo(item.Name, item.Address, item.Instance ?? "")).ToArray(),
             favorites,
             catalog.Groups.Select(group => new VersionGroupInfo(
                 group.Label,

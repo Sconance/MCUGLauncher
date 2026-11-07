@@ -39,3 +39,18 @@ WebView2 的唯一用途是 `MicrosoftLoginWindow` 承载微软 OAuth 页面；�
 - 0.22.3 的 WebView2/HTML UI 架构与拆分记录保留在
   [0.22.3-fix 架构快照](archive/0.22.3-fix-architecture.md)；
   当前代码已删除 `Ui/` 与 `MainWindow`。
+
+
+## 服务器收藏的实例绑定
+
+`Models.SavedServer.Instance` 保存当前游戏根目录中的实例键，不保存完整路径，不增加编号。
+旧配置缺少该字段时默认为空。`Contracts.SavedServerInfo.Instance` 同步暴露只读状态快照。
+
+`ILauncherService.SaveServerAsync(name, address, oldAddress, instance)` 使用既有强类型 handler。
+省略或传 null 保留原绑定，空字符串清除绑定；新增收藏未提供实例时保持未绑定。
+因此既有 Avalonia/TUI 的三参数调用不会丢失收藏的实例。界面和 Core 无需修改。
+
+收藏进服属于应用用例层，应在 `App/UseCases` 通过契约 handler 接入，并复用
+`GameCommands` 的身份校验、任务互斥、实例快照和进程管理。服务器地址只覆盖本次
+启动快照的 `LaunchSettings.Server`，不永久改写全局/实例设置；参数生成继续交给
+`Core.LaunchService`。本次仅补齐收藏存储契约，尚未添加进服接口或按钮。
