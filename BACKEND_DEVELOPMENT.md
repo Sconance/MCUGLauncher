@@ -238,7 +238,7 @@ Views（UI，不属于后端）
 | `AccountModeCommands` | 账号模式恢复、切换、忘记 | `LauncherContext.AccountRevision/AccountSessions/Config/Log/Microsoft/Mua/OnlineSession/Send/SendAccountState/Store/Token` |
 | `AvatarCommands` | 头像读取与离线皮肤 | `LauncherContext.AccountRevision/AvatarIdentity/Config/Http/Log/Microsoft/Mua/Store/Token`；`AvatarDiskCache`；`SkinAssets`；`ProtocolValues.ReadString` |
 | `BookmarkCommands` | 资源收藏切换 | `LauncherContext.RefreshState/Store` |
-| `CommunityCommands` | 公告图片下载、推荐/服务器收藏 | `LauncherContext.Community/Config/Http/RefreshState/Send/Store/Token` |
+| `CommunityCommands` | 刷新公告列表、公告图片下载、推荐与服务器收藏 | `LauncherContext.Community/Config/Http/RefreshState/Send/Store/Token`；`CommunityService.ReadAnnouncementsAsync`、`ReadAsync` |
 | `ContentUpdateCommands` | 内容更新检查、预览、应用 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `DiagnosticCommands` | 日志读取与系统信息 | `LauncherContext.Config/Send/Store` |
 | `GameCommands` | 启动/停止游戏、进程观察 | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |
@@ -281,7 +281,7 @@ Views（UI，不属于后端）
 | --- | --- | --- |
 | `ProtocolValues` | `UseCases/ProtocolValues.cs` | 协议字段类型、实例路径、离线 UUID 校验；只依赖 BCL |
 | `AccountSessionCache` | `Services/AccountSessionCache.cs` | 进程内已验证会话缓存；依赖 CmlLib 会话类型与可注入时钟 |
-| `CommunityService` | `Services/CommunityService.cs` | 社区 URL 读取与单篇 Markdown 公告解析；依赖 `HttpClient` 和 `Contracts.AnnouncementInfo` |
+| `CommunityService` | `Services/CommunityService.cs` | 社区 URL 读取、GitHub 公告目录和单篇 Markdown 解析；依赖 `HttpClient` 及 `Contracts.AnnouncementInfo` 的构造函数、`Markdown`、`PublishedAt` |
 | `InstallationProgress` | `Services/InstallationProgress.cs` | 安装阶段的进度计算；只依赖 Core `OperationContext` |
 | `InstanceOperationExecutor` | `Services/InstanceOperationExecutor.cs` | 实例级维护执行器；只依赖 Core 队列记录与回调 |
 | `InstanceRequirements` | `Services/InstanceRequirements.cs` | 读取实例安装元数据；只依赖 Core 的类型与 JSON |
@@ -356,6 +356,7 @@ AccountSessionCache.Forget(string mode) : void
 CommunityService.TestAsync(string url, CancellationToken token) : Task<(bool Ok, string Text, int Ms)>
 CommunityService.ReadAsync(string url, CancellationToken token) : Task<string?>
 CommunityService.ReadAnnouncementAsync(string url, CancellationToken token) : Task<(bool Ok, string Markdown, string Error, int Ms)>
+CommunityService.ReadAnnouncementsAsync(string url, CancellationToken token) : Task<(AnnouncementInfo[] Items, string Error, int Ms, bool IsDirectory)>
 CommunityService.TestAnnouncementAsync(string url, CancellationToken token) : Task<(bool Ok, string Text, int Ms)>
 CommunityService.ParseMarkdownAnnouncement(string markdown, string source) : AnnouncementInfo
 
@@ -371,6 +372,11 @@ MuaAccountService.Session(MuaCredential credential) : MSession
 
 AccountModeCommands.Apply(LauncherContext context, string mode, MSession? session, bool verified = true, bool persist = true, AccountIdentity? identity = null) : void
 ```
+
+公告源为空时跳过读取。填写单篇 Markdown 的 Raw 地址可继续读取一篇公告。填写公开仓库的
+GitHub Contents API 目录地址（如 `https://api.github.com/repos/OWNER/REPO/contents/community/announcements?ref=main`）
+可同步多篇公告。每次发布在该目录新增一个 Markdown 文件。文件名以 `yyyy-MM-dd` 开头时按日期降序，
+同日及未标日期的文件按文件名降序。每次读取前十篇候选公告，个别文件无法读取或解析时仍返回同批次中成功的公告。
 
 ## 9. 后端与 UI 的协同边界
 

@@ -16,6 +16,9 @@ public sealed class ConfigStore
         "https://raw.githubusercontent.com/waibibabu1239/MCUGL-storage/main/announcements.md";
     const string UnpublishedMainAnnouncementsUrl =
         "https://raw.githubusercontent.com/Sconance/MCUGLauncher/main/community/announcements.md";
+    const string LegacyAvaloniaAnnouncementsUrl =
+        "https://raw.githubusercontent.com/Sconance/MCUGLauncher/" +
+        "0.22.3-Avalonia/community/announcements.md";
     readonly string _file;
     readonly bool dataDirectoryIsolated;
     readonly object writeGate = new();
@@ -73,6 +76,10 @@ public sealed class ConfigStore
                 || string.Equals(
                     config.DataSources.Announcements,
                     UnpublishedMainAnnouncementsUrl,
+                    StringComparison.OrdinalIgnoreCase)
+                || string.Equals(
+                    config.DataSources.Announcements,
+                    LegacyAvaloniaAnnouncementsUrl,
                     StringComparison.OrdinalIgnoreCase)))
         {
             config.DataSources.Announcements = new DataSourceConfig().Announcements;

@@ -109,7 +109,7 @@ public sealed class DataSourceConfig
     /// <summary>
     /// 获取或设置 Announcements。
     /// </summary>
-    public string Announcements { get; set; } = "https://raw.githubusercontent.com/Sconance/MCUGLauncher/0.22.3-Avalonia/community/announcements.md";
+    public string Announcements { get; set; } = "";
     /// <summary>
     /// 获取或设置 Servers。
     /// </summary>
