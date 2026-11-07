@@ -16,7 +16,28 @@ dotnet run --project src/MCUGLauncher.Tui -- --help
 
 App 的现有认证依赖会引入 Windows Desktop 运行时。源码运行需要 .NET 8 Desktop Runtime；在 Linux 上交叉构建时需附加 `-p:EnableWindowsTargeting=true`，不能据此声明 Linux 业务兼容。
 
-## 仅发布 TUI
+## 选择 UI 或 TUI 独立发布
+
+每次必须选择一个前端；两种模式引用不同入口项目，不发布整个解决方案。
+
+```bat
+scripts\build.bat ui
+scripts\build.bat tui
+```
+
+```sh
+bash scripts/build.sh ui
+bash scripts/build.sh tui
+```
+
+| 模式 | 构建入口 | 默认产物 |
+|---|---|---|
+| `ui` | MCUGLauncher.Avalonia.csproj | `artifacts/ui/win-x64/MCUGLauncher.exe` |
+| `tui` | MCUGLauncher.Tui.csproj | `artifacts/tui/win-x64/MCUGLauncher.Tui.exe` |
+
+UI 包不包含 TUI 主程序，TUI 包不包含 Avalonia 主界面；两者都复用 App/Core。支持追加一个输出目录参数，如 `bash scripts/build.sh ui "artifacts/ui test"`。若输出目录存在另一种前端的可执行文件、入口程序集或 Avalonia 程序集，脚本拒绝发布，不删除已有文件；请改用独立目录。
+
+旧的 TUI 命令仍可使用，内部转发到统一脚本的 `tui` 模式：
 
 ```bat
 scripts\build-tui.bat
@@ -28,7 +49,7 @@ bash scripts/build-tui.sh
 DOTNET_BIN=/path/to/dotnet bash scripts/build-tui.sh artifacts/tui-test
 ```
 
-两份脚本只发布 `MCUGLauncher.Tui.csproj` 及 App/Core 依赖，不构建 Avalonia 主界面。默认生成 `artifacts/tui/win-x64/MCUGLauncher.Tui.exe`，为 Release、Windows x64、自包含单文件控制台程序；无需目标机器另行安装 .NET。可用唯一的位置参数指定输出目录，路径有空格时加引号。脚本不修改版本、标签或正式发布文件。
+新脚本的两种模式均生成 Release、Windows x64、自包含单文件程序，无需目标机器另行安装 .NET。`ui` 是图形程序，`tui` 是控制台程序。脚本不修改版本、标签或正式发布文件。现有 PowerShell `build.ps1` 保持只构建 Avalonia 的行为及原有完整版/Lite 发布流程，不会同时构建 TUI。
 
 “纯 TUI”指无 Avalonia 主界面；App 现有认证包仍会携带部分 Windows Desktop/WebView2 依赖，不在本任务中删除或改写它们。
 
@@ -101,3 +122,10 @@ dotnet run --project src/MCUGLauncher.Tui -- --help
 - 临时检查扩展到 32 项，新增方向键移动、进入/返回、Q 退出、首尾跳转、翻页边界、空列表、中英文截断与控制字符过滤。
 - 实际终端检查了主菜单移动光标、右键进入服务器页、左键返回，以及退出；编号模式的原有接口调用检查仍保留。
 - 方向键菜单只改变展示和输入，不改变游戏启动接口或增加 Linux 原生运行支持。
+
+### 独立发布验证
+
+- 通过 `build.sh ui` 和 `build.sh tui` 实际发布两种 Windows x64 自包含 EXE，分别为 GUI 和 Console 子系统。
+- 检查实际依赖清单：UI 不包含 TUI 项目，TUI 不包含 Avalonia 前端及其包；检查输出目录没有另一种入口程序。
+- 13 项临时脚本场景检查通过，覆盖项目选择、旧 TUI 命令、路径空格、参数错误、SDK 失败、缺失产物及拒绝混合目录；使用实际产物目录互换发布目标也会被拒绝，不删除已有文件。
+- `.bat` 未在 Windows 执行；布局、原生边界、格式和 Shell 语法检查通过。版本检查仍在未改动的 AppConfig.cs 报已有硬编码版本问题。
