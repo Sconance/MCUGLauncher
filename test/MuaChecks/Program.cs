@@ -167,6 +167,9 @@ sealed class Mock : HttpMessageHandler
     public List<string> Paths = [];
     public List<JsonElement> Bodies = [];
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
         if (request.RequestUri!.Host != "skin.mualliance.ltd" && request.RequestUri.Host != "authlib-injector.yushi.moe")

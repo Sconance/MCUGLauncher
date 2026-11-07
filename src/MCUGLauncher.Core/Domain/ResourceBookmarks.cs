@@ -1,21 +1,45 @@
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 ResourceBookmark 数据。
+/// </summary>
 public record ResourceBookmark(ContentProject Project, string Kind, string[] Labels, DateTimeOffset Added)
 {
+    /// <summary>
+    /// 获取或设置 文件夹。
+    /// </summary>
     public string Folder { get; init; } = "默认收藏夹";
 }
 
+/// <summary>
+/// 提供 ResourceBookmarkDocument 相关功能。
+/// </summary>
 public class ResourceBookmarkDocument
 {
+    /// <summary>
+    /// 获取或设置 Schema版本。
+    /// </summary>
     public int SchemaVersion { get; set; } = 1;
+    /// <summary>
+    /// 获取或设置 项目。
+    /// </summary>
     public List<ResourceBookmark> Items { get; set; } = [];
+    /// <summary>
+    /// 获取或设置 Folders。
+    /// </summary>
     public List<string> Folders { get; set; } = ["默认收藏夹"];
 }
 
+/// <summary>
+/// 提供 ResourceBookmarkStore 相关功能。
+/// </summary>
 public sealed class ResourceBookmarkStore(string directory)
 {
     string FileName => Path.Combine(directory, "resource-bookmarks.json");
 
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public List<ResourceBookmark> Read()
     {
         if (!File.Exists(FileName))
@@ -28,6 +52,9 @@ public sealed class ResourceBookmarkStore(string directory)
         return document.Items;
     }
 
+    /// <summary>
+    /// 执行 Labels。
+    /// </summary>
     public static string[] Labels(string text)
     {
         var labels = text.Split([',', '，', ';', '；', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
@@ -36,6 +63,9 @@ public sealed class ResourceBookmarkStore(string directory)
         return labels;
     }
 
+    /// <summary>
+    /// 保存。
+    /// </summary>
     public void Save(ContentProject project, string kind, string labels, string? folder = null)
     {
         if (kind is not ("mod" or "modpack" or "resourcepack" or "shader" or "datapack") || string.IsNullOrWhiteSpace(project.Id))
@@ -64,6 +94,9 @@ public sealed class ResourceBookmarkStore(string directory)
         return name;
     }
 
+    /// <summary>
+    /// 执行 Folders。
+    /// </summary>
     public List<string> Folders()
     {
         var items = Read();
@@ -73,6 +106,9 @@ public sealed class ResourceBookmarkStore(string directory)
         }.Concat(doc.Folders ?? []).Concat(items.Select(i => i.Folder)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
+    /// <summary>
+    /// 创建文件夹。
+    /// </summary>
     public void CreateFolder(string name)
     {
         name = FolderName(name);
@@ -86,6 +122,9 @@ public sealed class ResourceBookmarkStore(string directory)
         AtomicFile.WriteJson(FileName, doc);
     }
 
+    /// <summary>
+    /// 移除。
+    /// </summary>
     public void Remove(string projectId) => Mutate(items => items.RemoveAll(i => i.Project.Id == projectId));
 
     void Mutate(Action<List<ResourceBookmark>> action)
@@ -99,12 +138,18 @@ public sealed class ResourceBookmarkStore(string directory)
         AtomicFile.WriteJson(FileName, doc);
     }
 
+    /// <summary>
+    /// 执行 Query。
+    /// </summary>
     public List<ResourceBookmark> Query(string query = "", string? label = null, string? kind = null)
     {
         var words = query.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         return Read().Where(i => kind == null || i.Kind == kind).Where(i => label == null || i.Labels.Contains(label, StringComparer.OrdinalIgnoreCase)).Where(i => words.All(w => (i.Project.Title + " " + i.Project.Description + " " + i.Project.Author + " " + string.Join(' ', i.Labels)).Contains(w, StringComparison.OrdinalIgnoreCase))).OrderByDescending(i => i.Added).ToList();
     }
 
+    /// <summary>
+    /// 执行 Prioritize。
+    /// </summary>
     public List<ContentProject> Prioritize(IEnumerable<ContentProject> projects)
     {
         var items = Read().ToDictionary(i => i.Project.Id);
@@ -112,8 +157,14 @@ public sealed class ResourceBookmarkStore(string directory)
     }
 }
 
+/// <summary>
+/// 提供 Local内容Search 相关功能。
+/// </summary>
 public static class LocalContentSearch
 {
+    /// <summary>
+    /// 执行 Filter。
+    /// </summary>
     public static List<LocalContent> Filter(IEnumerable<LocalContent> items, string query, string kind = "全部", string state = "全部")
     {
         var words = query.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);

@@ -1,9 +1,18 @@
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 Bookmark下载 数据。
+/// </summary>
 public record BookmarkDownload(ResourceBookmark Bookmark, ContentVersion? Version, string Error);
 
+/// <summary>
+/// 提供 BookmarkBatch 相关功能。
+/// </summary>
 public static class BookmarkBatch
 {
+    /// <summary>
+    /// 解析。
+    /// </summary>
     public static async Task<List<BookmarkDownload>> Resolve(IResourceProvider provider, IEnumerable<ResourceBookmark> items, string game, string loader, CancellationToken token)
     {
         var result = new List<BookmarkDownload>();

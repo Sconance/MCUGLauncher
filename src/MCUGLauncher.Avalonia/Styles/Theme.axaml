@@ -1,0 +1,343 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Styles.Resources>
+        <SolidColorBrush x:Key="AppBg" Color="#F3F7F6" />
+        <SolidColorBrush x:Key="AppSide" Color="#F8FAF9" />
+        <SolidColorBrush x:Key="AppCard" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="AppInk" Color="#1E252B" />
+        <SolidColorBrush x:Key="AppInk2" Color="#545D66" />
+        <SolidColorBrush x:Key="AppInk3" Color="#616A72" />
+        <SolidColorBrush x:Key="AppLine" Color="#DDE4EB" />
+        <SolidColorBrush x:Key="AppLine2" Color="#D3DAE0" />
+        <SolidColorBrush x:Key="AppAccent" Color="#326EA7" />
+        <SolidColorBrush x:Key="AppAccentDark" Color="#25517A" />
+        <SolidColorBrush x:Key="AppAccentDeep" Color="#193753" />
+        <SolidColorBrush x:Key="AppAccentSoft" Color="#C9DFF3" />
+        <SolidColorBrush x:Key="AppAccentTint" Color="#E9F1F8" />
+        <SolidColorBrush x:Key="AppAccentWash" Color="#ECF4FB" />
+        <SolidColorBrush x:Key="AppAmber" Color="#8F5A0E" />
+        <SolidColorBrush x:Key="AppAmberBg" Color="#FBF3E2" />
+        <SolidColorBrush x:Key="AppRed" Color="#BF443B" />
+        <SolidColorBrush x:Key="AppRedBg" Color="#FBEDEB" />
+        <SolidColorBrush x:Key="AppSidebar" Color="#1A2C3C" />
+        <SolidColorBrush x:Key="AppSidebarText" Color="#E6EEF5" />
+        <LinearGradientBrush x:Key="LaunchGradient" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0" Color="#3472AD" />
+            <GradientStop Offset="1" Color="#2C6294" />
+        </LinearGradientBrush>
+    </Styles.Resources>
+
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{StaticResource AppBg}" />
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Microsoft YaHei, Segoe UI" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource AppInk}" />
+    </Style>
+
+    <Style Selector="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource AppInk}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style Selector="TextBlock.h2">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="#232C35" />
+    </Style>
+
+    <Style Selector="TextBlock.pageTitle">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="#1C252D" />
+        <Setter Property="LetterSpacing" Value="-0.3" />
+    </Style>
+
+    <Style Selector="TextBlock.muted">
+        <Setter Property="Foreground" Value="{StaticResource AppInk3}" />
+        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style Selector="TextBlock.small">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Foreground" Value="{StaticResource AppInk3}" />
+    </Style>
+
+    <Style Selector="TextBlock.status">
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDark}" />
+        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{StaticResource AppCard}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="BoxShadow" Value="0 1 2 0 #08000000, 0 8 24 0 #09000000" />
+    </Style>
+
+    <Style Selector="Button">
+        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Microsoft YaHei, Segoe UI" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Background" Value="#FFFFFF" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppLine2}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="#414B55" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button /template/ ContentPresenter">
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{StaticResource AppAccent}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#2C6193" />
+        <Setter Property="TextElement.Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.primary:disabled /template/ ContentPresenter">
+        <Setter Property="Background" Value="#ACC3D9" />
+        <Setter Property="TextElement.Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="Button.soft">
+        <Setter Property="Background" Value="{StaticResource AppAccentTint}" />
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.soft:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#DEE9F3" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+
+    <Style Selector="Button.ghost">
+        <Setter Property="Background" Value="#FFFFFF" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppLine2}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="#414B55" />
+    </Style>
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+
+    <Style Selector="Button.link">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDark}" />
+        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+
+    <Style Selector="Button.avatar">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.avatar:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+    </Style>
+
+    <Style Selector="Button.topnav">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="#545D66" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="15,0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="Button.topnav:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#E8F0F7" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+    <Style Selector="Button.topnav.active">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.topnav.active:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+
+    <Style Selector="Button.titlebarbtn">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="#505961" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Button.titlebarbtn:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#F2F6F3" />
+        <Setter Property="TextElement.Foreground" Value="#505961" />
+    </Style>
+    <Style Selector="Button.titlebarbtn.close:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#facdd1" />
+        <Setter Property="TextElement.Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="Button.nav">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="#4E5760" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Button.nav:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#E7EFF6" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+    <Style Selector="Button.nav.active">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.nav.active:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+
+    <Style Selector="Button.launch">
+        <Setter Property="Height" Value="72" />
+        <Setter Property="Background" Value="{StaticResource LaunchGradient}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="Button.launch:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#2C6294" />
+        <Setter Property="TextElement.Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="#FBFDFC" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppLine2}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="#739FC7" />
+        <Setter Property="BoxShadow" Value="0 0 0 3 #17000000" />
+    </Style>
+
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="#FBFDFC" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppLine2}" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style Selector="CheckBox">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource AppInk2}" />
+    </Style>
+
+    <Style Selector="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="ListBoxItem">
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="Foreground" Value="{StaticResource AppInk2}" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover">
+        <Setter Property="Background" Value="#E7EFF6" />
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="TabControl">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="TabItem">
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="Foreground" Value="{StaticResource AppInk3}" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="MinHeight" Value="36" />
+    </Style>
+    <Style Selector="TabItem:selected">
+        <Setter Property="Foreground" Value="{StaticResource AppInk}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="ProgressBar">
+        <Setter Property="Foreground" Value="{StaticResource AppAccent}" />
+        <Setter Property="Background" Value="#EDF3FD" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="MinHeight" Value="6" />
+    </Style>
+
+    <Style Selector="ScrollViewer">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <!--
+      这个 Padding 只缩进滚动内容，不影响滚动条本身的位置：
+      滚动条贴在 ScrollViewer 的右边界上，而 ScrollViewer 的右边界由外层容器决定。
+      因此"内容右边距"放在这里，"滚动条到窗口边"放在 ShellWindow 的 Border.Padding 上，两者互不干扰。
+    -->
+        <Setter Property="Padding" Value="0,0,11,0" />
+        <!-- 让滚动条始终占据自己那一列（否则内容会横跨到滚动条下面，空档就白留了） -->
+        <Setter Property="AllowAutoHide" Value="False" />
+    </Style>
+
+    <Style Selector="Border.fieldLabel">
+        <Setter Property="Background" Value="{StaticResource AppAccentTint}" />
+        <Setter Property="CornerRadius" Value="7" />
+    </Style>
+
+    <!-- 右键菜单（群友推荐「收藏」）：换成白底细边框，别用 Fluent 默认的灰底 -->
+    <Style Selector="MenuFlyoutPresenter">
+        <Setter Property="Background" Value="{StaticResource AppCard}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="3" />
+        <Setter Property="MinWidth" Value="0" />
+    </Style>
+    <Style Selector="MenuItem">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="12,6" />
+    </Style>
+</Styles>

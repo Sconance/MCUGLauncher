@@ -420,8 +420,14 @@ async Task Child(string mode, string path)
 
 sealed class SlowHandler : HttpMessageHandler
 {
+    /// <summary>
+    /// 获取或设置 Started。
+    /// </summary>
     public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken token)
     {
         Started.TrySetResult();
@@ -437,6 +443,9 @@ sealed class FixtureHandler : HttpMessageHandler
         private set;
     }
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
         Requests++;
@@ -460,20 +469,41 @@ sealed class WaitingStream : Stream
         set => throw new NotSupportedException();
     }
 
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
     {
         await Task.Delay(Timeout.Infinite, token);
         return 0;
     }
 
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token) => ReadAsync(buffer.AsMemory(offset, count), token).AsTask();
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public override int Read(byte[] b, int o, int c) => throw new NotSupportedException();
 
+    /// <summary>
+    /// 执行 Flush。
+    /// </summary>
     public override void Flush()
     {
     }
 
+    /// <summary>
+    /// 执行 Seek。
+    /// </summary>
     public override long Seek(long o, SeekOrigin s) => throw new NotSupportedException();
+    /// <summary>
+    /// 设置Length。
+    /// </summary>
     public override void SetLength(long v) => throw new NotSupportedException();
+    /// <summary>
+    /// 写入。
+    /// </summary>
     public override void Write(byte[] b, int o, int c) => throw new NotSupportedException();
 }

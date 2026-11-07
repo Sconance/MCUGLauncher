@@ -1,20 +1,50 @@
 namespace BlockLaunch;
 
+/// <summary>
+/// 提供 实例Descriptor 相关功能。
+/// </summary>
 public class InstanceDescriptor
 {
+    /// <summary>
+    /// 获取或设置 Schema版本。
+    /// </summary>
     public int SchemaVersion { get; set; } = 1;
+    /// <summary>
+    /// 获取或设置 实例ID。
+    /// </summary>
     public string InstanceId { get; set; } = Guid.NewGuid().ToString("N");
+    /// <summary>
+    /// 获取或设置 Key。
+    /// </summary>
     public string Key { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Display名称。
+    /// </summary>
     public string DisplayName { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 启动档案ID。
+    /// </summary>
     public string LaunchProfileId { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Description。
+    /// </summary>
     public string Description { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 Category。
+    /// </summary>
     public string Category { get; set; } = "自动";
     public bool Favorite
     {
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 Icon路径。
+    /// </summary>
     public string IconPath { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 数据Directory。
+    /// </summary>
     public string DataDirectory { get; set; } = "";
     public LaunchSettings? Launch
     {
@@ -23,11 +53,20 @@ public class InstanceDescriptor
     }
 }
 
+/// <summary>
+/// 提供 实例Catalog 相关功能。
+/// </summary>
 public sealed class InstanceCatalog(string root)
 {
     static string Safe(string id) => ContentService.SafeFile(id is "." or ".." ? throw new IOException("实例 ID 无效。") : id);
+    /// <summary>
+    /// 执行 MetadataDirectory。
+    /// </summary>
     public string MetadataDirectory(string key) => Path.Combine(Path.GetFullPath(root), "instances", Safe(key));
 
+    /// <summary>
+    /// 执行 DirectoryFor。
+    /// </summary>
     public string DirectoryFor(string key)
     {
         var file = Path.Combine(MetadataDirectory(key), ".blocklaunch-instance.json");
@@ -35,6 +74,9 @@ public sealed class InstanceCatalog(string root)
         return stored.Length == 0 ? MetadataDirectory(key) : Path.GetFullPath(stored);
     }
 
+    /// <summary>
+    /// 保存。
+    /// </summary>
     public void Save(InstanceDescriptor record)
     {
         GetOrCreate(record.Key);
@@ -42,6 +84,9 @@ public sealed class InstanceCatalog(string root)
         AtomicFile.WriteJson(Path.Combine(MetadataDirectory(record.Key), ".blocklaunch-instance.json"), record);
     }
 
+    /// <summary>
+    /// 获取OrCreate。
+    /// </summary>
     public InstanceDescriptor GetOrCreate(string key)
     {
         var directory = MetadataDirectory(key);
@@ -66,8 +111,13 @@ public sealed class InstanceCatalog(string root)
         if (new[] {
             "mods",
             "saves",
-            "config"
-        }.Any(d => Directory.Exists(Path.Combine(legacyDirectory, d))))
+            "config",
+            "resourcepacks",
+            "shaderpacks",
+            "screenshots",
+            "options.txt",
+            "servers.dat"
+        }.Any(d => Directory.Exists(Path.Combine(legacyDirectory, d)) || File.Exists(Path.Combine(legacyDirectory, d))))
             record.DataDirectory = Path.GetFullPath(legacyDirectory);
         var legacy = Path.Combine(directory, ".blocklaunch-pack.json");
         if (File.Exists(legacy))
@@ -81,6 +131,9 @@ public sealed class InstanceCatalog(string root)
         return record;
     }
 
+    /// <summary>
+    /// 执行 MigrateLegacy。
+    /// </summary>
     public List<string> MigrateLegacy()
     {
         var errors = new List<string>();
@@ -100,6 +153,9 @@ public sealed class InstanceCatalog(string root)
         return errors;
     }
 
+    /// <summary>
+    /// 创建。
+    /// </summary>
     public string Create(string displayName, string launchProfile, string minecraft)
     {
         Safe(launchProfile);
@@ -127,14 +183,23 @@ public sealed class InstanceCatalog(string root)
     }
 }
 
+/// <summary>
+/// 提供 版本Installation 相关功能。
+/// </summary>
 public sealed class VersionInstallation
 {
+    /// <summary>
+    /// 获取或设置 版本。
+    /// </summary>
     public string Version { get; set; } = "";
     public bool Ready
     {
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 状态。
+    /// </summary>
     public string State { get; set; } = "";
     public DateTimeOffset Updated
     {
@@ -144,6 +209,9 @@ public sealed class VersionInstallation
 
     static string FileFor(string root, string version) => Path.Combine(root, ".blocklaunch-installations", ContentService.SafeFile(version) + ".json");
 
+    /// <summary>
+    /// 判断是否为Ready。
+    /// </summary>
     public static bool IsReady(string root, string version)
     {
         var file = FileFor(root, version);
@@ -159,6 +227,9 @@ public sealed class VersionInstallation
         }
     }
 
+    /// <summary>
+    /// 执行 Run。
+    /// </summary>
     public static async Task Run(string root, string version, Func<CancellationToken, Task> action, CancellationToken token)
     {
         var file = FileFor(root, version);

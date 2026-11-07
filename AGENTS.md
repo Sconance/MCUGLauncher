@@ -1,0 +1,31 @@
+# MCUG Launcher 开发约定
+
+## 架构
+
+- ShellWindow 只管理导航、窗口生命周期和原生对话框，不新增账号、安装、下载、配置或社区业务。
+- 业务页面放在 `Views/*View`，只通过 `Contracts.ILauncherService` 调用 UseCases；不要把窗口、控件或内部命令协议传入 UseCases。共享 DTO 位于 `App/Contracts`。
+- 新功能优先复用 Core；Services 负责适配，UseCases 负责流程，Views 负责展示和事件。不能为了换界面另写一套下载器、依赖解析器或 Java 扫描。
+- 后台任务由 LauncherTaskQueue/OperationCoordinator 管理，不能绑定在页面导航或视图生命周期上。
+- WebView2 只用于微软 OAuth 登录窗口；不要在启动器主界面重新引入 Web UI、`Ui/` 资源或浏览器消息桥。
+- 菜单必须提供实际入口；尚未接通的功能明确标注，不把有按钮当成功能完成。
+- 不以行数作为唯一标准。一个模块负责一件事，依赖应明确；避免过度抽象和仅转发调用的无意义文件。
+- 后端组件分级、依赖声明与 Core 下沉规则见 [后端开发规范](BACKEND_DEVELOPMENT.md)：新组件优先做成完全独立组件，依赖现有组件的必须逐成员声明。
+- UI 开发遵循 [UI 开发指南](docs/UI_DEVELOPMENT.md)：UI 任务只修改 `src/MCUGLauncher.Avalonia/`；禁止自动修改 `App`/`Core`/`Contracts`/测试；需要业务变更必须先向用户说明并等待确认。
+
+## 兼容性
+
+- 保留旧配置字段和数据文件，不因新 UI 暂未提供入口就丢弃设置。
+- 安装目标在入队时保存，执行时不读取用户当前选中的实例来替换目标。
+- 下载使用 Core 的校验、临时文件和提交机制，取消不能把半成品当完成。
+- 关闭启动器不关闭游戏；关闭游戏需要确认，操作限制在自己记录的会话内。
+- 保持蓝白主题与透明背景 MCUG 标志，尺寸调整时保证控件可滚动访问。
+
+## 提交前
+
+运行布局、版本、C# SourceFormatter、原生 UI 边界检查及受影响的 test/*Checks。修改页面需实际启动并查看截图/控件状态。修改任务需验证排队、取消和恢复。
+
+测试进程、假 HTTP 和模拟对话框不能代替真实账号、游戏和 WebView2（微软登录）验收；提交说明须说明验证范围和剩余缺口。
+
+只推送用户指定分支。发布 Release、移动标签或覆盖正式程序须有相应用户指示。
+
+Views 通过 `ILauncherService` 调用业务，不得直接接触 `LauncherService` 内部协议或 `AppConfig`；服务层不反向依赖 UseCases。卸载必须经过路径预览与原生确认，恢复排队卸载也必须确认。WebView2 仅用于微软登录，不得恢复主界面 Web UI。

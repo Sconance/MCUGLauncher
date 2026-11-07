@@ -11,6 +11,9 @@ public static class ProductInfo
 {
     public const string Name = "MCUG Launcher";
 
+    /// <summary>
+    /// 获取或设置 版本。
+    /// </summary>
     public static string Version { get; } = ReadVersion();
 
     static string ReadVersion()

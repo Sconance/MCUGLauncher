@@ -4,17 +4,32 @@ using System.Text.RegularExpressions;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 模组Finding 数据。
+/// </summary>
 public record ModFinding(string Severity, string File, string Message);
 
+/// <summary>
+/// 表示 模组Descriptor 数据。
+/// </summary>
 public record ModDescriptor(string Id, string Version, string File, string Loader, Dictionary<string, string[]> Depends, Dictionary<string, string[]> Breaks, bool Nested = false);
 
+/// <summary>
+/// 表示 模组Scan 数据。
+/// </summary>
 public record ModScan(List<ModDescriptor> Mods, List<ModFinding> Findings)
 {
     public string Summary => $"{Mods.Count} 个元数据条目 · {Findings.Count(f => f.Severity == "错误")} 项明确问题 · {Findings.Count(f => f.Severity != "错误")} 项需核对";
 }
 
+/// <summary>
+/// 提供 模组Preflight 相关功能。
+/// </summary>
 public static class ModPreflight
 {
+    /// <summary>
+    /// 扫描。
+    /// </summary>
     public static ModScan Scan(string directory, string minecraft, string loader, int java = 0, string loaderVersion = "", CancellationToken token = default)
     {
         var mods = new List<ModDescriptor>();
@@ -237,6 +252,9 @@ public static class ModPreflight
 
     static string[] Ranges(JsonElement value) => value.ValueKind == JsonValueKind.Array ? value.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.String).Select(e => e.GetString()!).ToArray() : value.ValueKind == JsonValueKind.String ? [value.GetString()!] : ["[无法解析]"];
 
+    /// <summary>
+    /// 执行 Matches。
+    /// </summary>
     public static bool? Matches(string actual, string rule)
     {
         rule = rule.Trim();

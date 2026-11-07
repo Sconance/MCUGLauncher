@@ -4,8 +4,14 @@ using System.Text;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 WorldMetadata 数据。
+/// </summary>
 public record WorldMetadata(string Name, string Version, int DataVersion, bool Snapshot)
 {
+    /// <summary>
+    /// 读取。
+    /// </summary>
     public static WorldMetadata Read(string file)
     {
         using var source = File.OpenRead(file);
@@ -113,5 +119,8 @@ public record WorldMetadata(string Name, string Version, int DataVersion, bool S
         return new(values.GetValueOrDefault("Data/LevelName") as string ?? Path.GetFileName(Path.GetDirectoryName(file))!, values.GetValueOrDefault("Data/Version/Name") as string ?? "未知", values.GetValueOrDefault("Data/DataVersion") is int version ? version : 0, values.GetValueOrDefault("Data/Version/Snapshot") is true);
     }
 
+    /// <summary>
+    /// 执行 Warning。
+    /// </summary>
     public string Warning(string target) => Version == "未知" ? "未取得存档版本，请先备份。" : ModPreflight.Matches(target, ">=" + Version) == false ? $"存档来自 {Version}，当前目标 {target} 可能降级并损坏世界；建议使用备份副本。" : Snapshot ? "该世界曾由快照版本保存，切换游戏版本前请备份。" : "跨版本首次打开前建议备份。";
 }

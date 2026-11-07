@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-31T12:00:00+08:00",
+  "items": [
+    {
+      "id": "srv-dusk",
+      "name": "暮色森林 · 轻生存",
+      "address": "play.mclc.cn",
+      "description": "无经济、无地皮，只想好好种田。",
+      "version": "1.20.1",
+      "mode": "轻生存",
+      "tags": ["公益", "轻生存"],
+      "icon": "server"
+    },
+    {
+      "id": "srv-redstone",
+      "name": "红石小镇 · 创造服",
+      "address": "build.mclc.cn",
+      "description": "建筑党聚集地，每周五合建。",
+      "version": "1.20.1",
+      "mode": "创造",
+      "tags": ["创造", "建筑"],
+      "icon": "box"
+    }
+  ]
+}

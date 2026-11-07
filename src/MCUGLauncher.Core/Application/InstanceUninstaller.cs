@@ -2,14 +2,23 @@ using System.Text.Json;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 UninstallPlan 数据。
+/// </summary>
 public sealed record UninstallPlan(string Root, string Key, string InstanceId, string Name, bool SharedData, bool DeleteSharedData, List<string> Paths);
 
+/// <summary>
+/// 提供 实例Uninstaller 相关功能。
+/// </summary>
 public static class InstanceUninstaller
 {
     static readonly string[] SharedItems = ["saves", "mods", "config", "defaultconfigs", "resourcepacks", "shaderpacks", "screenshots", "logs", "crash-reports", "options.txt", "optionsof.txt", "servers.dat", "servers.dat_old"];
 
     static string Full(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
     static bool Same(string a, string b) => Full(a).Equals(Full(b), StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// 执行 Inside。
+    /// </summary>
     public static bool Inside(string path, string parent) => Same(path, parent) || Full(path).StartsWith(Path.EndsInDirectorySeparator(Full(parent)) ? Full(parent) : Full(parent) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
 
     static void NoLinks(string path, bool recursive = true)
@@ -31,6 +40,9 @@ public static class InstanceUninstaller
             }
     }
 
+    /// <summary>
+    /// 执行 Plan。
+    /// </summary>
     public static UninstallPlan Plan(string root, string key, LaunchSettings defaults, bool deleteSharedData = false)
     {
         root = Full(root);
@@ -104,6 +116,9 @@ public static class InstanceUninstaller
         return new(root, key, descriptor.InstanceId, descriptor.DisplayName, shared, shared && deleteSharedData, paths);
     }
 
+    /// <summary>
+    /// 删除。
+    /// </summary>
     public static void Delete(UninstallPlan confirmed, LaunchSettings defaults)
     {
         var current = Plan(confirmed.Root, confirmed.Key, defaults, confirmed.DeleteSharedData);

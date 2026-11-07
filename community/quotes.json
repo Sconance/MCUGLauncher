@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-31T12:00:00+08:00",
+  "items": [
+    {
+      "id": "quote-001",
+      "type": "text",
+      "text": "先把今天的矿挖完，再去想明天的事。",
+      "author": "阿澈",
+      "source": "暮色森林",
+      "created_at": "2026-10-30T21:12:00+08:00"
+    },
+    {
+      "id": "quote-002",
+      "type": "image",
+      "text": "周末合影 · 群友服务器",
+      "author": "北岸",
+      "source": "红石小镇 · 2026.10.26",
+      "imageUrl": "https://raw.githubusercontent.com/your-name/mcug-community/main/images/weekend.jpg",
+      "created_at": "2026-10-26T20:00:00+08:00"
+    }
+  ]
+}

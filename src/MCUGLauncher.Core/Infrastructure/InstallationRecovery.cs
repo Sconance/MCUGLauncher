@@ -1,9 +1,18 @@
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 PackCommitRecord 数据。
+/// </summary>
 public record PackCommitRecord(string Alias, string State);
 
+/// <summary>
+/// 提供 InstallationRecovery 相关功能。
+/// </summary>
 public static class InstallationRecovery
 {
+    /// <summary>
+    /// 执行 Recover。
+    /// </summary>
     public static List<string> Recover(string root)
     {
         var messages = new List<string>();

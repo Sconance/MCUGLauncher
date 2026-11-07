@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-31T12:00:00+08:00",
+  "items": [
+    {
+      "id": "rec-dusk",
+      "type": "server",
+      "name": "暮色森林 · 轻生存",
+      "author": "阿澈",
+      "description": "无经济、无地皮，只想好好种田。",
+      "tags": ["公益", "轻生存"],
+      "version": "1.20.1",
+      "url": "https://example.com/servers/dusk"
+    },
+    {
+      "id": "rec-clean-ui",
+      "type": "material",
+      "name": "清爽 UI · 1.20",
+      "author": "小鹿",
+      "description": "只改界面与字体，保留原版手感。",
+      "tags": ["16x", "1.20", "界面"],
+      "version": "1.20",
+      "size": "12.5 MB",
+      "url": "https://example.com/packs/clean-ui"
+    },
+    {
+      "id": "rec-complementary",
+      "type": "shader",
+      "name": "Complementary Reimagined",
+      "author": "北岸",
+      "description": "柔和的体积光，帧数依然友好。",
+      "tags": ["1.20.1", "中配", "体积光"],
+      "version": "1.20.1",
+      "size": "8.3 MB",
+      "url": "https://example.com/shaders/complementary"
+    }
+  ]
+}

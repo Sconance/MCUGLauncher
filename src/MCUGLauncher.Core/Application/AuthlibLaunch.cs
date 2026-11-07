@@ -2,12 +2,18 @@ using System.Security.Cryptography;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 Authlib启动 数据。
+/// </summary>
 public record AuthlibLaunch(string Jar, string Metadata)
 {
     public const string Api = "https://skin.mualliance.ltd/api/yggdrasil/";
     public const string Version = "1.2.8";
     public const string Sha256 = "9c7f4343e6c82034958ffb48c14a2cb0c85928be7283103ce17da00c6d5a7b10";
 
+    /// <summary>
+    /// 执行 ValidJar。
+    /// </summary>
     public static bool ValidJar(string path)
     {
         if (!File.Exists(path))
@@ -16,6 +22,9 @@ public record AuthlibLaunch(string Jar, string Metadata)
         return Convert.ToHexString(SHA256.HashData(stream)).Equals(Sha256, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// 准备。
+    /// </summary>
     public static async Task<string> Prepare(string directory, HttpClient http, CancellationToken token)
     {
         Directory.CreateDirectory(directory);
@@ -55,6 +64,9 @@ public record AuthlibLaunch(string Jar, string Metadata)
         }
     }
 
+    /// <summary>
+    /// 执行 Arguments。
+    /// </summary>
     public IReadOnlyList<string> Arguments()
     {
         if (!ValidJar(Jar))

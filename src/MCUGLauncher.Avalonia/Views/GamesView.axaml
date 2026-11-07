@@ -1,0 +1,18 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MCUGLauncher.Avalonia.Views.GamesView">
+  <Grid RowDefinitions="Auto,*">
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="运行中的游戏" Classes="pageTitle" />
+      <Button x:Name="RefreshButton" Grid.Column="1" Content="刷新" Classes="ghost" />
+    </Grid>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+      <StackPanel Spacing="8">
+        <TextBlock Text="这里只列出由本次启动器启动、且仍在运行的游戏。关闭启动器不会自动关闭游戏。"
+                   Classes="muted" TextWrapping="Wrap" />
+        <StackPanel x:Name="GamesPanel" Spacing="6" />
+        <TextBlock x:Name="StatusText" Classes="status" />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

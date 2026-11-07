@@ -242,17 +242,38 @@ catch (IOException)
 Console.WriteLine("ALL_UPGRADE_CHECKS_PASSED");
 sealed class Provider : IResourceProvider
 {
+    /// <summary>
+    /// 获取或设置 Plans。
+    /// </summary>
     public Dictionary<string, InstallPlan> Plans { get; } = new();
 
+    /// <summary>
+    /// 解析。
+    /// </summary>
     public Task<InstallPlan> Resolve(ContentVersion version, string game, string loader) => Task.FromResult(Plans[version.Id]);
+    /// <summary>
+    /// 执行 Versions。
+    /// </summary>
     public Task<List<ContentVersion>> Versions(string project, string game, string loader, string type) => Task.FromResult(Plans.Values.SelectMany(p => p.Versions).Where(v => v.ProjectId == project).ToList());
+    /// <summary>
+    /// 搜索。
+    /// </summary>
     public Task<SearchPage> Search(string query, string game, string loader, string type, int offset = 0) => throw new NotSupportedException();
 }
 
 sealed class Handler : HttpMessageHandler
 {
+    /// <summary>
+    /// 获取或设置 Bytes。
+    /// </summary>
     public Dictionary<string, byte[]> Bytes { get; } = new();
+    /// <summary>
+    /// 获取或设置 Statuses。
+    /// </summary>
     public Queue<HttpStatusCode> Statuses { get; } = new();
+    /// <summary>
+    /// 获取或设置 Hosts。
+    /// </summary>
     public List<string> Hosts { get; } = [];
 
     int requests, active;
@@ -265,6 +286,9 @@ sealed class Handler : HttpMessageHandler
         private set;
     }
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
         Interlocked.Increment(ref requests);

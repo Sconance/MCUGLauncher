@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>MCUGLauncher</AssemblyName>
+    <RootNamespace>MCUGLauncher.Avalonia</RootNamespace>
+    <ApplicationIcon>Assets/MCUGLauncher.ico</ApplicationIcon>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/MCUGLogo.png" />
+    <AvaloniaResource Include="Assets/LaunchIcon.svg" />
+    <AvaloniaResource Include="Assets/DownloadIcon.svg" />
+    <AvaloniaResource Include="Assets/SettingsIcon.svg" />
+    <AvaloniaResource Include="Assets/ExtraIcon.svg" />
+    <AvaloniaResource Include="Assets/MinimizeIcon.svg" />
+    <AvaloniaResource Include="Assets/MaximizeIcon.svg" />
+    <AvaloniaResource Include="Assets/CloseIcon.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MCUGLauncher.App/MCUGLauncher.App.csproj" />
+    <ProjectReference Include="../MCUGLauncher.Core/MCUGLauncher.Core.csproj" />
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageReference Include="Markdown.Avalonia.Tight" Version="11.0.3" />
+    <PackageReference Include="WebView2.Avalonia" Version="1.0.3240.44-preview.250526.1" />
+    <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="11.3.9.5" />
+  </ItemGroup>
+</Project>

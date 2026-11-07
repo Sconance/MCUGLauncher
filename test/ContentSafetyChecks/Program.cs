@@ -200,6 +200,9 @@ Check(handler.Requests == before, "directory collision fails before downloading"
 Console.WriteLine("ALL_CONTENT_SAFETY_CHECKS_PASSED");
 sealed class PayloadHandler : HttpMessageHandler
 {
+    /// <summary>
+    /// 获取或设置 Payloads。
+    /// </summary>
     public Dictionary<string, byte[]> Payloads { get; } = new();
     public int Requests
     {
@@ -207,6 +210,9 @@ sealed class PayloadHandler : HttpMessageHandler
         private set;
     }
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         Requests++;

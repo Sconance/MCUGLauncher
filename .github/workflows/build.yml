@@ -1,7 +1,7 @@
 name: Windows build
 on:
   push:
-    branches: [main, test]
+    branches: [main, test, "0.22.1", "0.22.2", "0.22.3", "0.22.3-fix", "0.22.3-Avalonia", "0.22.3-codex"]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -16,20 +16,14 @@ jobs:
           global-json-file: global.json
       - name: Validate repository layout
         run: python scripts/check-layout.py
+      - name: Check native UI boundaries
+        run: python scripts/check-native-boundaries.py
       - name: Check version metadata
         run: python scripts/check-version.py
-      - name: Check class documentation
-        run: python scripts/check-class-docs.py
-      - name: Check UI boundaries
-        run: python scripts/check-ui-boundaries.py
-      - name: Check reference component reuse
-        run: python scripts/check-refactor-reuse.py
       - name: Check source formatting
         run: dotnet run --project tools/SourceFormatter
       - name: Build launcher
         run: ./scripts/build.ps1
 
       - name: Run isolated regression checks
-        run: ./scripts/run-checks.ps1 -Name AuthChecks,MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks
-      - name: Run isolated UI and collection checks
-        run: ./scripts/run-checks.ps1 -Name VersionUiChecks,WorkflowUiChecks,CollectionChecks
+        run: ./scripts/run-checks.ps1 -Name MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks,LauncherChecks

@@ -2,8 +2,14 @@ using System.Text.Json;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 CloneOptions 数据。
+/// </summary>
 public record CloneOptions(bool Saves = false, bool Screenshots = false, bool Servers = false);
 
+/// <summary>
+/// 提供 实例Cloner 相关功能。
+/// </summary>
 public static class InstanceCloner
 {
     static void NoLink(string path)
@@ -29,6 +35,9 @@ public static class InstanceCloner
         }
     }
 
+    /// <summary>
+    /// 复制。
+    /// </summary>
     public static async Task<string> Copy(string root, string key, string source, string minecraft, string name, LaunchSettings effectiveSettings, CloneOptions options, Action<string>? progress = null, CancellationToken token = default)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Trim().Length > 100)

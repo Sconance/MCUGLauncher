@@ -3,20 +3,35 @@ using System.Text;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 表示 内容更新 数据。
+/// </summary>
 public record ContentUpdate(ManagedContent Current, ContentVersion? Latest, string Error)
 {
     public string Label => Current.Name + " · " + (Latest == null ? Error : Current.VersionId + " → " + Latest.VersionNumber);
 }
 
+/// <summary>
+/// 表示 内容Change 数据。
+/// </summary>
 public record ContentChange(string Project, string Before, string After, string Path, string? OldPath = null)
 {
     public string Label => Project + " · " + Before + " → " + After + "\n" + (OldPath != null && OldPath != Path ? "移除 " + OldPath + "\n写入 " : "写入 ") + Path;
 }
 
+/// <summary>
+/// 表示 内容更新Preview 数据。
+/// </summary>
 public record ContentUpdatePreview(InstallPlan Plan, string Fingerprint, List<ContentChange> Changes, long Bytes);
 
+/// <summary>
+/// 提供 内容Updates 相关功能。
+/// </summary>
 public static class ContentUpdates
 {
+    /// <summary>
+    /// 执行 Kind。
+    /// </summary>
     public static string Kind(ManagedContent item) => item.RelativePath.Split('/')[0] switch
     {
         "mods" => "mod",
@@ -25,6 +40,9 @@ public static class ContentUpdates
         _ => "resourcepack"
     };
 
+    /// <summary>
+    /// 检查。
+    /// </summary>
     public static async Task<List<ContentUpdate>> Check(IResourceProvider provider, string instance, string game, string loader, CancellationToken token)
     {
         var result = new List<ContentUpdate>();
@@ -46,6 +64,9 @@ public static class ContentUpdates
         return result;
     }
 
+    /// <summary>
+    /// 执行 Fingerprint。
+    /// </summary>
     public static async Task<string> Fingerprint(string instance, CancellationToken token)
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
@@ -64,6 +85,9 @@ public static class ContentUpdates
         return Convert.ToHexString(hash.GetHashAndReset());
     }
 
+    /// <summary>
+    /// 执行 Preview。
+    /// </summary>
     public static async Task<ContentUpdatePreview> Preview(IResourceProvider provider, string instance, IEnumerable<ContentVersion> selected, string game, string loader, CancellationToken token)
     {
         var before = await Fingerprint(instance, token);

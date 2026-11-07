@@ -2,6 +2,9 @@ using System.Net;
 
 namespace BlockLaunch;
 
+/// <summary>
+/// 提供 Network设置 相关功能。
+/// </summary>
 public sealed class NetworkSettings
 {
     public int LimitKibPerSecond
@@ -9,10 +12,22 @@ public sealed class NetworkSettings
         get;
         set;
     }
+    /// <summary>
+    /// 获取或设置 ProxyMode。
+    /// </summary>
     public string ProxyMode { get; set; } = "系统代理";
+    /// <summary>
+    /// 获取或设置 Proxy地址。
+    /// </summary>
     public string ProxyAddress { get; set; } = "";
+    /// <summary>
+    /// 获取或设置 下载Source。
+    /// </summary>
     public string DownloadSource { get; set; } = "官方优先，失败切换 BMCLAPI";
 
+    /// <summary>
+    /// 执行 Validate。
+    /// </summary>
     public void Validate()
     {
         if (LimitKibPerSecond is < 0 or > 1048576)
@@ -24,8 +39,14 @@ public sealed class NetworkSettings
     }
 }
 
+/// <summary>
+/// 提供 NetworkPolicy处理器 相关功能。
+/// </summary>
 public sealed class NetworkPolicyHandler(NetworkSettings settings, HttpMessageHandler inner) : DelegatingHandler(inner)
 {
+    /// <summary>
+    /// 执行 Mirror。
+    /// </summary>
     public static Uri? Mirror(Uri uri) => uri.Host switch
     {
         "libraries.minecraft.net" => new("https://bmclapi2.bangbang93.com/maven" + uri.PathAndQuery),
@@ -34,6 +55,9 @@ public sealed class NetworkPolicyHandler(NetworkSettings settings, HttpMessageHa
         _ => null
     };
 
+    /// <summary>
+    /// 发送。
+    /// </summary>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
     {
         if (request.Method != HttpMethod.Get || request.Content != null || request.RequestUri == null || request.Headers.Authorization != null || request.Headers.Contains("Cookie"))
@@ -81,6 +105,9 @@ public sealed class NetworkPolicyHandler(NetworkSettings settings, HttpMessageHa
         throw new HttpRequestException("网络请求失败。", last);
     }
 
+    /// <summary>
+    /// 创建。
+    /// </summary>
     public static HttpClient Create(NetworkSettings settings)
     {
         settings.Validate();
