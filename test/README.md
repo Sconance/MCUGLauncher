@@ -29,3 +29,14 @@ dotnet run --project test/LauncherChecks -c Release -- --server-favorites-only
 检查旧配置、强类型接口保存、配置持久化、状态快照、旧调用保留绑定、清除绑定、删除及无编号。
 该场景也在完整 LauncherChecks 中执行，由现有 Windows CI 运行。
 它不启动游戏，不能替代真实账号、Java 和服务器进服验收。
+
+
+## 收藏服务器启动
+
+```sh
+dotnet run --project test/LauncherChecks -c Release -- --server-launch-only
+```
+
+覆盖真实接口路由、缺少绑定/错误地址/不存在实例、默认端口与 IPv6、临时参数隔离、普通启动、
+进程失败后的重试，以及不同入口的并发目录预留。该场景也由完整 LauncherChecks 和既有 Windows CI 执行。
+测试使用短命令进程替代 Minecraft，不执行真实账号登录或网络进服，不能声称真实游戏验收完成。

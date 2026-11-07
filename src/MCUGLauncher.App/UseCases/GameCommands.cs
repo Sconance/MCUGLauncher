@@ -7,12 +7,37 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
 
+/// <summary>普通启动、指定服务器启动、会话停止与进程观察的统一用例。</summary>
+/// <remarks>B 类：通过 LauncherContext.Config/Games/Tasks/Store/Http/Token/Log/SendGames
+/// 和 MarkPreparing/ReleasePreparing 管理启动；依赖 InstanceSnapshot.Capture、
+/// AccountModeCommands.EnsureFreshAsync 和 MuaAccountService.Metadata。
+/// 详细成员和 Core 调用见 docs/components/GameCommands.md；不依赖视图或 LauncherService。</remarks>
 internal sealed class GameCommands(LauncherContext context,
     Func<LaunchRequest, CancellationToken, Task<Process>>? buildProcess = null)
 {
     bool preparing;
 
-    public async Task<LaunchResultInfo> LaunchAsync(string version)
+    public Task<LaunchResultInfo> LaunchAsync(string version) => LaunchCoreAsync(version, null);
+
+    public async Task<LaunchResultInfo> LaunchToServerAsync(string instance, string serverAddress)
+    {
+        if (string.IsNullOrWhiteSpace(instance))
+            return new(false, "请先为服务器收藏绑定启动实例。");
+        if (string.IsNullOrWhiteSpace(serverAddress))
+            return new(false, "请填写服务器地址。");
+        string address;
+        try
+        {
+            address = ServerEndpoint.Parse(serverAddress).ToString();
+        }
+        catch (Exception error) when (error is IOException or ArgumentException)
+        {
+            return new(false, error.Message);
+        }
+        return await LaunchCoreAsync(instance.Trim(), address);
+    }
+
+    async Task<LaunchResultInfo> LaunchCoreAsync(string version, string? serverOverride)
     {
         if (preparing)
             return new(false, "游戏正在准备启动，请稍候。");
@@ -53,7 +78,10 @@ internal sealed class GameCommands(LauncherContext context,
                 var jar = await AuthlibLaunch.Prepare(Path.Combine(context.Store.DataDirectory, "authlib-injector"), context.Http, context.Token);
                 external = new AuthlibLaunch(jar, metadata.Json);
             }
+            // InstanceSnapshot owns a deep copy, so this override cannot alter saved settings.
             var settings = instance.Settings;
+            if (serverOverride != null)
+                settings.Server = serverOverride;
             if (settings.AutoChinese && !context.Games.UsesDirectory(instance.Directory))
                 GameDefaults.EnsureChinese(instance.Directory, instance.Requirements.Minecraft);
             settings.VersionInfo = "MCUGLauncher";

@@ -46,7 +46,12 @@ WebView2 的唯一用途是 `MicrosoftLoginWindow` 承载微软 OAuth 页面；�
 省略或传 null 保留原绑定，空字符串清除绑定；新增收藏未提供实例时保持未绑定。
 因此既有 Avalonia/TUI 的三参数调用不会丢失收藏的实例。界面和 Core 无需修改。
 
-收藏进服属于应用用例层，应在 `App/UseCases` 通过契约 handler 接入，并复用
-`GameCommands` 的身份校验、任务互斥、实例快照和进程管理。服务器地址只覆盖本次
-启动快照的 `LaunchSettings.Server`，不永久改写全局/实例设置；参数生成继续交给
-`Core.LaunchService`。本次仅补齐收藏存储契约，尚未添加进服接口或按钮。
+收藏进服已通过 `ILauncherService.LaunchToServerAsync(instance, serverAddress)` 接入。
+`LaunchToServerFeatureHandler` 调用 `GameCommands`，复用身份校验、任务互斥、实例快照和进程管理。
+实例必须明确指定，未绑定或已删除的实例返回失败，不会回退到当前选中实例；服务器地址由
+Core `ServerEndpoint.Parse` 校验并规范化。共享的目录预留会阻止普通启动和收藏启动并发准备同一实例。
+
+地址只覆盖本次启动快照的 `LaunchSettings.Server`，不永久改写全局/实例/收藏设置；
+普通 `LaunchAsync` 保持原有行为。参数生成继续交给 `Core.LaunchService`。
+调用方读取收藏的 `Instance` 和 `Address` 后传给接口，并展示 `LaunchResultInfo.Ok/Message`。
+当前任务没有修改 Avalonia 或 TUI 页面，按钮可在独立的前端任务中接入。

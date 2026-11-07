@@ -70,6 +70,14 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             version
         });
 
+    /// <summary>使用明确的实例和服务器地址启动；不永久修改实例启动设置。</summary>
+    public Task<LaunchResultInfo> LaunchToServerAsync(string instance, string serverAddress) =>
+        FeatureRequest.InvokeAsync<LaunchResultInfo>(this, nameof(LaunchToServerAsync), new
+        {
+            instance,
+            serverAddress
+        });
+
     public Task RequestStateAsync() => application.HandleAsync("""{"type":"requestState"}""");
 
     public Task SelectInstanceAsync(string instance) => CommandAsync(new { type = "selectInstance", instance });
