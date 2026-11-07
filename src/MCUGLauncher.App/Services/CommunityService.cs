@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,15 +11,14 @@ namespace MCUGLauncher.Services;
 /// <summary>
 /// 社区数据源访问。
 /// </summary>
-/// <param name="url">数据源地址</param>
-/// <param name="token">取消令牌</param>
-/// <returns>是否成功、响应文本与耗时（毫秒）</returns>
 /// <remarks>
-/// 依赖 <see cref="System.Net.Http.HttpClient"/>；用于读取 Markdown 公告及其他社区数据，并测试数据源。
+/// 组件级别：B。通过 HttpClient 读取社区数据，通过 AnnouncementInfo 的构造函数和
+/// Markdown、PublishedAt 属性返回公告。与界面无直接依赖。
 /// </remarks>
 public sealed class CommunityService
 {
     const int MaxAnnouncementBytes = 1024 * 1024;
+    const int MaxDirectoryAnnouncements = 10;
     readonly HttpClient _http;
     public CommunityService(HttpClient http) => _http = http;
 
@@ -34,11 +34,17 @@ public sealed class CommunityService
         var watch = Stopwatch.StartNew();
         try
         {
-            using var response = await _http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
+            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            if (IsGitHubDirectory(uri))
+            {
+                request.Headers.UserAgent.ParseAdd("MCUGLauncher");
+                request.Headers.Accept.ParseAdd("application/vnd.github+json");
+            }
+            using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
             if (!response.IsSuccessStatusCode)
                 return (false, "", $"公告读取失败：HTTP {(int)response.StatusCode} · {response.ReasonPhrase}", (int)watch.ElapsedMilliseconds);
             if (response.Content.Headers.ContentLength > MaxAnnouncementBytes)
-                return (false, "", "公告 Markdown 不能超过 1 MB。", (int)watch.ElapsedMilliseconds);
+                return (false, "", "公告文件或目录清单不能超过 1 MB。", (int)watch.ElapsedMilliseconds);
 
             await using var input = await response.Content.ReadAsStreamAsync(deadline.Token);
             using var output = new MemoryStream();
@@ -47,7 +53,7 @@ public sealed class CommunityService
             while ((read = await input.ReadAsync(buffer, deadline.Token)) > 0)
             {
                 if (output.Length + read > MaxAnnouncementBytes)
-                    return (false, "", "公告 Markdown 不能超过 1 MB。", (int)watch.ElapsedMilliseconds);
+                    return (false, "", "公告文件或目录清单不能超过 1 MB。", (int)watch.ElapsedMilliseconds);
                 await output.WriteAsync(buffer.AsMemory(0, read), deadline.Token);
             }
 
@@ -58,7 +64,7 @@ public sealed class CommunityService
         {
             return (false, "", "公告读取超时（8 秒）。", 8000);
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (ex is HttpRequestException or IOException)
         {
             return (false, "", "公告读取失败：" + ex.Message, (int)watch.ElapsedMilliseconds);
         }
@@ -66,19 +72,122 @@ public sealed class CommunityService
 
     public async Task<(bool Ok, string Text, int Ms)> TestAnnouncementAsync(string url, CancellationToken token)
     {
+        var result = await ReadAnnouncementsAsync(url, token);
+        if (result.Items.Length == 0)
+            return (false, result.Error, result.Ms);
+        var text = result.IsDirectory
+            ? $"GitHub 公告目录有效 · 成功读取 {result.Items.Length} 篇 · {result.Ms} ms"
+            : $"Markdown 公告有效 · {result.Ms} ms";
+        return (true, text, result.Ms);
+    }
+
+    /// <summary>读取单篇公告，或读取 GitHub 目录中最近的公告。</summary>
+    public async Task<(AnnouncementInfo[] Items, string Error, int Ms, bool IsDirectory)> ReadAnnouncementsAsync(
+        string url,
+        CancellationToken token)
+    {
+        var isDirectory = TryHttpUri(url, out var uri) && IsGitHubDirectory(uri);
         var read = await ReadAnnouncementAsync(url, token);
         if (!read.Ok)
-            return (false, read.Error, read.Ms);
+            return ([], read.Error, read.Ms, isDirectory);
+        if (isDirectory)
+            return await ReadDirectoryAnnouncementsAsync(read.Markdown, read.Ms, token);
+
         try
         {
-            _ = ParseMarkdownAnnouncement(read.Markdown, url);
-            return (true, $"Markdown 公告有效 · {read.Ms} ms", read.Ms);
+            return ([ParseMarkdownAnnouncement(read.Markdown, url)], "", read.Ms, false);
         }
         catch (InvalidDataException ex)
         {
-            return (false, ex.Message, read.Ms);
+            return ([], "公告 Markdown 无效：" + ex.Message, read.Ms, false);
         }
     }
+
+    async Task<(AnnouncementInfo[] Items, string Error, int Ms, bool IsDirectory)> ReadDirectoryAnnouncementsAsync(
+        string json,
+        int listingMs,
+        CancellationToken token)
+    {
+        var watch = Stopwatch.StartNew();
+        try
+        {
+            using var listing = JsonDocument.Parse(json);
+            if (listing.RootElement.ValueKind != JsonValueKind.Array)
+                return ([], "公告源须指向 GitHub Contents API 的目录。", listingMs, true);
+
+            var files = listing.RootElement.EnumerateArray()
+                .Select(ParseDirectoryFile)
+                .OfType<AnnouncementFile>()
+                .OrderByDescending(file => file.Date)
+                .ThenByDescending(file => file.Name, StringComparer.Ordinal)
+                .Take(MaxDirectoryAnnouncements);
+            var results = await Task.WhenAll(files.Select(file => ReadDirectoryFileAsync(file, token)));
+            var announcements = results.OfType<AnnouncementInfo>().ToArray();
+            var error = results.Length == 0
+                ? "公告目录中没有可下载的 Markdown 文件。"
+                : announcements.Length == 0 ? "公告目录中的 Markdown 文件均未能读取或解析。" : "";
+            return (announcements, error, listingMs + (int)watch.ElapsedMilliseconds, true);
+        }
+        catch (JsonException)
+        {
+            return ([], "GitHub 公告目录返回了无效的文件清单。", listingMs, true);
+        }
+    }
+
+    async Task<AnnouncementInfo?> ReadDirectoryFileAsync(AnnouncementFile file, CancellationToken token)
+    {
+        var read = await ReadAnnouncementAsync(file.Url, token);
+        if (!read.Ok)
+            return null;
+        try
+        {
+            return ParseMarkdownAnnouncement(read.Markdown, file.Url) with
+            {
+                PublishedAt = file.Date
+            };
+        }
+        catch (InvalidDataException)
+        {
+            // 单篇损坏时仍展示同批次的其他公告。
+            return null;
+        }
+    }
+
+    static AnnouncementFile? ParseDirectoryFile(JsonElement item)
+    {
+        if (ReadString(item, "type") != "file"
+            || ReadString(item, "name") is not { } name
+            || !name.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+            || ReadString(item, "download_url") is not { } url
+            || !TryHttpUri(url, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttps
+            || !uri.IsDefaultPort
+            || uri.Host != "raw.githubusercontent.com")
+            return null;
+
+        DateTimeOffset? published = null;
+        if (name.Length >= 10
+            && DateOnly.TryParseExact(name.AsSpan(0, 10), "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var date))
+            published = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        return new AnnouncementFile(name, url, published);
+    }
+
+    static string? ReadString(JsonElement item, string key) =>
+        item.ValueKind == JsonValueKind.Object
+        && item.TryGetProperty(key, out var value)
+        && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    static bool IsGitHubDirectory(Uri uri)
+    {
+        var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return uri.Scheme == Uri.UriSchemeHttps && uri.IsDefaultPort && uri.Host == "api.github.com"
+            && segments.Length >= 4 && segments[0] == "repos" && segments[3] == "contents";
+    }
+
+    sealed record AnnouncementFile(string Name, string Url, DateTimeOffset? Date);
 
     public static AnnouncementInfo ParseMarkdownAnnouncement(string markdown, string source)
     {
@@ -90,7 +199,7 @@ public sealed class CommunityService
         {
             using var json = JsonDocument.Parse(markdown);
             if (json.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object)
-                throw new InvalidDataException("公告数据源已改为单篇 Markdown 文件，不再支持 JSON 公告列表。");
+                throw new InvalidDataException("公告源须使用 Markdown 文件地址或 GitHub Contents API 目录地址。");
         }
         catch (JsonException)
         {

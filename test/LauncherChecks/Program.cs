@@ -114,7 +114,7 @@ missingMarkdownStore.Save(new MCUGLauncher.Models.AppConfig
     DataSourceMode = "default"
 });
 Check(missingMarkdownStore.Load().DataSources.Announcements == new MCUGLauncher.Models.DataSourceConfig().Announcements,
-    "missing default Markdown announcement source migrates to the published source");
+    "旧默认 Markdown 公告源迁移为空地址");
 var unpublishedMainStore = new ConfigStore(Path.Combine(fixture, "unpublished-main-announcements"));
 unpublishedMainStore.Save(new MCUGLauncher.Models.AppConfig
 {
@@ -122,7 +122,7 @@ unpublishedMainStore.Save(new MCUGLauncher.Models.AppConfig
     DataSourceMode = "default"
 });
 Check(unpublishedMainStore.Load().DataSources.Announcements == new MCUGLauncher.Models.DataSourceConfig().Announcements,
-    "unpublished main announcement source migrates to the published branch");
+    "旧主分支公告默认地址迁移为空地址");
 const string customAnnouncementsUrl = "https://example.test/custom-announcements.md";
 var customAnnouncementStore = new ConfigStore(Path.Combine(fixture, "custom-markdown-announcements"));
 customAnnouncementStore.Save(new MCUGLauncher.Models.AppConfig
@@ -154,8 +154,8 @@ catch (InvalidDataException)
 {
     Check(true, "JSON announcement lists are rejected");
 }
-using (var markdownClient = new HttpClient(new MarkdownResponseHandler(
-           "# preview_title\n网络公告\n\n# 正文\n从 Markdown URL 读取。")))
+using (var markdownClient = new HttpClient(new AnnouncementResponseHandler(
+           _ => "# preview_title\n网络公告\n\n# 正文\n从 Markdown URL 读取。")))
 {
     var markdownService = new CommunityService(markdownClient);
     var loaded = await markdownService.ReadAnnouncementAsync(
@@ -169,6 +169,35 @@ using (var markdownClient = new HttpClient(new MarkdownResponseHandler(
         && tested.Ok
         && tested.Text.Contains("Markdown 公告有效", StringComparison.Ordinal),
         "announcement service loads and validates a direct Markdown URL");
+}
+const string announcementDirectory = "https://api.github.com/repos/example/community/contents/announcements?ref=main";
+using (var directoryClient = new HttpClient(new AnnouncementResponseHandler(request =>
+    request.RequestUri!.AbsoluteUri == announcementDirectory && request.Headers.UserAgent.Count > 0
+        ? """
+          [
+            {"type":"file","name":"2026-10-30-old.md","download_url":"https://raw.githubusercontent.com/example/community/main/old.md"},
+            {"type":"file","name":"2026-11-07-new.MD","download_url":"https://raw.githubusercontent.com/example/community/main/new.md"},
+            {"type":"file","name":"2026-11-08-broken.md","download_url":"https://raw.githubusercontent.com/example/community/main/broken.md"},
+            {"type":"file","name":"2026-11-09.txt","download_url":"https://raw.githubusercontent.com/example/community/main/ignored.txt"},
+            {"type":"dir","name":"2026-11-10.md"},
+            {"type":"file","name":"2026-11-11.md","download_url":"https://example.test/ignored.md"}
+          ]
+          """
+        : request.RequestUri.AbsolutePath switch
+        {
+            "/example/community/main/old.md" => "# preview_title\n旧公告",
+            "/example/community/main/new.md" => "# preview_title\n新公告",
+            "/example/community/main/broken.md" => "{}",
+            _ => throw new InvalidOperationException("请求了不应读取的公告地址。")
+        })))
+{
+    var directoryService = new CommunityService(directoryClient);
+    var loaded = await directoryService.ReadAnnouncementsAsync(announcementDirectory, CancellationToken.None);
+    var tested = await directoryService.TestAnnouncementAsync(announcementDirectory, CancellationToken.None);
+    Check(loaded.IsDirectory && loaded.Items.Select(item => item.Title).SequenceEqual(["新公告", "旧公告"])
+        && loaded.Items[0].PublishedAt == new DateTimeOffset(2026, 11, 7, 0, 0, 0, TimeSpan.Zero)
+        && tested.Ok && tested.Text.Contains("2 篇", StringComparison.Ordinal),
+        "GitHub directory filters files, skips invalid Markdown, and orders announcements by date");
 }
 var emptyGameRoot = Path.Combine(fixture, "empty-game");
 Directory.CreateDirectory(emptyGameRoot);
@@ -335,13 +364,13 @@ sealed class FakeDesktop : IDesktopHost
     }
 }
 
-sealed class MarkdownResponseHandler(string markdown) : HttpMessageHandler
+sealed class AnnouncementResponseHandler(Func<HttpRequestMessage, string> response) : HttpMessageHandler
 {
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken) =>
         Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(markdown, Encoding.UTF8, "text/markdown")
+            Content = new StringContent(response(request), Encoding.UTF8)
         });
 }

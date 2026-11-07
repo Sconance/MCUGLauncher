@@ -7,7 +7,12 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
 
-// Handles community use cases; no WPF controls or browser access.
+/// <summary>刷新社区数据，处理公告配图、推荐和服务器收藏。</summary>
+/// <remarks>
+/// 组件级别：B。依赖 LauncherContext 的 Community、Config、Http、Store、Token、
+/// Send 和 RefreshState。使用 CommunityService.ReadAnnouncementsAsync 与 ReadAsync 读取数据，
+/// ConfigStore.DataDirectory 与 Save 管理本地数据。与界面无直接依赖。
+/// </remarks>
 internal sealed class CommunityCommands(LauncherContext context)
 {
     public async Task<byte[]> DownloadImageAsync(string url)
@@ -50,27 +55,14 @@ internal sealed class CommunityCommands(LauncherContext context)
         }
         else
         {
-            var announcementResult = await context.Community.ReadAnnouncementAsync(
+            var announcementResult = await context.Community.ReadAnnouncementsAsync(
                 announcementUrl,
                 context.Token);
-            successful &= announcementResult.Ok;
-            if (announcementResult.Ok)
-            {
-                try
-                {
-                    var announcement = CommunityService.ParseMarkdownAnnouncement(
-                        announcementResult.Markdown,
-                        announcementUrl);
-                    items["announcements"] = JsonSerializer.Serialize(new[] { announcement }, CommunityJsonOptions);
-                }
-                catch (InvalidDataException ex)
-                {
-                    successful = false;
-                    announcementError = "公告 Markdown 无效：" + ex.Message;
-                }
-            }
+            if (announcementResult.Items.Length > 0)
+                items["announcements"] = JsonSerializer.Serialize(announcementResult.Items, CommunityJsonOptions);
             else
             {
+                successful = false;
                 announcementError = announcementResult.Error;
             }
         }
