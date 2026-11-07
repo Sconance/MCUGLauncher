@@ -114,7 +114,7 @@ dotnet run --project src/MCUGLauncher.Tui -- --help
 - Linux 交叉构建通过，0 警告、0 错误；`build-tui.sh` 实际生成 Windows x64 自包含控制台 EXE。
 - 临时验证程序位于 `/tmp`，未加入仓库；18 项检查覆盖菜单、EOF、失败回执、异常、取消删除/导入、提交阶段任务保护、启动参数保留、MUA 角色选择、订阅释放和真实 App 的隔离配置持久化。模拟登录未使用真实账号。
 - 通过临时 .NET Core runtimeconfig 在 Linux 运行不涉及 Windows API 的终端冒烟，实际检查主菜单、添加服务器、查看设置和退出；此方式仅用于开发验证，不是发布启动方式。
-- SourceFormatter、布局和原生 UI 边界检查通过。根目录版本检查在未修改的 `src/MCUGLauncher.App/Models/AppConfig.cs` 报硬编码版本；按本任务范围保留原文件。
+- SourceFormatter、布局和原生 UI 边界检查通过。初次开发时版本检查误把 AppConfig.cs 公告 URL 中的分支名当成硬编码版本；后续已修复检查规则，公告地址保持不变。
 - `.bat` 未在 Windows 实际执行，Windows EXE 及真实登录、下载安装、游戏进服、任务恢复仍待实际环境验收。当前任务没有修改解决方案、CI、后端或 Avalonia。
 
 ### 方向键菜单验证
@@ -128,4 +128,4 @@ dotnet run --project src/MCUGLauncher.Tui -- --help
 - 通过 `build.sh ui` 和 `build.sh tui` 实际发布两种 Windows x64 自包含 EXE，分别为 GUI 和 Console 子系统。
 - 检查实际依赖清单：UI 不包含 TUI 项目，TUI 不包含 Avalonia 前端及其包；检查输出目录没有另一种入口程序。
 - 13 项临时脚本场景检查通过，覆盖项目选择、旧 TUI 命令、路径空格、参数错误、SDK 失败、缺失产物及拒绝混合目录；使用实际产物目录互换发布目标也会被拒绝，不删除已有文件。
-- `.bat` 未在 Windows 执行；布局、原生边界、格式和 Shell 语法检查通过。版本检查仍在未改动的 AppConfig.cs 报已有硬编码版本问题。
+- `.bat` 未在 Windows 执行；布局、原生边界、格式和 Shell 语法检查通过。版本检查的公告 URL 误报已修复，并加入 Python 回归检查和 CI。

@@ -6,7 +6,9 @@ import subprocess
 import sys
 
 SEMVER = re.compile(r'^\d+\.\d+\.\d+$')
-HARDCODED = re.compile(r'(MCUGLauncher/|MCUG Launcher\s)\d+\.\d+\.\d+')
+# Match product labels/User-Agent tokens, not repository path segments such as
+# /MCUGLauncher/0.22.3-Avalonia in a GitHub raw-content URL.
+HARDCODED = re.compile(r'(?<![\w/])(?:MCUGLauncher/|MCUG Launcher\s)\d+\.\d+\.\d+')
 XAML_VERSION = re.compile(r'\b\d+\.\d+\.\d+\b')
 
 
