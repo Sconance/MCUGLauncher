@@ -288,8 +288,9 @@ public interface ILauncherService : IDisposable
         FeatureRequest.InvokeAsync<SystemInfoInfo>(this, nameof(SystemInfoAsync), new
         {
         });
+    /// <summary>保存服务器收藏；instance 为 null 时保留绑定，空字符串时清除绑定。</summary>
     [FeatureOperation]
-    Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "") =>
+    Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "", string? instance = null) =>
         FeatureRequest.InvokeAsync<ServerResultInfo>(
             this,
             nameof(SaveServerAsync),
@@ -297,7 +298,8 @@ public interface ILauncherService : IDisposable
             {
                 name,
                 address,
-                oldAddress
+                oldAddress,
+                instance
             });
     [FeatureOperation]
     Task<SavedInfo> DeleteServerAsync(string address) =>

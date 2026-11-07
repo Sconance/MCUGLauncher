@@ -129,6 +129,8 @@ public sealed class DataSourceConfig
 /// </summary>
 public sealed class SavedServer
 {
+    /// <summary>启动此服务器的实例标识；空字符串表示未绑定。</summary>
+    public string Instance { get; set; } = "";
     /// <summary>
     /// 获取或设置 名称。
     /// </summary>

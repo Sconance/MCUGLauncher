@@ -367,7 +367,7 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
         {
         });
 
-    public Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "") =>
+    public Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "", string? instance = null) =>
         FeatureRequest.InvokeAsync<ServerResultInfo>(
             this,
             nameof(SaveServerAsync),
@@ -375,7 +375,8 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             {
                 name,
                 address,
-                oldAddress
+                oldAddress,
+                instance
             });
 
     public Task<SavedInfo> DeleteServerAsync(string address) =>
