@@ -96,6 +96,14 @@ public interface ILauncherService : IDisposable
         {
             version
         });
+    /// <summary>使用明确的实例和服务器地址启动；不永久修改实例启动设置。</summary>
+    [FeatureOperation]
+    Task<LaunchResultInfo> LaunchToServerAsync(string instance, string serverAddress) =>
+        FeatureRequest.InvokeAsync<LaunchResultInfo>(this, nameof(LaunchToServerAsync), new
+        {
+            instance,
+            serverAddress
+        });
     Task RequestStateAsync();
     [FeatureOperation]
     Task<SavedInfo> SelectInstanceAsync(string instance) =>

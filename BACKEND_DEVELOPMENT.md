@@ -241,7 +241,8 @@ Views（UI，不属于后端）
 | `CommunityCommands` | 刷新公告列表、公告图片下载、推荐与服务器收藏（含 SavedServer.Instance 可选绑定） | `LauncherContext.Community/Config/Http/RefreshState/Send/Store/Token`；`CommunityService.ReadAnnouncementsAsync`、`ReadAsync` |
 | `ContentUpdateCommands` | 内容更新检查、预览、应用 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `DiagnosticCommands` | 日志读取与系统信息 | `LauncherContext.Config/Send/Store` |
-| `GameCommands` | 启动/停止游戏、进程观察 | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |
+| `GameCommands` | 普通/收藏服务器启动、停止游戏、进程观察（依赖详见 docs/components/GameCommands.md） | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |
+| `LaunchToServerFeatureHandler` | 收藏进服的强类型入口 | `ProtocolValues.ReadString(JsonElement, string)`；`GameCommands.LaunchToServerAsync(string, string)`；通过构造函数接收 `LauncherContext` |
 | `InstallationCommands` | 加载器列表/安装、整合包预览/导入 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `InstanceCommands` | 实例/版本选择、目录打开、模组启停/删除 | `LauncherContext.Config/RefreshState/Store`；`VersionCatalog`；`SavedInfo`/`ModInfo` |
 | `InstanceMaintenanceCommands` | 实例克隆与导出 | `LauncherContext.Config/Tasks` |
