@@ -1,124 +1,163 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="MCUGLauncher.Avalonia.Views.HomeView">
-    <Grid ColumnDefinitions="320,*" ColumnSpacing="18">
-        <Border Classes="card">
-            <Grid RowDefinitions="*,Auto">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="账号" Classes="h2" />
-                    <Grid Width="100" Height="100">
-                        <Border Width="82" Height="82" Background="Transparent" IsHitTestVisible="False"
-                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                BoxShadow="0 3 10 0 #220E2B3F" />
-                        <Button x:Name="AvatarButton" Classes="avatar" Width="94" Height="94" Padding="0"
-                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                ToolTip.Tip="查看或更换头像" AutomationProperties.Name="查看或更换头像">
-                            <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AvatarImage" Stretch="Uniform" />
+    <Grid>
+        <!-- 页面本体：打开服务器弹层时整体模糊，弹层是它的兄弟节点，不会被模糊 -->
+        <Grid x:Name="PageRoot" ColumnDefinitions="320,*" ColumnSpacing="18" Margin="20,20,3,20">
+            <Border Classes="card">
+                <Grid RowDefinitions="*,Auto">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="账号" Classes="h2" />
+                        <Grid Width="100" Height="100">
+                            <Border Width="82" Height="82" Background="Transparent" IsHitTestVisible="False"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    BoxShadow="0 3 10 0 #220E2B3F" />
+                            <Button x:Name="AvatarButton" Classes="avatar" Width="94" Height="94" Padding="0"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    ToolTip.Tip="查看或更换头像" AutomationProperties.Name="查看或更换头像">
+                                <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AvatarImage"
+                                       Stretch="Uniform" />
+                            </Button>
+                        </Grid>
+                        <TextBlock x:Name="PlayerName" FontSize="18" FontWeight="Bold"
+                                   HorizontalAlignment="Center" TextWrapping="Wrap" />
+                        <TextBlock x:Name="AccountMeta" Classes="muted" HorizontalAlignment="Center"
+                                   TextAlignment="Center" />
+                        <Button x:Name="AccountButton" Content="账号与皮肤" Classes="soft"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                        <TextBlock Text="当前实例" FontWeight="SemiBold" Margin="0,6,0,0" />
+                        <ComboBox x:Name="InstanceSelector" HorizontalAlignment="Stretch" />
+                        <TextBlock x:Name="LaunchTarget" Classes="muted" TextWrapping="Wrap" />
+                        <Button x:Name="RefreshButton" Content="刷新状态" Classes="link"
+                                HorizontalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" VerticalAlignment="Bottom">
+                        <Button x:Name="LaunchButton" Classes="launch" HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left">
+                            <StackPanel Spacing="2" Margin="8,0,0,0">
+                                <TextBlock Text="▶  启动游戏" Foreground="White" FontSize="17" FontWeight="Bold" />
+                                <TextBlock x:Name="LaunchSubtitle" Foreground="#C9DDF0" FontSize="9.5" />
+                            </StackPanel>
                         </Button>
-                    </Grid>
-                    <TextBlock x:Name="PlayerName" FontSize="18" FontWeight="Bold"
-                               HorizontalAlignment="Center" TextWrapping="Wrap" />
-                    <TextBlock x:Name="AccountMeta" Classes="muted" HorizontalAlignment="Center"
-                               TextAlignment="Center" />
-                    <Button x:Name="AccountButton" Content="账号与皮肤" Classes="soft"
-                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-                    <TextBlock Text="当前实例" FontWeight="SemiBold" Margin="0,6,0,0" />
-                    <ComboBox x:Name="InstanceSelector" HorizontalAlignment="Stretch" />
-                    <TextBlock x:Name="LaunchTarget" Classes="muted" TextWrapping="Wrap" />
-                    <Button x:Name="RefreshButton" Content="刷新状态" Classes="link"
-                            HorizontalAlignment="Center" />
-                </StackPanel>
-                <StackPanel Grid.Row="1" VerticalAlignment="Bottom">
-                    <Button x:Name="LaunchButton" Classes="launch" HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Left">
-                        <StackPanel Spacing="2" Margin="8,0,0,0">
-                            <TextBlock Text="▶  启动游戏" Foreground="White" FontSize="17" FontWeight="Bold" />
-                            <TextBlock x:Name="LaunchSubtitle" Foreground="#C9DDF0" FontSize="9.5" />
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Grid>
-        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                      HorizontalContentAlignment="Stretch" AllowAutoHide="False">
-            <StackPanel Spacing="14">
-                <Border Classes="card">
-                    <StackPanel Spacing="8">
-                        <Grid ColumnDefinitions="*,Auto,Auto">
-                            <TextBlock Text="正在开设的服务器" Classes="h2" />
-                            <TextBlock x:Name="ServerSummary" Grid.Column="1" Classes="muted"
-                                       VerticalAlignment="Center" Margin="8,0" />
-                            <Button x:Name="AddServerButton" Grid.Column="2" Content="添加服务器" Classes="link" />
-                        </Grid>
-                        <StackPanel x:Name="ServerForm" Spacing="6" IsVisible="False">
-                            <Grid ColumnDefinitions="*,*,Auto,Auto">
-                                <TextBox x:Name="ServerNameBox" Watermark="名称（可留空）" />
-                                <TextBox x:Name="ServerAddressBox" Grid.Column="1"
-                                         Watermark="地址，例如 play.example.com"
-                                         Margin="8,0,0,0" />
-                                <Button x:Name="SaveServerButton" Grid.Column="2" Content="保存"
-                                        Classes="primary"
-                                        Margin="8,0,0,0" />
-                                <Button x:Name="CancelServerButton" Grid.Column="3" Content="取消"
-                                        Classes="ghost"
-                                        Margin="8,0,0,0" />
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          HorizontalContentAlignment="Stretch" AllowAutoHide="False">
+                <StackPanel Spacing="14">
+                    <Border Classes="card">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                <TextBlock Text="正在开设的服务器" Classes="h2" />
+                                <TextBlock x:Name="ServerSummary" Grid.Column="1" Classes="muted"
+                                           VerticalAlignment="Center" Margin="8,0" />
+                                <Button x:Name="AddServerButton" Grid.Column="2" Content="添加服务器" Classes="link" />
                             </Grid>
-                            <TextBlock x:Name="ServerStatus" Classes="status" />
+                            <WrapPanel x:Name="ServerPanel" Orientation="Horizontal" />
+                            <Border x:Name="ServerEmptyPanel" Height="120" IsVisible="False">
+                                <TextBlock Classes="muted"
+                                           Text="还没有收藏服务器。&#10;点右上角「添加服务器」，填好网页与实例后就能在这里一键进服。"
+                                           TextWrapping="Wrap"
+                                           TextAlignment="Center"
+                                           HorizontalAlignment="Stretch"
+                                           VerticalAlignment="Center" />
+                            </Border>
                         </StackPanel>
-                        <WrapPanel x:Name="ServerPanel" Orientation="Horizontal" />
-                        <Border x:Name="ServerEmptyPanel" Height="120" IsVisible="False">
-                            <TextBlock Classes="muted"
-                                       Text="还没有收藏服务器。&#10;填入 host:port 或服务器网址，就能看到实时人数与延迟。"
-                                       TextWrapping="Wrap"
-                                       TextAlignment="Center"
-                                       HorizontalAlignment="Stretch"
-                                       VerticalAlignment="Center" />
-                        </Border>
-                    </StackPanel>
-                </Border>
+                    </Border>
 
-                <Border Classes="card">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="群公告" Classes="h2" />
-                        <TextBlock x:Name="AnnouncementTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
-                        <TextBlock x:Name="AnnouncementBody" TextWrapping="Wrap" />
-                        <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AnnouncementImage"
-                               MaxHeight="180" Stretch="Uniform"
-                               HorizontalAlignment="Left" IsVisible="False" />
-                        <TextBlock x:Name="AnnouncementMeta" Classes="muted" />
-                        <Button x:Name="OpenAnnouncementButton" Content="查看完整公告" Classes="link"
-                                HorizontalAlignment="Left" IsVisible="False" />
-                    </StackPanel>
-                </Border>
+                    <Border Classes="card">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="群公告" Classes="h2" />
+                            <TextBlock x:Name="AnnouncementTitle" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <TextBlock x:Name="AnnouncementBody" TextWrapping="Wrap" />
+                            <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AnnouncementImage"
+                                   MaxHeight="180" Stretch="Uniform"
+                                   HorizontalAlignment="Left" IsVisible="False" />
+                            <TextBlock x:Name="AnnouncementMeta" Classes="muted" />
+                            <Button x:Name="OpenAnnouncementButton" Content="查看完整公告" Classes="link"
+                                    HorizontalAlignment="Left" IsVisible="False" />
+                        </StackPanel>
+                    </Border>
 
-                <Border Classes="card">
-                    <StackPanel Spacing="8">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="群友推荐" Classes="h2" />
-                            <Button x:Name="RefreshCommunityButton" Grid.Column="1" Content="刷新社区内容"
-                                    Classes="link" />
+                    <Border Classes="card">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="群友推荐" Classes="h2" />
+                                <Button x:Name="RefreshCommunityButton" Grid.Column="1" Content="刷新社区内容"
+                                        Classes="link" />
+                            </Grid>
+                            <StackPanel x:Name="RecommendationPanel" Spacing="6" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="card">
+                        <Grid ColumnDefinitions="72,*,Auto" ColumnSpacing="12">
+                            <TextBlock Text="“" FontFamily="Georgia" FontSize="34" Foreground="#7FA4C7"
+                                       VerticalAlignment="Top" />
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock x:Name="QuoteText" TextWrapping="Wrap" FontSize="15" />
+                                <TextBlock x:Name="QuoteMeta" Classes="muted" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Spacing="6" VerticalAlignment="Center">
+                                <Button x:Name="NextQuoteButton" Content="换一条" Classes="link" />
+                            </StackPanel>
                         </Grid>
-                        <StackPanel x:Name="RecommendationPanel" Spacing="6" />
+                    </Border>
+
+                    <TextBlock x:Name="HomeStatus" Classes="status" />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- 中间覆盖页：背景吃掉点击，卡片居中；Esc 或「取消」关闭 -->
+        <Grid x:Name="ServerDialogLayer" IsVisible="False" Background="#40121F2B">
+            <Border x:Name="ServerDialogCard"
+                    Width="430"
+                    KeyboardNavigation.TabNavigation="Cycle"
+                    Padding="22"
+                    CornerRadius="14"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="#FFFFFF"
+                    BorderBrush="{StaticResource AppLine}"
+                    BorderThickness="1"
+                    BoxShadow="0 18 48 0 #33142032">
+                <StackPanel Spacing="16">
+                    <StackPanel Spacing="5">
+                        <TextBlock x:Name="ServerDialogTitle" Text="添加服务器" FontSize="16" FontWeight="Bold" />
+                        <TextBlock Classes="muted"
+                                   Text="保存后会作为一张卡片出现在「正在开设的服务器」里。" />
                     </StackPanel>
-                </Border>
 
-                <Border Classes="card">
-                    <Grid ColumnDefinitions="72,*,Auto" ColumnSpacing="12">
-                        <TextBlock Text="“" FontFamily="Georgia" FontSize="34" Foreground="#7FA4C7"
-                                   VerticalAlignment="Top" />
-                        <StackPanel Grid.Column="1" Spacing="4">
-                            <TextBlock x:Name="QuoteText" TextWrapping="Wrap" FontSize="15" />
-                            <TextBlock x:Name="QuoteMeta" Classes="muted" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" Spacing="6" VerticalAlignment="Center">
-                            <Button x:Name="NextQuoteButton" Content="换一条" Classes="link" />
-                        </StackPanel>
-                    </Grid>
-                </Border>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="服务器名称" FontSize="11.5" FontWeight="SemiBold" Foreground="#3A444E" />
+                        <TextBox x:Name="DialogServerNameBox" Watermark="例如：MCUG 生存服（可留空）" MaxLength="60" />
+                    </StackPanel>
 
-                <TextBlock x:Name="HomeStatus" Classes="status" />
-            </StackPanel>
-        </ScrollViewer>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="网页" FontSize="11.5" FontWeight="SemiBold" Foreground="#3A444E" />
+                        <TextBox x:Name="DialogServerAddressBox" Watermark="play.example.com:25565" />
+                        <TextBlock Classes="muted"
+                                   Text="填域名或 host:port 才能查询人数并直接进服；带 / 的网页链接只能作记录。" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="打开所用的实例" FontSize="11.5" FontWeight="SemiBold" Foreground="#3A444E" />
+                        <ComboBox x:Name="DialogServerInstanceBox" HorizontalAlignment="Stretch"
+                                  MaxDropDownHeight="260" />
+                        <TextBlock Classes="muted"
+                                   Text="绑定后用卡片上的「打开」直连服务器；不绑定只能手动进入。" />
+                    </StackPanel>
+
+                    <TextBlock x:Name="ServerDialogStatus" Classes="status" IsVisible="False" />
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                        <Button x:Name="DialogCancelButton" Content="取消" Classes="ghost" Width="88" />
+                        <Button x:Name="DialogSaveButton" Content="保存" Classes="primary" Width="88" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
