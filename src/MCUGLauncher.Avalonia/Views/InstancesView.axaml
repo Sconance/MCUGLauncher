@@ -17,7 +17,10 @@
         <StackPanel Spacing="8">
             <TextBlock Text="实例" Classes="pageTitle" />
             <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                <ComboBox x:Name="InstanceSelector" />
+                <ComboBox x:Name="InstanceSelector" Width="380" HorizontalAlignment="Left"
+                          ItemTemplate="{StaticResource InstanceRow}"
+                          SelectionBoxItemTemplate="{StaticResource InstanceRowCompact}"
+                          MaxDropDownHeight="320" />
                 <Button x:Name="LaunchButton" Grid.Column="1" Content="启动" Classes="primary" Margin="8,0,0,0" />
                 <Button x:Name="OpenVersionFolderButton" Grid.Column="2" Content="版本文件夹" Classes="ghost"
                         Margin="8,0,0,0" />

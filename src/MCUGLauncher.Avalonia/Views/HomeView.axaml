@@ -26,7 +26,10 @@
                         <Button x:Name="AccountButton" Content="账号与皮肤" Classes="soft"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
                         <TextBlock Text="当前实例" FontWeight="SemiBold" Margin="0,6,0,0" />
-                        <ComboBox x:Name="InstanceSelector" HorizontalAlignment="Stretch" />
+                        <ComboBox x:Name="InstanceSelector" HorizontalAlignment="Stretch"
+                                  ItemTemplate="{StaticResource InstanceRow}"
+                                  SelectionBoxItemTemplate="{StaticResource InstanceRowCompact}"
+                                  MaxDropDownHeight="320" />
                         <TextBlock x:Name="LaunchTarget" Classes="muted" TextWrapping="Wrap" />
                         <Button x:Name="RefreshButton" Content="刷新状态" Classes="link"
                                 HorizontalAlignment="Center" />
@@ -145,6 +148,8 @@
                     <StackPanel Spacing="6">
                         <TextBlock Text="打开所用的实例" FontSize="11.5" FontWeight="SemiBold" Foreground="#3A444E" />
                         <ComboBox x:Name="DialogServerInstanceBox" HorizontalAlignment="Stretch"
+                                  ItemTemplate="{StaticResource InstanceRow}"
+                                  SelectionBoxItemTemplate="{StaticResource InstanceRowCompact}"
                                   MaxDropDownHeight="260" />
                         <TextBlock Classes="muted"
                                    Text="绑定后用卡片上的「打开」直连服务器；不绑定只能手动进入。" />
