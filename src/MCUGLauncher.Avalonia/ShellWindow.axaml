@@ -69,11 +69,12 @@
         </Border>
 
         <!--
-            右 Padding = 滚动条到窗口右边界的距离（0 = 贴边）。
-            内容右侧留白不在这里，而在 Theme.axaml 的 ScrollViewer.Padding 上；
-            二者之和决定卡片位置：Padding(0) + 滚动条列(6) + ScrollViewer.Padding(11) = 17。
+            这里不再留内边距：页面自己带 Margin="20,20,3,20"，
+            这样页面内的覆盖层（如首页的服务器弹窗）才能铺满标题栏以下的整块区域。
+            右 3 的含义仍是"滚动条到页面右边界"，配合 ScrollViewer.Padding=0,0,11,0，
+            卡片到窗口边 = 3 + 滚动条列(6) + 11。
         -->
-        <Border Grid.Row="1" Padding="20,20,3,20">
+        <Border Grid.Row="1">
             <ContentControl x:Name="PageHost"
                             HorizontalContentAlignment="Stretch"
                             VerticalContentAlignment="Stretch" />

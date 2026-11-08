@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
@@ -11,6 +12,7 @@ namespace MCUGLauncher.Avalonia.Views;
 internal partial class HomeView : UserControl
 {
     readonly Dictionary<string, ServerPingInfo> pings = new(StringComparer.OrdinalIgnoreCase);
+    readonly List<InstanceInfo> dialogInstances = [];
     ILauncherService service = EmptyServiceFallback.Instance;
     LauncherState? state;
     CommunityData community = CommunityData.Empty;
@@ -19,6 +21,7 @@ internal partial class HomeView : UserControl
     int imageVersion;
     string serverSignature = "";
     string editingServer = "";
+    string dialogMissingInstance = "";
     bool updatingInstances;
     int quoteIndex;
     string avatarAccount = "";
@@ -79,29 +82,17 @@ internal partial class HomeView : UserControl
             if (name != state.SelectedInstance)
                 await service!.SelectInstanceAsync(name);
         };
-        AddServerButton.Click += (_, _) =>
+        AddServerButton.Click += (_, _) => ShowServerDialog(null);
+        DialogCancelButton.Click += (_, _) => HideServerDialog();
+        DialogSaveButton.Click += async (_, _) => await SaveServerFromDialog();
+        DialogServerNameBox.KeyDown += OnDialogTextBoxKeyDown;
+        DialogServerAddressBox.KeyDown += OnDialogTextBoxKeyDown;
+        ServerDialogLayer.KeyDown += (_, e) =>
         {
-            editingServer = "";
-            ServerNameBox.Text = "";
-            ServerAddressBox.Text = "";
-            ServerForm.IsVisible = true;
-            ServerStatus.Text = "";
-        };
-        CancelServerButton.Click += (_, _) => HideServerForm();
-        SaveServerButton.Click += async (_, _) =>
-        {
-            var address = ServerAddressBox.Text?.Trim() ?? "";
-            if (address.Length == 0)
-            {
-                ServerStatus.Text = "请填写服务器地址。";
+            if (e.Key != Key.Escape)
                 return;
-            }
-
-            ServerStatus.Text = "正在保存…";
-            var result = await service!.SaveServerAsync(ServerNameBox.Text?.Trim() ?? "", address, editingServer);
-            ServerStatus.Text = result.Message;
-            if (result.Ok)
-                HideServerForm();
+            e.Handled = true;
+            HideServerDialog();
         };
         OpenAnnouncementButton.Click += async (_, _) => await OpenAnnouncement();
         NextQuoteButton.Click += (_, _) =>
@@ -236,16 +227,24 @@ internal partial class HomeView : UserControl
             });
             copy.Children.Add(new TextBlock
             {
+                Text = server.Instance.Length > 0 ? "实例 · " + server.Instance : "未绑定实例",
+                Classes = { "muted" },
+                TextWrapping = TextWrapping.Wrap
+            });
+            copy.Children.Add(new TextBlock
+            {
                 Text = ping is null ? "等待查询" : ping.Online ? ping.Motd : "无法连接",
                 TextWrapping = TextWrapping.Wrap,
                 Classes = { "muted" }
             });
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
             var current = server;
+            var open = new Button { Content = "打开", Classes = { "link" } };
+            open.Click += async (_, _) => await OpenServerAsync(current);
             var query = new Button { Content = "查询", Classes = { "link" } };
             query.Click += async (_, _) => await PingServer(current.Address);
             var edit = new Button { Content = "编辑", Classes = { "link" } };
-            edit.Click += (_, _) => ShowServerForm(current);
+            edit.Click += (_, _) => ShowServerDialog(current);
             var delete = new Button { Content = "删除", Classes = { "link" } };
             delete.Click += async (_, _) =>
             {
@@ -253,6 +252,7 @@ internal partial class HomeView : UserControl
                 pings.Remove(current.Address);
                 Status(result.Message);
             };
+            actions.Children.Add(open);
             actions.Children.Add(query);
             actions.Children.Add(edit);
             actions.Children.Add(delete);
@@ -543,22 +543,132 @@ internal partial class HomeView : UserControl
         RenderServers();
     }
 
-    void ShowServerForm(SavedServerInfo server)
+    /// <summary>用收藏绑定的实例直连服务器；未绑定则先引导去绑定。</summary>
+    async Task OpenServerAsync(SavedServerInfo server)
     {
-        editingServer = server.Address;
-        ServerNameBox.Text = server.Name;
-        ServerAddressBox.Text = server.Address;
-        ServerForm.IsVisible = true;
-        ServerStatus.Text = "正在编辑 " + server.Address;
+        if (server.Instance.Length == 0)
+        {
+            ShowServerDialog(server);
+            SetDialogStatus("先给这台服务器绑定实例，保存后就能一键进服。");
+            return;
+        }
+
+        Status("正在用 " + server.Instance + " 打开 " + server.Address + "…");
+        Status((await service!.LaunchToServerAsync(server.Instance, server.Address)).Message);
     }
 
-    void HideServerForm()
+    /// <summary>打开中间覆盖页；server 为空表示新增。</summary>
+    void ShowServerDialog(SavedServerInfo? server)
+    {
+        editingServer = server?.Address ?? "";
+        ServerDialogTitle.Text = server is null ? "添加服务器" : "编辑服务器";
+        DialogServerNameBox.Text = server?.Name ?? "";
+        DialogServerAddressBox.Text = server?.Address ?? "";
+        SetDialogStatus("");
+        FillDialogInstances(server?.Instance ?? "");
+        DialogSaveButton.IsEnabled = true;
+        ServerDialogLayer.IsVisible = true;
+        // 卡片自身 Cycle 收住 Tab，页面只做模糊与遮罩，不改背景控件的可交互状态
+        PageRoot.Effect = new BlurEffect { Radius = 7 };
+        Dispatcher.UIThread.Post(() =>
+        {
+            DialogServerNameBox.Focus();
+            DialogServerNameBox.SelectAll();
+        });
+    }
+
+    void HideServerDialog()
     {
         editingServer = "";
-        ServerForm.IsVisible = false;
-        ServerNameBox.Text = "";
-        ServerAddressBox.Text = "";
-        ServerStatus.Text = "";
+        ServerDialogLayer.IsVisible = false;
+        PageRoot.Effect = null;
+        DialogServerNameBox.Text = "";
+        DialogServerAddressBox.Text = "";
+        DialogServerInstanceBox.SelectedIndex = -1;
+        DialogServerInstanceBox.ItemsSource = null;
+        dialogInstances.Clear();
+        dialogMissingInstance = "";
+        SetDialogStatus("");
+    }
+
+    /// <summary>第一项是「不绑定」，其余按当前可用实例顺序排列，索引偏移 1。</summary>
+    void FillDialogInstances(string selected)
+    {
+        dialogInstances.Clear();
+        dialogInstances.AddRange(Instances());
+        dialogMissingInstance = "";
+        var labels = new List<string> { "不绑定实例" };
+        labels.AddRange(dialogInstances.Select(item =>
+            item.DisplayName + " · " + item.Loader + " · " + item.Minecraft));
+        var index = dialogInstances.FindIndex(item =>
+            item.Name.Equals(selected, StringComparison.OrdinalIgnoreCase));
+        // 记着的实例已被删除时也留一个补位项，避免保存时把它悄悄清掉
+        if (selected.Length > 0 && index < 0)
+        {
+            dialogMissingInstance = selected;
+            labels.Add(selected + "（当前未安装）");
+        }
+
+        DialogServerInstanceBox.ItemsSource = labels;
+        DialogServerInstanceBox.SelectedIndex = selected.Length > 0
+            ? index >= 0 ? index + 1 : labels.Count - 1
+            : 0;
+    }
+
+    string SelectedDialogInstance()
+    {
+        var index = DialogServerInstanceBox.SelectedIndex - 1;
+        if (index >= 0 && index < dialogInstances.Count)
+            return dialogInstances[index].Name;
+        return index == dialogInstances.Count ? dialogMissingInstance : "";
+    }
+
+    async Task SaveServerFromDialog()
+    {
+        var address = DialogServerAddressBox.Text?.Trim() ?? "";
+        if (address.Length == 0)
+        {
+            SetDialogStatus("请填写服务器网页。");
+            DialogServerAddressBox.Focus();
+            return;
+        }
+
+        SetDialogStatus("正在保存…");
+        DialogSaveButton.IsEnabled = false;
+        try
+        {
+            var result = await service!.SaveServerAsync(
+                DialogServerNameBox.Text?.Trim() ?? "",
+                address,
+                editingServer,
+                SelectedDialogInstance());
+            if (result.Ok)
+            {
+                HideServerDialog();
+                Status(result.Message);
+                return;
+            }
+
+            SetDialogStatus(result.Message);
+        }
+        finally
+        {
+            DialogSaveButton.IsEnabled = true;
+        }
+    }
+
+    void OnDialogTextBoxKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+            return;
+        e.Handled = true;
+        _ = SaveServerFromDialog();
+    }
+
+    void SetDialogStatus(string message)
+    {
+        ServerDialogStatus.Text = message;
+        ServerDialogStatus.IsVisible = message.Length > 0;
     }
 
     void Status(string message) => HomeStatus.Text = message;

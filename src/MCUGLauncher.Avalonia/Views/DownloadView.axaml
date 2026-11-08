@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="MCUGLauncher.Avalonia.Views.DownloadView">
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20,20,3,20">
         <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="下载" Classes="pageTitle" />
             <TextBlock x:Name="InstanceHint" Grid.Column="1" Classes="muted" VerticalAlignment="Center" />
@@ -55,7 +55,8 @@
                         <ListBox x:Name="VanillaList" Height="300" />
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <Button x:Name="PreviousVanillaPageButton" Content="上一页" Classes="ghost" />
-                            <TextBlock x:Name="VanillaPageText" Grid.Column="1" Classes="muted" HorizontalAlignment="Center"
+                            <TextBlock x:Name="VanillaPageText" Grid.Column="1" Classes="muted"
+                                       HorizontalAlignment="Center"
                                        VerticalAlignment="Center" />
                             <Button x:Name="NextVanillaPageButton" Grid.Column="2" Content="下一页" Classes="ghost" />
                         </Grid>
