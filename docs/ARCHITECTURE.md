@@ -54,4 +54,6 @@ Core `ServerEndpoint.Parse` 校验并规范化。共享的目录预留会阻止�
 地址只覆盖本次启动快照的 `LaunchSettings.Server`，不永久改写全局/实例/收藏设置；
 普通 `LaunchAsync` 保持原有行为。参数生成继续交给 `Core.LaunchService`。
 调用方读取收藏的 `Instance` 和 `Address` 后传给接口，并展示 `LaunchResultInfo.Ok/Message`。
-当前任务没有修改 Avalonia 或 TUI 页面，按钮可在独立的前端任务中接入。
+Avalonia 主页已通过服务器卡片的“打开”按钮调用该接口；未绑定时引导编辑收藏。
+编辑窗口从 `State.Instances` 读取实例列表，经 `SaveServerAsync` 保存绑定。
+TUI 服务器收藏页暂未接入这一操作。
