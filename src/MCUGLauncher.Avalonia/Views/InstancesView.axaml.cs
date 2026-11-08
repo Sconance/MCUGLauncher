@@ -65,6 +65,7 @@ internal partial class InstancesView : UserControl
                 Status("请填写新实例名称。");
                 return;
             }
+
             await service!.CloneInstanceAsync(
                 selected,
                 name,
@@ -105,23 +106,25 @@ internal partial class InstancesView : UserControl
         var previous = selected;
         if (selected.Length == 0 || !instances.Any(item => item.Name == selected))
             selected = instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)?.Name
-                ?? instances.FirstOrDefault()?.Name
-                ?? "";
+                       ?? instances.FirstOrDefault()?.Name
+                       ?? "";
         updatingSelector = true;
         InstanceSelector.ItemsSource = instances.Count == 0
-            ? new[] { "尚未安装实例" }
-            : instances.Select(item =>
-                item.DisplayName
-                + (item.Minecraft.Length > 0 ? " · " + item.Minecraft : "")
-                + " · " + item.Loader).ToArray();
+            ? new[] { InstanceListItem.Empty("尚未安装实例", "先去下载页安装或导入整合包") }
+            : instances.Select(InstanceListItem.From).ToArray();
         InstanceSelector.SelectedIndex = instances.Count == 0
             ? 0
             : Math.Max(0, Array.FindIndex(instances.ToArray(), item => item.Name == selected));
         updatingSelector = false;
         var current = instances.FirstOrDefault(item => item.Name == selected);
+        var currentRow = current is null ? null : InstanceListItem.From(current);
         Summary.Text = instances.Count == 0
             ? "尚未找到已安装实例。请先在下载页安装或导入整合包。"
-            : $"共 {instances.Count} 个实例 · 当前 {current?.DisplayName ?? selected} · {current?.Minecraft ?? ""} · {current?.Loader ?? ""}";
+            : "共 " + instances.Count + " 个实例"
+              + (currentRow is null
+                  ? ""
+                  : " · 当前 " + currentRow.Title
+                             + (currentRow.Subtitle.Length > 0 ? " · " + currentRow.Subtitle : ""));
         LaunchButton.IsEnabled = current is not null;
         OpenVersionFolderButton.IsEnabled = current is not null;
         if (previous != selected)
@@ -134,6 +137,7 @@ internal partial class InstancesView : UserControl
             RenderUpdates();
             RenderUpdatePreview();
         }
+
         RenderMods(current);
         if (current is not null && (options is null || options.Version != selected))
             _ = LoadOptions();
@@ -148,11 +152,8 @@ internal partial class InstancesView : UserControl
     {
         if (updatingSelector || service is null || state is null)
             return;
-        var instances = ValidInstances(state).ToArray();
-        if (InstanceSelector.SelectedIndex < 0 || InstanceSelector.SelectedIndex >= instances.Length)
-            return;
-        var next = instances[InstanceSelector.SelectedIndex].Name;
-        if (next == selected)
+        var next = (InstanceSelector.SelectedItem as InstanceListItem)?.Instance ?? "";
+        if (next.Length == 0 || next == selected)
             return;
         selected = next;
         options = null;
@@ -236,27 +237,34 @@ internal partial class InstancesView : UserControl
             OptionsStatus.Text = "请先重新读取此实例的启动设置。";
             return;
         }
+
         var name = DisplayNameBox.Text?.Trim() ?? "";
         if (name.Length is 0 or > LaunchLimits.DisplayNameMax)
         {
             OptionsStatus.Text = $"实例显示名需为 1–{LaunchLimits.DisplayNameMax} 个字符。";
             return;
         }
+
         if (!int.TryParse(RamBox.Text, out var ram) || ram is < LaunchLimits.RamMin or > LaunchLimits.RamMax)
         {
             OptionsStatus.Text = $"内存需在 {LaunchLimits.RamMin}–{LaunchLimits.RamMax} MB 之间。";
             return;
         }
-        if (!int.TryParse(WidthBox.Text, out var width) || width is < LaunchLimits.WindowWidthMin or > LaunchLimits.WindowWidthMax)
+
+        if (!int.TryParse(WidthBox.Text, out var width) ||
+            width is < LaunchLimits.WindowWidthMin or > LaunchLimits.WindowWidthMax)
         {
             OptionsStatus.Text = $"窗口宽需在 {LaunchLimits.WindowWidthMin}–{LaunchLimits.WindowWidthMax} 之间。";
             return;
         }
-        if (!int.TryParse(HeightBox.Text, out var height) || height is < LaunchLimits.WindowHeightMin or > LaunchLimits.WindowHeightMax)
+
+        if (!int.TryParse(HeightBox.Text, out var height) ||
+            height is < LaunchLimits.WindowHeightMin or > LaunchLimits.WindowHeightMax)
         {
             OptionsStatus.Text = $"窗口高需在 {LaunchLimits.WindowHeightMin}–{LaunchLimits.WindowHeightMax} 之间。";
             return;
         }
+
         var inherit = InheritCheck.IsChecked == true;
         var settings = new LaunchOptionsSettings(
             AutoMemoryCheck.IsChecked == true,
@@ -270,7 +278,8 @@ internal partial class InstancesView : UserControl
             ServerBox.Text?.Trim() ?? "",
             AutoChineseCheck.IsChecked == true);
         OptionsStatus.Text = "正在保存…";
-        OptionsStatus.Text = (await service.SaveLaunchOptionsAsync(options.Token, selected, name, settings, inherit)).Message;
+        OptionsStatus.Text = (await service.SaveLaunchOptionsAsync(options.Token, selected, name, settings, inherit))
+            .Message;
         await service.RequestStateAsync();
     }
 
@@ -282,6 +291,7 @@ internal partial class InstancesView : UserControl
             OptionsStatus.Text = "已选择 Java 路径，保存后生效。";
             return;
         }
+
         if (info.Target == "export" && pendingExport is { } pending)
         {
             pendingExport = null;
@@ -298,20 +308,25 @@ internal partial class InstancesView : UserControl
             ContentSummary.Text = "请选择实例。";
             return;
         }
+
         if (state?.SelectedInstance != selected)
         {
             ContentSummary.Text = "正在切换实例…";
             return;
         }
-        ContentSummary.Text = $"{instance.DisplayName} · {instance.Loader} · {instance.Minecraft} · {instance.Mods} 个模组，{instance.Updates} 个可更新";
+
+        ContentSummary.Text =
+            $"{instance.DisplayName} · {instance.Loader} · {instance.Minecraft} · {instance.Mods} 个模组，{instance.Updates} 个可更新";
         if (state?.Mods.Count is not > 0)
         {
             ModsPanel.Children.Add(Muted("当前实例没有可管理的模组。"));
             return;
         }
+
         foreach (var mod in state.Mods)
         {
-            var check = new CheckBox { Content = mod.Name, IsChecked = mod.Enabled, VerticalAlignment = VerticalAlignment.Center };
+            var check = new CheckBox
+                { Content = mod.Name, IsChecked = mod.Enabled, VerticalAlignment = VerticalAlignment.Center };
             var file = mod.File;
             var enabled = mod.Enabled;
             check.Click += async (_, _) =>
@@ -327,7 +342,8 @@ internal partial class InstancesView : UserControl
                 Classes = { "muted" },
                 TextWrapping = TextWrapping.Wrap
             });
-            var delete = new Button { Content = "删除", Classes = { "ghost" }, VerticalAlignment = VerticalAlignment.Center };
+            var delete = new Button
+                { Content = "删除", Classes = { "ghost" }, VerticalAlignment = VerticalAlignment.Center };
             var name = mod.Name;
             delete.Click += async (_, _) =>
             {
@@ -354,6 +370,7 @@ internal partial class InstancesView : UserControl
             UninstallPanel.Children.Add(Muted("尚未生成卸载预览。"));
             return;
         }
+
         UninstallPanel.Children.Add(new TextBlock
         {
             Text = "卸载 " + preview.Name,
@@ -361,7 +378,8 @@ internal partial class InstancesView : UserControl
         });
         UninstallPanel.Children.Add(Muted(preview.Notice));
         foreach (var path in preview.Paths)
-            UninstallPanel.Children.Add(new TextBlock { Text = "· " + path, TextWrapping = TextWrapping.Wrap, Classes = { "muted" } });
+            UninstallPanel.Children.Add(new TextBlock
+                { Text = "· " + path, TextWrapping = TextWrapping.Wrap, Classes = { "muted" } });
         var confirm = new CheckBox { Content = "我已检查删除范围并确认备份" };
         var apply = new Button { Content = "确认卸载", IsEnabled = false, HorizontalAlignment = HorizontalAlignment.Left };
         confirm.Click += (_, _) => apply.IsEnabled = confirm.IsChecked == true;
@@ -395,11 +413,13 @@ internal partial class InstancesView : UserControl
             UpdatesPanel.Children.Add(Muted("尚未检查内容更新。"));
             return;
         }
+
         if (updates.Items.Count == 0)
         {
             UpdatesPanel.Children.Add(Muted("当前实例没有启动器管理的内容。"));
             return;
         }
+
         var checkedUpdates = updates;
         var selectedProjects = new List<(string Id, CheckBox Box)>();
         foreach (var item in checkedUpdates.Items)
@@ -413,6 +433,7 @@ internal partial class InstancesView : UserControl
             selectedProjects.Add((item.Id, box));
             UpdatesPanel.Children.Add(box);
         }
+
         var preview = new Button { Content = "生成所选更新预览", HorizontalAlignment = HorizontalAlignment.Left };
         preview.Click += async (_, _) =>
         {
@@ -425,6 +446,7 @@ internal partial class InstancesView : UserControl
                 Status("请先选择更新项目。");
                 return;
             }
+
             updatePreview = null;
             UpdatePreviewPanel.Children.Clear();
             Status("正在解析更新及必需依赖…");
@@ -449,6 +471,7 @@ internal partial class InstancesView : UserControl
             UpdatePreviewPanel.Children.Add(Muted("尚未生成更新预览。"));
             return;
         }
+
         UpdatePreviewPanel.Children.Add(new TextBlock
         {
             Text = "更新预览 · " + (preview.Bytes / 1048576.0).ToString("0.00") + " MiB",

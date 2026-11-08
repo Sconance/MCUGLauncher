@@ -12,7 +12,6 @@ namespace MCUGLauncher.Avalonia.Views;
 internal partial class HomeView : UserControl
 {
     readonly Dictionary<string, ServerPingInfo> pings = new(StringComparer.OrdinalIgnoreCase);
-    readonly List<InstanceInfo> dialogInstances = [];
     ILauncherService service = EmptyServiceFallback.Instance;
     LauncherState? state;
     CommunityData community = CommunityData.Empty;
@@ -21,7 +20,6 @@ internal partial class HomeView : UserControl
     int imageVersion;
     string serverSignature = "";
     string editingServer = "";
-    string dialogMissingInstance = "";
     bool updatingInstances;
     int quoteIndex;
     string avatarAccount = "";
@@ -125,9 +123,12 @@ internal partial class HomeView : UserControl
 
         var current = snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)
                       ?? snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedVersion);
-        LaunchTarget.Text = current is null
+        var currentRow = current is null ? null : InstanceListItem.From(current);
+        LaunchTarget.Text = currentRow is null
             ? "请选择实例"
-            : $"{current.DisplayName} · {current.Minecraft} · {current.Loader}";
+            : currentRow.Subtitle.Length > 0
+                ? currentRow.Title + " · " + currentRow.Subtitle
+                : currentRow.Title;
         LaunchSubtitle.Text = current is null
             ? "未选择实例"
             : $"{current.Name} · " + (snapshot.AutoMemory ? "自动内存" : snapshot.Ram + " MB");
@@ -151,13 +152,10 @@ internal partial class HomeView : UserControl
         if (state is null)
             return;
         var instances = Instances();
-        var labels = instances
-            .Select(item => item.DisplayName + " · " + item.Loader + " · " + item.Minecraft)
-            .ToArray();
         updatingInstances = true;
-        InstanceSelector.ItemsSource = labels;
+        InstanceSelector.ItemsSource = instances.Select(InstanceListItem.From).ToArray();
         var index = Array.FindIndex(instances.ToArray(), item => item.Name == state.SelectedInstance);
-        InstanceSelector.SelectedIndex = labels.Length == 0 ? -1 : Math.Max(0, index);
+        InstanceSelector.SelectedIndex = instances.Count == 0 ? -1 : Math.Max(0, index);
         updatingInstances = false;
     }
 
@@ -586,42 +584,31 @@ internal partial class HomeView : UserControl
         DialogServerAddressBox.Text = "";
         DialogServerInstanceBox.SelectedIndex = -1;
         DialogServerInstanceBox.ItemsSource = null;
-        dialogInstances.Clear();
-        dialogMissingInstance = "";
         SetDialogStatus("");
     }
 
-    /// <summary>第一项是「不绑定」，其余按当前可用实例顺序排列，索引偏移 1。</summary>
+    /// <summary>第一项是「不绑定」，其余按当前可用实例顺序排列。</summary>
     void FillDialogInstances(string selected)
     {
-        dialogInstances.Clear();
-        dialogInstances.AddRange(Instances());
-        dialogMissingInstance = "";
-        var labels = new List<string> { "不绑定实例" };
-        labels.AddRange(dialogInstances.Select(item =>
-            item.DisplayName + " · " + item.Loader + " · " + item.Minecraft));
-        var index = dialogInstances.FindIndex(item =>
-            item.Name.Equals(selected, StringComparison.OrdinalIgnoreCase));
+        var binding = selected.Trim();
+        var instances = Instances();
+        var items = new List<InstanceListItem> { InstanceListItem.None };
+        items.AddRange(instances.Select(InstanceListItem.From));
+        var known = instances.Any(item => item.Name.Equals(binding, StringComparison.OrdinalIgnoreCase));
         // 记着的实例已被删除时也留一个补位项，避免保存时把它悄悄清掉
-        if (selected.Length > 0 && index < 0)
+        if (binding.Length > 0 && !known)
         {
-            dialogMissingInstance = selected;
-            labels.Add(selected + "（当前未安装）");
+            items.Add(InstanceListItem.Missing(binding));
         }
 
-        DialogServerInstanceBox.ItemsSource = labels;
-        DialogServerInstanceBox.SelectedIndex = selected.Length > 0
-            ? index >= 0 ? index + 1 : labels.Count - 1
+        DialogServerInstanceBox.ItemsSource = items;
+        DialogServerInstanceBox.SelectedIndex = binding.Length > 0
+            ? Math.Max(0, items.FindIndex(item => item.Instance.Equals(binding, StringComparison.OrdinalIgnoreCase)))
             : 0;
     }
 
-    string SelectedDialogInstance()
-    {
-        var index = DialogServerInstanceBox.SelectedIndex - 1;
-        if (index >= 0 && index < dialogInstances.Count)
-            return dialogInstances[index].Name;
-        return index == dialogInstances.Count ? dialogMissingInstance : "";
-    }
+    string SelectedDialogInstance() =>
+        (DialogServerInstanceBox.SelectedItem as InstanceListItem)?.Instance ?? "";
 
     async Task SaveServerFromDialog()
     {

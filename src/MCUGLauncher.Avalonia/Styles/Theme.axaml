@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:MCUGLauncher.Avalonia.Views">
     <Styles.Resources>
         <SolidColorBrush x:Key="AppBg" Color="#F3F7F6" />
         <SolidColorBrush x:Key="AppSide" Color="#F8FAF9" />
@@ -25,6 +26,35 @@
             <GradientStop Offset="0" Color="#3472AD" />
             <GradientStop Offset="1" Color="#2C6294" />
         </LinearGradientBrush>
+
+        <!--
+            实例下拉的行样式：左图标 + 右侧两行（上行名称、下行“版本 · 加载器”）。
+            两行文字限制 MaxWidth，下拉宽度就由 ComboBox 自身宽度决定，不再随条目内容变宽。
+        -->
+        <DataTemplate x:Key="InstanceRow" x:DataType="views:InstanceListItem">
+            <Grid ColumnDefinitions="Auto,*">
+                <Border Width="26" Height="26" CornerRadius="7" VerticalAlignment="Center"
+                        Background="{Binding Accent}">
+                    <TextBlock Text="{Binding Glyph}" Foreground="White" FontSize="13"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Margin="9,0,0,0" Spacing="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="13"
+                               Foreground="{StaticResource AppInk}" HorizontalAlignment="Left"
+                               MaxWidth="208" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Subtitle}" FontSize="10.5"
+                               Foreground="{StaticResource AppInk3}" IsVisible="{Binding HasSubtitle}"
+                               HorizontalAlignment="Left"
+                               MaxWidth="208" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <!-- 收起状态只留上行，保证下拉框还是原来的 36px 高 -->
+        <DataTemplate x:Key="InstanceRowCompact" x:DataType="views:InstanceListItem">
+            <TextBlock Text="{Binding Title}" Foreground="{StaticResource AppInk}"
+                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        </DataTemplate>
     </Styles.Resources>
 
     <Style Selector="Window">
@@ -260,6 +290,11 @@
         <Setter Property="CornerRadius" Value="7" />
         <Setter Property="MinHeight" Value="36" />
         <Setter Property="FontSize" Value="12" />
+    </Style>
+    <!-- 两行实例行要贴合：默认内边距会把 26px 图标挤变形 -->
+    <Style Selector="ComboBoxItem">
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="MinHeight" Value="0" />
     </Style>
 
     <Style Selector="CheckBox">
