@@ -33,11 +33,17 @@
         -->
         <DataTemplate x:Key="InstanceRow" x:DataType="views:InstanceListItem">
             <Grid ColumnDefinitions="Auto,*">
-                <Border Width="26" Height="26" CornerRadius="7" VerticalAlignment="Center"
-                        Background="{Binding Accent}">
-                    <TextBlock Text="{Binding Glyph}" Foreground="White" FontSize="13"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
+                <Panel Width="26" Height="26" VerticalAlignment="Center">
+                    <!-- 有加载器图标就铺满并圆角裁剪 -->
+                    <Border CornerRadius="7" ClipToBounds="True" IsVisible="{Binding HasIcon}">
+                        <Image Source="{Binding Icon}" Stretch="Uniform" />
+                    </Border>
+                    <!-- 没有图标（Quilt / 占位行）时退回彩色徽标 + 字符 -->
+                    <Border CornerRadius="7" Background="{Binding Accent}" IsVisible="{Binding HasGlyph}">
+                        <TextBlock Text="{Binding Glyph}" Foreground="White" FontSize="13"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </Panel>
                 <StackPanel Grid.Column="1" Margin="9,0,0,0" Spacing="1" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Title}" FontSize="13"
                                Foreground="{StaticResource AppInk}" HorizontalAlignment="Left"

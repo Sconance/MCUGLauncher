@@ -157,22 +157,40 @@ internal partial class InstancePickerView : UserControl
             });
 
         var head = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
-        head.Children.Add(new Border
+        // 图标区：有加载器图片就铺满 26px 并圆角裁剪，没有（Quilt / 占位行）就用彩色徽标 + 字符
+        var badge = new Panel
         {
             Width = 26,
             Height = 26,
-            CornerRadius = new CornerRadius(7),
-            Background = row.Accent,
-            VerticalAlignment = VerticalAlignment.Center,
-            Child = new TextBlock
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        if (row.Icon is { } icon)
+        {
+            badge.Children.Add(new Border
             {
-                Text = row.Glyph,
-                Foreground = Brushes.White,
-                FontSize = 13,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            }
-        });
+                CornerRadius = new CornerRadius(7),
+                ClipToBounds = true,
+                Child = new Image { Source = icon, Stretch = Stretch.Uniform }
+            });
+        }
+        else
+        {
+            badge.Children.Add(new Border
+            {
+                CornerRadius = new CornerRadius(7),
+                Background = row.Accent,
+                Child = new TextBlock
+                {
+                    Text = row.Glyph,
+                    Foreground = Brushes.White,
+                    FontSize = 13,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            });
+        }
+
+        head.Children.Add(badge);
         lines.Margin = new Thickness(9, 0, 0, 0);
         Grid.SetColumn(lines, 1);
         head.Children.Add(lines);
@@ -191,17 +209,25 @@ internal partial class InstancePickerView : UserControl
 
         var launch = new Button
         {
-            Content = "▷",
             Classes = { "link" },
-            Width = 30,
-            Padding = new Thickness(0)
+            Width = 30, Height = 30,
+            Padding = new Thickness(0),
+            Content = new global::Avalonia.Svg.Skia.Svg(new Uri("avares://MCUGLauncher/"))
+            {
+                Path = "/Assets/LaunchIcon.svg",
+                Height = 16, Width = 16
+            }
         };
         ToolTip.SetTip(launch, "用这个实例启动");
         launch.Click += (_, _) => LaunchRequested?.Invoke(item.Name);
 
         var settings = new Button
         {
-            Content = "⚙",
+            Content = new global::Avalonia.Svg.Skia.Svg(new Uri("avares://MCUGLauncher/"))
+            {
+                Path = "/Assets/SettingsIcon.svg",
+                Height = 16, Width = 16
+            },
             Classes = { "link" },
             Width = 30,
             Padding = new Thickness(0)

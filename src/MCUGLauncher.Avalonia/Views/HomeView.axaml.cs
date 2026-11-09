@@ -160,15 +160,25 @@ internal partial class HomeView : UserControl
         if (current is null)
         {
             InstanceButtonIcon.Background = new SolidColorBrush(Color.Parse("#C9D2DA"));
+            InstanceButtonIcon.ClipToBounds = false;
+            InstanceButtonGlyph.IsVisible = true;
             InstanceButtonGlyph.Text = "·";
+            InstanceButtonImage.IsVisible = false;
+            InstanceButtonImage.Source = null;
             InstanceButtonTitle.Text = "未选择实例";
             InstanceButtonDetail.Text = "点这里选择要启动的实例";
             return;
         }
 
         var row = InstanceListItem.From(current);
-        InstanceButtonIcon.Background = row.Accent;
+        var icon = row.Icon;
+        // 有加载器图片就铺满图标框（圆角裁剪），否则退回彩色徽标 + 字符
+        InstanceButtonIcon.Background = icon is null ? row.Accent : Brushes.Transparent;
+        InstanceButtonIcon.ClipToBounds = icon is not null;
+        InstanceButtonGlyph.IsVisible = icon is null;
         InstanceButtonGlyph.Text = row.Glyph;
+        InstanceButtonImage.Source = icon;
+        InstanceButtonImage.IsVisible = icon is not null;
         InstanceButtonTitle.Text = row.Title;
         InstanceButtonDetail.Text = row.Subtitle;
     }
@@ -213,11 +223,10 @@ internal partial class HomeView : UserControl
                 Height = 34,
                 CornerRadius = new CornerRadius(8),
                 Background = new SolidColorBrush(Color.Parse(ping?.Online == true ? "#3370AA" : "#8A96A0")),
-                Child = new TextBlock
+                Child = new global::Avalonia.Svg.Skia.Svg(new Uri("avares://MCUGLauncher/"))
                 {
-                    Text = "▣",
-                    Foreground = Brushes.White,
-                    FontSize = 16,
+                    Path = "/Assets/ServerIcon.svg",
+                    Height = 16, Width = 16,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 }
@@ -428,6 +437,14 @@ internal partial class HomeView : UserControl
                     TextWrapping = TextWrapping.Wrap,
                     Classes = { "muted" }
                 });
+            // Svg 控件没有无参构造函数：XAML 里 <Svg/> 由加载器传 baseUri，代码里必须自己给一个，
+            // 否则 "/Assets/x.svg" 这种以 / 开头的路径无法解析成 avares 资源。
+            var iconFile = item.Type switch
+            {
+                "material" => "ResourcePackIcon",
+                "shader" => "ResourcePackIcon",
+                _ => "ServerIcon"
+            };
             var icon = new Border
             {
                 Width = 30,
@@ -439,11 +456,10 @@ internal partial class HomeView : UserControl
                     "shader" => "#7B5AC8",
                     _ => "#3370AA"
                 })),
-                Child = new TextBlock
+                Child = new global::Avalonia.Svg.Skia.Svg(new Uri("avares://MCUGLauncher/"))
                 {
-                    Text = item.Type switch { "material" => "◆", "shader" => "✦", _ => "▣" },
-                    Foreground = Brushes.White,
-                    FontSize = 13,
+                    Path = "/Assets/" + iconFile + ".svg",
+                    Height = 16, Width = 16,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 }

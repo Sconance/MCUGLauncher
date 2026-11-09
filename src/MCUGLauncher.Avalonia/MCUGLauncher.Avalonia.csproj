@@ -26,6 +26,18 @@
     <AvaloniaResource Include="Assets/MinimizeIcon.svg" />
     <AvaloniaResource Include="Assets/MaximizeIcon.svg" />
     <AvaloniaResource Include="Assets/CloseIcon.svg" />
+    <AvaloniaResource Include="Assets/RunningInstancesIcon.svg"/>
+    <AvaloniaResource Include="Assets/ServerIcon.svg"/>
+    <AvaloniaResource Include="Assets/ResourcePackIcon.svg"/>
+    <!--
+        实例列表的加载器图标取自 PCL2（Plain Craft Launcher 2）的 Images/Blocks/，
+        按《PCL 存储库合理使用指南》的“轻度使用”条款引用，仅用于标识加载器类型。
+    -->
+    <AvaloniaResource Include="Assets/Loaders/Vanilla.png"/>
+    <AvaloniaResource Include="Assets/Loaders/Forge.png"/>
+    <AvaloniaResource Include="Assets/Loaders/NeoForge.png"/>
+    <AvaloniaResource Include="Assets/Loaders/Fabric.png"/>
+    <AvaloniaResource Include="Assets/Loaders/OptiFine.png"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../MCUGLauncher.App/MCUGLauncher.App.csproj" />
