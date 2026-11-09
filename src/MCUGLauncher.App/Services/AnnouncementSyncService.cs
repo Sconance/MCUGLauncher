@@ -21,6 +21,10 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
     const int FileLimit = 1024 * 1024;
     const int SnapshotLimit = 16 * FileLimit;
     const int DownloadConcurrency = 4;
+    const int MaxAnnouncementCount = 64;
+    const int Sha256HexLength = 64;
+    static readonly TimeSpan SourceTimeout = TimeSpan.FromSeconds(40);
+    static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(8);
     static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     static readonly UTF8Encoding Utf8 = new(false, true);
     readonly SemaphoreSlim gate = new(1);
@@ -91,7 +95,7 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
         foreach (var address in sources)
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
-            deadline.CancelAfter(TimeSpan.FromSeconds(40));
+            deadline.CancelAfter(SourceTimeout);
             try
             {
                 if (address.AbsolutePath.EndsWith("/manifest.json", StringComparison.OrdinalIgnoreCase))
@@ -137,7 +141,7 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
 
         var entries = manifest.Files.Where(entry => entry.Path.EndsWith(".md",
             StringComparison.OrdinalIgnoreCase)).ToArray();
-        if (entries.Length > 64 || entries.Any(entry => !ValidEntry(entry))
+        if (entries.Length > MaxAnnouncementCount || entries.Any(entry => !ValidEntry(entry))
             || entries.Sum(entry => (long)entry.Size) > SnapshotLimit
             || entries.Select(entry => entry.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count() != entries.Length)
             throw new InvalidDataException("公告清单的路径、大小或 SHA-256 无效。");
@@ -168,7 +172,7 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
     }
 
     static bool ValidEntry(Entry entry) => entry.Size is > 0 and <= FileLimit
-        && entry.Sha256 is { Length: 64 } && entry.Sha256.All(Uri.IsHexDigit)
+        && entry.Sha256 is { Length: Sha256HexLength } && entry.Sha256.All(Uri.IsHexDigit)
         && entry.Path.Split('/').All(part => part.Length > 0 && part is not ("." or "..")
             && !part.Any(ch => char.IsControl(ch) || ch is '\\' or ':' or '%' or '?' or '#'));
 
@@ -183,10 +187,12 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
             ? new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) : null;
     }
 
+    static bool TryHttpsUri(string? url, out Uri uri) =>
+        Uri.TryCreate(url, UriKind.Absolute, out uri!) && uri.Scheme == Uri.UriSchemeHttps
+        && uri.UserInfo.Length == 0 && uri.Fragment.Length == 0;
+
     static Uri HttpsUri(string? url) =>
-        Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps
-        && uri.UserInfo.Length == 0 && uri.Fragment.Length == 0
-            ? uri : throw new InvalidDataException("公告同步地址必须使用 HTTPS。");
+        TryHttpsUri(url, out var uri) ? uri : throw new InvalidDataException("公告同步地址必须使用 HTTPS。");
 
     async Task<T> ReadJsonAsync<T>(Uri url, CancellationToken token) =>
         JsonSerializer.Deserialize<T>(await DownloadAsync(url, FileLimit, token), JsonOptions)
@@ -196,7 +202,7 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
     {
         HttpsUri(url.AbsoluteUri);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
-        deadline.CancelAfter(TimeSpan.FromSeconds(8));
+        deadline.CancelAfter(RequestTimeout);
         try
         {
             using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
@@ -245,9 +251,9 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
             if (input.Length > 2 * SnapshotLimit)
                 return null;
             var snapshot = await JsonSerializer.DeserializeAsync<Snapshot>(input, JsonOptions, token);
-            if (snapshot?.Files is not { Length: <= 64 } || snapshot.Files.Any(file =>
+            if (snapshot?.Files is not { Length: <= MaxAnnouncementCount } || snapshot.Files.Any(file =>
                 file?.Entry?.Path is null || !ValidEntry(file.Entry) || file.Bytes is null
-                || !Matches(file.Entry, file.Bytes) || HttpsUri(file.Url) is null)
+                || !Matches(file.Entry, file.Bytes) || !TryHttpsUri(file.Url, out _))
                 || snapshot.Files.Select(file => file.Entry.Path).Distinct(StringComparer.OrdinalIgnoreCase).Count()
                     != snapshot.Files.Length)
                 return null;
