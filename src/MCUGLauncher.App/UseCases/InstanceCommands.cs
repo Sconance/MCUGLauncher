@@ -8,12 +8,37 @@ using SavedInfo = MCUGLauncher.Contracts.SavedInfo;
 
 namespace MCUGLauncher.UseCases;
 
-/// <summary>实例目录访问与模组管理；明确目标的操作不修改当前选择。</summary>
-/// <remarks>B 类。依赖 LauncherContext.Config/Store.DataDirectory/RefreshState，
-/// VersionCatalog.Load/InstanceDirectory/ReadMods/SetEnabled/Delete，InstanceSnapshot.Capture(AppConfig,string,string)
-/// 及 Models.ModInfo.File/Path；依赖面见 docs/components/GameDirectories.md，不依赖视图或其他 Commands。</remarks>
+/// <summary>实例选择、目录与模组维护用例。</summary>
+/// <remarks>
+/// 组件级别：B。
+/// 依赖：
+/// - LauncherContext.Config：读取根目录/当前实例，保存最近选择；
+/// - LauncherContext.Store.Save(AppConfig)：持久化实例/版本选择；
+/// - LauncherContext.Store.DataDirectory：打开配置目录；
+/// - LauncherContext.RefreshState：选择变化后刷新状态；
+/// - VersionCatalog.Load/InstanceDirectory/ReadMods/SetEnabled/Delete：实例与模组目录操作；
+/// - InstanceSnapshot.Capture(AppConfig,string,string)：定位明确目录的实例；
+/// - SavedInfo/ModInfo：返回维护结果。
+/// 逐成员依赖见 docs/components/GameDirectories.md。
+/// 不依赖：原生窗口/浏览器适配、LauncherService、LauncherApplication。
+/// </remarks>
 internal sealed class InstanceCommands(LauncherContext context)
 {
+    public void SelectVersion(string version)
+    {
+        context.Config.LastVersion = version;
+        context.Config.LastInstance = version;
+        context.Store.Save(context.Config);
+        context.RefreshState();
+    }
+
+    public void SelectInstance(string instance)
+    {
+        context.Config.LastInstance = instance;
+        context.Store.Save(context.Config);
+        context.RefreshState();
+    }
+
     public void OpenFolder(string kind)
     {
         var catalog = VersionCatalog.Load(context.Config.Root, context.Config.LastInstance);

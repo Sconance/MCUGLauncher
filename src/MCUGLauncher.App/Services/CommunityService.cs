@@ -13,14 +13,26 @@ namespace MCUGLauncher.Services;
 /// </summary>
 /// <remarks>
 /// 组件级别：B。通过 HttpClient 读取社区数据，通过 AnnouncementInfo 的构造函数和
-/// Markdown、PublishedAt 属性返回公告。与界面无直接依赖。
+/// Markdown、PublishedAt 属性返回公告。清单模式使用 AnnouncementSyncService 的
+/// 构造函数、IsSyncSource、SyncAsync、FileDate、IsSyncing 和 LastStatus，
+/// 以及同步结果的 Outcome、Error。依赖签名和用途见 docs/components/CommunityService.md。
+/// 与界面无直接依赖。
 /// </remarks>
 public sealed class CommunityService
 {
     const int MaxAnnouncementBytes = 1024 * 1024;
     const int MaxDirectoryAnnouncements = 10;
     readonly HttpClient _http;
-    public CommunityService(HttpClient http) => _http = http;
+    readonly AnnouncementSyncService _announcementSync;
+
+    internal bool IsAnnouncementSyncing => _announcementSync.IsSyncing;
+    internal AnnouncementSyncStatus? LastAnnouncementSync => _announcementSync.LastStatus;
+
+    public CommunityService(HttpClient http, string? announcementCacheDirectory = null)
+    {
+        _http = http;
+        _announcementSync = new AnnouncementSyncService(http, announcementCacheDirectory);
+    }
 
     public async Task<(bool Ok, string Markdown, string Error, int Ms)> ReadAnnouncementAsync(
         string url,
@@ -72,6 +84,17 @@ public sealed class CommunityService
 
     public async Task<(bool Ok, string Text, int Ms)> TestAnnouncementAsync(string url, CancellationToken token)
     {
+        if (TryHttpUri(url, out var uri) && AnnouncementSyncService.IsSyncSource(uri))
+        {
+            var watch = Stopwatch.StartNew();
+            // 测试可能针对尚未启用的自定义源，独立验证且不写入运行时缓存。
+            var sync = new AnnouncementSyncService(_http, null);
+            var (items, status) = await sync.SyncAsync(uri, ParseManifestAnnouncement, token);
+            var ms = (int)watch.ElapsedMilliseconds;
+            return status.Outcome == AnnouncementSyncOutcome.Updated
+                ? (true, $"公告清单有效 · 成功读取 {items.Length} 篇 · {ms} ms", ms)
+                : (false, status.Error, ms);
+        }
         var result = await ReadAnnouncementsAsync(url, token);
         if (result.Items.Length == 0)
             return (false, result.Error, result.Ms);
@@ -81,27 +104,43 @@ public sealed class CommunityService
         return (true, text, result.Ms);
     }
 
-    /// <summary>读取单篇公告，或读取 GitHub 目录中最近的公告。</summary>
-    public async Task<(AnnouncementInfo[] Items, string Error, int Ms, bool IsDirectory)> ReadAnnouncementsAsync(
+    /// <summary>读取 Markdown、GitHub 目录或 HTTPS 公告清单。</summary>
+    public async Task<(AnnouncementInfo[] Items, string Error, int Ms, bool IsDirectory, bool Publish)> ReadAnnouncementsAsync(
         string url,
         CancellationToken token)
     {
-        var isDirectory = TryHttpUri(url, out var uri) && IsGitHubDirectory(uri);
+        var validUri = TryHttpUri(url, out var uri);
+        if (validUri && AnnouncementSyncService.IsSyncSource(uri))
+        {
+            var watch = Stopwatch.StartNew();
+            var (items, status) = await _announcementSync.SyncAsync(uri, ParseManifestAnnouncement, token);
+            return (items, status.Error, (int)watch.ElapsedMilliseconds, true, true);
+        }
+        var isDirectory = validUri && IsGitHubDirectory(uri);
         var read = await ReadAnnouncementAsync(url, token);
         if (!read.Ok)
-            return ([], read.Error, read.Ms, isDirectory);
+            return ([], read.Error, read.Ms, isDirectory, false);
         if (isDirectory)
-            return await ReadDirectoryAnnouncementsAsync(read.Markdown, read.Ms, token);
+        {
+            var directory = await ReadDirectoryAnnouncementsAsync(read.Markdown, read.Ms, token);
+            return (directory.Items, directory.Error, directory.Ms, true, directory.Items.Length > 0);
+        }
 
         try
         {
-            return ([ParseMarkdownAnnouncement(read.Markdown, url)], "", read.Ms, false);
+            return ([ParseMarkdownAnnouncement(read.Markdown, url)], "", read.Ms, false, true);
         }
         catch (InvalidDataException ex)
         {
-            return ([], "公告 Markdown 无效：" + ex.Message, read.Ms, false);
+            return ([], "公告 Markdown 无效：" + ex.Message, read.Ms, false, false);
         }
     }
+
+    static AnnouncementInfo ParseManifestAnnouncement(string markdown, string source) =>
+        ParseMarkdownAnnouncement(markdown, source) with
+        {
+            PublishedAt = AnnouncementSyncService.FileDate(Uri.UnescapeDataString(new Uri(source).AbsolutePath))
+        };
 
     async Task<(AnnouncementInfo[] Items, string Error, int Ms, bool IsDirectory)> ReadDirectoryAnnouncementsAsync(
         string json,

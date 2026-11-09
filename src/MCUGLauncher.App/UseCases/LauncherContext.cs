@@ -113,7 +113,7 @@ internal sealed class LauncherContext : IDisposable
         Config = Store.Load();
         Avatars = new AvatarCommands(this, AvatarEncoder);
         Http = NetworkPolicyHandler.Create(Config.LegacyPreferences.Network);
-        Community = new CommunityService(Http);
+        Community = new CommunityService(Http, Path.Combine(Store.DataDirectory, "announcements-cache"));
         var executor = new DownloadExecutor(Http, IsInstanceInUse, IsRootPreparing);
         Tasks = new LauncherTaskQueue(Path.Combine(Store.DataDirectory, "operations"),
             async (record, task) => { await executor.ExecuteAsync(record, task); RefreshState(); }, SendTasks, Log);

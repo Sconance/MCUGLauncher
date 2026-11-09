@@ -244,7 +244,7 @@ Views（UI，不属于后端）
 | `GameCommands` | 普通/收藏服务器启动、停止游戏、进程观察（依赖详见 docs/components/GameCommands.md） | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |
 | `LaunchToServerFeatureHandler` | 收藏进服的强类型入口 | `ProtocolValues.ReadString(JsonElement, string)`；`GameCommands.LaunchToServerAsync(string, string, string?)`；通过构造函数接收 `LauncherContext` |
 | `InstallationCommands` | 加载器列表/安装、整合包预览/导入 | `LauncherContext.Config/Http/Send/Tasks/Token` |
-| `InstanceCommands` | 目录打开、明确目录的模组列表/启停/删除 | `LauncherContext.Config/RefreshState/Store.DataDirectory`；`VersionCatalog` 模组成员；`InstanceSnapshot.Capture(AppConfig,string,string)`；[完整成员](docs/components/GameDirectories.md) |
+| `InstanceCommands` | 实例/版本选择、目录打开、明确目录的模组列表/启停/删除 | `LauncherContext.Config/RefreshState/Store.Save(AppConfig)/Store.DataDirectory`；`VersionCatalog` 模组成员；`InstanceSnapshot.Capture(AppConfig,string,string)`；[完整成员](docs/components/GameDirectories.md) |
 | `InstanceMaintenanceCommands` | 实例克隆与导出 | `LauncherContext.Config/Tasks.Enqueue`；`InstanceSnapshot.Capture/Request`；[完整成员](docs/components/GameDirectories.md) |
 | `LaunchOptionsCommands` | 启动选项读写 | `LauncherContext.Config/RefreshState/Send/Store` |
 | `LauncherContext` | 共享运行时（配置、HTTP、队列、会话、状态回推） | `ConfigStore`、`NetworkPolicyHandler`、`CommunityService`、`DownloadExecutor`、`LauncherTaskQueue`、`RunningGameRegistry`、`AccountSessionCache`、`MicrosoftAccountService`、`MuaAccountService`、`AvatarCommands` |
@@ -284,7 +284,8 @@ Views（UI，不属于后端）
 | 组件 | 位置 | 说明 |
 | --- | --- | --- |
 | `AccountSessionCache` | `Services/AccountSessionCache.cs` | 进程内已验证会话缓存；依赖 CmlLib 会话类型与可注入时钟 |
-| `CommunityService` | `Services/CommunityService.cs` | 社区 URL 读取、GitHub 公告目录和单篇 Markdown 解析；依赖 `HttpClient` 及 `Contracts.AnnouncementInfo` 的构造函数、`Markdown`、`PublishedAt` |
+| `CommunityService` | `Services/CommunityService.cs` | 社区 URL 读取、GitHub 公告目录和 Markdown 解析。依赖 `HttpClient`、`AnnouncementInfo` 的构造函数、`Markdown`、`PublishedAt`，以及 `AnnouncementSyncService` 的构造函数、`IsSyncSource`、`SyncAsync`、`FileDate`、`IsSyncing`、`LastStatus` 和结果的 `Outcome`、`Error`。 |
+| `AnnouncementSyncService` | `Services/AnnouncementSyncService.cs` | A 类组件。接收调用方的 `HttpClient`、缓存目录及解析函数，负责 HTTPS 公告源、SHA-256 校验和快照提交。 |
 | `InstallationProgress` | `Services/InstallationProgress.cs` | 安装阶段的进度计算；只依赖 Core `OperationContext` |
 | `InstanceOperationExecutor` | `Services/InstanceOperationExecutor.cs` | 实例级维护执行器；只依赖 Core 队列记录与回调 |
 | `InstanceRequirements` | `Services/InstanceRequirements.cs` | 读取实例安装元数据；只依赖 Core 的类型与 JSON |
@@ -359,9 +360,11 @@ AccountSessionCache.Forget(string mode) : void
 CommunityService.TestAsync(string url, CancellationToken token) : Task<(bool Ok, string Text, int Ms)>
 CommunityService.ReadAsync(string url, CancellationToken token) : Task<string?>
 CommunityService.ReadAnnouncementAsync(string url, CancellationToken token) : Task<(bool Ok, string Markdown, string Error, int Ms)>
-CommunityService.ReadAnnouncementsAsync(string url, CancellationToken token) : Task<(AnnouncementInfo[] Items, string Error, int Ms, bool IsDirectory)>
+CommunityService.ReadAnnouncementsAsync(string url, CancellationToken token) : Task<(AnnouncementInfo[] Items, string Error, int Ms, bool IsDirectory, bool Publish)>
 CommunityService.TestAnnouncementAsync(string url, CancellationToken token) : Task<(bool Ok, string Text, int Ms)>
 CommunityService.ParseMarkdownAnnouncement(string markdown, string source) : AnnouncementInfo
+CommunityService.IsAnnouncementSyncing : bool
+CommunityService.LastAnnouncementSync : AnnouncementSyncStatus?
 
 MicrosoftAccountService.Authenticate(bool interactive, CancellationToken token) : Task<MSession>
 MicrosoftAccountService.ReadSavedAccount() : SavedMicrosoftAccount?
@@ -527,3 +530,13 @@ internal sealed class SaveCommands(LauncherContext context)
 InstallationCommands.LoadersAsync 统一调用 Core LoaderCatalog.Get，避免在 App 重复解析 Fabric/Quilt 数据。先检查提供方的游戏支持列表，再查询对应加载器版本。
 
 版本目录在无实例时返回空列表与空选中项，不构造可误选的占位实例；空实例名不读取 mods。CommunityService 仅接受 HTTP(S) 源，空或无效地址返回 null；切换数据源后重新发送社区状态。
+
+默认公告源使用 GitHub Raw 的 `sources.json`，同步失败时重试 Gitee Raw。索引的
+`resources.announcements.primary` 和 `mirrors` 提供 HTTPS 目录。目录下的
+`manifest.json` 列出相对路径、文件大小和 SHA-256，清单版本为 1。
+自定义源支持 HTTPS 清单地址、单篇 Markdown 和既有 GitHub Contents API 地址。
+公告快照按配置的源地址隔离，校验整批 Markdown 后才替换旧快照。
+每个索引入口最多尝试 40 秒，公告文件最多同时下载 4 篇。写入缓存失败时，
+本次内容仍会发布，同一来源可在本次运行期间回退到最近一次未写入的快照。
+同步状态由后端提供，现有页面继续使用社区公告列表和刷新入口。
+逐成员依赖见 [CommunityService 组件文档](docs/components/CommunityService.md)。

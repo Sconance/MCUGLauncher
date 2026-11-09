@@ -27,6 +27,10 @@ WebView2 的唯一用途是 `MicrosoftLoginWindow` 承载微软 OAuth 页面；�
 
 后端组件的分级、依赖声明与 Core 下沉标准见 [后端开发规范](../BACKEND_DEVELOPMENT.md)。
 
+社区用例通过 [CommunityService](components/CommunityService.md) 发布公告数据。清单模式由
+`AnnouncementSyncService` 解析数据源、并行下载和校验公告，并在整批通过后提交本地快照。
+每个入口有独立的同步时限。缓存写入失败时，社区用例仍可发布已校验的内容并报告错误。
+
 ## 行为约定
 
 - 页面只调用 `ILauncherService` 的强类型方法并订阅 `StateChanged`、`TasksChanged` 等领域事件；

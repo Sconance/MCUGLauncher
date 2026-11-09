@@ -129,7 +129,7 @@ missingMarkdownStore.Save(new MCUGLauncher.Models.AppConfig
     DataSourceMode = "default"
 });
 Check(missingMarkdownStore.Load().DataSources.Announcements == new MCUGLauncher.Models.DataSourceConfig().Announcements,
-    "旧默认 Markdown 公告源迁移为空地址");
+    "旧默认 Markdown 公告源迁移到当前默认地址");
 var unpublishedMainStore = new ConfigStore(Path.Combine(fixture, "unpublished-main-announcements"));
 unpublishedMainStore.Save(new MCUGLauncher.Models.AppConfig
 {
@@ -137,7 +137,7 @@ unpublishedMainStore.Save(new MCUGLauncher.Models.AppConfig
     DataSourceMode = "default"
 });
 Check(unpublishedMainStore.Load().DataSources.Announcements == new MCUGLauncher.Models.DataSourceConfig().Announcements,
-    "旧主分支公告默认地址迁移为空地址");
+    "旧主分支公告默认地址迁移到当前默认地址");
 const string customAnnouncementsUrl = "https://example.test/custom-announcements.md";
 var customAnnouncementStore = new ConfigStore(Path.Combine(fixture, "custom-markdown-announcements"));
 customAnnouncementStore.Save(new MCUGLauncher.Models.AppConfig
@@ -214,6 +214,7 @@ using (var directoryClient = new HttpClient(new AnnouncementResponseHandler(requ
         && tested.Ok && tested.Text.Contains("2 篇", StringComparison.Ordinal),
         "GitHub directory filters files, skips invalid Markdown, and orders announcements by date");
 }
+await AnnouncementSyncScenarios.RunAsync(fixture, Check);
 var emptyGameRoot = Path.Combine(fixture, "empty-game");
 Directory.CreateDirectory(emptyGameRoot);
 var emptyCatalog = VersionCatalog.Load(emptyGameRoot, "missing");
@@ -338,6 +339,9 @@ using (var service = new LauncherService(
         "typed launcher service exposes state without the UI JSON protocol");
     Check(service.WindowPlacement.Width == 1400 && service.WindowPlacement.Maximized,
         "typed launcher service exposes immutable window placement");
+    var selection = await service.SelectInstanceAsync("custom-fabric");
+    Check(store.Load().LastInstance == "custom-fabric" && selection.Message.Length > 0,
+        "instance selection returns a typed result through its feature handler");
     ILauncherService serviceContract = service;
     var sourceResult = await serviceContract.TestSourceAsync("Fixture", "ftp://invalid");
     Check(sourceResult.Name == "Fixture"

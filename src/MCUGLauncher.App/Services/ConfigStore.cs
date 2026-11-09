@@ -69,6 +69,15 @@ public sealed class ConfigStore
         }
 
         config.DataSources ??= new DataSourceConfig();
+        var defaults = new DataSourceConfig();
+        if (string.IsNullOrWhiteSpace(config.DataSources.Announcements)
+            && (config.DataSourceMode == "default" || (string.IsNullOrEmpty(config.DataSourceMode)
+                && config.DataSources.Servers == defaults.Servers
+                && config.DataSources.Recommendations == defaults.Recommendations
+                && config.DataSources.Quotes == defaults.Quotes)))
+        {
+            config.DataSources.Announcements = defaults.Announcements;
+        }
         if (config.DataSourceMode != "custom"
             && (string.Equals(
                     config.DataSources.Announcements,
@@ -83,7 +92,7 @@ public sealed class ConfigStore
                     LegacyAvaloniaAnnouncementsUrl,
                     StringComparison.OrdinalIgnoreCase)))
         {
-            config.DataSources.Announcements = new DataSourceConfig().Announcements;
+            config.DataSources.Announcements = defaults.Announcements;
         }
 
         // Disconnected disks must retain their saved library and selection.

@@ -4,6 +4,28 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 
 namespace MCUGLauncher.UseCases;
 
+[FeatureHandler(nameof(ILauncherService.SelectInstanceAsync))]
+internal sealed class SelectInstanceFeatureHandler(LauncherContext context)
+    : IFeatureHandler<SavedInfo>
+{
+    public Task<SavedInfo> HandleAsync(JsonElement arguments, CancellationToken token)
+    {
+        new InstanceCommands(context).SelectInstance(ReadString(arguments, "instance"));
+        return Task.FromResult(new SavedInfo("已切换实例。"));
+    }
+}
+
+[FeatureHandler(nameof(ILauncherService.SelectVersionAsync))]
+internal sealed class SelectVersionFeatureHandler(LauncherContext context)
+    : IFeatureHandler<SavedInfo>
+{
+    public Task<SavedInfo> HandleAsync(JsonElement arguments, CancellationToken token)
+    {
+        new InstanceCommands(context).SelectVersion(ReadString(arguments, "version"));
+        return Task.FromResult(new SavedInfo("已切换版本。"));
+    }
+}
+
 [FeatureHandler(nameof(ILauncherService.PreviewUninstallAsync))]
 internal sealed class PreviewUninstallFeatureHandler(LauncherContext context)
     : IFeatureHandler<UninstallPreviewInfo>
