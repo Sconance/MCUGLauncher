@@ -320,6 +320,9 @@ using (var service = new LauncherService(
         "typed launcher service exposes state without the UI JSON protocol");
     Check(service.WindowPlacement.Width == 1400 && service.WindowPlacement.Maximized,
         "typed launcher service exposes immutable window placement");
+    var selection = await service.SelectInstanceAsync("custom-fabric");
+    Check(store.Load().LastInstance == "custom-fabric" && selection.Message.Length > 0,
+        "instance selection returns a typed result through its feature handler");
     ILauncherService serviceContract = service;
     var sourceResult = await serviceContract.TestSourceAsync("Fixture", "ftp://invalid");
     Check(sourceResult.Name == "Fixture"

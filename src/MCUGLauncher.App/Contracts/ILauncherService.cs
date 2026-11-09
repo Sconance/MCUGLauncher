@@ -97,8 +97,18 @@ public interface ILauncherService : IDisposable
             version
         });
     Task RequestStateAsync();
-    Task SelectInstanceAsync(string instance);
-    Task SelectVersionAsync(string version);
+    [FeatureOperation]
+    Task<SavedInfo> SelectInstanceAsync(string instance) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SelectInstanceAsync), new
+        {
+            instance
+        });
+    [FeatureOperation]
+    Task<SavedInfo> SelectVersionAsync(string version) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SelectVersionAsync), new
+        {
+            version
+        });
     [FeatureOperation]
     Task<IReadOnlyList<JavaInfo>> ScanJavaAsync() =>
         FeatureRequest.InvokeAsync<IReadOnlyList<JavaInfo>>(this, nameof(ScanJavaAsync), new

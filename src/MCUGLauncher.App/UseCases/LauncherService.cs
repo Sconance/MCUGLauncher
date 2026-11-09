@@ -72,9 +72,17 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
 
     public Task RequestStateAsync() => application.HandleAsync("""{"type":"requestState"}""");
 
-    public Task SelectInstanceAsync(string instance) => CommandAsync(new { type = "selectInstance", instance });
+    public Task<SavedInfo> SelectInstanceAsync(string instance) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SelectInstanceAsync), new
+        {
+            instance
+        });
 
-    public Task SelectVersionAsync(string version) => CommandAsync(new { type = "selectVersion", version });
+    public Task<SavedInfo> SelectVersionAsync(string version) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SelectVersionAsync), new
+        {
+            version
+        });
 
     public async Task<IReadOnlyList<JavaInfo>> ScanJavaAsync()
     {

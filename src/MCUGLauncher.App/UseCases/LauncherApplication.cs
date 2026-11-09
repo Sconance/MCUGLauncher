@@ -368,17 +368,6 @@ internal sealed class LauncherApplication : IDisposable
                 case "drag":
                     desktop.Drag();
                     break;
-                case "selectVersion":
-                    context.Config.LastVersion = ReadString(root, "version");
-                    context.Config.LastInstance = context.Config.LastVersion;
-                    context.Store.Save(context.Config);
-                    context.RefreshState();
-                    break;
-                case "selectInstance":
-                    context.Config.LastInstance = ReadString(root, "instance");
-                    context.Store.Save(context.Config);
-                    context.RefreshState();
-                    break;
                 case "openFolder":
                     instanceCommands.OpenFolder(ReadString(root, "kind"));
                     break;
