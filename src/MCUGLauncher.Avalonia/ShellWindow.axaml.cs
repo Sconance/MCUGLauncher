@@ -50,6 +50,8 @@ public partial class ShellWindow : Window
         extrasView = new ExtrasView(service);
         homeView = new HomeView(service);
         homeView.AccountRequested += () => OpenExtras("account");
+        homeView.InstancesRequested += () => OpenExtras("instances");
+        homeView.RunningGamesRequested += () => OpenExtras("games");
         downloadView = new DownloadView(service);
         var placement = service.WindowPlacement;
         Width = Math.Clamp(placement.Width, LaunchLimits.ShellWidthMin, LaunchLimits.ShellWidthMax);

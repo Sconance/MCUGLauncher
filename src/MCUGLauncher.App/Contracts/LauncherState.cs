@@ -9,7 +9,9 @@ public sealed record InstanceInfo(
     int Updates,
     string DisplayName,
     string Minecraft,
-    bool IsPlaceholder = false)
+    bool IsPlaceholder = false,
+    string LoaderVersion = "",
+    string VersionType = "")
 {
 }
 
@@ -79,7 +81,10 @@ public sealed record FavoriteInfo(string Id, string Kind, string Name, string De
 
 public sealed record DataSourceSet(string Announcements, string Servers, string Recommendations, string Quotes)
 {
-    public static DataSourceSet Empty { get; } = new("", "", "", "");
+    public static DataSourceSet Empty
+    {
+        get;
+    } = new("", "", "", "");
 }
 
 public sealed record VersionChoice(string Name, string Meta);

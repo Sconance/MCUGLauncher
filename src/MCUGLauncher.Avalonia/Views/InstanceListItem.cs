@@ -4,7 +4,7 @@ using MCUGLauncher.Contracts;
 namespace MCUGLauncher.Avalonia.Views;
 
 /// <summary>
-/// 实例下拉/列表的一行：左侧是加载器图标字符，右侧上行实例名、下行“版本 · 加载器”。
+/// 实例下拉/列表的一行：左侧是加载器图标字符，右侧上行实例名、下行“游戏版本 - 加载器 加载器版本”。
 /// </summary>
 /// <param name="Instance">对应 <see cref="InstanceInfo.Name"/>；空串表示“不绑定”之类的占位项</param>
 /// <param name="Title">上行文字</param>
@@ -29,25 +29,32 @@ public sealed record InstanceListItem(string Instance, string Title, string Subt
         get;
     } = new("", "不绑定实例", "打开前需要先选一个实例", "–", VanillaBrush);
 
-    /// <summary>把实例转成展示行；加载器为“原版”时不写进下行，版本与名称相同时也不重复写。</summary>
+    /// <summary>
+    /// 把实例转成展示行。下行按 PCL2 的描述格式拼成「版本类型 版本号，加载器 加载器版本」，
+    /// 例如「正式版 1.20.1，Forge 47.4.10」；没有加载器时连逗号一起省略。
+    /// </summary>
     public static InstanceListItem From(InstanceInfo info)
     {
         var loader = info.Loader;
         var vanilla = loader.Length == 0 || loader == "原版";
         var title = info.DisplayName.Length > 0 ? info.DisplayName : info.Name;
-        // 部分实例的“版本”就是文件夹名，和名称重复时不再写第二遍
-        var version = info.Minecraft.Length > 0 &&
-                      !info.Minecraft.Equals(title, StringComparison.OrdinalIgnoreCase) &&
-                      !info.Minecraft.Equals(info.Name, StringComparison.OrdinalIgnoreCase)
-            ? info.Minecraft
-            : "";
-        var subtitle = version.Length > 0 && !vanilla
-            ? version + " · " + loader
-            : version.Length > 0
-                ? version
-                : vanilla
-                    ? ""
-                    : loader;
+        var version = info.Minecraft.Trim();
+        var type = info.VersionType.Trim();
+        var head = type.Length > 0 && version.Length > 0
+            ? type + " " + version
+            : type.Length > 0
+                ? type
+                : version;
+        var loaderText = vanilla
+            ? ""
+            : info.LoaderVersion.Length > 0
+                ? loader + " " + info.LoaderVersion
+                : loader;
+        var subtitle = head.Length > 0 && loaderText.Length > 0
+            ? head + "，" + loaderText
+            : head.Length > 0
+                ? head
+                : loaderText;
         var (glyph, accent) = Style(loader);
         return new InstanceListItem(info.Name, title, subtitle, glyph, accent);
     }

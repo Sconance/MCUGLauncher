@@ -104,10 +104,13 @@ internal partial class InstancesView : UserControl
             return;
         var instances = ValidInstances(snapshot);
         var previous = selected;
-        if (selected.Length == 0 || !instances.Any(item => item.Name == selected))
-            selected = instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)?.Name
-                       ?? instances.FirstOrDefault()?.Name
-                       ?? "";
+        // 当前实例可能在别处被切换（首页二级页面、服务器卡片），这里跟随全局选择，
+        // 否则会一直停在「正在切换实例…」。
+        var target = instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)?.Name ?? "";
+        if (target.Length > 0)
+            selected = target;
+        else if (selected.Length == 0 || !instances.Any(item => item.Name == selected))
+            selected = instances.FirstOrDefault()?.Name ?? "";
         updatingSelector = true;
         InstanceSelector.ItemsSource = instances.Count == 0
             ? new[] { InstanceListItem.Empty("尚未安装实例", "先去下载页安装或导入整合包") }
