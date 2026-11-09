@@ -533,4 +533,7 @@ InstallationCommands.LoadersAsync 统一调用 Core LoaderCatalog.Get，避免�
 `manifest.json` 列出相对路径、文件大小和 SHA-256，清单版本为 1。
 自定义源支持 HTTPS 清单地址、单篇 Markdown 和既有 GitHub Contents API 地址。
 公告快照按配置的源地址隔离，校验整批 Markdown 后才替换旧快照。
+每个索引入口最多尝试 40 秒，公告文件最多同时下载 4 篇。写入缓存失败时，
+本次内容仍会发布，同一来源可在本次运行期间回退到最近一次未写入的快照。
 同步状态由后端提供，现有页面继续使用社区公告列表和刷新入口。
+逐成员依赖见 [CommunityService 组件文档](docs/components/CommunityService.md)。

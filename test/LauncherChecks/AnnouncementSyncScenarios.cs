@@ -89,6 +89,28 @@ internal static class AnnouncementSyncScenarios
         var updated = await service.ReadAnnouncementsAsync(source, CancellationToken.None);
         check(updated.Items.Single().Title == "更新公告", "同步替换改动并移除清单中删除的公告");
 
+        responses[manifest] = Manifest((oldName, revised), (newName, latest));
+        var blockedCache = Path.Combine(fixture, "blocked-announcement-cache");
+        File.WriteAllText(blockedCache, "占用缓存目录路径");
+        var concurrentHandler = new FixtureHandler(responses, [])
+        {
+            WaitForBothDownloads = true
+        };
+        using (var concurrentHttp = new HttpClient(concurrentHandler))
+        {
+            var unwritable = new CommunityService(concurrentHttp, blockedCache);
+            var result = await unwritable.ReadAnnouncementsAsync(manifest, CancellationToken.None);
+            check(result.Items.Select(item => item.Title).SequenceEqual(["新公告", "更新公告"])
+                && result.Error.Contains("无法写入本地缓存", StringComparison.Ordinal)
+                && unwritable.LastAnnouncementSync?.Outcome == AnnouncementSyncOutcome.Updated,
+                "并行下载后保留公告顺序，缓存不可写时仍发布公告");
+            responses.Remove(manifest);
+            var recovered = await unwritable.ReadAnnouncementsAsync(manifest, CancellationToken.None);
+            check(recovered.Items.Length == 2
+                && unwritable.LastAnnouncementSync?.Outcome == AnnouncementSyncOutcome.Cached,
+                "缓存不可写且随后断网时使用同一来源的内存快照");
+        }
+
         responses[manifest] = Manifest();
         var empty = await service.ReadAnnouncementsAsync(source, CancellationToken.None);
         var tested = await service.TestAnnouncementAsync(manifest, CancellationToken.None);
@@ -110,13 +132,27 @@ internal static class AnnouncementSyncScenarios
 
     sealed class FixtureHandler(Dictionary<string, byte[]> responses, List<string> requests) : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        readonly TaskCompletionSource bothDownloads = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int downloads;
+        public bool WaitForBothDownloads
+        {
+            get; init;
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var url = request.RequestUri!.AbsoluteUri;
-            requests.Add(url);
-            return Task.FromResult(responses.TryGetValue(url, out var bytes)
+            lock (requests)
+                requests.Add(url);
+            if (WaitForBothDownloads && url.EndsWith(".md", StringComparison.Ordinal))
+            {
+                if (Interlocked.Increment(ref downloads) == 2)
+                    bothDownloads.TrySetResult();
+                await bothDownloads.Task.WaitAsync(TimeSpan.FromSeconds(3), cancellationToken);
+            }
+            return responses.TryGetValue(url, out var bytes)
                 ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) }
-                : new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+                : new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
         }
     }
 }

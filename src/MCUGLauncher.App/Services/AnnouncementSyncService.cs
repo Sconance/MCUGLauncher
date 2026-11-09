@@ -20,10 +20,12 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
     const string Fallback = "https://gitee.com/Sconance/MCUGL-Config/raw/main/sources.json";
     const int FileLimit = 1024 * 1024;
     const int SnapshotLimit = 16 * FileLimit;
+    const int DownloadConcurrency = 4;
     static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     static readonly UTF8Encoding Utf8 = new(false, true);
     readonly SemaphoreSlim gate = new(1);
     volatile AnnouncementSyncStatus? lastStatus;
+    (Uri Source, Snapshot Snapshot)? unsavedSnapshot;
 
     public bool IsSyncing => gate.CurrentCount == 0;
     public AnnouncementSyncStatus? LastStatus => lastStatus;
@@ -40,27 +42,40 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
         {
             var cacheFile = cacheDirectory is null ? null : Path.Combine(cacheDirectory,
                 Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source.AbsoluteUri))) + ".json");
-            var old = await LoadAsync(cacheFile, parse, token);
-            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
-            deadline.CancelAfter(TimeSpan.FromSeconds(40));
+            var old = unsavedSnapshot is { } pending && pending.Source == source
+                ? pending.Snapshot : await LoadAsync(cacheFile, parse, token);
+            Snapshot snapshot;
+            T[] items;
             try
             {
-                var (snapshot, items) = await FetchAsync(source, old, parse, deadline.Token);
-                if (cacheFile is not null)
-                    await SaveAsync(cacheFile, snapshot, deadline.Token);
-                var outcome = old is not null && old.Files.Select(file => file.Entry)
-                    .SequenceEqual(snapshot.Files.Select(file => file.Entry))
-                    ? AnnouncementSyncOutcome.Unchanged : AnnouncementSyncOutcome.Updated;
-                return (items, lastStatus = new(outcome, snapshot.SyncedAt, ""));
-            }
-            catch (OperationCanceledException) when (!token.IsCancellationRequested)
-            {
-                return UseCache(old, parse, "公告同步超时。");
+                (snapshot, items) = await FetchAsync(source, old, parse, token);
             }
             catch (Exception error) when (IsSyncError(error))
             {
+                token.ThrowIfCancellationRequested();
                 return UseCache(old, parse, error.Message);
             }
+
+            var warning = "";
+            if (cacheFile is not null)
+            {
+                try
+                {
+                    await SaveAsync(cacheFile, snapshot, token);
+                    if (unsavedSnapshot is { } saved && saved.Source == source)
+                        unsavedSnapshot = null;
+                }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                    token.ThrowIfCancellationRequested();
+                    unsavedSnapshot = (source, snapshot);
+                    warning = "公告已同步，但无法写入本地缓存：" + error.Message;
+                }
+            }
+            var outcome = old is not null && old.Files.Select(file => file.Entry)
+                .SequenceEqual(snapshot.Files.Select(file => file.Entry))
+                ? AnnouncementSyncOutcome.Unchanged : AnnouncementSyncOutcome.Updated;
+            return (items, lastStatus = new(outcome, snapshot.SyncedAt, warning));
         }
         finally
         {
@@ -75,12 +90,14 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
         Uri[] sources = source.AbsoluteUri == Primary ? [source, new Uri(Fallback)] : [source];
         foreach (var address in sources)
         {
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+            deadline.CancelAfter(TimeSpan.FromSeconds(40));
             try
             {
                 if (address.AbsolutePath.EndsWith("/manifest.json", StringComparison.OrdinalIgnoreCase))
-                    return await FetchManifestAsync(address, old, parse, token);
+                    return await FetchManifestAsync(address, old, parse, deadline.Token);
 
-                var index = await ReadJsonAsync<SourceIndex>(address, token);
+                var index = await ReadJsonAsync<SourceIndex>(address, deadline.Token);
                 if (index.SchemaVersion != 1 || index.Resources?.Announcements is not { } resource)
                     throw new InvalidDataException("公告源索引格式无效。");
                 foreach (var url in new[] { resource.Primary }.Concat(resource.Mirrors ?? []))
@@ -90,13 +107,17 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
                         var root = HttpsUri(url);
                         if (!root.AbsolutePath.EndsWith('/') || root.Query.Length > 0)
                             throw new InvalidDataException("公告资源地址必须指向 HTTPS 目录。");
-                        return await FetchManifestAsync(new Uri(root, "manifest.json"), old, parse, token);
+                        return await FetchManifestAsync(new Uri(root, "manifest.json"), old, parse, deadline.Token);
                     }
                     catch (Exception failure) when (IsSyncError(failure))
                     {
                         error = failure.Message;
                     }
                 }
+            }
+            catch (OperationCanceledException) when (!token.IsCancellationRequested)
+            {
+                error = "公告源同步超时。";
             }
             catch (Exception failure) when (IsSyncError(failure))
             {
@@ -122,22 +143,26 @@ internal sealed class AnnouncementSyncService(HttpClient http, string? cacheDire
             throw new InvalidDataException("公告清单的路径、大小或 SHA-256 无效。");
 
         var previous = old?.Files.ToDictionary(file => file.Entry.Path, StringComparer.Ordinal);
-        var files = new List<CachedFile>();
-        foreach (var original in entries.OrderByDescending(entry => FileDate(entry.Path))
-                     .ThenByDescending(entry => entry.Path, StringComparer.Ordinal))
+        var sortedEntries = entries.OrderByDescending(entry => FileDate(entry.Path))
+            .ThenByDescending(entry => entry.Path, StringComparer.Ordinal).ToArray();
+        var files = new CachedFile[sortedEntries.Length];
+        await Parallel.ForEachAsync(Enumerable.Range(0, sortedEntries.Length),
+            new ParallelOptions { MaxDegreeOfParallelism = DownloadConcurrency, CancellationToken = token },
+            async (index, downloadToken) =>
         {
+            var original = sortedEntries[index];
             var entry = original with
             {
                 Sha256 = original.Sha256.ToUpperInvariant()
             };
             var url = new Uri(manifestUrl, string.Join('/', entry.Path.Split('/').Select(Uri.EscapeDataString)));
             var bytes = previous is not null && previous.TryGetValue(entry.Path, out var file) && file.Entry == entry
-                ? file.Bytes : await DownloadAsync(url, entry.Size, token);
+                ? file.Bytes : await DownloadAsync(url, entry.Size, downloadToken);
             if (!Matches(entry, bytes))
                 throw new InvalidDataException($"公告文件校验失败：{entry.Path}");
-            files.Add(new(entry, url.AbsoluteUri, bytes));
-        }
-        var snapshot = new Snapshot(DateTimeOffset.UtcNow, [.. files]);
+            files[index] = new(entry, url.AbsoluteUri, bytes);
+        });
+        var snapshot = new Snapshot(DateTimeOffset.UtcNow, files);
         // 清单中每篇公告都必须可解析，才允许替换上次成功的快照。
         return (snapshot, Parse(snapshot, parse));
     }

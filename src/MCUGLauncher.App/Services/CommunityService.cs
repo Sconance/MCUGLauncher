@@ -15,7 +15,7 @@ namespace MCUGLauncher.Services;
 /// 组件级别：B。通过 HttpClient 读取社区数据，通过 AnnouncementInfo 的构造函数和
 /// Markdown、PublishedAt 属性返回公告。清单模式使用 AnnouncementSyncService 的
 /// 构造函数、IsSyncSource、SyncAsync、FileDate、IsSyncing 和 LastStatus，
-/// 以及同步结果的 Outcome、Error。
+/// 以及同步结果的 Outcome、Error。依赖签名和用途见 docs/components/CommunityService.md。
 /// 与界面无直接依赖。
 /// </remarks>
 public sealed class CommunityService
