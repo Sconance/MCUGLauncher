@@ -109,7 +109,7 @@ public sealed class DataSourceConfig
     /// <summary>
     /// 获取或设置 Announcements。
     /// </summary>
-    public string Announcements { get; set; } = "";
+    public string Announcements { get; set; } = Services.AnnouncementSyncService.Primary;
     /// <summary>
     /// 获取或设置 Servers。
     /// </summary>

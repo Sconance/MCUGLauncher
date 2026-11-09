@@ -58,11 +58,10 @@ internal sealed class CommunityCommands(LauncherContext context)
             var announcementResult = await context.Community.ReadAnnouncementsAsync(
                 announcementUrl,
                 context.Token);
-            if (announcementResult.Items.Length > 0)
+            if (announcementResult.Publish)
                 items["announcements"] = JsonSerializer.Serialize(announcementResult.Items, CommunityJsonOptions);
-            else
+            if (announcementResult.Error.Length > 0)
             {
-                successful = false;
                 announcementError = announcementResult.Error;
             }
         }
@@ -80,6 +79,13 @@ internal sealed class CommunityCommands(LauncherContext context)
             successful &= text != null;
             items[name] = text ?? "[]";
         }
+        // 请求过程中可能切换数据源，旧源的结果不能覆盖新源。
+        if (!string.Equals(announcementUrl, context.Config.DataSources.Announcements, StringComparison.Ordinal))
+        {
+            items.Remove("announcements");
+            announcementError = null;
+        }
+        successful &= announcementError is null;
         if (items.Count > 0)
             context.Send(new
             {
