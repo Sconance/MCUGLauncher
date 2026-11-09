@@ -12,7 +12,7 @@ dotnet run --project src/MCUGLauncher.Tui -- --data-directory "D:/MCUGL-tui-data
 dotnet run --project src/MCUGLauncher.Tui -- --help
 ```
 
-本项目独立构建，不需要修改现有解决方案。使用 `net8.0-windows` 以匹配 App/Core，正式运行目标仍为 Windows。
+本项目已加入 `MCUGLauncher.sln` 的 `src` 分组，也支持独立构建。使用 `net8.0-windows` 以匹配 App/Core，正式运行目标仍为 Windows。
 
 App 的现有认证依赖会引入 Windows Desktop 运行时。源码运行需要 .NET 8 Desktop Runtime；在 Linux 上交叉构建时需附加 `-p:EnableWindowsTargeting=true`，不能据此声明 Linux 业务兼容。
 
