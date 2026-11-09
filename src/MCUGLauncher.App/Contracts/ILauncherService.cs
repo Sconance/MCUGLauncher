@@ -105,6 +105,82 @@ public interface ILauncherService : IDisposable
             serverAddress
         });
     Task RequestStateAsync();
+    [FeatureOperation]
+    Task<IReadOnlyList<GameDirectoryInfo>> ScanGameDirectoriesAsync() =>
+        FeatureRequest.InvokeAsync<IReadOnlyList<GameDirectoryInfo>>(this, nameof(ScanGameDirectoriesAsync), new
+        {
+        });
+    [FeatureOperation]
+    Task<SavedInfo> AddGameDirectoryAsync(string root, bool select = false) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(AddGameDirectoryAsync), new
+        {
+            root,
+            select
+        });
+    [FeatureOperation]
+    Task<SavedInfo> RemoveGameDirectoryAsync(string root) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(RemoveGameDirectoryAsync), new
+        {
+            root
+        });
+    [FeatureOperation]
+    Task<SavedInfo> SelectManagedInstanceAsync(InstanceTarget target) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SelectManagedInstanceAsync), new
+        {
+            target
+        });
+    [FeatureOperation]
+    Task<LaunchResultInfo> LaunchManagedInstanceAsync(InstanceTarget target, string? serverAddress = null) =>
+        FeatureRequest.InvokeAsync<LaunchResultInfo>(this, nameof(LaunchManagedInstanceAsync), new
+        {
+            target,
+            serverAddress
+        });
+    [FeatureOperation]
+    Task<SavedInfo> CloneManagedInstanceAsync(InstanceTarget target, string name, bool saves = false, bool servers = false) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(CloneManagedInstanceAsync), new
+        {
+            target,
+            name,
+            saves,
+            servers
+        });
+    [FeatureOperation]
+    Task<SavedInfo> ExportManagedInstanceAsync(InstanceTarget target, string path, bool servers = false, bool saves = false) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ExportManagedInstanceAsync), new
+        {
+            target,
+            path,
+            servers,
+            saves
+        });
+    [FeatureOperation]
+    Task<UninstallPreviewInfo> PreviewManagedUninstallAsync(InstanceTarget target) =>
+        FeatureRequest.InvokeAsync<UninstallPreviewInfo>(this, nameof(PreviewManagedUninstallAsync), new
+        {
+            target
+        });
+    [FeatureOperation]
+    Task<IReadOnlyList<ModInfo>> ListManagedModsAsync(InstanceTarget target) =>
+        FeatureRequest.InvokeAsync<IReadOnlyList<ModInfo>>(this, nameof(ListManagedModsAsync), new
+        {
+            target
+        });
+    [FeatureOperation]
+    Task<SavedInfo> ToggleManagedModAsync(InstanceTarget target, string file, bool enabled) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ToggleManagedModAsync), new
+        {
+            target,
+            file,
+            enabled
+        });
+    [FeatureOperation]
+    Task<SavedInfo> DeleteManagedModAsync(InstanceTarget target, string file) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(DeleteManagedModAsync), new
+        {
+            target,
+            file
+        });
     Task SelectInstanceAsync(string instance);
     Task SelectVersionAsync(string version);
     [FeatureOperation]
@@ -298,7 +374,7 @@ public interface ILauncherService : IDisposable
         });
     /// <summary>保存服务器收藏；instance 为 null 时保留绑定，空字符串时清除绑定。</summary>
     [FeatureOperation]
-    Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "", string? instance = null) =>
+    Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "", string? instance = null, string? gameRoot = null) =>
         FeatureRequest.InvokeAsync<ServerResultInfo>(
             this,
             nameof(SaveServerAsync),
@@ -307,7 +383,8 @@ public interface ILauncherService : IDisposable
                 name,
                 address,
                 oldAddress,
-                instance
+                instance,
+                gameRoot
             });
     [FeatureOperation]
     Task<SavedInfo> DeleteServerAsync(string address) =>

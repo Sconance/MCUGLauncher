@@ -40,7 +40,7 @@
 - 不允许持有全局可变状态；需要状态时由调用方传入；
 - 不允许内部 `new HttpClient`、`new ConfigStore`、`new LauncherTaskQueue`；需要这些能力时说明为什么不能留在调用方。
 
-示例：`ProtocolValues`、`PreviewCache<T>`、Core 中的纯算法/校验类。
+示例：`PreviewCache<T>`、Core 中的纯算法/校验类。
 
 ### 3.2 B 类：不完全独立组件
 
@@ -228,9 +228,9 @@ Views（UI，不属于后端）
 > `ShellWindow` 是宿主壳，不计入后端组件；它只依赖 `ILauncherService` 与 `IDesktopHost`。
 > `MicrosoftLoginWindow` / `MicrosoftLoginWebUi` 是 UI 侧 OAuth 适配，不计入后端组件。
 
-### 8.2 B 类（27 个）
+### 8.2 B 类
 
-#### 8.2.1 UseCases（20 个）
+#### 8.2.1 UseCases（含声明式功能适配器）
 
 | 组件 | 说明 | 依赖面 |
 | --- | --- | --- |
@@ -242,10 +242,10 @@ Views（UI，不属于后端）
 | `ContentUpdateCommands` | 内容更新检查、预览、应用 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `DiagnosticCommands` | 日志读取与系统信息 | `LauncherContext.Config/Send/Store` |
 | `GameCommands` | 普通/收藏服务器启动、停止游戏、进程观察（依赖详见 docs/components/GameCommands.md） | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |
-| `LaunchToServerFeatureHandler` | 收藏进服的强类型入口 | `ProtocolValues.ReadString(JsonElement, string)`；`GameCommands.LaunchToServerAsync(string, string)`；通过构造函数接收 `LauncherContext` |
+| `LaunchToServerFeatureHandler` | 收藏进服的强类型入口 | `ProtocolValues.ReadString(JsonElement, string)`；`GameCommands.LaunchToServerAsync(string, string, string?)`；通过构造函数接收 `LauncherContext` |
 | `InstallationCommands` | 加载器列表/安装、整合包预览/导入 | `LauncherContext.Config/Http/Send/Tasks/Token` |
-| `InstanceCommands` | 目录打开、模组启停/删除 | `LauncherContext.Config/RefreshState` |
-| `InstanceMaintenanceCommands` | 实例克隆与导出 | `LauncherContext.Config/Tasks` |
+| `InstanceCommands` | 目录打开、明确目录的模组列表/启停/删除 | `LauncherContext.Config/RefreshState/Store.DataDirectory`；`VersionCatalog` 模组成员；`InstanceSnapshot.Capture(AppConfig,string,string)`；[完整成员](docs/components/GameDirectories.md) |
+| `InstanceMaintenanceCommands` | 实例克隆与导出 | `LauncherContext.Config/Tasks.Enqueue`；`InstanceSnapshot.Capture/Request`；[完整成员](docs/components/GameDirectories.md) |
 | `LaunchOptionsCommands` | 启动选项读写 | `LauncherContext.Config/RefreshState/Send/Store` |
 | `LauncherContext` | 共享运行时（配置、HTTP、队列、会话、状态回推） | `ConfigStore`、`NetworkPolicyHandler`、`CommunityService`、`DownloadExecutor`、`LauncherTaskQueue`、`RunningGameRegistry`、`AccountSessionCache`、`MicrosoftAccountService`、`MuaAccountService`、`AvatarCommands` |
 | `LocalImportCommands` | 本地文件分类预览、冻结导入目标并排入任务队列 | `LauncherContext.Config/Tasks/Games/IsRootPreparing/IsInstanceInUse/Token`；`InstanceSnapshot`；`LauncherTaskQueue`；`RunningGameRegistry`；`PreviewCache<Choice>`；Core `LocalImportClassifier`、`ContentService`、`WorldArchives` |
@@ -253,10 +253,12 @@ Views（UI，不属于后端）
 | `ResourceChoiceCommands` | 资源版本列表与排队 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `ResourceCommands` | 原版/Modrinth 搜索与安装 | `LauncherContext.Config/Http/Send/Store/Tasks/Token` |
 | `SaveCommands` | 存档备份与恢复 | `LauncherContext.Config/Games/Send/Store/Token` |
-| `SettingsCommands` | 设置、Java 扫描、数据源保存/启用 | `LauncherContext.Config/RefreshState/Send/Store/Token` |
+| `SettingsCommands` | 设置、Java 扫描、数据源及游戏目录增删/选择 | `LauncherContext.Config/RefreshState/Store.Save(AppConfig)/Token`；`GameDirectoryCatalog.Roots/RequireRoot`；`InstanceSnapshot.Capture`；[完整成员](docs/components/GameDirectories.md) |
+| `ProtocolValues` | 字段校验、实例目标与离线 UUID | `Contracts.InstanceTarget(string,string)`；其余只依赖 BCL |
+| `GameDirectoryFeatureHandlers.cs` 内十一项适配器 | 类型化目录管理及明确目录的实例操作 | `SettingsCommands`、`GameCommands`、`InstanceCommands`、`InstanceMaintenanceCommands`、`UninstallCommands`、`GameDirectoryCatalog`；[逐适配器成员](docs/components/GameDirectories.md) |
 | `DownloadImageFeatureHandler` | 公告图片下载的强类型结果 handler | `LauncherContext.Http/Token` → `CommunityCommands.DownloadImageAsync` |
 | `TestSourceFeatureHandler` | 数据源连通性与 Markdown 公告校验的强类型结果 handler | `LauncherContext.Community` → `CommunityService.TestAsync` / `TestAnnouncementAsync` |
-| `UninstallCommands` | 卸载预览与应用 | `LauncherContext.Config/Games/Send/Tasks/Token` |
+| `UninstallCommands` | 明确目录的卸载预览与确认后排队 | `LauncherContext.Config/Games.UsesDirectory/Tasks.Enqueue/Token`；`InstanceSnapshot.Capture/Request`；`PreviewCache.For/Add/Get`；[完整成员](docs/components/GameDirectories.md) |
 
 #### 8.2.2 Services（5 个）
 
@@ -264,8 +266,9 @@ Views（UI，不属于后端）
 | --- | --- | --- |
 | `ConfigStore` | `config.json` 读取、迁移、保存 | `AppConfig`（Models） |
 | `DownloadExecutor` | 按任务类型执行下载/安装/维护 | `InstanceOperationExecutor` 与 Core 的 `OperationRecord`/`OperationContext` |
-| `InstanceSnapshot` | 捕获实例根目录、名称、要求与启动设置 | `AppConfig`、Core 实例/包类型 |
-| `LauncherStateBuilder` | 直接组装强类型 `LauncherState`，不生成匿名 JSON schema | `AppConfig`、`VersionCatalog`、`FavoriteInfo`（由调用方传入）、`Contracts` DTO |
+| `InstanceSnapshot` | 捕获明确目录下的实例快照 | `AppConfig`；`GameDirectoryCatalog.RequireRoot(AppConfig,string)`；`InstanceRequirements.Read(string,string)`；Core 实例/包类型；[完整成员](docs/components/GameDirectories.md) |
+| `LauncherStateBuilder` | 多目录状态与当前目录兼容快照 | `AppConfig`；`GameDirectoryCatalog.Scan/Roots`；`VersionCatalog.ReadMods`；传入的 FavoriteInfo、Contracts DTO；[完整成员](docs/components/GameDirectories.md) |
+| `GameDirectoryCatalog` | 所有已保存目录的独立扫描与错误汇总 | `AppConfig.Root/GameRoots`；`VersionCatalog.Load(string,string).Instances`；Models/Contracts 实例 DTO；[完整成员](docs/components/GameDirectories.md) |
 | `VersionCatalog` | 版本目录扫描、实例与模组读取 | `AppConfig`、`ModInfo`/`VersionDetails` 等 Models；占位实例带 `IsPlaceholder` |
 
 #### 8.2.3 Authentication（2 个）
@@ -276,11 +279,10 @@ Views（UI，不属于后端）
 | `MicrosoftAccountService` | 微软登录、会话刷新、令牌存储 | `ProtectedAccountStorage`、`MinecraftOwnershipGuard`、`AuthenticationCheckpoint`、`IWebUI`、`HttpClient` |
 | `MuaAccountService` | MUA 登录、角色、元数据 | `ProtectedAccountStorage`、`HttpClient` |
 
-### 8.3 A 类（15 个）
+### 8.3 A 类
 
 | 组件 | 位置 | 说明 |
 | --- | --- | --- |
-| `ProtocolValues` | `UseCases/ProtocolValues.cs` | 协议字段类型、实例路径、离线 UUID 校验；只依赖 BCL |
 | `AccountSessionCache` | `Services/AccountSessionCache.cs` | 进程内已验证会话缓存；依赖 CmlLib 会话类型与可注入时钟 |
 | `CommunityService` | `Services/CommunityService.cs` | 社区 URL 读取、GitHub 公告目录和单篇 Markdown 解析；依赖 `HttpClient` 及 `Contracts.AnnouncementInfo` 的构造函数、`Markdown`、`PublishedAt` |
 | `InstallationProgress` | `Services/InstallationProgress.cs` | 安装阶段的进度计算；只依赖 Core `OperationContext` |
@@ -492,7 +494,7 @@ docs/**（仅后端/架构文档）
 
 ### A 类（合格）
 
-`ProtocolValues` 只使用 BCL 与 Core 无关的 JSON/密码学类型，直接可测，无依赖声明负担。
+`PreviewCache<T>` 的过期与令牌逻辑只依赖 BCL，可独立测试。`ProtocolValues` 新增返回 Contracts.InstanceTarget 的解析方法后已归入 B 类，并声明该构造函数依赖。
 
 ### B 类（合格）
 

@@ -11,6 +11,7 @@ public sealed record InstanceInfo(
     string Minecraft,
     bool IsPlaceholder = false)
 {
+    public string Root { get; init; } = "";
 }
 
 public sealed record ModInfo(
@@ -69,7 +70,7 @@ public sealed record TaskInfo(
         JsonRead.Bool(element, "committing"));
 }
 
-public sealed record SavedServerInfo(string Name, string Address, string Instance = "")
+public sealed record SavedServerInfo(string Name, string Address, string Instance = "", string GameRoot = "")
 {
 }
 
@@ -117,4 +118,6 @@ public sealed record LauncherState(
     string DataSourceMode,
     bool AutoChinese = true)
 {
+    /// <summary>所有已保存目录的扫描结果；Instances 保留当前目录的兼容语义。</summary>
+    public IReadOnlyList<GameDirectoryInfo> GameDirectories { get; init; } = [];
 }

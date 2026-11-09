@@ -4,8 +4,21 @@ using System.Text;
 
 namespace MCUGLauncher.UseCases;
 
+/// <summary>校验协议字段、实例定位和离线身份值。</summary>
+/// <remarks>B 类。ReadInstanceTarget(JsonElement) 依赖 Contracts.InstanceTarget(string,string)；
+/// 其余字段和身份校验仅依赖 BCL。不读配置或访问 UI。见 docs/components/GameDirectories.md。</remarks>
 internal static class ProtocolValues
 {
+    public static MCUGLauncher.Contracts.InstanceTarget ReadInstanceTarget(JsonElement arguments)
+    {
+        var target = arguments.GetProperty("target");
+        var root = ReadString(target, "root");
+        var name = ReadString(target, "name");
+        if (string.IsNullOrWhiteSpace(root) || string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("必须明确指定游戏根目录和实例名称。");
+        return new(root, name);
+    }
+
     // Validate field kinds before handlers mutate configuration or touch files.
     public static void ValidateMessage(JsonElement root)
     {

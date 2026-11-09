@@ -129,6 +129,8 @@ public sealed class DataSourceConfig
 /// </summary>
 public sealed class SavedServer
 {
+    /// <summary>绑定实例所属根目录；旧数据按原 Root 迁移。</summary>
+    public string GameRoot { get; set; } = "";
     /// <summary>启动此服务器的实例标识；空字符串表示未绑定。</summary>
     public string Instance { get; set; } = "";
     /// <summary>

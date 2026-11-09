@@ -13,15 +13,13 @@ internal sealed class SettingsPage(ILauncherService service, Terminal terminal) 
         IO.Write($"游戏目录：{State.Root}");
         IO.Write($"Java：{State.Java} | 内存：{State.Ram} MB | 自动内存：{State.AutoMemory}");
         IO.Write($"窗口：{State.Width} × {State.Height} | 自动中文：{State.AutoChinese}");
-        var action = IO.Select(Title, ["切换游戏目录", "扫描并选择 Java", "设置内存", "设置窗口尺寸", "设置自动中文"]);
+        var action = IO.Select(Title, ["管理多个游戏目录", "扫描并选择 Java", "设置内存", "设置窗口尺寸", "设置自动中文"]);
         AppSettingsPatch? patch = null;
         switch (action)
         {
             case 0:
-                var directory = IO.Required("已有游戏目录完整路径：");
-                if (IO.Confirm("切换游戏目录？"))
-                    patch = new(Root: directory);
-                break;
+                await new GameDirectoriesPage(Service, IO).ShowAsync();
+                return;
             case 1:
                 var java = await Service.ScanJavaAsync();
                 var selected = IO.Select("选择 Java", new[] { "自动管理" }.Concat(java.Select(item =>

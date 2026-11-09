@@ -19,7 +19,30 @@ internal sealed class GameCommands(LauncherContext context,
 
     public Task<LaunchResultInfo> LaunchAsync(string version) => LaunchCoreAsync(version, null);
 
-    public async Task<LaunchResultInfo> LaunchToServerAsync(string instance, string serverAddress)
+    public Task<LaunchResultInfo> LaunchManagedAsync(InstanceTarget target, string? serverAddress)
+    {
+        if (string.IsNullOrWhiteSpace(target.Root) || string.IsNullOrWhiteSpace(target.Name))
+            return Task.FromResult(new LaunchResultInfo(false, "必须明确指定游戏根目录和实例名称。"));
+        return serverAddress is null ? LaunchCoreAsync(target.Name, null, target.Root)
+            : LaunchToServerAsync(target.Name, serverAddress, target.Root);
+    }
+
+    string? FavoriteRoot(string instance, string address)
+    {
+        foreach (var server in context.Config.Servers.Where(server =>
+            string.Equals(server.Instance, instance, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(server.GameRoot)))
+        {
+            try
+            {
+                if (ServerEndpoint.Parse(server.Address).ToString().Equals(address, StringComparison.OrdinalIgnoreCase))
+                    return server.GameRoot;
+            }
+            catch (Exception error) when (error is IOException or ArgumentException) { }
+        }
+        return null;
+    }
+
+    public async Task<LaunchResultInfo> LaunchToServerAsync(string instance, string serverAddress, string? gameRoot = null)
     {
         if (string.IsNullOrWhiteSpace(instance))
             return new(false, "请先为服务器收藏绑定启动实例。");
@@ -34,10 +57,11 @@ internal sealed class GameCommands(LauncherContext context,
         {
             return new(false, error.Message);
         }
-        return await LaunchCoreAsync(instance.Trim(), address);
+        gameRoot ??= FavoriteRoot(instance.Trim(), address);
+        return await LaunchCoreAsync(instance.Trim(), address, gameRoot);
     }
 
-    async Task<LaunchResultInfo> LaunchCoreAsync(string version, string? serverOverride)
+    async Task<LaunchResultInfo> LaunchCoreAsync(string version, string? serverOverride, string? gameRoot = null)
     {
         if (preparing)
             return new(false, "游戏正在准备启动，请稍候。");
@@ -50,7 +74,7 @@ internal sealed class GameCommands(LauncherContext context,
                 throw new IOException("还没有可启动的版本。");
             var player = context.Config.Player;
             var mode = context.Config.AccountType;
-            var instance = InstanceSnapshot.Capture(context.Config, key);
+            var instance = InstanceSnapshot.Capture(context.Config, key, gameRoot);
             context.Tasks.RequireLaunchAvailable(instance.Root, key, instance.Directory);
             context.Games.RequireAvailable(instance.Directory, player, mode == "offline");
             context.MarkPreparing(instance.Root, instance.Directory);
@@ -101,7 +125,7 @@ internal sealed class GameCommands(LauncherContext context,
                 new[] { session.AccessToken ?? "" }, player, mode == "offline");
             context.SendGames();
             _ = ObserveAsync(game);
-            if (Path.GetFullPath(context.Config.Root).Equals(instance.Root, StringComparison.OrdinalIgnoreCase))
+            if (GameDirectoryPath.Comparer.Equals(GameDirectoryPath.Normalize(context.Config.Root), instance.Root))
             {
                 context.Config.LastVersion = key;
                 context.Config.LastInstance = key;

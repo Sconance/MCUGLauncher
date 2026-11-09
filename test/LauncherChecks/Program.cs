@@ -11,6 +11,11 @@ using MCUGLauncher;
 
 var fixture = Path.Combine(Path.GetTempPath(), "mcug-launcher-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(fixture);
+if (args.Contains("--game-directories-only"))
+{
+    await GameDirectoryScenarios.Run(fixture);
+    return;
+}
 if (args.Contains("--server-favorites-only"))
 {
     await ServerFavoriteScenarios.Run(fixture);
@@ -301,6 +306,7 @@ await MaintenanceScenarios.Run(fixture);
 await ServerPingScenarios.Run();
 await ServerFavoriteScenarios.Run(fixture);
 await ServerLaunchScenarios.Run(fixture);
+await GameDirectoryScenarios.Run(fixture);
 using (var service = new LauncherService(
            desktop,
            action => action(),

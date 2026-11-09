@@ -19,7 +19,7 @@ internal sealed class TerminalUi : IDisposable
         pages = [new InstancesPage(service, terminal), new AccountsPage(service, terminal),
             new ServersPage(service, terminal), new DownloadsPage(service, terminal),
             new TasksPage(service, terminal), new SettingsPage(service, terminal),
-            new DiagnosticsPage(service, terminal)];
+            new DiagnosticsPage(service, terminal), new GameDirectoriesPage(service, terminal)];
         service.ErrorReceived += OnError;
         service.ToastReceived += OnToast;
     }
@@ -34,7 +34,7 @@ internal sealed class TerminalUi : IDisposable
             while (notices.TryDequeue(out var notice))
                 terminal.Write(notice);
             if (service.State is { } state)
-                terminal.Write($"MCUG Launcher {state.AppVersion} | {state.Player} ({state.AccountType}) | 实例：{state.SelectedInstance}");
+                terminal.Write($"MCUG Launcher {state.AppVersion} | {state.Player} ({state.AccountType}) | 实例：{state.SelectedInstance}\n目录：{state.Root}");
             var selected = terminal.Select("主菜单", pages.Select(page => page.Title).ToArray());
             if (selected < 0)
                 return;

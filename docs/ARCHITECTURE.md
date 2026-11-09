@@ -1,5 +1,14 @@
 # 当前架构
 
+## 多游戏目录
+
+`AppConfig.GameRoots` 保存全部目录，`Root` 为当前目录；`InstanceTarget(Root,Name)` 唯一定位受管理实例。
+`GameDirectoryCatalog` 复用 VersionCatalog 扫描所有目录并单独报告离线、权限或元数据错误。
+状态的 `GameDirectories` 返回全部结果，旧 `Instances/VersionGroups/Mods` 保留当前目录语义。
+新的强类型目录管理、启动、克隆、导出、模组和卸载预览接口直接复用现有用例与 Core；后台任务在入队时冻结目录，不跟随当前选择。
+收藏增加 GameRoot，旧数据加载时固定当时的根目录；配置重载保留离线磁盘路径。
+TUI 已按目录分组接入上述功能，Avalonia 仍保留当前目录展示；后续 Avalonia 页面需传递完整 InstanceTarget。详见 [多目录组件与接口](components/GameDirectories.md)。
+
 界面使用 Avalonia 原生控件。`ShellWindow` 只负责导航、窗口生命周期和页面宿主；页面只依赖
 `Contracts.ILauncherService`，由 `UseCases.LauncherService` 统一实现业务入口。WebView2 仅保留给微软 OAuth 登录窗口。
 

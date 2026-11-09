@@ -12,7 +12,8 @@ namespace MCUGLauncher.UseCases;
 /// 组件级别：B。依赖 LauncherContext 的 Community、Config、Http、Store、Token、
 /// Send 和 RefreshState。使用 CommunityService.ReadAnnouncementsAsync 与 ReadAsync 读取数据，
 /// ConfigStore.DataDirectory 与 Save(AppConfig) 管理本地数据；Config.Servers 中的
-/// SavedServer.Name/Address/Instance 用于保存收藏及可选实例绑定。与界面无直接依赖。
+/// SavedServer.Name/Address/Instance/GameRoot 用于保存收藏和目录绑定；
+/// GameDirectoryCatalog.RequireRoot(AppConfig,string) 校验显式目录。与界面无直接依赖。
 /// </remarks>
 internal sealed class CommunityCommands(LauncherContext context)
 {
@@ -110,7 +111,7 @@ internal sealed class CommunityCommands(LauncherContext context)
             result.Ping, result.Motd, result.Version, result.Error);
     }
 
-    public ServerResultInfo SaveServer(string name, string address, string oldAddress, string? instance = null)
+    public ServerResultInfo SaveServer(string name, string address, string oldAddress, string? instance = null, string? gameRoot = null)
     {
         address = address.Trim();
         oldAddress = oldAddress.Trim();
@@ -120,13 +121,17 @@ internal sealed class CommunityCommands(LauncherContext context)
         var previous = context.Config.Servers.FirstOrDefault(server =>
             server.Address.Equals(previousAddress, StringComparison.OrdinalIgnoreCase));
         var binding = instance?.Trim() ?? previous?.Instance ?? "";
+        var boundRoot = binding.Length == 0 ? "" : gameRoot != null
+            ? GameDirectoryCatalog.RequireRoot(context.Config, gameRoot)
+            : previous?.Instance == binding && !string.IsNullOrWhiteSpace(previous.GameRoot)
+                ? previous.GameRoot : GameDirectoryPath.Normalize(context.Config.Root);
         if (name.Length == 0)
             name = address.Split(':')[0];
         if (!string.IsNullOrWhiteSpace(oldAddress) &&
             !oldAddress.Equals(address, StringComparison.OrdinalIgnoreCase))
             context.Config.Servers.RemoveAll(s => s.Address.Equals(oldAddress, StringComparison.OrdinalIgnoreCase));
         context.Config.Servers.RemoveAll(s => s.Address.Equals(address, StringComparison.OrdinalIgnoreCase));
-        context.Config.Servers.Add(new SavedServer { Name = name, Address = address, Instance = binding });
+        context.Config.Servers.Add(new SavedServer { Name = name, Address = address, Instance = binding, GameRoot = boundRoot });
         context.Store.Save(context.Config);
         context.RefreshState();
         return new(true, (oldAddress.Length > 0 ? "已更新 " : "已添加 ") + name);

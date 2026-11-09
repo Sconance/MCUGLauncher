@@ -8,7 +8,8 @@ namespace MCUGLauncher.Services;
 /// 启动器配置存储。
 /// </summary>
 /// <remarks>
-/// 依赖 %LOCALAPPDATA%/MCUGLauncher/config.json；Load 会导入旧 BlockLaunch 配置并修正无效路径，Save 直接覆盖写入。
+/// B 类。依赖 Models.AppConfig 的配置字段及 SavedServer.Instance/GameRoot；Load 导入旧配置，
+/// 为旧收藏固定所属目录并保留离线磁盘路径，Save 使用现有原子提交机制写入。无 UI 依赖。
 /// </remarks>
 public sealed class ConfigStore
 {
@@ -85,9 +86,13 @@ public sealed class ConfigStore
             config.DataSources.Announcements = new DataSourceConfig().Announcements;
         }
 
-        if (string.IsNullOrWhiteSpace(config.Root) || !Directory.Exists(config.Root))
+        // Disconnected disks must retain their saved library and selection.
+        if (string.IsNullOrWhiteSpace(config.Root))
             config.Root = FindDefaultRoot();
         config.GameRoots ??= [];
+        config.Servers ??= [];
+        foreach (var server in config.Servers.Where(server => !string.IsNullOrWhiteSpace(server.Instance) && string.IsNullOrWhiteSpace(server.GameRoot)))
+            server.GameRoot = config.Root;
         if (string.IsNullOrWhiteSpace(config.Player))
             config.Player = "Steve";
         if (string.IsNullOrWhiteSpace(config.OfflinePlayer))

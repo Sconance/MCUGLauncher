@@ -6,7 +6,7 @@ namespace MCUGLauncher.UseCases;
 
 /// <summary>将类型化收藏请求交给既有社区用例，保留可选实例的空值语义。</summary>
 /// <remarks>B 类：依赖 ProtocolValues.ReadString(JsonElement, string)、LauncherContext，
-/// 以及 CommunityCommands.SaveServer(string, string, string, string?)；不访问 UI 或 Core 启动实现。</remarks>
+/// 以及 CommunityCommands.SaveServer(string, string, string, string?, string?)；不访问 UI 或 Core 启动实现。</remarks>
 [FeatureHandler(nameof(ILauncherService.SaveServerAsync))]
 internal sealed class SaveServerFeatureHandler(LauncherContext context)
     : IFeatureHandler<ServerResultInfo>
@@ -18,7 +18,9 @@ internal sealed class SaveServerFeatureHandler(LauncherContext context)
             ReadString(arguments, "oldAddress"),
             arguments.TryGetProperty("instance", out var instance) && instance.ValueKind != JsonValueKind.Null
                 ? instance.GetString()
-                : null));
+                : null,
+            arguments.TryGetProperty("gameRoot", out var gameRoot) && gameRoot.ValueKind != JsonValueKind.Null
+                ? gameRoot.GetString() : null));
 }
 
 [FeatureHandler(nameof(ILauncherService.PingServerAsync))]

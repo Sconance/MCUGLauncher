@@ -1,5 +1,14 @@
 # 回归检查
 
+## 多游戏目录
+
+```sh
+dotnet run --project test/LauncherChecks -c Release -- --game-directories-only
+```
+
+检查路径规范化、重复添加、目录持久化、离线/损坏目录错误隔离、同名实例定位、收藏目录迁移、定向模组操作、原生卸载确认、启动等待后保持目标，以及真实队列的导出和克隆。
+完整 LauncherChecks 同时包含这些场景。Linux 可构建后用只包含 Microsoft.NETCore.App 的临时 runtimeconfig 执行该定向场景；不能据此认定 Windows UI、真实游戏或登录已验收。
+
 ## 版本检查脚本
 
 ```sh
