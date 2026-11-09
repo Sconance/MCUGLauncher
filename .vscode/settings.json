@@ -4,6 +4,7 @@
   "dotnet.backgroundAnalysis.compilerDiagnosticsScope": "openFiles",
   "dotnet.diagnostics.reportInformationAsHint": true,
   "dotnet.server.useOmnisharp": false,
+  "avalonia.preview.useLegacyPreviewer": true,
   "csharp.format.enable": false,
   "[csharp]": {
     "editor.formatOnSave": false,
@@ -23,5 +24,7 @@
     "**/__pycache__/**": true,
     "artifacts/**": true,
     "work/**": true
-  }
+  },
+
 }
+
