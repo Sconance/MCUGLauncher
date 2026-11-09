@@ -20,7 +20,6 @@ internal partial class HomeView : UserControl
     int imageVersion;
     string serverSignature = "";
     string editingServer = "";
-    bool updatingInstances;
     int quoteIndex;
     string avatarAccount = "";
 
@@ -36,6 +35,12 @@ internal partial class HomeView : UserControl
     }
 
     public event Action? AccountRequested;
+
+    /// <summary>二级页面里点「⚙」时请求外壳切到实例管理页。</summary>
+    public event Action? InstancesRequested;
+
+    /// <summary>启动按钮右侧「▣」：请求外壳切到运行中的游戏页。</summary>
+    public event Action? RunningGamesRequested;
 
     public void Attach(ILauncherService value)
     {
@@ -68,17 +73,27 @@ internal partial class HomeView : UserControl
             Status("正在准备启动…");
             Status((await service!.LaunchAsync(target)).Message);
         };
-        RefreshButton.Click += async (_, _) => await service!.RequestStateAsync();
-        InstanceSelector.SelectionChanged += async (_, _) =>
+        InstanceButton.Click += (_, _) => ToggleInstances(!InstancePicker.IsVisible);
+        VersionSettingsButton.Click += (_, _) => InstancesRequested?.Invoke();
+        RunningGameButton.Click += (_, _) => RunningGamesRequested?.Invoke();
+        InstancePicker.CloseRequested += () => ToggleInstances(false);
+        InstancePicker.RefreshRequested += async () => await service!.RequestStateAsync();
+        InstancePicker.InstancePicked += async name =>
         {
-            if (updatingInstances || state is null)
-                return;
-            var instances = Instances();
-            if (InstanceSelector.SelectedIndex < 0 || InstanceSelector.SelectedIndex >= instances.Count)
-                return;
-            var name = instances[InstanceSelector.SelectedIndex].Name;
-            if (name != state.SelectedInstance)
-                await service!.SelectInstanceAsync(name);
+            await service!.SelectVersionAsync(name);
+            await service!.SelectInstanceAsync(name);
+            // 留在二级页面：选中项会高亮，方便连续比较几个实例
+        };
+        InstancePicker.LaunchRequested += async name =>
+        {
+            InstancePicker.SetStatus("正在用 " + name + " 准备启动…");
+            InstancePicker.SetStatus((await service!.LaunchAsync(name)).Message);
+        };
+        InstancePicker.SettingsRequested += async name =>
+        {
+            await service!.SelectInstanceAsync(name);
+            ToggleInstances(false);
+            InstancesRequested?.Invoke();
         };
         AddServerButton.Click += (_, _) => ShowServerDialog(null);
         DialogCancelButton.Click += (_, _) => HideServerDialog();
@@ -123,17 +138,9 @@ internal partial class HomeView : UserControl
 
         var current = snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)
                       ?? snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedVersion);
-        var currentRow = current is null ? null : InstanceListItem.From(current);
-        LaunchTarget.Text = currentRow is null
-            ? "请选择实例"
-            : currentRow.Subtitle.Length > 0
-                ? currentRow.Title + " · " + currentRow.Subtitle
-                : currentRow.Title;
-        LaunchSubtitle.Text = current is null
-            ? "未选择实例"
-            : $"{current.Name} · " + (snapshot.AutoMemory ? "自动内存" : snapshot.Ram + " MB");
         LaunchButton.IsEnabled = current is not null;
-        RenderInstances();
+        ShowInstanceButton(current);
+        InstancePicker.SetState(snapshot, current?.Name ?? snapshot.SelectedInstance);
         var signature = string.Join("|", snapshot.Servers.Select(item => item.Address));
         if (signature != serverSignature)
         {
@@ -147,16 +154,33 @@ internal partial class HomeView : UserControl
         RenderServers();
     }
 
-    void RenderInstances()
+    /// <summary>左侧「当前实例」按钮：图标、名称与「版本类型 版本号，加载器」一行说明。</summary>
+    void ShowInstanceButton(InstanceInfo? current)
     {
-        if (state is null)
+        if (current is null)
+        {
+            InstanceButtonIcon.Background = new SolidColorBrush(Color.Parse("#C9D2DA"));
+            InstanceButtonGlyph.Text = "·";
+            InstanceButtonTitle.Text = "未选择实例";
+            InstanceButtonDetail.Text = "点这里选择要启动的实例";
             return;
-        var instances = Instances();
-        updatingInstances = true;
-        InstanceSelector.ItemsSource = instances.Select(InstanceListItem.From).ToArray();
-        var index = Array.FindIndex(instances.ToArray(), item => item.Name == state.SelectedInstance);
-        InstanceSelector.SelectedIndex = instances.Count == 0 ? -1 : Math.Max(0, index);
-        updatingInstances = false;
+        }
+
+        var row = InstanceListItem.From(current);
+        InstanceButtonIcon.Background = row.Accent;
+        InstanceButtonGlyph.Text = row.Glyph;
+        InstanceButtonTitle.Text = row.Title;
+        InstanceButtonDetail.Text = row.Subtitle;
+    }
+
+    /// <summary>切换右侧信息流与实例选择二级页面；按钮右箭头随之翻转。</summary>
+    void ToggleInstances(bool open)
+    {
+        InstancePicker.IsVisible = open;
+        FeedScroll.IsVisible = !open;
+        InstanceButtonChevron.Text = open ? "‹" : "›";
+        if (!open)
+            InstancePicker.SetStatus("");
     }
 
     IReadOnlyList<InstanceInfo> Instances() => state is null
