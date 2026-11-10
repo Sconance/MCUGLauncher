@@ -7,26 +7,50 @@
         <Grid x:Name="PageRoot" ColumnDefinitions="320,*" ColumnSpacing="18" Margin="20,20,3,20">
             <Border Classes="card">
                 <Grid RowDefinitions="*,Auto">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="账号" Classes="h2" />
-                        <Grid Width="100" Height="100">
-                            <Border Width="82" Height="82" Background="Transparent" IsHitTestVisible="False"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                    BoxShadow="0 3 10 0 #220E2B3F" />
-                            <Button x:Name="AvatarButton" Classes="avatar" Width="94" Height="94" Padding="0"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                    ToolTip.Tip="查看或更换头像" AutomationProperties.Name="查看或更换头像">
-                                <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AvatarImage"
-                                       Stretch="Uniform" />
+                    <!-- Row0：默认是账号栏；打开实例选择二级页时换成实例目录栏 -->
+                    <Panel>
+                        <StackPanel x:Name="AccountPanel" Spacing="8">
+                            <TextBlock Text="账号" Classes="h2" />
+                            <Grid Width="100" Height="100">
+                                <Border Width="82" Height="82" Background="Transparent" IsHitTestVisible="False"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        BoxShadow="0 3 10 0 #220E2B3F" />
+                                <Button x:Name="AvatarButton" Classes="avatar" Width="94" Height="94" Padding="0"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        ToolTip.Tip="查看或更换头像" AutomationProperties.Name="查看或更换头像">
+                                    <Image RenderOptions.BitmapInterpolationMode="None" x:Name="AvatarImage"
+                                           Stretch="Uniform" />
+                                </Button>
+                            </Grid>
+                            <TextBlock x:Name="PlayerName" FontSize="18" FontWeight="Bold"
+                                       HorizontalAlignment="Center" TextWrapping="Wrap" />
+                            <TextBlock x:Name="AccountMeta" Classes="muted" HorizontalAlignment="Center"
+                                       TextAlignment="Center" />
+                            <Button x:Name="AccountButton" Content="账号与皮肤" Classes="soft"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                        </StackPanel>
+
+                        <Grid x:Name="RootPanel" RowDefinitions="Auto,*,Auto" IsVisible="False">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="实例目录" Classes="h2" />
+                                <TextBlock x:Name="RootSummary" Classes="muted" FontSize="10.5"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <ScrollViewer Grid.Row="1" Margin="0,8,0,8" VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled" AllowAutoHide="False">
+                                <StackPanel x:Name="RootList" Spacing="2" />
+                            </ScrollViewer>
+                            <Button x:Name="AddRootButton" Grid.Row="2" Classes="ghost"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                    ToolTip.Tip="选择一个 Minecraft 游戏目录并加进列表">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Text="添加实例目录" VerticalAlignment="Center" />
+                                </StackPanel>
                             </Button>
                         </Grid>
-                        <TextBlock x:Name="PlayerName" FontSize="18" FontWeight="Bold"
-                                   HorizontalAlignment="Center" TextWrapping="Wrap" />
-                        <TextBlock x:Name="AccountMeta" Classes="muted" HorizontalAlignment="Center"
-                                   TextAlignment="Center" />
-                        <Button x:Name="AccountButton" Content="账号与皮肤" Classes="soft"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-                    </StackPanel>
+                    </Panel>
                     <StackPanel Grid.Row="1" VerticalAlignment="Bottom">
                         <Button x:Name="InstanceButton" Classes="instanceField"
                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,8">
@@ -185,12 +209,56 @@
 
                     <StackPanel Spacing="6">
                         <TextBlock Text="打开所用的实例" FontSize="11.5" FontWeight="SemiBold" Foreground="#3A444E" />
-                        <ComboBox x:Name="DialogServerInstanceBox" HorizontalAlignment="Stretch"
-                                  ItemTemplate="{StaticResource InstanceRow}"
-                                  SelectionBoxItemTemplate="{StaticResource InstanceRowCompact}"
-                                  MaxDropDownHeight="260" />
+                        <!-- 两级选择：左边实例目录（滚动），右边该目录下的实例（滚动）；默认停在当前实例所在目录 -->
+                        <Button x:Name="DialogInstanceButton" Classes="instanceField"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
+                                <Border x:Name="DialogInstanceIcon" Width="26" Height="26" CornerRadius="7"
+                                        VerticalAlignment="Center">
+                                    <Panel>
+                                        <TextBlock x:Name="DialogInstanceGlyph" Foreground="White" FontSize="13"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <Image x:Name="DialogInstanceImage" Stretch="Uniform" IsVisible="False" />
+                                    </Panel>
+                                </Border>
+                                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                                    <TextBlock x:Name="DialogInstanceTitle" FontSize="12.5" FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="DialogInstanceDetail" FontSize="10.5" Classes="muted"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="▾" FontSize="12" VerticalAlignment="Center"
+                                           Foreground="{StaticResource AppInk3}" />
+                            </Grid>
+                            <Button.Flyout>
+                                <Flyout Placement="TopEdgeAlignedLeft">
+                                    <Grid ColumnDefinitions="156,Auto,300" Height="236">
+                                        <Grid RowDefinitions="Auto,*">
+                                            <TextBlock Text="实例目录" FontSize="11" FontWeight="SemiBold"
+                                                       Margin="2,0,0,6" />
+                                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                                          HorizontalScrollBarVisibility="Disabled"
+                                                          AllowAutoHide="True">
+                                                <StackPanel x:Name="DialogRootList" Spacing="2" />
+                                            </ScrollViewer>
+                                        </Grid>
+                                        <Border Grid.Column="1" Width="1" Background="{StaticResource AppLine2}"
+                                                Margin="8,0" />
+                                        <Grid Grid.Column="2" RowDefinitions="Auto,*">
+                                            <TextBlock Text="该目录下的实例" FontSize="11" FontWeight="SemiBold"
+                                                       Margin="2,0,0,6" />
+                                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                                          HorizontalScrollBarVisibility="Disabled"
+                                                          AllowAutoHide="True">
+                                                <StackPanel x:Name="DialogInstanceList" Spacing="2" />
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </Grid>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
                         <TextBlock Classes="muted"
-                                   Text="绑定后用卡片上的「打开」直连服务器；不绑定只能手动进入。" />
+                                   Text="绑定后用卡片上的「打开」直连服务器。切换目录会把该目录设为当前游戏目录，首页的实例列表也会跟着变。" />
                     </StackPanel>
 
                     <TextBlock x:Name="ServerDialogStatus" Classes="status" IsVisible="False" />

@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using MCUGLauncher.Contracts;
+using SSvg = Avalonia.Svg.Skia.Svg;
 
 namespace MCUGLauncher.Avalonia.Views;
 
@@ -20,6 +21,7 @@ internal partial class HomeView : UserControl
     int imageVersion;
     string serverSignature = "";
     string editingServer = "";
+    string dialogInstance = "";
     int quoteIndex;
     string avatarAccount = "";
 
@@ -49,6 +51,7 @@ internal partial class HomeView : UserControl
         service.CommunityChanged += OnCommunity;
         service.ToastReceived += info => Status(info.Message);
         service.ErrorReceived += message => Status("操作失败：" + message);
+        service.PathPicked += OnPathPicked;
         community = service.Community;
         ApplyState(service.State);
         RenderCommunity();
@@ -96,6 +99,8 @@ internal partial class HomeView : UserControl
             InstancesRequested?.Invoke();
         };
         AddServerButton.Click += (_, _) => ShowServerDialog(null);
+        AddRootButton.Click += async (_, _) => await service!.PickFolderAsync("root");
+        DialogInstanceButton.Click += (_, _) => RenderDialogPickers();
         DialogCancelButton.Click += (_, _) => HideServerDialog();
         DialogSaveButton.Click += async (_, _) => await SaveServerFromDialog();
         DialogServerNameBox.KeyDown += OnDialogTextBoxKeyDown;
@@ -152,6 +157,11 @@ internal partial class HomeView : UserControl
         }
 
         RenderServers();
+        // 目录切换、实例增删都会重新推状态，两个列表跟着重建
+        if (RootPanel.IsVisible)
+            RenderRoots();
+        if (ServerDialogLayer.IsVisible)
+            RenderDialogPickers();
     }
 
     /// <summary>左侧「当前实例」按钮：图标、名称与「版本类型 版本号，加载器」一行说明。</summary>
@@ -183,14 +193,115 @@ internal partial class HomeView : UserControl
         InstanceButtonDetail.Text = row.Subtitle;
     }
 
-    /// <summary>切换右侧信息流与实例选择二级页面；按钮右箭头随之翻转。</summary>
+    /// <summary>切换右侧信息流与实例选择二级页面；左侧账号栏同时换成实例目录栏，按钮右箭头翻转。</summary>
     void ToggleInstances(bool open)
     {
         InstancePicker.IsVisible = open;
         FeedScroll.IsVisible = !open;
+        AccountPanel.IsVisible = !open;
+        RootPanel.IsVisible = open;
         InstanceButtonChevron.Text = open ? "‹" : "›";
-        if (!open)
+        if (open)
+            RenderRoots();
+        else
             InstancePicker.SetStatus("");
+    }
+
+    /// <summary>左侧目录栏：列出所有游戏目录，当前目录高亮，点另一个即切换。</summary>
+    void RenderRoots()
+    {
+        RootList.Children.Clear();
+        if (state is null)
+        {
+            RootSummary.Text = "";
+            return;
+        }
+
+        var roots = state.GameRoots;
+        RootSummary.Text = roots.Count == 0
+            ? "还没有添加目录"
+            : "共 " + roots.Count + " 个目录 · 点选切换";
+        foreach (var root in roots)
+            RootList.Children.Add(RootRow(root, root.Equals(state.Root, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    Control RootRow(string path, bool active)
+    {
+        var icon = new Border
+        {
+            Width = 26,
+            Height = 26,
+            CornerRadius = new CornerRadius(7),
+            VerticalAlignment = VerticalAlignment.Center,
+            Background = new SolidColorBrush(Color.Parse(active ? "#3370AA" : "#C9D2DA"))
+        };
+        icon.Child = new TextBlock
+        {
+            Text = "\uE8B7",
+            FontFamily = new FontFamily("Segoe MDL2 Assets"),
+            FontSize = 13,
+            Foreground = Brushes.White,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var name = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        if (name.Length == 0)
+            name = path;
+        var lines = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
+        lines.Children.Add(new TextBlock
+        {
+            Text = name,
+            FontSize = 12.5,
+            FontWeight = FontWeight.SemiBold,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        lines.Children.Add(new TextBlock
+        {
+            Text = path,
+            FontSize = 10.5,
+            Classes = { "muted" },
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), ColumnSpacing = 9 };
+        grid.Children.Add(icon);
+        Grid.SetColumn(lines, 1);
+        grid.Children.Add(lines);
+
+        var row = new Button
+        {
+            Content = grid,
+            Classes = { "instanceRow" },
+            Padding = new Thickness(6, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
+        if (active)
+            row.Classes.Set("selected", true);
+        row.Click += async (_, _) =>
+        {
+            if (active)
+                return;
+            Status("正在切换到 " + name + "…");
+            var result = await service!.SaveSettingsAsync(new AppSettingsPatch(Root: path));
+            Status(result.Message);
+        };
+        return row;
+    }
+
+    void OnPathPicked(PickedPathInfo info)
+    {
+        if (info.Target != "root" || info.Path.Length == 0)
+            return;
+        _ = AddRootAsync(info.Path);
+    }
+
+    async Task AddRootAsync(string path)
+    {
+        Status("正在添加实例目录…");
+        var result = await service!.SaveSettingsAsync(new AppSettingsPatch(Root: path));
+        Status(result.Message);
     }
 
     IReadOnlyList<InstanceInfo> Instances() => state is null
@@ -223,7 +334,7 @@ internal partial class HomeView : UserControl
                 Height = 34,
                 CornerRadius = new CornerRadius(8),
                 Background = new SolidColorBrush(Color.Parse(ping?.Online == true ? "#3370AA" : "#8A96A0")),
-                Child = new global::Avalonia.Svg.Skia.Svg(new Uri("avares://MCUGLauncher/"))
+                Child = new SSvg(new Uri("avares://MCUGLauncher/"))
                 {
                     Path = "/Assets/ServerIcon.svg",
                     Height = 16, Width = 16,
@@ -456,7 +567,7 @@ internal partial class HomeView : UserControl
                     "shader" => "#7B5AC8",
                     _ => "#3370AA"
                 })),
-                Child = new global::Avalonia.Svg.Skia.Svg(new Uri("avares://MCUGLauncher/"))
+                Child = new SSvg(new Uri("avares://MCUGLauncher/"))
                 {
                     Path = "/Assets/" + iconFile + ".svg",
                     Height = 16, Width = 16,
@@ -622,33 +733,207 @@ internal partial class HomeView : UserControl
         PageRoot.Effect = null;
         DialogServerNameBox.Text = "";
         DialogServerAddressBox.Text = "";
-        DialogServerInstanceBox.SelectedIndex = -1;
-        DialogServerInstanceBox.ItemsSource = null;
+        dialogInstance = "";
+        DialogRootList.Children.Clear();
+        DialogInstanceList.Children.Clear();
+        DialogInstanceButton.Flyout?.Hide();
         SetDialogStatus("");
     }
 
-    /// <summary>第一项是「不绑定」，其余按当前可用实例顺序排列。</summary>
+    /// <summary>打开弹窗时按当前绑定重建下拉按钮与两级列表。</summary>
     void FillDialogInstances(string selected)
     {
-        var binding = selected.Trim();
-        var instances = Instances();
-        var items = new List<InstanceListItem> { InstanceListItem.None };
-        items.AddRange(instances.Select(InstanceListItem.From));
-        var known = instances.Any(item => item.Name.Equals(binding, StringComparison.OrdinalIgnoreCase));
-        // 记着的实例已被删除时也留一个补位项，避免保存时把它悄悄清掉
-        if (binding.Length > 0 && !known)
-        {
-            items.Add(InstanceListItem.Missing(binding));
-        }
-
-        DialogServerInstanceBox.ItemsSource = items;
-        DialogServerInstanceBox.SelectedIndex = binding.Length > 0
-            ? Math.Max(0, items.FindIndex(item => item.Instance.Equals(binding, StringComparison.OrdinalIgnoreCase)))
-            : 0;
+        dialogInstance = selected.Trim();
+        RenderDialogPickers();
     }
 
-    string SelectedDialogInstance() =>
-        (DialogServerInstanceBox.SelectedItem as InstanceListItem)?.Instance ?? "";
+    void RenderDialogPickers()
+    {
+        UpdateDialogInstanceButton();
+        RenderDialogRoots();
+        RenderDialogInstances();
+    }
+
+    /// <summary>下拉按钮正面：当前绑定的图标、名称与「版本类型 版本号，加载器」。</summary>
+    void UpdateDialogInstanceButton()
+    {
+        if (dialogInstance.Length == 0)
+        {
+            SetDialogInstanceFace(null, "不绑定实例", "只能手动进入服务器", "#C9D2DA", "–");
+            return;
+        }
+
+        var info = Instances().FirstOrDefault(item =>
+            item.Name.Equals(dialogInstance, StringComparison.OrdinalIgnoreCase));
+        if (info is null)
+        {
+            SetDialogInstanceFace(null, dialogInstance, "当前目录下找不到这个实例", "#A5483F", "!");
+            return;
+        }
+
+        var row = InstanceListItem.From(info);
+        SetDialogInstanceFace(row.Icon, row.Title, row.Subtitle, "#C9D2DA", row.Glyph, row.Accent);
+    }
+
+    void SetDialogInstanceFace(Bitmap? icon, string title, string detail, string fallbackColor, string glyph,
+        IBrush? accent = null)
+    {
+        DialogInstanceIcon.Background = icon is not null
+            ? Brushes.Transparent
+            : accent ?? new SolidColorBrush(Color.Parse(fallbackColor));
+        DialogInstanceIcon.ClipToBounds = icon is not null;
+        DialogInstanceGlyph.IsVisible = icon is null;
+        DialogInstanceGlyph.Text = glyph;
+        DialogInstanceImage.Source = icon;
+        DialogInstanceImage.IsVisible = icon is not null;
+        DialogInstanceTitle.Text = title;
+        DialogInstanceDetail.Text = detail;
+    }
+
+    /// <summary>一级：实例目录。当前目录高亮，点别的目录会真的切换过去（首页实例随之变化）。</summary>
+    void RenderDialogRoots()
+    {
+        DialogRootList.Children.Clear();
+        if (state is null)
+            return;
+        foreach (var root in state.GameRoots)
+            DialogRootList.Children.Add(
+                DialogRootChoice(root, root.Equals(state.Root, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    Control DialogRootChoice(string path, bool active)
+    {
+        var name = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        if (name.Length == 0)
+            name = path;
+        // 两行：目录名 + 绝对路径。路径被列宽截断，完整值仍由 ToolTip 兜底。
+        var lines = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
+        lines.Children.Add(new TextBlock
+        {
+            Text = name,
+            FontSize = 11.5,
+            FontWeight = active ? FontWeight.SemiBold : FontWeight.Normal,
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        lines.Children.Add(new TextBlock
+        {
+            Text = path,
+            FontSize = 9.5,
+            Classes = { "muted" },
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        var row = new Button
+        {
+            Content = lines,
+            Classes = { "instanceRow" },
+            Padding = new Thickness(6, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
+        if (active)
+            row.Classes.Set("selected", true);
+        ToolTip.SetTip(row, path);
+        row.Click += async (_, _) =>
+        {
+            if (active)
+                return;
+            SetDialogStatus("正在切换到 " + name + "…");
+            var result = await service!.SaveSettingsAsync(new AppSettingsPatch(Root: path));
+            SetDialogStatus(result.Message);
+        };
+        return row;
+    }
+
+    /// <summary>二级：当前目录下的实例，首项是「不绑定实例」。</summary>
+    void RenderDialogInstances()
+    {
+        DialogInstanceList.Children.Clear();
+        DialogInstanceList.Children.Add(DialogInstanceChoice(InstanceListItem.None, dialogInstance.Length == 0));
+        var instances = Instances();
+        foreach (var info in instances)
+        {
+            var row = InstanceListItem.From(info);
+            DialogInstanceList.Children.Add(DialogInstanceChoice(
+                row, row.Instance.Equals(dialogInstance, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        // 记着的实例在当前目录里不存在时补一行，避免保存时被悄悄清空
+        if (dialogInstance.Length > 0 &&
+            !instances.Any(item => item.Name.Equals(dialogInstance, StringComparison.OrdinalIgnoreCase)))
+            DialogInstanceList.Children.Add(DialogInstanceChoice(InstanceListItem.Missing(dialogInstance), true));
+    }
+
+    Control DialogInstanceChoice(InstanceListItem row, bool active)
+    {
+        var icon = new Border
+        {
+            Width = 22,
+            Height = 22,
+            CornerRadius = new CornerRadius(6),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        if (row.Icon is { } bitmap)
+        {
+            icon.ClipToBounds = true;
+            icon.Child = new Image { Source = bitmap, Stretch = Stretch.Uniform };
+        }
+        else
+        {
+            icon.Background = row.Accent;
+            icon.Child = new TextBlock
+            {
+                Text = row.Glyph,
+                Foreground = Brushes.White,
+                FontSize = 11,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+        }
+
+        var lines = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
+        lines.Children.Add(new TextBlock
+        {
+            Text = row.Title,
+            FontSize = 11.5,
+            FontWeight = FontWeight.SemiBold,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        if (row.HasSubtitle)
+            lines.Children.Add(new TextBlock
+            {
+                Text = row.Subtitle,
+                FontSize = 10,
+                Classes = { "muted" },
+                TextTrimming = TextTrimming.CharacterEllipsis
+            });
+
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), ColumnSpacing = 8 };
+        grid.Children.Add(icon);
+        Grid.SetColumn(lines, 1);
+        grid.Children.Add(lines);
+
+        var button = new Button
+        {
+            Content = grid,
+            Classes = { "instanceRow" },
+            Padding = new Thickness(6, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
+        if (active)
+            button.Classes.Set("selected", true);
+        button.Click += (_, _) =>
+        {
+            dialogInstance = row.Instance;
+            UpdateDialogInstanceButton();
+            DialogInstanceButton.Flyout?.Hide();
+        };
+        return button;
+    }
+
+    string SelectedDialogInstance() => dialogInstance;
 
     async Task SaveServerFromDialog()
     {

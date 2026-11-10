@@ -231,13 +231,13 @@ public sealed class AppConfig
 public sealed class DataSourceConfig
 {
     /// <summary>
-    /// 获取或设置 Announcements。
+    /// 获取或设置 Announcements。默认指向公告同步服务的入口清单（main 分支的做法）。
     /// </summary>
     public string Announcements
     {
         get;
         set;
-    } = "";
+    } = Services.AnnouncementSyncService.Primary;
 
     /// <summary>
     /// 获取或设置 Servers。

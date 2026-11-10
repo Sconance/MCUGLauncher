@@ -18,7 +18,6 @@ public partial class ShellWindow : Window
     ILauncherService service = null!;
     readonly ShellDesktopHost host;
     readonly SettingsView settingsView;
-    readonly ExtrasView extrasView;
     readonly HomeView homeView;
     readonly DownloadView downloadView;
     readonly FileDropView fileDropView;
@@ -47,11 +46,10 @@ public partial class ShellWindow : Window
         ShellRoot.Children.Add(fileDropView);
         Grid.SetRowSpan(fileDropView, 2);
         settingsView = new SettingsView(service);
-        extrasView = new ExtrasView(service);
         homeView = new HomeView(service);
-        homeView.AccountRequested += () => OpenExtras("account");
-        homeView.InstancesRequested += () => OpenExtras("instances");
-        homeView.RunningGamesRequested += () => OpenExtras("games");
+        homeView.AccountRequested += () => OpenSettings("account");
+        homeView.InstancesRequested += () => OpenSettings("instances");
+        homeView.RunningGamesRequested += () => OpenSettings("games");
         downloadView = new DownloadView(service);
         var placement = service.WindowPlacement;
         Width = Math.Clamp(placement.Width, LaunchLimits.ShellWidthMin, LaunchLimits.ShellWidthMax);
@@ -83,7 +81,6 @@ public partial class ShellWindow : Window
             Show("download");
         };
         SettingsButton.Click += (_, _) => Show("settings");
-        MoreButton.Click += (_, _) => OpenExtras();
         Render();
         Opened += async (_, _) =>
         {
@@ -111,16 +108,14 @@ public partial class ShellWindow : Window
             button.Classes.Remove("active");
         if (navigation.TryGetValue(page, out var active))
             active.Classes.Add("active");
-        MoreButton.Classes.Remove("active");
-        if (page == "extras")
-            MoreButton.Classes.Add("active");
     }
 
-    void OpenExtras(string? section = null)
+    /// <summary>打开设置页并停到指定分区；原「更多」页的入口现在也走这里。</summary>
+    void OpenSettings(string? section = null)
     {
         if (section is not null)
-            extrasView.Open(section);
-        Show("extras");
+            settingsView.Open(section);
+        Show("settings");
     }
 
     void OnMinimizeWindow(object? sender, RoutedEventArgs e) =>
@@ -153,12 +148,6 @@ public partial class ShellWindow : Window
         if (page == "settings")
         {
             PageHost.Content = settingsView;
-            return;
-        }
-
-        if (page == "extras")
-        {
-            PageHost.Content = extrasView;
             return;
         }
 

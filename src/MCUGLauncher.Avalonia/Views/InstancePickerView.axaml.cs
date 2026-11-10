@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using MCUGLauncher.Contracts;
+using Path = Avalonia.Controls.Shapes.Path;
 
 namespace MCUGLauncher.Avalonia.Views;
 
@@ -17,6 +18,9 @@ internal partial class InstancePickerView : UserControl
     const double RowPaddingX = 6;
     const double RowMinHeight = 37;
     const double RowSpacing = 4;
+
+    // 与 Theme.axaml 里的 AppInk3 保持一致（分组标题箭头颜色，略浅于正文）
+    static readonly IBrush ArrowBrush = Brush.Parse("#616A72");
 
     readonly HashSet<string> collapsed = new(StringComparer.OrdinalIgnoreCase);
     LauncherState? state;
@@ -69,7 +73,7 @@ internal partial class InstancePickerView : UserControl
         var instances = Instances();
         PickerSummary.Text = instances.Count == 0
             ? "当前目录没有可用实例，先在下载页安装一个。"
-            : $"共 {instances.Count} 个实例。点条目切换当前实例，▷ 直接启动，⚙ 进入版本设置。";
+            : $"共 {instances.Count} 个实例";
 
         var filtered = instances.Where(Matches).ToArray();
         foreach (var group in filtered
@@ -88,14 +92,29 @@ internal partial class InstancePickerView : UserControl
     {
         var open = !collapsed.Contains(loader);
         var label = (loader == "原版" ? "原版游戏" : loader + " 版本") + "（" + items.Count + "）";
-        // 箭头用同族的 ▾/▸ 且占固定宽度，展开前后标题文字的左边缘与基线都不会跳。
-        var arrow = new TextBlock
+        // 箭头用 Path 画：收起的 › 与展开的 v 都是两段等长（3.4px）的 45° 折线，
+        // 外面套固定 12×12 的槽位，展开前后标题文字的左边缘不会跳。
+        var arrow = new Panel
         {
-            Text = open ? "▾" : "▸",
             Width = 12,
-            TextAlignment = TextAlignment.Center,
+            Height = 12,
             VerticalAlignment = VerticalAlignment.Center,
-            Classes = { "muted" }
+            // 折线的墨迹中心比汉字略低：v 的圆拐角在顶点处更靠下，所以它多上提 1px
+            Margin = new Thickness(0, open ? -2 : -1, 0, 0),
+            Children =
+            {
+                new Path
+                {
+                    Data = Geometry.Parse(open ? "M 2.6 4 L 6 7.4 L 9.4 4" : "M 4 2.6 L 7.4 6 L 4 9.4"),
+                    Stroke = ArrowBrush,
+                    StrokeThickness = 1.6,
+                    StrokeLineCap = PenLineCap.Round,
+                    StrokeJoin = PenLineJoin.Round,
+                    Stretch = Stretch.None,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            }
         };
         var title = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center };
         var header = new Button
