@@ -17,6 +17,8 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
     public event Action<LauncherState>? StateChanged;
     public event Action<IReadOnlyList<TaskInfo>>? TasksChanged;
     public event Action<IReadOnlyList<GameInfo>>? GamesChanged;
+    public AccountStateInfo? AccountState => account.State;
+
     public event Action<AuthResultInfo>? AuthResultReceived
     {
         add => account.AuthResultReceived += value;
@@ -74,7 +76,7 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             store,
             microsoftBrowser: browser,
             avatarEncoder: avatarEncoder);
-        account = new AccountModule(new AccountFeatureInvoker(application));
+        account = application.Accounts;
     }
 
     public Task StartAsync() => application.HandleAsync("""{"type":"ready"}""");

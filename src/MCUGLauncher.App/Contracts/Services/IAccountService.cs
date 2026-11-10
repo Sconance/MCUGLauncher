@@ -3,6 +3,11 @@ namespace MCUGLauncher.Contracts;
 /// <summary>微软/MUA/离线账号、登录结果与头像皮肤。</summary>
 public interface IAccountService
 {
+    AccountStateInfo? AccountState
+    {
+        get;
+    }
+
     event Action<AuthResultInfo>? AuthResultReceived;
     event Action<AccountStateInfo>? AccountStateChanged;
     event Action<AccountSwitchResultInfo>? AccountSwitchResultReceived;

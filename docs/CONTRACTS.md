@@ -62,4 +62,7 @@ Modules/Account/
 - 账号命令只依赖 `IAccountContext`，不再接收完整 `LauncherContext`；
 - `SelectMuaProfileAsync` 已改为 `[FeatureOperation] Task<SavedInfo>`，删除 JSON 命令委托；
 - `LauncherContext` 实现 `IAccountContext`，并用 `NextRevision()` 统一账号版本号递增；
-- 账号状态仍由 `LauncherContext.Config/OnlineSession` 和 `LauncherStateBuilder` 维护，后续可再抽 `IAccountStateProvider`。
+- `AccountModule` 持有运行时账号状态 `AccountStateInfo`，通过 `StateChanged`/`AccountStateChanged` 发布；`IAccountService.AccountState` 暴露当前快照；
+- `AccountModeCommands.Apply` 统一委托 `AccountModule.Apply`，账号模式、玩家名、会话与持久化写入只有一个入口；
+- `AppConfig` 仍是持久化载体，模块写入后镜像到配置，保证旧配置与启动流程兼容；
+- `LauncherStateBuilder` 优先使用模块状态，模块未装配时回退配置。

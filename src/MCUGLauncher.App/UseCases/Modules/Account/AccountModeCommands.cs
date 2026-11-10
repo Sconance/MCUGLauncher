@@ -193,22 +193,8 @@ internal sealed class AccountModeCommands(
         MSession? session,
         bool verified = true,
         bool persist = true,
-        AccountIdentity? identity = null)
-    {
-        var player = mode == "offline" ? context.Config.OfflinePlayer : identity?.Player ?? session?.Username;
-        if (string.IsNullOrWhiteSpace(player))
-            throw new AccountLoginException("账号没有有效的玩家名，请重新登录。", true);
-        if (context.Config.AccountType == "offline")
-            context.Config.OfflinePlayer = context.Config.Player;
-        if (session != null && verified)
-            context.AccountSessions.Remember(mode, session);
-        context.OnlineSession = session;
-        context.Config.AccountType = mode;
-        context.Config.Player = player;
-        if (persist)
-            context.Store.Save(context.Config);
-        context.SendAccountState();
-    }
+        AccountIdentity? identity = null) =>
+        context.Accounts.Apply(mode, session, verified, persist, identity);
 
     public async Task<AuthResultInfo> ForgetAsync(string mode)
     {

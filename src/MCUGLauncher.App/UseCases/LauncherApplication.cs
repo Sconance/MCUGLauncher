@@ -55,7 +55,16 @@ internal sealed class LauncherApplication : IDisposable
         diagnosticCommands = new DiagnosticCommands(context);
         communityCommands = new CommunityCommands(context);
         featureDispatcher = new FeatureDispatcher(context);
+        Accounts = new AccountModule(new AccountFeatureInvoker(this), context);
+        context.AttachAccounts(Accounts);
     }
+
+    internal AccountModule Accounts
+    {
+        get;
+    }
+
+    internal LauncherContext Context => context;
 
     public Task<TResponse> ExecuteFeatureAsync<TResponse>(string operation, object arguments) =>
         featureDispatcher.ExecuteAsync<TResponse>(operation, arguments);
@@ -614,7 +623,7 @@ internal sealed class LauncherApplication : IDisposable
     {
         try
         {
-            var state = LauncherStateBuilder.Build(context.Config, bookmarkCommands.Snapshot());
+            var state = LauncherStateBuilder.Build(context.Config, bookmarkCommands.Snapshot(), context.AccountsOrNull?.State);
             context.Send(state);
         }
         catch (Exception ex)

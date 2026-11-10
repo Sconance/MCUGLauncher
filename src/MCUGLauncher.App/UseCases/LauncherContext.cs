@@ -10,6 +10,10 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
 {
     readonly CancellationTokenSource lifetime = new();
     long accountRevision;
+    AccountModule? accounts;
+    public AccountModule Accounts => accounts ?? throw new InvalidOperationException("账号模块尚未装配。");
+    internal AccountModule? AccountsOrNull => accounts;
+    internal void AttachAccounts(AccountModule module) => accounts = module;
     public long AccountRevision => accountRevision;
     public long NextRevision() => Interlocked.Increment(ref accountRevision);
     public string AvatarIdentity
@@ -133,6 +137,8 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
             // A damaged account cache must never prevent the launcher from opening.
             Config.AccountType = "offline";
         }
+        // Direct LauncherContext users (tests/tools) still get a state sink; LauncherApplication replaces it with a real module.
+        AttachAccounts(new AccountModule(new UnavailableAccountFeatureInvoker(), this));
     }
 
     public void Log(string message)
@@ -162,4 +168,10 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
         finally { Http.Dispose(); lifetime.Dispose(); }
     }
 
+}
+
+internal sealed class UnavailableAccountFeatureInvoker : IAccountFeatureInvoker
+{
+    public Task<TResponse> InvokeAsync<TResponse>(string operation, object arguments) =>
+        throw new InvalidOperationException("账号功能尚未装配：" + operation);
 }

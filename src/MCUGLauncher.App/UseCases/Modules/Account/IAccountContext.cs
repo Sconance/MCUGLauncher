@@ -41,6 +41,10 @@ internal interface IAccountContext
         get;
     }
     long NextRevision();
+    AccountModule Accounts
+    {
+        get;
+    }
     Action<object> Send
     {
         get;

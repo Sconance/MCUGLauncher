@@ -1,15 +1,57 @@
 using System.Text.Json;
+using BlockLaunch;
+using CmlLib.Core.Auth;
 using MCUGLauncher.Contracts;
+using MCUGLauncher.Services;
 
 namespace MCUGLauncher.UseCases;
 
-/// <summary>账号领域模块：登录、账号切换、MUA 档案、头像皮肤与账号事件。</summary>
-internal sealed class AccountModule(IAccountFeatureInvoker invoker)
+/// <summary>账号领域模块：登录、账号切换、MUA 档案、头像皮肤、账号状态与事件。</summary>
+internal sealed class AccountModule
 {
+    readonly IAccountFeatureInvoker invoker;
+    readonly IAccountContext context;
+
+    public AccountModule(IAccountFeatureInvoker invoker, IAccountContext context)
+    {
+        this.invoker = invoker;
+        this.context = context;
+        State = new AccountStateInfo(context.Config.Player, context.Config.AccountType);
+    }
+
+    public AccountStateInfo? State
+    {
+        get; private set;
+    }
+    public event Action<AccountStateInfo>? StateChanged;
+
     public event Action<AuthResultInfo>? AuthResultReceived;
     public event Action<AccountStateInfo>? AccountStateChanged;
     public event Action<AccountSwitchResultInfo>? AccountSwitchResultReceived;
     public event Action<MuaProfilesInfo>? MuaProfilesReceived;
+
+    public void Apply(
+        string mode,
+        MSession? session,
+        bool verified = true,
+        bool persist = true,
+        AccountIdentity? identity = null)
+    {
+        var player = mode == "offline" ? context.Config.OfflinePlayer : identity?.Player ?? session?.Username;
+        if (string.IsNullOrWhiteSpace(player))
+            throw new AccountLoginException("账号没有有效的玩家名，请重新登录。", true);
+        if (context.Config.AccountType == "offline")
+            context.Config.OfflinePlayer = context.Config.Player;
+        if (session != null && verified)
+            context.AccountSessions.Remember(mode, session);
+        context.OnlineSession = session;
+        context.Config.AccountType = mode;
+        context.Config.Player = player;
+        if (persist)
+            context.Store.Save(context.Config);
+        context.SendAccountState();
+        Publish(new AccountStateInfo(player, mode));
+    }
 
     public Task<AuthResultInfo> LoginMicrosoftAsync() =>
         invoker.InvokeAsync<AuthResultInfo>(nameof(LoginMicrosoftAsync), new
@@ -67,7 +109,9 @@ internal sealed class AccountModule(IAccountFeatureInvoker invoker)
                 AuthResultReceived?.Invoke(AuthResultInfo.From(root));
                 return true;
             case "accountState":
-                AccountStateChanged?.Invoke(AccountStateInfo.From(root));
+                var state = AccountStateInfo.From(root);
+                Publish(state);
+                AccountStateChanged?.Invoke(state);
                 return true;
             case "accountSwitchResult":
                 AccountSwitchResultReceived?.Invoke(AccountSwitchResultInfo.From(root));
@@ -78,5 +122,11 @@ internal sealed class AccountModule(IAccountFeatureInvoker invoker)
             default:
                 return false;
         }
+    }
+
+    void Publish(AccountStateInfo state)
+    {
+        State = state;
+        StateChanged?.Invoke(state);
     }
 }

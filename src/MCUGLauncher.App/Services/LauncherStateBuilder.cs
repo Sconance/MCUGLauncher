@@ -9,7 +9,7 @@ namespace MCUGLauncher.Services;
 // Reads one local snapshot; UI only receives the typed, presentation-neutral result.
 internal static class LauncherStateBuilder
 {
-    public static LauncherState Build(AppConfig config, IReadOnlyList<FavoriteInfo> favorites)
+    public static LauncherState Build(AppConfig config, IReadOnlyList<FavoriteInfo> favorites, AccountStateInfo? account = null)
     {
         var catalog = VersionCatalog.Load(config.Root, config.LastInstance);
         var selectedVersion = catalog.Groups.Count == 0 ? "" :
@@ -18,8 +18,8 @@ internal static class LauncherStateBuilder
         var mods = VersionCatalog.ReadMods(config.Root, catalog.Selected);
         return new LauncherState(
             ProductInfo.Version,
-            config.Player,
-            config.AccountType,
+            account?.Player ?? config.Player,
+            account?.AccountType ?? config.AccountType,
             config.Root,
             config.GameRoots.Append(config.Root)
                 .Where(path => !string.IsNullOrWhiteSpace(path))
