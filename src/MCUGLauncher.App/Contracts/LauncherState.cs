@@ -64,10 +64,14 @@ public sealed record TaskInfo(
         JsonRead.String(element, "id"),
         JsonRead.String(element, "name"),
         JsonRead.String(element, "state"),
-        element.TryGetProperty("percent", out var percent) && percent.TryGetDouble(out var value) ? value : 0,
+        element.TryGetProperty("percent", out var percent)
+        && percent.ValueKind == JsonValueKind.Number
+        && percent.TryGetDouble(out var value) ? value : 0,
         JsonRead.String(element, "message"),
         JsonRead.Bool(element, "committing"));
 }
+
+public sealed record CustomDownloadInfo(string TaskId, string FilePath);
 
 public sealed record SavedServerInfo(string Name, string Address, string Instance = "")
 {
@@ -115,6 +119,7 @@ public sealed record LauncherState(
     DataSourceSet DefaultDataSources,
     DataSourceSet CustomDataSources,
     string DataSourceMode,
-    bool AutoChinese = true)
+    bool AutoChinese = true,
+    BlockLaunch.DownloadSourcePreference DownloadSource = BlockLaunch.DownloadSourcePreference.Mirror)
 {
 }

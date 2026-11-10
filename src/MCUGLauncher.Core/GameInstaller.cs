@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
+using BlockLaunch.Downloads;
 using CmlLib.Core;
 using CmlLib.Core.Auth;
 using CmlLib.Core.ProcessBuilder;
@@ -16,7 +17,7 @@ namespace BlockLaunch;
 /// <remarks>
 /// 依赖 HttpClient、游戏根目录、Java 路径与 NetworkSettings；通过 progress 回调报告下载/解压进度，失败时抛出异常并保留可恢复状态。
 /// </remarks>
-public sealed class GameInstaller(HttpClient http, string root, string java, Action<string>? progress = null, CancellationToken token = default, NetworkSettings? network = null, Action<double>? overallProgress = null)
+public sealed class GameInstaller(HttpClient http, string root, string java, Action<string>? progress = null, CancellationToken token = default, NetworkSettings? network = null, Action<double>? overallProgress = null, Action<string>? log = null)
 {
     /// <summary>
     /// 安装。
@@ -44,6 +45,8 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
             var parameters = MinecraftLauncherParameters.CreateDefault(path, http);
             if (File.Exists(Path.Combine(root, "versions", profile, profile + ".json")))
                 parameters.VersionLoader = new CmlLib.Core.VersionLoader.LocalJsonVersionLoader(path);
+            if (network is { EnableFastDownload: true })
+                parameters.GameInstaller = new FastGameInstaller(http, DownloadOptions.From(network), progress, log);
             return new MinecraftLauncher(parameters);
         }
 
@@ -54,7 +57,9 @@ public sealed class GameInstaller(HttpClient http, string root, string java, Act
             {
                 if (e.TotalTasks > 0)
                     overallProgress?.Invoke(start + weight * Math.Clamp((double)e.ProgressedTasks / e.TotalTasks, 0, 1));
-                progress?.Invoke($"{e.Name} · {e.ProgressedTasks}/{e.TotalTasks}");
+                // 高速引擎自己报告“文件 · 速度 · 剩余 · 源”，这里不再覆盖成只有计数的文案。
+                if (network is not { EnableFastDownload: true })
+                    progress?.Invoke($"{e.Name} · {e.ProgressedTasks}/{e.TotalTasks}");
             };
         }
         overallProgress?.Invoke(0);

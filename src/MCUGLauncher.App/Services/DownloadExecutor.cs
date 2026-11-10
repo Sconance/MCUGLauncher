@@ -1,10 +1,11 @@
 using System.Security.Cryptography;
 using BlockLaunch;
+using BlockLaunch.Downloads;
 
 namespace MCUGLauncher.Services;
 
 // Uses the existing Core installers, dependency resolver and verified downloader.
-internal sealed class DownloadExecutor(HttpClient http, Func<string, bool>? inUse = null, Func<string, bool>? preparingRoot = null)
+internal sealed class DownloadExecutor(HttpClient http, Func<string, bool>? inUse = null, Func<string, bool>? preparingRoot = null, NetworkSettings? network = null, Action<string>? log = null)
 {
     public async Task ExecuteAsync(OperationRecord record, OperationContext task)
     {
@@ -13,6 +14,41 @@ internal sealed class DownloadExecutor(HttpClient http, Func<string, bool>? inUs
         if (request.Instance != null)
         {
             await new InstanceOperationExecutor(inUse).ExecuteAsync(record, task);
+            return;
+        }
+        if (request.Kind == "file")
+        {
+            if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri)
+                || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            {
+                throw new IOException("下载地址无效。");
+            }
+
+            var settings = network ?? new NetworkSettings();
+            var engine = new DownloadEngine(http, DownloadOptions.From(settings), log);
+            var mirror = NetworkPolicyHandler.Mirror(uri);
+            var sources = mirror is null
+                ? new[] { DownloadSource.Official(uri) }
+                : settings.EffectiveDownloadSource == DownloadSourcePreference.Mirror
+                    ? new[] { DownloadSource.Mirror("BMCLAPI", mirror), DownloadSource.Official(uri) }
+                    : new[] { DownloadSource.Official(uri), DownloadSource.Mirror("BMCLAPI", mirror) };
+            var download = new DownloadTask
+            {
+                Id = record.Id,
+                Kind = DownloadKind.Custom,
+                TargetPath = record.Target,
+                Sources = sources,
+                Hash = "",
+                Size = 0,
+                AllowSplitting = true
+            };
+            var reporter = new InlineProgress<DownloadProgress>(update =>
+                task.Report(
+                    update.Describe(),
+                    update.TotalBytes > 0
+                        ? Math.Clamp(update.CompletedBytes * 100.0 / update.TotalBytes, 0, 99)
+                        : null));
+            await engine.DownloadAsync(download, reporter, 0, 1, task.Token);
             return;
         }
         if (request.Kind == "update")
@@ -30,14 +66,14 @@ internal sealed class DownloadExecutor(HttpClient http, Func<string, bool>? inUs
         {
             if (inUse?.Invoke(VersionCatalog.InstanceDirectory(record.Root, request.Version)) == true)
                 throw new IOException("该实例正在运行，请关闭游戏后重试安装。");
-            var installer = new GameInstaller(http, record.Root, request.Java, progress.Message, task.Token, overallProgress: progress.Advance);
+            var installer = new GameInstaller(http, record.Root, request.Java, progress.Message, task.Token, network, overallProgress: progress.Advance, log: log);
             await installer.Install(new PackRequirements(request.Version, request.Loader, request.LoaderVersion));
             return;
         }
         if (request.Kind == "pack")
         {
             await VerifySource(request.File, request.SourceHash, task.Token, "整合包");
-            var installer = new GameInstaller(http, record.Root, request.Java, progress.Message, task.Token, overallProgress: value => progress.Advance(InstallationStages.PackFiles + value * (InstallationStages.BeforeCommit - InstallationStages.PackFiles) / 100));
+            var installer = new GameInstaller(http, record.Root, request.Java, progress.Message, task.Token, network, overallProgress: value => progress.Advance(InstallationStages.PackFiles + value * (InstallationStages.BeforeCommit - InstallationStages.PackFiles) / 100), log: log);
             await new PackService(http, task.Token).Import(request.File, record.Root, installer.Install, false,
                 progress.Message, request.PackInstance, progress.Advance);
             return;

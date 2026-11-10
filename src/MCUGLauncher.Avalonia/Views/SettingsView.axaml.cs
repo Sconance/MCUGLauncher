@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using BlockLaunch;
 using MCUGLauncher.Contracts;
 
 namespace MCUGLauncher.Avalonia.Views;
@@ -16,11 +17,13 @@ internal partial class SettingsView : UserControl
     string editingServer = "";
     bool updatingRoots;
     bool addRootOnPick;
+    bool updatingSource;
 
     public SettingsView()
     {
         InitializeComponent();
         panels["launch"] = LaunchPanel;
+        panels["network"] = NetworkPanel;
         panels["java"] = JavaPanel;
         panels["datasources"] = DataSourcesPanel;
         panels["appearance"] = AppearancePanel;
@@ -35,6 +38,9 @@ internal partial class SettingsView : UserControl
         JavaListPanel.Children.Add(Muted("还没有扫描结果。点击“扫描本机 Java”。"));
         SaveListPanel.Children.Add(Muted("还没有存档备份。"));
         ServerListPanel.Children.Add(Muted("还没有收藏服务器。"));
+        updatingSource = true;
+        DownloadSourceBox.SelectedIndex = 1;
+        updatingSource = false;
         Nav.SelectedIndex = 0;
     }
 
@@ -310,6 +316,25 @@ internal partial class SettingsView : UserControl
         DiagnoseStatus.Text = "诊断信息已复制。";
     }
 
+    async void OnDownloadSourceChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (updatingSource || DownloadSourceBox.SelectedItem is not ComboBoxItem { Tag: string tag })
+            return;
+        if (!Enum.TryParse<DownloadSourcePreference>(tag, true, out var preference) || !Enum.IsDefined(preference))
+            return;
+        DownloadSourceStatus.Text = "正在保存…";
+        try
+        {
+            var saved = await service.SaveSettingsAsync(new AppSettingsPatch(DownloadSourcePreference: preference));
+            var name = preference == DownloadSourcePreference.Mirror ? "镜像源" : "官方源";
+            DownloadSourceStatus.Text = $"已切换为{name}；{saved.Message}";
+        }
+        catch (Exception ex)
+        {
+            DownloadSourceStatus.Text = "保存失败：" + ex.Message;
+        }
+    }
+
     void OnNavSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (Nav.SelectedItem is ListBoxItem { Tag: string key })
@@ -439,6 +464,9 @@ internal partial class SettingsView : UserControl
             AutoMemoryBox.IsChecked = snapshot.AutoMemory;
         if (!AutoChineseBox.IsFocused)
             AutoChineseBox.IsChecked = snapshot.AutoChinese;
+        updatingSource = true;
+        DownloadSourceBox.SelectedIndex = snapshot.DownloadSource == DownloadSourcePreference.Official ? 0 : 1;
+        updatingSource = false;
         if (!AnonymousBox.IsFocused)
             AnonymousBox.IsChecked = snapshot.Anonymous;
         PlayerBox.IsEnabled = snapshot.AccountType == "offline";

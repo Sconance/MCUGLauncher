@@ -28,4 +28,4 @@ jobs:
         run: ./scripts/build.ps1
 
       - name: Run isolated regression checks
-        run: ./scripts/run-checks.ps1 -Name MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks,LauncherChecks
+        run: ./scripts/run-checks.ps1 -Name MuaChecks,DownloadChecks,QueueChecks,CompatibilityChecks,LauncherChecks,FastDownloadChecks

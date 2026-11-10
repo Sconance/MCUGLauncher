@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:MCUGLauncher.Avalonia.Views"
              x:Class="MCUGLauncher.Avalonia.Views.DownloadView">
     <Grid RowDefinitions="Auto,*,Auto" Margin="20,20,3,20">
         <Grid ColumnDefinitions="*,Auto">
@@ -116,6 +117,9 @@
                         <TextBlock x:Name="PackHint" Classes="muted" TextWrapping="Wrap" />
                     </StackPanel>
                 </ScrollViewer>
+            </TabItem>
+            <TabItem Header="自定义文件">
+                <views:CustomDownloadView x:Name="CustomDownload" />
             </TabItem>
         </TabControl>
 

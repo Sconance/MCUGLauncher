@@ -130,6 +130,8 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
                 ["recommendations"] = sources.Recommendations,
                 ["quotes"] = sources.Quotes
             };
+        if (patch.DownloadSourcePreference is { } preference)
+            payload["downloadSource"] = preference.ToString();
         return FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SaveSettingsAsync), payload);
     }
 

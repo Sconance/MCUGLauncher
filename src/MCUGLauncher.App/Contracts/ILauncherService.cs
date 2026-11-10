@@ -431,4 +431,15 @@ public interface ILauncherService : IDisposable
                 version,
                 requestId
             });
+    [FeatureOperation]
+    Task<CustomDownloadInfo> StartCustomDownloadAsync(string url, string directory, string fileName) =>
+        FeatureRequest.InvokeAsync<CustomDownloadInfo>(
+            this,
+            nameof(StartCustomDownloadAsync),
+            new
+            {
+                url,
+                directory,
+                fileName
+            });
 }

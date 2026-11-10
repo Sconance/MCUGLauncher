@@ -80,6 +80,7 @@ internal partial class DownloadView : UserControl
         service.PathPicked += OnPathPicked;
         service.ToastReceived += info => Status(info.Message);
         service.ErrorReceived += message => Status("操作失败：" + message);
+        CustomDownload.Attach(service);
         ApplyState(service.State);
     }
 

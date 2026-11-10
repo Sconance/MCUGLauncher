@@ -46,14 +46,18 @@ internal sealed class LauncherTaskQueue : IDisposable
         changed();
     }
 
-    public void Enqueue(string name, string root, string target, DownloadRequest request)
+    public void Enqueue(string name, string root, string target, DownloadRequest request) =>
+        EnqueueTracked(name, root, target, request);
+
+    public string EnqueueTracked(string name, string root, string target, DownloadRequest request)
     {
         lock (gate)
         {
             if (stopped)
                 throw new ObjectDisposedException(nameof(LauncherTaskQueue));
-            operations.Enqueue(name, root, target, request);
+            var record = operations.Enqueue(name, root, target, request);
             Start();
+            return record.Id;
         }
     }
 

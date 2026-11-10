@@ -90,7 +90,7 @@ internal sealed class LauncherContext : IDisposable
         get;
     }
 
-    public void SendTasks() => Send(new { type = "tasks", items = Tasks.History().Take(200).Select(r => new { r.Id, r.Name, state = r.State.ToString(), r.Percent, r.Message, r.Committing }) });
+    public void SendTasks() => Send(new { type = "tasks", items = Tasks.History().Take(200).Select(r => new { r.Id, r.Name, state = r.State.ToString(), percent = r.Percent ?? 0, r.Message, r.Committing }) });
 
     public void SendAccountState() => Send(new
     {
@@ -114,7 +114,7 @@ internal sealed class LauncherContext : IDisposable
         Avatars = new AvatarCommands(this, AvatarEncoder);
         Http = NetworkPolicyHandler.Create(Config.LegacyPreferences.Network);
         Community = new CommunityService(Http, Path.Combine(Store.DataDirectory, "announcements-cache"));
-        var executor = new DownloadExecutor(Http, IsInstanceInUse, IsRootPreparing);
+        var executor = new DownloadExecutor(Http, IsInstanceInUse, IsRootPreparing, Config.LegacyPreferences.Network, Log);
         Tasks = new LauncherTaskQueue(Path.Combine(Store.DataDirectory, "operations"),
             async (record, task) => { await executor.ExecuteAsync(record, task); RefreshState(); }, SendTasks, Log);
         Installations = new InstallationCommands(this);

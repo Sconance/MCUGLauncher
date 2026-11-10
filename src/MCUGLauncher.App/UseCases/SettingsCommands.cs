@@ -38,6 +38,15 @@ internal sealed class SettingsCommands(LauncherContext context)
             context.Config.AutoMemory = autoMemory.GetBoolean();
         if (root.TryGetProperty("autoChinese", out var autoChinese))
             context.Config.LegacyPreferences.Launch.AutoChinese = autoChinese.GetBoolean();
+        if (root.TryGetProperty("downloadSource", out var downloadSource))
+        {
+            var text = downloadSource.ValueKind == JsonValueKind.String ? downloadSource.GetString() : downloadSource.ToString();
+            if (!Enum.TryParse<DownloadSourcePreference>(text, true, out var preference) || !Enum.IsDefined(preference))
+                throw new ArgumentException("未知的下载源设置。");
+            context.Config.LegacyPreferences.Network.DownloadSourcePreference = preference;
+            // 清掉旧的字符串覆盖，避免两套下载源配置互相打架。
+            context.Config.LegacyPreferences.Network.DownloadSource = "";
+        }
         if (root.TryGetProperty("ram", out var ram) && ram.TryGetInt32(out var ramValue))
             context.Config.Ram = Math.Clamp(ramValue, LaunchLimits.RamMin, LaunchLimits.RamMax);
         if (requestedRoot.Length > 0)

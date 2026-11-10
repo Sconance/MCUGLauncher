@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MCUGLauncher.Avalonia.Views.CustomDownloadView">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+        <StackPanel Spacing="12" MaxWidth="780" HorizontalAlignment="Left">
+            <TextBlock Text="下载自定义文件" Classes="h2" />
+            <TextBlock Classes="muted" TextWrapping="Wrap"
+                       Text="使用高速多线程下载引擎下载任意文件。部分网站启用了人机验证（如 Cloudflare）或防盗链，会返回 403 而无法直接下载；遇到时请用浏览器下载后再导入。" />
+
+            <Grid ColumnDefinitions="88,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="8">
+                <TextBlock Text="下载地址" VerticalAlignment="Center" />
+                <TextBox x:Name="UrlBox" Grid.Column="1" Watermark="https://example.com/file.zip" />
+
+                <TextBlock Text="保存到" Grid.Row="1" VerticalAlignment="Center" />
+                <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto">
+                    <TextBox x:Name="FolderBox" Watermark="选择保存文件夹" />
+                    <Button x:Name="PickFolderButton" Grid.Column="1" Content="选择" Margin="8,0,0,0" />
+                </Grid>
+
+                <TextBlock Text="文件名" Grid.Row="2" VerticalAlignment="Center" />
+                <TextBox x:Name="FileNameBox" Grid.Row="2" Grid.Column="1"
+                         Watermark="自动从下载地址提取，可手动修改" />
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="StartButton" Content="开始下载" Classes="primary" IsEnabled="False" />
+                <Button x:Name="CancelButton" Content="取消" Classes="ghost" IsVisible="False" />
+                <Button x:Name="OpenFolderButton" Content="打开文件夹" Classes="ghost" IsEnabled="False" />
+            </StackPanel>
+
+            <ProgressBar x:Name="DownloadProgress" Minimum="0" Maximum="100" Height="8" />
+            <TextBlock x:Name="StatusText" Classes="status" TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

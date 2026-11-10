@@ -186,7 +186,10 @@ using (var upgrade = await PackUpgrade.Prepare(http, gameRoot, oldPack.InstanceI
 using (var locked = new FileStream(Path.Combine(oldDir, "saves", "world", "session.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
     await Reject(() => PackUpgrade.Prepare(http, gameRoot, oldPack.InstanceId, oldDir, newZip, _ => Task.FromResult("base"), false, null, default), "externally running world blocks upgrade");
 var networkHandler = new Handler();
-using var network = new HttpClient(new NetworkPolicyHandler(new(), networkHandler));
+using var network = new HttpClient(new NetworkPolicyHandler(new()
+{
+    DownloadSourcePreference = DownloadSourcePreference.Official
+}, networkHandler));
 networkHandler.Statuses.Enqueue(HttpStatusCode.ServiceUnavailable);
 networkHandler.Statuses.Enqueue(HttpStatusCode.OK);
 using var response = await network.GetAsync("https://libraries.minecraft.net/test.jar");
@@ -195,7 +198,10 @@ Check(NetworkPolicyHandler.Mirror(new("https://login.microsoftonline.com/token")
 Check(NetworkPolicyHandler.Mirror(new("https://libraries.minecraft.net.evil.example/test")) == null, "mirror matching rejects lookalike domains");
 var authHandler = new Handler();
 authHandler.Statuses.Enqueue(HttpStatusCode.ServiceUnavailable);
-using (var client = new HttpClient(new NetworkPolicyHandler(new(), authHandler)))
+using (var client = new HttpClient(new NetworkPolicyHandler(new()
+{
+    DownloadSourcePreference = DownloadSourcePreference.Official
+}, authHandler)))
 using (var requestAuth = new HttpRequestMessage(HttpMethod.Get, "https://libraries.minecraft.net/protected"))
 {
     requestAuth.Headers.Authorization = new("Bearer", "synthetic-token");

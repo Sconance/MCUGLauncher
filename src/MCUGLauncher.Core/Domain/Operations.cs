@@ -51,6 +51,10 @@ public sealed class DownloadRequest
     /// </summary>
     public string Kind { get; set; } = "game";
     /// <summary>
+    /// 获取或设置自定义文件的下载地址（仅 Kind 为 file 时使用）。
+    /// </summary>
+    public string Url { get; set; } = "";
+    /// <summary>
     /// 获取或设置 版本。
     /// </summary>
     public string Version { get; set; } = "";

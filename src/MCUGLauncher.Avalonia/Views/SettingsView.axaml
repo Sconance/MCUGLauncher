@@ -8,6 +8,7 @@
                 <ListBox x:Name="Nav" Background="Transparent" BorderThickness="0"
                          SelectionChanged="OnNavSelectionChanged">
                     <ListBoxItem Content="启动设置" Tag="launch" />
+                    <ListBoxItem Content="下载与网络" Tag="network" />
                     <ListBoxItem Content="Java 管理" Tag="java" />
                     <ListBoxItem Content="数据源" Tag="datasources" />
                     <ListBoxItem Content="界面与背景" Tag="appearance" />
@@ -71,6 +72,20 @@
                             <Button x:Name="SaveLaunchButton" Content="保存设置" Classes="primary" />
                             <TextBlock x:Name="LaunchStatus" Classes="status" VerticalAlignment="Center" />
                         </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="NetworkPanel" Classes="card" IsVisible="False">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="下载与网络" Classes="h2" />
+                        <TextBlock Text="镜像不可用时自动回退官方源；修改后对之后开始的下载生效。" Classes="muted" />
+                        <TextBlock Text="下载源" FontWeight="SemiBold" />
+                        <ComboBox x:Name="DownloadSourceBox" HorizontalAlignment="Left" MinWidth="360"
+                                  SelectionChanged="OnDownloadSourceChanged">
+                            <ComboBoxItem Content="官方源（Mojang 官方服务器，可能较慢）" Tag="official" />
+                            <ComboBoxItem Content="镜像源（国内加速，推荐）" Tag="mirror" />
+                        </ComboBox>
+                        <TextBlock x:Name="DownloadSourceStatus" Classes="status" />
                     </StackPanel>
                 </Border>
 
