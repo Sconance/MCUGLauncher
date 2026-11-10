@@ -11,20 +11,32 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
 {
     readonly IAccountFeatureInvoker invoker;
     readonly IAccountStore store;
-    readonly IAccountContext context;
+    readonly IAccountSessionCache sessionCache;
+    readonly IAccountNotifier notifier;
+    readonly IAccountRevision revision;
+    readonly Func<string, Task<MSession>> refreshSession;
 
-    public AccountModule(IAccountFeatureInvoker invoker, IAccountStore store, IAccountContext context)
+    public AccountModule(
+        IAccountFeatureInvoker invoker,
+        IAccountStore store,
+        IAccountSessionCache sessionCache,
+        IAccountNotifier notifier,
+        IAccountRevision revision,
+        Func<string, Task<MSession>> refreshSession)
     {
         this.invoker = invoker;
         this.store = store;
-        this.context = context;
+        this.sessionCache = sessionCache;
+        this.notifier = notifier;
+        this.revision = revision;
+        this.refreshSession = refreshSession;
         var record = store.Load();
         State = new AccountStateInfo(
             record.Player,
             record.Mode,
             record.OfflinePlayer,
             record.Mode == "offline",
-            context.AccountRevision);
+            revision.Current);
     }
 
     public AccountStateInfo? State
@@ -61,17 +73,17 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
                 OfflinePlayer = record.Player
             };
         if (session != null && verified)
-            context.AccountSessions.Remember(mode, session);
+            sessionCache.Remember(mode, session);
         Session = session;
         record = new AccountRecord(mode, player, record.OfflinePlayer);
         store.Save(record, persist);
-        context.SendAccountState();
+        notifier.SendAccountState();
         Publish(new AccountStateInfo(
             player,
             mode,
             record.OfflinePlayer,
             session != null || mode == "offline",
-            context.AccountRevision));
+            revision.Current));
     }
 
     public async Task<MSession> PrepareLaunchSessionAsync()
@@ -93,7 +105,7 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
             return offline;
         }
 
-        var session = await new AccountModeCommands(context).EnsureFreshAsync(mode);
+        var session = await refreshSession(mode);
         if (!string.Equals(session.Username, player, StringComparison.Ordinal))
             throw new IOException("账号身份已改变，请重新选择账号后启动。");
         Session = session;
@@ -162,7 +174,7 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
                 {
                     OfflinePlayer = account.OfflinePlayer,
                     Authenticated = Session != null || incoming.AccountType == "offline",
-                    Revision = context.AccountRevision
+                    Revision = revision.Current
                 };
                 Publish(state);
                 AccountStateChanged?.Invoke(state);

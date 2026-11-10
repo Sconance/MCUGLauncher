@@ -36,3 +36,25 @@ internal interface IAccountSessionService
 {
     Task<MSession> PrepareLaunchSessionAsync();
 }
+
+/// <summary>账号事件/状态通知端口。</summary>
+internal interface IAccountNotifier
+{
+    void SendAccountState();
+}
+
+/// <summary>账号并发版本号端口。</summary>
+internal interface IAccountRevision
+{
+    long Current
+    {
+        get;
+    }
+    long Next();
+}
+
+/// <summary>账号会话缓存端口。</summary>
+internal interface IAccountSessionCache
+{
+    void Remember(string mode, MSession session);
+}

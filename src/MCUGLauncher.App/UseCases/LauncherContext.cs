@@ -6,7 +6,7 @@ using MCUGLauncher.Services;
 
 namespace MCUGLauncher.UseCases;
 
-internal sealed class LauncherContext : IDisposable, IAccountContext
+internal sealed class LauncherContext : IDisposable, IAccountContext, IAccountNotifier, IAccountRevision, IAccountSessionCache
 {
     readonly CancellationTokenSource lifetime = new();
     long accountRevision;
@@ -20,6 +20,9 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
     internal void AttachAccounts(AccountModule module) => accounts = module;
     public long AccountRevision => accountRevision;
     public long NextRevision() => Interlocked.Increment(ref accountRevision);
+    long IAccountRevision.Current => accountRevision;
+    long IAccountRevision.Next() => NextRevision();
+    void IAccountSessionCache.Remember(string mode, MSession session) => AccountSessions.Remember(mode, session);
     public string AvatarIdentity
     {
         get
@@ -144,7 +147,13 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
             Config.AccountType = "offline";
         }
         // Direct LauncherContext users (tests/tools) still get a state sink; LauncherApplication replaces it with a real module.
-        AttachAccounts(new AccountModule(new UnavailableAccountFeatureInvoker(), AccountStore, this));
+        AttachAccounts(new AccountModule(
+            new UnavailableAccountFeatureInvoker(),
+            AccountStore,
+            this,
+            this,
+            this,
+            _ => Task.FromException<MSession>(new InvalidOperationException("在线会话刷新尚未装配。"))));
     }
 
     public void Log(string message)

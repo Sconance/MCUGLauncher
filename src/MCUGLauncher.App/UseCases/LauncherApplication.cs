@@ -55,7 +55,13 @@ internal sealed class LauncherApplication : IDisposable
         diagnosticCommands = new DiagnosticCommands(context);
         communityCommands = new CommunityCommands(context);
         featureDispatcher = new FeatureDispatcher(context);
-        Accounts = new AccountModule(new AccountFeatureInvoker(this), context.AccountStore, context);
+        Accounts = new AccountModule(
+            new AccountFeatureInvoker(this),
+            context.AccountStore,
+            context,
+            context,
+            context,
+            mode => new AccountModeCommands(context).EnsureFreshAsync(mode));
         context.AttachAccounts(Accounts);
     }
 
