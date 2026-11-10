@@ -11,7 +11,7 @@ B 类游戏启动用例。普通启动和收藏启动共用一条准备、授权
 - `LauncherContext.Tasks.RequireLaunchAvailable(string, string, string)`：检查下载/维护与启动冲突。
 - `LauncherContext.Games.RequireAvailable(string, string, bool)`、`UsesDirectory(string)`：检查已运行会话与实例占用。
 - `LauncherContext.MarkPreparing(string, string)` / `ReleasePreparing(string)`：原子预留目录，在 finally 释放；供其他用例检查占用。
-- `AccountModeCommands.EnsureFreshAsync(string)`：在线会话校验；`LauncherContext.Mua.Metadata(CancellationToken)` 和 Core AuthlibLaunch.Prepare 注入 MUA 认证。
+- `LauncherContext.PrepareLaunchSessionAsync()`：由 `AccountModule` 准备离线/在线会话；`LauncherContext.Mua.Metadata(CancellationToken)` 和 Core AuthlibLaunch.Prepare 注入 MUA 认证。
 - `LauncherContext.Http/Token`：复用网络策略和生命周期，不在视图中新建网络客户端。
 - `LauncherContext.Store.DataDirectory/Save(AppConfig)`：日志、认证依赖及最近实例持久化。
 - `LauncherContext.Games.Start(...)` / `Active` / `Release(Guid)`：登记、查询和释放游戏会话；`GameSession.RequestStop()` 沿用原生确认后的关闭请求。

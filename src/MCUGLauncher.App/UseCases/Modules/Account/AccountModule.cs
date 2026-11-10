@@ -7,7 +7,7 @@ using MCUGLauncher.Services;
 namespace MCUGLauncher.UseCases;
 
 /// <summary>账号领域模块：登录、账号切换、MUA 档案、头像皮肤、账号状态与事件。</summary>
-internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider, IAccountSessionProvider
+internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider, IAccountSessionProvider, IAccountSessionService
 {
     readonly IAccountFeatureInvoker invoker;
     readonly IAccountContext context;
@@ -67,6 +67,31 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
             context.Config.OfflinePlayer,
             session != null || mode == "offline",
             context.AccountRevision));
+    }
+
+    public async Task<MSession> PrepareLaunchSessionAsync()
+    {
+        var mode = context.Config.AccountType;
+        var player = context.Config.Player;
+        if (mode == "offline")
+        {
+            var offline = new MSession
+            {
+                Username = player,
+                UUID = ProtocolValues.OfflineUuid(player),
+                AccessToken = "0",
+                ClientToken = Guid.NewGuid().ToString("N"),
+                UserType = "legacy"
+            };
+            Session = offline;
+            return offline;
+        }
+
+        var session = await new AccountModeCommands(context).EnsureFreshAsync(mode);
+        if (!string.Equals(session.Username, player, StringComparison.Ordinal))
+            throw new IOException("账号身份已改变，请重新选择账号后启动。");
+        Session = session;
+        return session;
     }
 
     public Task<AuthResultInfo> LoginMicrosoftAsync() =>

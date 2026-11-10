@@ -9,8 +9,8 @@ namespace MCUGLauncher.UseCases;
 
 /// <summary>普通启动、指定服务器启动、会话停止与进程观察的统一用例。</summary>
 /// <remarks>B 类：通过 LauncherContext.Config/Games/Tasks/Store/Http/Token/Log/SendGames
-/// 和 MarkPreparing/ReleasePreparing 管理启动；依赖 InstanceSnapshot.Capture、
-/// AccountModeCommands.EnsureFreshAsync 和 MuaAccountService.Metadata。
+/// 和 MarkPreparing/ReleasePreparing 管理启动；会话由 AccountModule.PrepareLaunchSessionAsync 提供，
+/// 另依赖 InstanceSnapshot.Capture 和 MuaAccountService.Metadata。
 /// 详细成员和 Core 调用见 docs/components/GameCommands.md；不依赖视图或 LauncherService。</remarks>
 internal sealed class GameCommands(LauncherContext context,
     Func<LaunchRequest, CancellationToken, Task<Process>>? buildProcess = null)
@@ -55,22 +55,7 @@ internal sealed class GameCommands(LauncherContext context,
             context.Games.RequireAvailable(instance.Directory, player, mode == "offline");
             context.MarkPreparing(instance.Root, instance.Directory);
             reservedDirectory = instance.Directory;
-            MSession session;
-            if (mode == "offline")
-                session = new MSession
-                {
-                    Username = player,
-                    UUID = OfflineUuid(player),
-                    AccessToken = "0",
-                    ClientToken = Guid.NewGuid().ToString("N"),
-                    UserType = "legacy"
-                };
-            else
-            {
-                session = await new AccountModeCommands(context).EnsureFreshAsync(mode);
-                if (!string.Equals(session.Username, player, StringComparison.Ordinal))
-                    throw new IOException("账号身份已改变，请重新选择账号后启动。");
-            }
+            var session = await context.PrepareLaunchSessionAsync();
             AuthlibLaunch? external = null;
             if (mode == "mua" && context.Mua != null)
             {

@@ -75,4 +75,5 @@ Modules/Account/
 - P1：新增 `IAccountStateProvider` / `IAccountSessionProvider`，`LauncherStateBuilder` 通过状态提供者读取账号快照；
 - P2（部分）：`AccountStateInfo` 扩展为 `Player/AccountType/OfflinePlayer/Authenticated/Revision`，保留默认参数兼容旧构造；
 - P1：账号契约改为纯抽象方法，UI 只走 `LauncherService → AccountModule → IAccountFeatureInvoker` 单一调用路径；
+- 启动会话：`AccountModule.PrepareLaunchSessionAsync` 统一生成离线会话、刷新在线会话并校验玩家名，`GameCommands` 不再自行构造 `MSession`；
 - P2（待做）：`IAccountStore` / `IAccountSessionStore` 尚未替代 `IAccountContext`。

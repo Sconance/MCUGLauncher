@@ -14,6 +14,8 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
     internal AccountModule? AccountsOrNull => accounts;
     public IAccountStateProvider? AccountStateProvider => accounts;
     public IAccountSessionProvider? SessionProvider => accounts;
+    public Task<MSession> PrepareLaunchSessionAsync() =>
+        (accounts ?? throw new InvalidOperationException("账号模块尚未装配。")).PrepareLaunchSessionAsync();
     public IAccountStateWriter StateWriter => accounts ?? throw new InvalidOperationException("账号模块尚未装配。");
     internal void AttachAccounts(AccountModule module) => accounts = module;
     public long AccountRevision => accountRevision;

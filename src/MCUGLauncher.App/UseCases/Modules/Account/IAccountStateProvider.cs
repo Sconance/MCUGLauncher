@@ -20,3 +20,9 @@ internal interface IAccountSessionProvider
         get;
     }
 }
+
+/// <summary>启动流程的账号会话入口；离线与在线会话都由账号模块准备。</summary>
+internal interface IAccountSessionService
+{
+    Task<MSession> PrepareLaunchSessionAsync();
+}
