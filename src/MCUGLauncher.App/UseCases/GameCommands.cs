@@ -27,21 +27,6 @@ internal sealed class GameCommands(LauncherContext context,
             : LaunchToServerAsync(target.Name, serverAddress, target.Root);
     }
 
-    string? FavoriteRoot(string instance, string address)
-    {
-        foreach (var server in context.Config.Servers.Where(server =>
-            string.Equals(server.Instance, instance, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(server.GameRoot)))
-        {
-            try
-            {
-                if (ServerEndpoint.Parse(server.Address).ToString().Equals(address, StringComparison.OrdinalIgnoreCase))
-                    return server.GameRoot;
-            }
-            catch (Exception error) when (error is IOException or ArgumentException) { }
-        }
-        return null;
-    }
-
     public async Task<LaunchResultInfo> LaunchToServerAsync(string instance, string serverAddress, string? gameRoot = null)
     {
         if (string.IsNullOrWhiteSpace(instance))
@@ -57,7 +42,6 @@ internal sealed class GameCommands(LauncherContext context,
         {
             return new(false, error.Message);
         }
-        gameRoot ??= FavoriteRoot(instance.Trim(), address);
         return await LaunchCoreAsync(instance.Trim(), address, gameRoot);
     }
 

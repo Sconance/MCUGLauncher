@@ -96,7 +96,7 @@ public interface ILauncherService : IDisposable
         {
             version
         });
-    /// <summary>使用明确的实例和服务器地址启动；不永久修改实例启动设置。</summary>
+    /// <summary>兼容入口：使用当前根目录内的实例直连服务器；跨目录收藏应使用 LaunchManagedInstanceAsync。</summary>
     [FeatureOperation]
     Task<LaunchResultInfo> LaunchToServerAsync(string instance, string serverAddress) =>
         FeatureRequest.InvokeAsync<LaunchResultInfo>(this, nameof(LaunchToServerAsync), new

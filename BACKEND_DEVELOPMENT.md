@@ -242,7 +242,7 @@ Views（UI，不属于后端）
 | `ContentUpdateCommands` | 内容更新检查、预览、应用 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `DiagnosticCommands` | 日志读取与系统信息 | `LauncherContext.Config/Send/Store` |
 | `GameCommands` | 普通/收藏服务器启动、停止游戏、进程观察（依赖详见 docs/components/GameCommands.md） | `LauncherContext.Config/Games/Http/Log/MarkPreparing/Mua/OnlineSession/ReleasePreparing/Send/SendGames/Store/Tasks/Token` |
-| `LaunchToServerFeatureHandler` | 收藏进服的强类型入口 | `ProtocolValues.ReadString(JsonElement, string)`；`GameCommands.LaunchToServerAsync(string, string, string?)`；通过构造函数接收 `LauncherContext` |
+| `LaunchToServerFeatureHandler` | 当前目录内直连服务器的兼容入口；跨目录收藏使用 LaunchManagedInstanceAsync | `ProtocolValues.ReadString(JsonElement, string)`；`GameCommands.LaunchToServerAsync(string, string, string?)`；通过构造函数接收 `LauncherContext` |
 | `InstallationCommands` | 加载器列表/安装、整合包预览/导入 | `LauncherContext.Config/Http/Send/Tasks/Token` |
 | `InstanceCommands` | 实例/版本选择、目录打开、明确目录的模组列表/启停/删除 | `LauncherContext.Config/RefreshState/Store.Save(AppConfig)/Store.DataDirectory`；`VersionCatalog` 模组成员；`InstanceSnapshot.Capture(AppConfig,string,string)`；[完整成员](docs/components/GameDirectories.md) |
 | `InstanceMaintenanceCommands` | 实例克隆与导出 | `LauncherContext.Config/Tasks.Enqueue`；`InstanceSnapshot.Capture/Request`；[完整成员](docs/components/GameDirectories.md) |

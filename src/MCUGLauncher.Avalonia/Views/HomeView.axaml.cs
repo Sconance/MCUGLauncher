@@ -21,7 +21,7 @@ internal partial class HomeView : UserControl
     int imageVersion;
     string serverSignature = "";
     string editingServer = "";
-    string dialogMissingInstance = "";
+    InstanceTarget? dialogMissingTarget;
     bool updatingInstances;
     int quoteIndex;
     string avatarAccount = "";
@@ -227,7 +227,9 @@ internal partial class HomeView : UserControl
             });
             copy.Children.Add(new TextBlock
             {
-                Text = server.Instance.Length > 0 ? "实例 · " + server.Instance : "未绑定实例",
+                Text = server.Instance.Length > 0
+                    ? "实例 · " + server.Instance + "\n目录 · " + (server.GameRoot.Length > 0 ? server.GameRoot : "未记录，请重新绑定")
+                    : "未绑定实例",
                 Classes = { "muted" },
                 TextWrapping = TextWrapping.Wrap
             });
@@ -546,15 +548,15 @@ internal partial class HomeView : UserControl
     /// <summary>用收藏绑定的实例直连服务器；未绑定则先引导去绑定。</summary>
     async Task OpenServerAsync(SavedServerInfo server)
     {
-        if (server.Instance.Length == 0)
+        if (server.Instance.Length == 0 || server.GameRoot.Length == 0)
         {
             ShowServerDialog(server);
-            SetDialogStatus("先给这台服务器绑定实例，保存后就能一键进服。");
+            SetDialogStatus("先给这台服务器绑定游戏目录和实例，保存后就能一键进服。");
             return;
         }
 
         Status("正在用 " + server.Instance + " 打开 " + server.Address + "…");
-        Status((await service!.LaunchToServerAsync(server.Instance, server.Address)).Message);
+        Status((await service!.LaunchManagedInstanceAsync(new InstanceTarget(server.GameRoot, server.Instance), server.Address)).Message);
     }
 
     /// <summary>打开中间覆盖页；server 为空表示新增。</summary>
@@ -565,7 +567,7 @@ internal partial class HomeView : UserControl
         DialogServerNameBox.Text = server?.Name ?? "";
         DialogServerAddressBox.Text = server?.Address ?? "";
         SetDialogStatus("");
-        FillDialogInstances(server?.Instance ?? "");
+        FillDialogInstances(server is { Instance.Length: > 0 } ? new(server.GameRoot, server.Instance) : null);
         DialogSaveButton.IsEnabled = true;
         ServerDialogLayer.IsVisible = true;
         // 卡片自身 Cycle 收住 Tab，页面只做模糊与遮罩，不改背景控件的可交互状态
@@ -587,40 +589,42 @@ internal partial class HomeView : UserControl
         DialogServerInstanceBox.SelectedIndex = -1;
         DialogServerInstanceBox.ItemsSource = null;
         dialogInstances.Clear();
-        dialogMissingInstance = "";
+        dialogMissingTarget = null;
         SetDialogStatus("");
     }
 
-    /// <summary>第一项是「不绑定」，其余按当前可用实例顺序排列，索引偏移 1。</summary>
-    void FillDialogInstances(string selected)
+    /// <summary>按完整目录和实例名选择；不可用的旧目标单独保留，不替换成别处同名实例。</summary>
+    void FillDialogInstances(InstanceTarget? selected)
     {
         dialogInstances.Clear();
-        dialogInstances.AddRange(Instances());
-        dialogMissingInstance = "";
+        dialogInstances.AddRange(state?.GameDirectories.SelectMany(directory => directory.Instances)
+            .Where(item => item.Name.Length > 0 && item.Root.Length > 0 && !item.IsPlaceholder) ?? []);
+        dialogMissingTarget = null;
         var labels = new List<string> { "不绑定实例" };
         labels.AddRange(dialogInstances.Select(item =>
-            item.DisplayName + " · " + item.Loader + " · " + item.Minecraft));
+            item.DisplayName + " · " + item.Loader + " · " + item.Minecraft + "\n" + item.Root));
         var index = dialogInstances.FindIndex(item =>
-            item.Name.Equals(selected, StringComparison.OrdinalIgnoreCase));
+            selected != null && item.Name.Equals(selected.Name, StringComparison.OrdinalIgnoreCase)
+                && item.Root.Equals(selected.Root, StringComparison.OrdinalIgnoreCase));
         // 记着的实例已被删除时也留一个补位项，避免保存时把它悄悄清掉
-        if (selected.Length > 0 && index < 0)
+        if (selected != null && index < 0)
         {
-            dialogMissingInstance = selected;
-            labels.Add(selected + "（当前未安装）");
+            dialogMissingTarget = selected;
+            labels.Add(selected.Name + "（绑定实例不可用）\n" + (selected.Root.Length > 0 ? selected.Root : "未记录游戏目录，请重新绑定"));
         }
 
         DialogServerInstanceBox.ItemsSource = labels;
-        DialogServerInstanceBox.SelectedIndex = selected.Length > 0
+        DialogServerInstanceBox.SelectedIndex = selected != null
             ? index >= 0 ? index + 1 : labels.Count - 1
             : 0;
     }
 
-    string SelectedDialogInstance()
+    InstanceTarget? SelectedDialogInstance()
     {
         var index = DialogServerInstanceBox.SelectedIndex - 1;
         if (index >= 0 && index < dialogInstances.Count)
-            return dialogInstances[index].Name;
-        return index == dialogInstances.Count ? dialogMissingInstance : "";
+            return new(dialogInstances[index].Root, dialogInstances[index].Name);
+        return index == dialogInstances.Count ? dialogMissingTarget : null;
     }
 
     async Task SaveServerFromDialog()
@@ -637,11 +641,21 @@ internal partial class HomeView : UserControl
         DialogSaveButton.IsEnabled = false;
         try
         {
+            var target = SelectedDialogInstance();
+            if (target != null && string.IsNullOrWhiteSpace(target.Root))
+            {
+                SetDialogStatus("原绑定缺少游戏目录，请重新选择实例或取消绑定。");
+                return;
+            }
+            // A missing target is an unchanged historical binding. Omit both fields to preserve it,
+            // including when its directory is no longer managed; never infer a replacement root.
+            var preserveMissing = target != null && target == dialogMissingTarget;
             var result = await service!.SaveServerAsync(
                 DialogServerNameBox.Text?.Trim() ?? "",
                 address,
                 editingServer,
-                SelectedDialogInstance());
+                preserveMissing ? null : target?.Name ?? "",
+                preserveMissing ? null : target?.Root ?? "");
             if (result.Ok)
             {
                 HideServerDialog();

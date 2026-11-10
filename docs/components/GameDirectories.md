@@ -44,8 +44,10 @@ var serverResult = await service.LaunchManagedInstanceAsync(target, "play.exampl
 `SavedServer.GameRoot`、`SavedServerInfo.GameRoot` 与 Instance 共同固定目标。
 旧配置加载时将已绑定收藏的空 GameRoot 固定为当时的 Root，不要求离线目录在线。
 `SaveServerAsync(..., instance, gameRoot)` 支持明确目录；省略参数的旧调用保留既有绑定目录，清空实例则清空目录。
-旧主页按 Instance/Address 调用 `LaunchToServerAsync` 时，后端按规范化服务器地址和实例名找到收藏绑定目录，避免切换 Root 后误启动同名实例。
-显式 `LaunchManagedInstanceAsync` 则始终使用传入目录，不用收藏或当前选择替代。
+主页编辑收藏时从所有目录的实例中选择，显示根目录并以目录和名称共同匹配；同名实例重新绑定也同时提交绝对路径。
+绑定不可用时保留原目标的占位项，不选中其他目录的同名实例；只编辑名称或地址时通过省略绑定参数保留旧目标，解绑则清空两字段。
+主页卡片通过 `LaunchManagedInstanceAsync(new InstanceTarget(server.GameRoot,server.Instance),server.Address)` 直接启动所点击记录，不再用规范化地址重新寻找收藏。
+没有根目录的记录先引导重新绑定。兼容接口 `LaunchToServerAsync` 使用当前 Root，跨目录收藏必须使用显式目标接口。
 
 ## 组件与逐成员依赖
 
@@ -63,7 +65,7 @@ GameDirectoryCatalog 必须连接既有 VersionCatalog 的 Models 与返回给�
 | InstanceCommands | `LauncherContext.Config/RefreshState/Store.DataDirectory/Store.Save(AppConfig)`；SelectVersion(string)/SelectInstance(string) 保存当前目录内的选择；`VersionCatalog.Load(string,string)/InstanceDirectory(string,string)/ReadMods(string,string)/SetEnabled(ModInfo,bool)/Delete(ModInfo)`；Models.ModInfo.File；`InstanceSnapshot.Capture(AppConfig,string,string)` 的 Root/Key |
 | InstanceMaintenanceCommands | `LauncherContext.Config/Tasks.Enqueue(string,string,string,DownloadRequest)`；`InstanceSnapshot.Capture(AppConfig,string,string)` 的 Root/Directory/Name/Requirements/Request()；`ProtocolValues.ReadString(JsonElement,string)` |
 | UninstallCommands | `LauncherContext.Config/Games.UsesDirectory(string)/Token/Tasks.Enqueue(string,string,string,DownloadRequest)`；`InstanceSnapshot.Capture(AppConfig,string,string)` 的 Root/Key/Settings/Directory/Name/Request()；`PreviewCache<Confirmation>.For(object)/Add(Confirmation)/Get(string,bool)`；Core.InstanceUninstaller.Plan(string,string,LaunchSettings) |
-| GameCommands、CommunityCommands | 现有详细依赖分别在 GameCommands.md、CommunityCommands.md；增加读取 SavedServer.GameRoot/Instance/Address，CommunityCommands 调用 GameDirectoryCatalog.RequireRoot(AppConfig,string)，GameCommands 的 Capture 接收显式目录 |
+| GameCommands、CommunityCommands | 现有详细依赖分别在 GameCommands.md、CommunityCommands.md；CommunityCommands 读取 SavedServer.GameRoot/Instance/Address 并调用 GameDirectoryCatalog.RequireRoot(AppConfig,string)；GameCommands 的 Capture 接收显式目录，不读取收藏列表 |
 
 `GameDirectoryFeatureHandlers.cs` 的十一项适配器：
 
@@ -87,8 +89,8 @@ GameDirectoryCatalog 必须连接既有 VersionCatalog 的 Models 与返回给�
 
 TUI 已通过“游戏目录管理”和“实例与启动”接入：按目录浏览、添加/移除/刷新目录，并向明确目标的启动、克隆、导出、模组和卸载接口传递 InstanceTarget。
 编辑自动进服设置时，菜单明确说明先选择目标实例，然后沿用原有启动设置 token 流程；其他明确目标操作不改变当前目录。
-Avalonia 页面仍保持按当前目录展示；后续界面任务应消费 GameDirectories，并传递完整 InstanceTarget。
-涉及 HomeView 的实例选择/收藏、InstancesView 和 SettingsView 的目录管理；不得仅以名称查找跨目录实例。后端实现与后续 TUI 接入均未修改 Avalonia 页面。
+Avalonia 主页收藏编辑已消费 GameDirectories，完整传递 InstanceTarget 并显示所属目录；其余实例管理页面仍保持按当前目录展示。
+后续 InstancesView 和 SettingsView 的跨目录实例管理不得仅以名称查找实例。
 后台任务独立于页面生命周期。安装任务仍按原有入队时选定目录执行，不在执行时重新读取 Root。
 
 检查入口：LauncherChecks 的 `--game-directories-only`，覆盖同名实例、多目录扫描、离线与损坏元数据隔离、路径去重、持久化、收藏目录迁移、模组定向、原生卸载确认、跨等待启动和真实队列导出。

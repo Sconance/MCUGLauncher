@@ -145,9 +145,16 @@
                     <StackPanel Spacing="6">
                         <TextBlock Text="打开所用的实例" FontSize="11.5" FontWeight="SemiBold" Foreground="#3A444E" />
                         <ComboBox x:Name="DialogServerInstanceBox" HorizontalAlignment="Stretch"
-                                  MaxDropDownHeight="260" />
+                                  MaxDropDownHeight="260">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" x:CompileBindings="False"
+                                               TextWrapping="Wrap" MaxWidth="350" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                         <TextBlock Classes="muted"
-                                   Text="绑定后用卡片上的「打开」直连服务器；不绑定只能手动进入。" />
+                                   Text="按游戏目录和实例共同绑定；卡片上的「打开」使用此处保存的完整目标。" />
                     </StackPanel>
 
                     <TextBlock x:Name="ServerDialogStatus" Classes="status" IsVisible="False" />

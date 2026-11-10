@@ -5,11 +5,10 @@ B 类游戏启动用例。普通启动和收藏启动共用一条准备、授权
 ## 接口和依赖成员
 
 - `LaunchAsync(string version)`：普通启动；空版本沿用 LastVersion，保留已有启动设置。
-- `LaunchToServerAsync(string instance, string serverAddress, string? gameRoot=null)`：要求明确实例和地址；未指定目录时读取匹配收藏的 GameRoot；Core ServerEndpoint.Parse 校验并规范化地址。
+- `LaunchToServerAsync(string instance, string serverAddress, string? gameRoot=null)`：要求明确实例和地址；兼容入口未指定目录时沿用当前 Root，不查询收藏。Core ServerEndpoint.Parse 只校验并规范化连接地址。
 - `LaunchManagedAsync(InstanceTarget target,string? serverAddress)`：必须指定目录和名称，复用同一流程，不切换当前选择。
 - `LauncherContext.Config.Root/LastVersion/LastInstance/Player/AccountType`：读取当前根目录、账号，成功后记录最近实例；根目录变化时不写入错误目录的最近实例。
 - `InstanceSnapshot.Capture(AppConfig, string, string?)`：验证受管理根目录并冻结实例键、数据目录、需求以及深复制的启动设置。
-- `LauncherContext.Config.Servers` 的 Instance/Address/GameRoot：为旧收藏入口查找固定目录，按规范化地址匹配；不会替换显式目标。
 - `LauncherContext.Tasks.RequireLaunchAvailable(string, string, string)`：检查下载/维护与启动冲突。
 - `LauncherContext.Games.RequireAvailable(string, string, bool)`、`UsesDirectory(string)`：检查已运行会话与实例占用。
 - `LauncherContext.MarkPreparing(string, string)` / `ReleasePreparing(string)`：原子预留目录，在 finally 释放；供其他用例检查占用。
@@ -30,5 +29,7 @@ MemoryPolicy.Recommend、JavaDiscovery.Architecture、ServerEndpoint.Parse。离
 任何准备、账号或进程错误都返回 LaunchResultInfo(false, message)，不把创建了 Process 对象当作启动成功。
 只有 Games.Start 成功才返回 Ok=true；这也不表示远端服务器已完成登录。
 
-入口位于 Contracts.ILauncherService 和 UseCases.GameFeatureHandlers，不新增 JSON 字符串命令。
+主页收藏通过 LaunchManagedInstanceAsync 直接传递该记录的 GameRoot/Instance/Address，目录不可用则返回失败。
+等价地址的不同收藏互不影响；启动用例不再按地址遍历收藏以推断目录。
+入口位于 Contracts.ILauncherService、UseCases.GameFeatureHandlers 和 GameDirectoryFeatureHandlers，不新增 JSON 字符串命令。
 测试在 test/LauncherChecks/ServerLaunchScenarios.cs，执行命令见 test/README.md。

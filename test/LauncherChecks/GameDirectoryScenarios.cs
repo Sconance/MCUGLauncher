@@ -66,6 +66,13 @@ internal static class GameDirectoryScenarios
             "selection persists both root and instance name");
         await service.SaveServerAsync("Bound", "bound.example", instance: key, gameRoot: first);
         Check(store.Load().Servers.Single(item => item.Address == "bound.example").GameRoot == first, "favorite saves explicit instance root");
+        await service.SaveServerAsync("Rebound", "bound.example", "bound.example", key, Path.Combine(second, "."));
+        Check(store.Load().Servers.Single(item => item.Address == "bound.example").GameRoot == second,
+            "rebinding the same instance name replaces and normalizes the absolute root");
+        await service.SaveServerAsync("Bound", "bound.example", "bound.example", key, first);
+        await service.SaveServerAsync("Equivalent address", "bound.example:25565", instance: key, gameRoot: second);
+        Check(store.Load().Servers.Count(item => item.Address.StartsWith("bound.example", StringComparison.Ordinal)) == 2,
+            "equivalent server addresses retain independent favorite bindings");
         var mods = await service.ListManagedModsAsync(new(first, key));
         Check(mods.Single().Path.StartsWith(first, StringComparison.Ordinal), "explicit mod query ignores selected root");
         await service.ToggleManagedModAsync(new(first, key), "fixture.jar", false);
@@ -114,8 +121,19 @@ internal static class GameDirectoryScenarios
                 return Task.FromResult(CreateProcess());
             });
             var favorite = await favoriteCommands.LaunchToServerAsync(key, "bound.example:25565");
-            Check(favorite.Ok && favoriteRequest?.Root == first, "legacy favorite launch uses saved root and normalized server address");
+            Check(favorite.Ok && favoriteRequest?.Root == second, "legacy server launch uses current root without looking up favorites");
             await Task.WhenAll(context.Games.Active.Select(game => game.Session.Completion));
+            foreach (var server in context.Config.Servers.Where(item => item.Address.StartsWith("bound.example", StringComparison.Ordinal)))
+            {
+                var result = await favoriteCommands.LaunchManagedAsync(new(server.GameRoot, server.Instance), server.Address);
+                Check(result.Ok && favoriteRequest?.Root == server.GameRoot && favoriteRequest.Settings!.Server == "bound.example:25565",
+                    "clicked favorite keeps its explicit root for equivalent address: " + server.Address);
+                await Task.WhenAll(context.Games.Active.Select(game => game.Session.Completion));
+            }
+            var beforeMissing = favoriteRequest;
+            var unavailable = await favoriteCommands.LaunchManagedAsync(new(missing, key), "bound.example");
+            Check(!unavailable.Ok && ReferenceEquals(beforeMissing, favoriteRequest),
+                "unavailable favorite root never falls back to another same-name instance");
         }
 
         // The real queue persists the explicit snapshot before any directory changes.

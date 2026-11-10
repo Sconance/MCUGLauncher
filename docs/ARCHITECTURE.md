@@ -7,7 +7,7 @@
 状态的 `GameDirectories` 返回全部结果，旧 `Instances/VersionGroups/Mods` 保留当前目录语义。
 新的强类型目录管理、启动、克隆、导出、模组和卸载预览接口直接复用现有用例与 Core；后台任务在入队时冻结目录，不跟随当前选择。
 收藏增加 GameRoot，旧数据加载时固定当时的根目录；配置重载保留离线磁盘路径。
-TUI 已按目录分组接入上述功能，Avalonia 仍保留当前目录展示；后续 Avalonia 页面需传递完整 InstanceTarget。详见 [多目录组件与接口](components/GameDirectories.md)。
+TUI 已按目录分组接入上述功能，Avalonia 主页收藏已支持完整跨目录绑定，其余实例管理仍保留当前目录展示。详见 [多目录组件与接口](components/GameDirectories.md)。
 
 界面使用 Avalonia 原生控件。`ShellWindow` 只负责导航、窗口生命周期和页面宿主；页面只依赖
 `Contracts.ILauncherService`，由 `UseCases.LauncherService` 统一实现业务入口。WebView2 仅保留给微软 OAuth 登录窗口。
@@ -59,14 +59,14 @@ WebView2 的唯一用途是 `MicrosoftLoginWindow` 承载微软 OAuth 页面；�
 省略或传 null 保留原绑定，空字符串清除绑定；新增收藏未提供实例时保持未绑定。
 因此既有 Avalonia/TUI 的三参数调用不会丢失收藏的实例。界面和 Core 无需修改。
 
-收藏进服已通过 `ILauncherService.LaunchToServerAsync(instance, serverAddress)` 接入。
+主页收藏进服通过 `ILauncherService.LaunchManagedInstanceAsync(new InstanceTarget(GameRoot,Instance),Address)` 接入。
 `LaunchToServerFeatureHandler` 调用 `GameCommands`，复用身份校验、任务互斥、实例快照和进程管理。
 实例必须明确指定，未绑定或已删除的实例返回失败，不会回退到当前选中实例；服务器地址由
 Core `ServerEndpoint.Parse` 校验并规范化。共享的目录预留会阻止普通启动和收藏启动并发准备同一实例。
 
 地址只覆盖本次启动快照的 `LaunchSettings.Server`，不永久改写全局/实例/收藏设置；
 普通 `LaunchAsync` 保持原有行为。参数生成继续交给 `Core.LaunchService`。
-调用方读取收藏的 `Instance` 和 `Address` 后传给接口，并展示 `LaunchResultInfo.Ok/Message`。
+调用方直接读取所点击收藏的 `GameRoot`、`Instance` 和 `Address` 后传给接口，展示 `LaunchResultInfo.Ok/Message`；地址规范化仅处理连接参数，不用于反查收藏目录。
 Avalonia 主页已通过服务器卡片的“打开”按钮调用该接口；未绑定时引导编辑收藏。
-编辑窗口从 `State.Instances` 读取实例列表，经 `SaveServerAsync` 保存绑定。
+编辑窗口从 `State.GameDirectories` 读取实例列表，显示目录并按目录和名称共同选中，经 `SaveServerAsync` 同时保存实例和根目录；不可用目标保留原绑定。
 TUI 服务器收藏页暂未接入这一操作。
