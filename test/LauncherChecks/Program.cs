@@ -309,7 +309,9 @@ using (var service = new LauncherService(
            _ => "",
            store))
 {
-    var featureOperations = typeof(ILauncherService).GetMethods()
+    var featureOperations = typeof(ILauncherService).GetInterfaces()
+        .Prepend(typeof(ILauncherService))
+        .SelectMany(contract => contract.GetMethods())
         .Where(method => method.IsDefined(typeof(FeatureOperationAttribute)))
         .ToArray();
     var featureHandlers = typeof(LauncherService).Assembly.GetTypes()
