@@ -33,3 +33,14 @@
 - `LauncherService` 继续实现聚合接口，行为不变；
 - 现有 View 可继续使用 `ILauncherService`，后续逐页迁移到领域接口；
 - `LauncherChecks` 已改为从继承接口发现 feature operation。
+
+## 领域模块
+
+账号领域已从 `LauncherService` 抽离为 `UseCases/Modules/Account/AccountModule`：
+
+- `AccountModule` 负责微软/MUA/离线登录、账号切换、MUA 档案、头像皮肤；
+- 账号消息（`authResult`、`accountState`、`accountSwitchResult`、`muaProfiles`）由模块处理；
+- `LauncherService` 只保留事件转发与方法委托，`IAccountService` 契约不变；
+- `AccountFeatureHandlers` 与模块同目录，后续新账号能力优先加在模块内。
+
+其他领域模块按同样方式逐步抽离，保持 `ILauncherService` 聚合兼容。

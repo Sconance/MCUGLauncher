@@ -8,7 +8,7 @@
 | 契约 | `App/Contracts`：分领域接口、`ILauncherService` 聚合、`LauncherState`、事件 DTO、`LaunchLimits`、`WindowPlacement` | UI 与业务共享的类型化边界 |
 | 原生壳 | `ShellWindow`、`ShellDesktopHost`、`NativeDialogs` | 窗口、导航、原生确认框与文件选择 |
 | 页面 | `Views/*View`（Home、Download、Instances、Account、Games、Bookmarks、Community、Settings、Tasks） | 展示、页面事件与状态订阅 |
-| 应用服务 | `UseCases/LauncherService` | 实现领域接口与兼容聚合、UI 线程调度、状态/事件分发 |
+| 应用服务 | `UseCases/LauncherService`、`UseCases/Modules/*` | 实现领域接口与兼容聚合、UI 线程调度、状态/事件分发；账号已拆为 `AccountModule` |
 | 用例 | `UseCases/LauncherApplication` 及各 Commands | 校验输入、编排账号/游戏/内容/设置/维护 |
 | 适配与状态 | `Services`、`Authentication` | 配置、会话缓存、队列适配、外部认证与状态快照 |
 | 核心 | `MCUGLauncher.Core` | 校验下载、依赖解析、事务安装、实例和游戏会话 |
