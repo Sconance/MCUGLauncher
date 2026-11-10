@@ -628,5 +628,8 @@ internal sealed class LauncherApplication : IDisposable
         }
     }
 
+    // 供上层适配记录无法处理的响应；写盘失败会被吞掉，不影响主流程。
+    public void Log(string message) => context.Log(message);
+
     public void Dispose() => context.Dispose();
 }

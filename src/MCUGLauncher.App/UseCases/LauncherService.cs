@@ -12,6 +12,7 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
     static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
     readonly LauncherApplication application;
     readonly Action<Action> dispatch;
+    bool reportedMalformed;
 
     public event Action<LauncherState>? StateChanged;
     public event Action<IReadOnlyList<TaskInfo>>? TasksChanged;
@@ -540,7 +541,23 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             return;
         }
         var json = JsonSerializer.Serialize(payload, Options);
-        dispatch(() => Handle(json));
+        dispatch(() =>
+        {
+            try
+            {
+                Handle(json);
+            }
+            catch (Exception error) when (error is JsonException or InvalidOperationException or FormatException or ArgumentException or KeyNotFoundException)
+            {
+                // 一条结构异常的后台消息不应该带走整个启动器：记进日志，第一次时提示一次，然后继续等下一帧状态。
+                // 这里刻意只吞数据解析类异常；空引用之类的代码缺陷仍然会照常暴露。
+                application.Log("忽略无法处理的消息：" + json.Length + " 字节 " + error);
+                if (reportedMalformed)
+                    return;
+                reportedMalformed = true;
+                ErrorReceived?.Invoke("收到一条无法处理的更新，已忽略。");
+            }
+        });
     }
 
     void Handle(string json)
