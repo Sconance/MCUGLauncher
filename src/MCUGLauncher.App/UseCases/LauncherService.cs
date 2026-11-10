@@ -12,20 +12,37 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
     static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
     readonly LauncherApplication application;
     readonly Action<Action> dispatch;
+    readonly AccountModule account;
 
     public event Action<LauncherState>? StateChanged;
     public event Action<IReadOnlyList<TaskInfo>>? TasksChanged;
     public event Action<IReadOnlyList<GameInfo>>? GamesChanged;
-    public event Action<AuthResultInfo>? AuthResultReceived;
-    public event Action<AccountStateInfo>? AccountStateChanged;
-    public event Action<AccountSwitchResultInfo>? AccountSwitchResultReceived;
+    public event Action<AuthResultInfo>? AuthResultReceived
+    {
+        add => account.AuthResultReceived += value;
+        remove => account.AuthResultReceived -= value;
+    }
+    public event Action<AccountStateInfo>? AccountStateChanged
+    {
+        add => account.AccountStateChanged += value;
+        remove => account.AccountStateChanged -= value;
+    }
+    public event Action<AccountSwitchResultInfo>? AccountSwitchResultReceived
+    {
+        add => account.AccountSwitchResultReceived += value;
+        remove => account.AccountSwitchResultReceived -= value;
+    }
     public event Action<PickedPathInfo>? PathPicked;
     public event Action<ToastInfo>? ToastReceived;
     public event Action<string>? ErrorReceived;
     public event Action<CommunityPayload>? CommunityReceived;
     public event Action<CommunityData>? CommunityChanged;
     public event Action<ContentErrorInfo>? ContentErrorReceived;
-    public event Action<MuaProfilesInfo>? MuaProfilesReceived;
+    public event Action<MuaProfilesInfo>? MuaProfilesReceived
+    {
+        add => account.MuaProfilesReceived += value;
+        remove => account.MuaProfilesReceived -= value;
+    }
 
     public WindowPlacement WindowPlacement => new(
         application.Config.WindowWidth,
@@ -57,6 +74,7 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             store,
             microsoftBrowser: browser,
             avatarEncoder: avatarEncoder);
+        account = new AccountModule(this, CommandAsync);
     }
 
     public Task StartAsync() => application.HandleAsync("""{"type":"ready"}""");
@@ -137,34 +155,17 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
 
     public Task TaskActionAsync(string id, string action) => CommandAsync(new { type = "taskAction", id, action });
 
-    public Task<AuthResultInfo> LoginMicrosoftAsync() =>
-        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LoginMicrosoftAsync), new
-        {
-        });
+    public Task<AuthResultInfo> LoginMicrosoftAsync() => account.LoginMicrosoftAsync();
 
     public Task<AuthResultInfo> LoginMuaAsync(string account, string password) =>
-        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LoginMuaAsync), new
-        {
-            account,
-            password
-        });
+        this.account.LoginMuaAsync(account, password);
 
     public Task<AccountSwitchResultInfo> SwitchAccountModeAsync(string mode) =>
-        FeatureRequest.InvokeAsync<AccountSwitchResultInfo>(this, nameof(SwitchAccountModeAsync), new
-        {
-            mode
-        });
+        account.SwitchAccountModeAsync(mode);
 
-    public Task<AuthResultInfo> ForgetAccountAsync(string mode) =>
-        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(ForgetAccountAsync), new
-        {
-            mode
-        });
+    public Task<AuthResultInfo> ForgetAccountAsync(string mode) => account.ForgetAccountAsync(mode);
 
-    public Task<AuthResultInfo> LogoutAccountAsync() =>
-        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LogoutAccountAsync), new
-        {
-        });
+    public Task<AuthResultInfo> LogoutAccountAsync() => account.LogoutAccountAsync();
 
     public async Task<ContentSearchResultInfo> SearchContentAsync(string category, string query, string requestId = "")
     {
@@ -471,24 +472,12 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             url
         });
 
-    public Task<AvatarInfo?> ReadAvatarAsync() =>
-        FeatureRequest.InvokeAsync<AvatarInfo?>(this, nameof(ReadAvatarAsync), new
-        {
-        });
+    public Task<AvatarInfo?> ReadAvatarAsync() => account.ReadAvatarAsync();
 
-    public Task<AvatarInfo?> SetOfflineSkinAsync(string path) =>
-        FeatureRequest.InvokeAsync<AvatarInfo?>(this, nameof(SetOfflineSkinAsync), new
-        {
-            path
-        });
+    public Task<AvatarInfo?> SetOfflineSkinAsync(string path) => account.SetOfflineSkinAsync(path);
 
     public Task SelectMuaProfileAsync(string token, string profileId) =>
-        CommandAsync(new
-        {
-            type = "selectMuaProfile",
-            token,
-            profileId
-        });
+        account.SelectMuaProfileAsync(token, profileId);
 
     public Task PickFolderAsync(string target) => CommandAsync(new { type = "pickFolder", target });
 
@@ -549,6 +538,8 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
         var root = document.RootElement.Clone();
         if (!root.TryGetProperty("type", out var typeValue) || typeValue.GetString() is not { } type)
             return;
+        if (account.Handle(type, root))
+            return;
         switch (type)
         {
             case "tasks":
@@ -564,15 +555,6 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
                 break;
             case "saveBackups":
                 SaveBackups = ParseItems(root, "items", SaveBackupInfo.From);
-                break;
-            case "authResult":
-                AuthResultReceived?.Invoke(AuthResultInfo.From(root));
-                break;
-            case "accountState":
-                AccountStateChanged?.Invoke(AccountStateInfo.From(root));
-                break;
-            case "accountSwitchResult":
-                AccountSwitchResultReceived?.Invoke(AccountSwitchResultInfo.From(root));
                 break;
             case "pickedPath":
                 PathPicked?.Invoke(PickedPathInfo.From(root));
@@ -591,9 +573,6 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
                 break;
             case "contentError":
                 ContentErrorReceived?.Invoke(ContentErrorInfo.From(root));
-                break;
-            case "muaProfiles":
-                MuaProfilesReceived?.Invoke(MuaProfilesInfo.From(root));
                 break;
         }
     }
