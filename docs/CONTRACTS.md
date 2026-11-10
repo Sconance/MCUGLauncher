@@ -44,3 +44,22 @@
 - `AccountFeatureHandlers` 与模块同目录，后续新账号能力优先加在模块内。
 
 其他领域模块按同样方式逐步抽离，保持 `ILauncherService` 聚合兼容。
+
+## 账号模块边界（已完成）
+
+```text
+Modules/Account/
+  AccountModule.cs            方法/事件门面
+  AccountFeatureInvoker.cs    适配 LauncherApplication，断开与 LauncherService 的环
+  IAccountContext.cs          账号模块最小上下文
+  AccountCommands.cs          登录用例
+  AccountModeCommands.cs      账号切换/忘记/恢复
+  MuaProfileSelection.cs      MUA 角色选择
+  AccountFeatureHandlers.cs   FeatureHandler
+```
+
+- `AccountModule` 只依赖 `IAccountFeatureInvoker` 和 `Contracts`，不再引用 `LauncherService`；
+- 账号命令只依赖 `IAccountContext`，不再接收完整 `LauncherContext`；
+- `SelectMuaProfileAsync` 已改为 `[FeatureOperation] Task<SavedInfo>`，删除 JSON 命令委托；
+- `LauncherContext` 实现 `IAccountContext`，并用 `NextRevision()` 统一账号版本号递增；
+- 账号状态仍由 `LauncherContext.Config/OnlineSession` 和 `LauncherStateBuilder` 维护，后续可再抽 `IAccountStateProvider`。
