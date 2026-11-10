@@ -43,6 +43,7 @@ Check(new MCUGLauncher.Models.AppConfig().AutoMemory
 using (var oldLaunchSettings = JsonDocument.Parse("{}"))
     Check(LaunchSettingsInfo.From(oldLaunchSettings.RootElement).AutoChinese,
         "launch settings DTO defaults AutoChinese for older responses");
+ContractScenarios.Run(fixture);
 
 await Request("""{"type":"requestState"}""");
 Check(messages.Count > 0 && messages[0].GetProperty("selectedVersion").GetString() == "custom-fabric", "state reflects fixture instance");

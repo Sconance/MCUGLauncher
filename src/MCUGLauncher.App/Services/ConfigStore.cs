@@ -170,7 +170,7 @@ public sealed class ConfigStore
             string Read(string name) => root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
                 ? value.GetString() ?? ""
                 : "";
-            int ReadInt(string name, int fallback) => root.TryGetProperty(name, out var value) && value.TryGetInt32(out var number)
+            int ReadInt(string name, int fallback) => root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number)
                 ? number
                 : fallback;
 

@@ -38,7 +38,7 @@ internal sealed class SettingsCommands(LauncherContext context)
             context.Config.AutoMemory = autoMemory.GetBoolean();
         if (root.TryGetProperty("autoChinese", out var autoChinese))
             context.Config.LegacyPreferences.Launch.AutoChinese = autoChinese.GetBoolean();
-        if (root.TryGetProperty("ram", out var ram) && ram.TryGetInt32(out var ramValue))
+        if (root.TryGetProperty("ram", out var ram) && ram.ValueKind == JsonValueKind.Number && ram.TryGetInt32(out var ramValue))
             context.Config.Ram = Math.Clamp(ramValue, LaunchLimits.RamMin, LaunchLimits.RamMax);
         if (requestedRoot.Length > 0)
         {
@@ -50,9 +50,9 @@ internal sealed class SettingsCommands(LauncherContext context)
         }
         if (root.TryGetProperty("java", out var java))
             context.Config.Java = java.GetString()?.Trim() ?? "";
-        if (root.TryGetProperty("width", out var width) && width.TryGetInt32(out var widthValue))
+        if (root.TryGetProperty("width", out var width) && width.ValueKind == JsonValueKind.Number && width.TryGetInt32(out var widthValue))
             context.Config.Width = Math.Clamp(widthValue, LaunchLimits.WindowWidthMin, LaunchLimits.WindowWidthMax);
-        if (root.TryGetProperty("height", out var height) && height.TryGetInt32(out var heightValue))
+        if (root.TryGetProperty("height", out var height) && height.ValueKind == JsonValueKind.Number && height.TryGetInt32(out var heightValue))
             context.Config.Height = Math.Clamp(heightValue, LaunchLimits.WindowHeightMin, LaunchLimits.WindowHeightMax);
         context.Store.Save(context.Config);
         context.RefreshState();

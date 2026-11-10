@@ -66,7 +66,7 @@ public sealed record TaskInfo(
         JsonRead.String(element, "id"),
         JsonRead.String(element, "name"),
         JsonRead.String(element, "state"),
-        element.TryGetProperty("percent", out var percent) && percent.TryGetDouble(out var value) ? value : 0,
+        JsonRead.Double(element, "percent"),
         JsonRead.String(element, "message"),
         JsonRead.Bool(element, "committing"));
 }
