@@ -4,66 +4,56 @@ using MCUGLauncher.Contracts;
 namespace MCUGLauncher.UseCases;
 
 /// <summary>账号领域模块：登录、账号切换、MUA 档案、头像皮肤与账号事件。</summary>
-internal sealed class AccountModule
+internal sealed class AccountModule(IAccountFeatureInvoker invoker)
 {
-    readonly IFeatureRequestInvoker invoker;
-    readonly Func<object, Task> command;
-
-    public AccountModule(IFeatureRequestInvoker invoker, Func<object, Task> command)
-    {
-        this.invoker = invoker;
-        this.command = command;
-    }
-
     public event Action<AuthResultInfo>? AuthResultReceived;
     public event Action<AccountStateInfo>? AccountStateChanged;
     public event Action<AccountSwitchResultInfo>? AccountSwitchResultReceived;
     public event Action<MuaProfilesInfo>? MuaProfilesReceived;
 
     public Task<AuthResultInfo> LoginMicrosoftAsync() =>
-        invoker.InvokeFeatureAsync<AuthResultInfo>(nameof(LoginMicrosoftAsync), new
+        invoker.InvokeAsync<AuthResultInfo>(nameof(LoginMicrosoftAsync), new
         {
         });
 
     public Task<AuthResultInfo> LoginMuaAsync(string account, string password) =>
-        invoker.InvokeFeatureAsync<AuthResultInfo>(nameof(LoginMuaAsync), new
+        invoker.InvokeAsync<AuthResultInfo>(nameof(LoginMuaAsync), new
         {
             account,
             password
         });
 
     public Task<AccountSwitchResultInfo> SwitchAccountModeAsync(string mode) =>
-        invoker.InvokeFeatureAsync<AccountSwitchResultInfo>(nameof(SwitchAccountModeAsync), new
+        invoker.InvokeAsync<AccountSwitchResultInfo>(nameof(SwitchAccountModeAsync), new
         {
             mode
         });
 
     public Task<AuthResultInfo> ForgetAccountAsync(string mode) =>
-        invoker.InvokeFeatureAsync<AuthResultInfo>(nameof(ForgetAccountAsync), new
+        invoker.InvokeAsync<AuthResultInfo>(nameof(ForgetAccountAsync), new
         {
             mode
         });
 
     public Task<AuthResultInfo> LogoutAccountAsync() =>
-        invoker.InvokeFeatureAsync<AuthResultInfo>(nameof(LogoutAccountAsync), new
+        invoker.InvokeAsync<AuthResultInfo>(nameof(LogoutAccountAsync), new
         {
         });
 
-    public Task SelectMuaProfileAsync(string token, string profileId) =>
-        command(new
+    public Task<SavedInfo> SelectMuaProfileAsync(string token, string profileId) =>
+        invoker.InvokeAsync<SavedInfo>(nameof(SelectMuaProfileAsync), new
         {
-            type = "selectMuaProfile",
             token,
             profileId
         });
 
     public Task<AvatarInfo?> ReadAvatarAsync() =>
-        invoker.InvokeFeatureAsync<AvatarInfo?>(nameof(ReadAvatarAsync), new
+        invoker.InvokeAsync<AvatarInfo?>(nameof(ReadAvatarAsync), new
         {
         });
 
     public Task<AvatarInfo?> SetOfflineSkinAsync(string path) =>
-        invoker.InvokeFeatureAsync<AvatarInfo?>(nameof(SetOfflineSkinAsync), new
+        invoker.InvokeAsync<AvatarInfo?>(nameof(SetOfflineSkinAsync), new
         {
             path
         });

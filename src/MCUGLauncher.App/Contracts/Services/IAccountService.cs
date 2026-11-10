@@ -42,7 +42,13 @@ public interface IAccountService
         {
         });
 
-    Task SelectMuaProfileAsync(string token, string profileId);
+    [FeatureOperation]
+    Task<SavedInfo> SelectMuaProfileAsync(string token, string profileId) =>
+        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SelectMuaProfileAsync), new
+        {
+            token,
+            profileId
+        });
 
     [FeatureOperation]
     Task<AvatarInfo?> ReadAvatarAsync() =>

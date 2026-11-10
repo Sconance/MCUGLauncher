@@ -12,6 +12,17 @@ internal sealed class MicrosoftLoginFeatureHandler(LauncherContext context)
         new AccountCommands(context).LoginMicrosoftAsync();
 }
 
+[FeatureHandler(nameof(ILauncherService.SelectMuaProfileAsync))]
+internal sealed class SelectMuaProfileFeatureHandler(LauncherContext context)
+    : IFeatureHandler<SavedInfo>
+{
+    public Task<SavedInfo> HandleAsync(JsonElement arguments, CancellationToken token)
+    {
+        new MuaProfileSelection(context).Select(arguments);
+        return Task.FromResult(new SavedInfo("已选择 MUA 角色。"));
+    }
+}
+
 [FeatureHandler(nameof(ILauncherService.LoginMuaAsync))]
 internal sealed class MuaLoginFeatureHandler(LauncherContext context)
     : IFeatureHandler<AuthResultInfo>

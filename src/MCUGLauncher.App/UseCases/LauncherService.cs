@@ -74,7 +74,7 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             store,
             microsoftBrowser: browser,
             avatarEncoder: avatarEncoder);
-        account = new AccountModule(this, CommandAsync);
+        account = new AccountModule(new AccountFeatureInvoker(application));
     }
 
     public Task StartAsync() => application.HandleAsync("""{"type":"ready"}""");
@@ -476,7 +476,7 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
 
     public Task<AvatarInfo?> SetOfflineSkinAsync(string path) => account.SetOfflineSkinAsync(path);
 
-    public Task SelectMuaProfileAsync(string token, string profileId) =>
+    public Task<SavedInfo> SelectMuaProfileAsync(string token, string profileId) =>
         account.SelectMuaProfileAsync(token, profileId);
 
     public Task PickFolderAsync(string target) => CommandAsync(new { type = "pickFolder", target });
