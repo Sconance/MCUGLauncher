@@ -5,7 +5,7 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 namespace MCUGLauncher.UseCases;
 
 // Holds only a short-lived profile choice, never the password or access token.
-internal sealed class MuaProfileSelection(IAccountContext context)
+internal sealed class MuaProfileSelection(AccountServices services)
 {
     string? token;
     IReadOnlyList<MuaProfile>? profiles;
@@ -22,13 +22,13 @@ internal sealed class MuaProfileSelection(IAccountContext context)
         completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         try
         {
-            context.Send(new
+            services.Notifier.Send(new
             {
                 type = "muaProfiles",
                 token,
                 items = items.Select(p => new { p.Id, p.Name })
             });
-            return await completion.Task.WaitAsync(TimeSpan.FromMinutes(3), context.Token);
+            return await completion.Task.WaitAsync(TimeSpan.FromMinutes(3), services.Token);
         }
         finally { completion = null; profiles = null; token = null; }
     }

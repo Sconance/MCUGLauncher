@@ -6,7 +6,7 @@ using MCUGLauncher.Services;
 
 namespace MCUGLauncher.UseCases;
 
-internal sealed class LauncherContext : IDisposable, IAccountContext, IAccountNotifier, IAccountRevision, IAccountSessionCache
+internal sealed class LauncherContext : IDisposable, IAccountNotifier, IAccountRevision, IAccountSessionCache, IAccountSessionStore, IAccountLogger
 {
     readonly CancellationTokenSource lifetime = new();
     long accountRevision;
@@ -22,7 +22,16 @@ internal sealed class LauncherContext : IDisposable, IAccountContext, IAccountNo
     public long NextRevision() => Interlocked.Increment(ref accountRevision);
     long IAccountRevision.Current => accountRevision;
     long IAccountRevision.Next() => NextRevision();
+    MSession? IAccountSessionCache.Find(string mode) => AccountSessions.Find(mode);
+    MSession? IAccountSessionCache.Fresh(string mode) => AccountSessions.Fresh(mode);
+    AccountIdentity? IAccountSessionCache.Identity(string mode) => AccountSessions.Identity(mode);
     void IAccountSessionCache.Remember(string mode, MSession session) => AccountSessions.Remember(mode, session);
+    void IAccountSessionCache.RememberIdentity(string mode, AccountIdentity identity) => AccountSessions.RememberIdentity(mode, identity);
+    void IAccountSessionCache.Forget(string mode) => AccountSessions.Forget(mode);
+    void IAccountNotifier.Send(object payload) => Send(payload);
+    void IAccountNotifier.SendAccountState() => SendAccountState();
+    MSession? IAccountSessionStore.Current => accounts?.Session;
+    void IAccountSessionStore.Set(MSession? session) => accounts?.Set(session);
     public string AvatarIdentity
     {
         get
@@ -52,6 +61,10 @@ internal sealed class LauncherContext : IDisposable, IAccountContext, IAccountNo
         get;
     }
     public IAccountStore AccountStore
+    {
+        get;
+    }
+    public AccountServices AccountServices
     {
         get;
     }
@@ -146,6 +159,15 @@ internal sealed class LauncherContext : IDisposable, IAccountContext, IAccountNo
             // A damaged account cache must never prevent the launcher from opening.
             Config.AccountType = "offline";
         }
+        AccountServices = new AccountServices(
+            new MicrosoftMuaAuthGateway(Microsoft, Mua),
+            AccountStore,
+            this,
+            this,
+            this,
+            new AccountNotifier(Send, SendAccountState),
+            this,
+            Token);
         // Direct LauncherContext users (tests/tools) still get a state sink; LauncherApplication replaces it with a real module.
         AttachAccounts(new AccountModule(
             new UnavailableAccountFeatureInvoker(),

@@ -13,6 +13,7 @@ internal interface IAccountStore
 
     /// <summary>更新内存账号记录；persist=true 时同时写入配置。</summary>
     void Save(AccountRecord record, bool persist = true);
+    Task PersistAsync();
 }
 
 /// <summary>把账号记录映射到现有 AppConfig，兼容旧配置字段。</summary>
@@ -28,4 +29,6 @@ internal sealed class ConfigAccountStore(AppConfig config, ConfigStore store) : 
         if (persist)
             store.Save(config);
     }
+
+    public Task PersistAsync() => store.SaveAsync(config);
 }

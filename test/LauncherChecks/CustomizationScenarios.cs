@@ -173,7 +173,7 @@ internal static class CustomizationScenarios
         }));
         Check(queued.Last().Root == other && queued.Last().Request.PackInstance == "Chosen-pack-name", "pack confirmation honors custom instance name and directory");
 
-        var roles = new MuaProfileSelection(context);
+        var roles = new MuaProfileSelection(context.AccountServices);
         var selection = roles.ChooseAsync(new[] { new MuaProfile("first", "One"), new MuaProfile("second", "Two") });
         token = messages.Last().GetProperty("token").GetString();
         Check(!selection.IsCompleted, "multiple MUA roles wait for explicit choice");

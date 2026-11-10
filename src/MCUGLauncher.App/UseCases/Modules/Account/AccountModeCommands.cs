@@ -7,33 +7,33 @@ namespace MCUGLauncher.UseCases;
 
 // Mode selection preserves credentials. Only explicit removal deletes an account.
 internal sealed class AccountModeCommands(
-    IAccountContext context,
+    AccountServices services,
+    IAccountStateWriter writer,
     Func<string, Task<MSession>>? restore = null,
-    Func<string, Task<AccountIdentity?>>? readIdentity = null,
-    IAccountStateWriter? writer = null)
+    Func<string, Task<AccountIdentity?>>? readIdentity = null)
 {
-    readonly IAccountStateWriter accountWriter = writer ?? throw new InvalidOperationException("账号写入端口未注入。");
+    readonly IAccountStateWriter accountWriter = writer;
     Task? identityPreload;
 
     public async Task<AccountSwitchResultInfo> RestoreSelectedAsync()
     {
-        var revision = context.AccountRevision;
-        var mode = context.Config.AccountType;
+        var revision = services.Revision.Current;
+        var mode = services.Record.Mode;
         await PreloadIdentitiesAsync();
-        var result = revision == context.AccountRevision
+        var result = revision == services.Revision.Current
             ? await SwitchAsync(mode, false)
             : new AccountSwitchResultInfo(mode, false, "账号恢复已被更新的账号操作取代。");
         if (mode != "offline")
         {
-            if (context.Config.AccountType == mode && context.SessionStore.Current != null)
-                context.Send(new
+            if (services.Record.Mode == mode && services.SessionStore.Current != null)
+                services.Notifier.Send(new
                 {
                     type = "authResult",
                     ok = true,
                     message = result.Message
                 });
             else
-                context.Send(new
+                services.Notifier.Send(new
                 {
                     type = "accountSwitchResult",
                     account = result.Account,
@@ -48,48 +48,41 @@ internal sealed class AccountModeCommands(
 
     async Task LoadIdentitiesAsync()
     {
-        var revision = context.AccountRevision;
+        var revision = services.Revision.Current;
         foreach (var accountMode in new[] { "microsoft", "mua" })
         {
             try
             {
                 var identity = await ReadIdentityAsync(accountMode);
-                if (revision != context.AccountRevision)
+                if (revision != services.Revision.Current)
                     return;
                 if (identity is not null)
-                    context.AccountSessions.RememberIdentity(accountMode, identity);
+                    services.Sessions.RememberIdentity(accountMode, identity);
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or AccountStorageException)
             {
-                context.Log("账号身份预载失败 [" + error.GetType().Name + "]");
+                services.Logger.Log("账号身份预载失败 [" + error.GetType().Name + "]");
             }
         }
     }
 
     Task<AccountIdentity?> ReadIdentityAsync(string mode) => readIdentity is not null
         ? readIdentity(mode)
-        : Task.Run<AccountIdentity?>(() =>
-        {
-            if (mode == "microsoft")
-            {
-                var saved = context.Microsoft?.ReadSavedAccount();
-                return saved is null ? null : new AccountIdentity(saved.Username, saved.Uuid);
-            }
-            var mua = context.Mua?.Read();
-            return mua is null ? null : new AccountIdentity(mua.Profile.Name, mua.Profile.Id);
-        }, context.Token);
+        : Task.FromResult(mode == "microsoft"
+            ? services.Auth.ReadMicrosoftIdentity()
+            : services.Auth.ReadMuaIdentity());
 
     public async Task<AccountSwitchResultInfo> SwitchAsync(string mode, bool prompt = true)
     {
         if (mode is not ("offline" or "microsoft" or "mua"))
             throw new ArgumentException("未知的账号模式。");
-        var revision = context.NextRevision();
+        var revision = services.Revision.Next();
         if (mode == "offline")
         {
             await ApplySelectionAsync(mode, null);
             return new(mode, false, "已切换到离线账号。");
         }
-        var cached = context.AccountSessions.Find(mode);
+        var cached = services.Sessions.Find(mode);
         if (cached != null)
         {
             await ApplySelectionAsync(mode, cached, false);
@@ -98,20 +91,20 @@ internal sealed class AccountModeCommands(
 
         try
         {
-            var identity = context.AccountSessions.Identity(mode) ?? await ReadIdentityAsync(mode);
-            if (revision != context.AccountRevision)
+            var identity = services.Sessions.Identity(mode) ?? await ReadIdentityAsync(mode);
+            if (revision != services.Revision.Current)
                 return new(mode, false, "账号切换已被更新的账号操作取代。");
             if (identity is null)
                 throw new AccountLoginException("本机尚未保存此账号，请先登录。", true);
-            context.AccountSessions.RememberIdentity(mode, identity);
+            services.Sessions.RememberIdentity(mode, identity);
             await ApplySelectionAsync(mode, null, false, identity);
-            if (revision != context.AccountRevision)
+            if (revision != services.Revision.Current)
                 return new(mode, false, "账号切换已被更新的账号操作取代。");
             return new(mode, false, "已切换到 " + identity.Player);
         }
         catch (Exception error)
         {
-            if (revision != context.AccountRevision)
+            if (revision != services.Revision.Current)
                 return new(mode, false, "账号切换已被更新的账号操作取代。");
             var needsLogin = error is AccountLoginException { RequiresInteractive: true };
             return new(mode, prompt && needsLogin,
@@ -121,28 +114,28 @@ internal sealed class AccountModeCommands(
 
     public async Task<MSession> EnsureFreshAsync(string mode)
     {
-        var revision = context.AccountRevision;
-        var fresh = context.AccountSessions.Fresh(mode);
+        var revision = services.Revision.Current;
+        var fresh = services.Sessions.Fresh(mode);
         if (fresh != null)
             return fresh;
         try
         {
             var session = restore != null ? await restore(mode) : await RestoreAsync(mode);
-            if (revision == context.AccountRevision)
+            if (revision == services.Revision.Current)
             {
-                context.AccountSessions.Remember(mode, session);
-                if (context.Config.AccountType == mode)
-                    context.SessionStore.Set(session);
+                services.Sessions.Remember(mode, session);
+                if (services.Record.Mode == mode)
+                    services.SessionStore.Set(session);
             }
             return session;
         }
         catch (AccountLoginException error) when (error.RequiresInteractive)
         {
-            if (revision != context.AccountRevision)
+            if (revision != services.Revision.Current)
                 throw;
-            context.AccountSessions.Forget(mode);
-            if (context.Config.AccountType == mode)
-                context.SessionStore.Set(null);
+            services.Sessions.Forget(mode);
+            if (services.Record.Mode == mode)
+                services.SessionStore.Set(null);
             throw;
         }
     }
@@ -151,13 +144,11 @@ internal sealed class AccountModeCommands(
     {
         if (mode == "microsoft")
         {
-            var service = context.Microsoft ?? throw new AccountLoginException("登录组件未就绪。");
-            if (service.ReadSavedAccount() == null)
+            if (!services.Auth.HasSavedMicrosoftAccount)
                 throw new AccountLoginException("请先登录正版账号。", true);
-            return await service.Authenticate(false, context.Token);
+            return await services.Auth.AuthenticateMicrosoftAsync(false, services.Token);
         }
-        var mua = context.Mua ?? throw new AccountLoginException("登录组件未就绪。");
-        return MuaAccountService.Session(await mua.Ensure(false, context.Token));
+        return await services.Auth.EnsureMuaAsync(false, services.Token);
     }
 
     async Task ApplySelectionAsync(
@@ -169,11 +160,11 @@ internal sealed class AccountModeCommands(
         Apply(accountWriter, mode, session, verified, persist: false, identity: identity);
         try
         {
-            await context.Store.SaveAsync(context.Config);
+            await services.Store.PersistAsync();
         }
         catch (IOException)
         {
-            context.Send(new
+            services.Notifier.Send(new
             {
                 type = "toast",
                 message = "账号已切换，但设置未能保存，重启后可能恢复上次选择"
@@ -181,7 +172,7 @@ internal sealed class AccountModeCommands(
         }
         catch (UnauthorizedAccessException)
         {
-            context.Send(new
+            services.Notifier.Send(new
             {
                 type = "toast",
                 message = "账号已切换，但配置目录不可写，请检查目录权限"
@@ -200,17 +191,17 @@ internal sealed class AccountModeCommands(
 
     public async Task<AuthResultInfo> ForgetAsync(string mode)
     {
-        var revision = context.NextRevision();
-        context.AccountSessions.Forget(mode);
+        var revision = services.Revision.Next();
+        services.Sessions.Forget(mode);
         if (mode == "microsoft")
-            context.Microsoft?.Forget();
-        else if (mode == "mua" && context.Mua != null)
-            await context.Mua.Forget(context.Token);
+            services.Auth.ForgetMicrosoft();
+        else if (mode == "mua")
+            await services.Auth.ForgetMuaAsync(services.Token);
         else
             throw new ArgumentException("未知的在线账号模式。");
-        if (revision != context.AccountRevision)
+        if (revision != services.Revision.Current)
             return new(false, false, "账号移除已被更新的账号操作取代。");
-        if (context.Config.AccountType == mode)
+        if (services.Record.Mode == mode)
             Apply(accountWriter, "offline", null);
         return new(true, false, "已移除本机保存的账号。");
     }

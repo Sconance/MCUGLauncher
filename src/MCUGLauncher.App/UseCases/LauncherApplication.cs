@@ -49,10 +49,10 @@ internal sealed class LauncherApplication : IDisposable
             context,
             context,
             context,
-            mode => new AccountModeCommands(context, writer: Accounts).EnsureFreshAsync(mode));
+            mode => new AccountModeCommands(context.AccountServices, Accounts).EnsureFreshAsync(mode));
         context.AttachAccounts(Accounts);
-        accountCommands = new AccountCommands(context, Accounts);
-        accountModes = new AccountModeCommands(context, writer: Accounts);
+        accountCommands = new AccountCommands(context.AccountServices, Accounts);
+        accountModes = new AccountModeCommands(context.AccountServices, Accounts);
         gameCommands = new GameCommands(context);
         instanceCommands = new InstanceCommands(context);
         resourceCommands = new ResourceCommands(context);
@@ -63,14 +63,6 @@ internal sealed class LauncherApplication : IDisposable
         diagnosticCommands = new DiagnosticCommands(context);
         communityCommands = new CommunityCommands(context);
         featureDispatcher = new FeatureDispatcher(context);
-        Accounts = new AccountModule(
-            new AccountFeatureInvoker(this),
-            context.AccountStore,
-            context,
-            context,
-            context,
-            mode => new AccountModeCommands(context).EnsureFreshAsync(mode));
-        context.AttachAccounts(Accounts);
     }
 
     internal AccountModule Accounts
