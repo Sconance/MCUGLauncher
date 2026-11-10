@@ -12,7 +12,7 @@ internal sealed class AccountModeCommands(
     Func<string, Task<AccountIdentity?>>? readIdentity = null,
     IAccountStateWriter? writer = null)
 {
-    readonly IAccountStateWriter writer = writer ?? context.StateWriter;
+    readonly IAccountStateWriter accountWriter = writer ?? throw new InvalidOperationException("账号写入端口未注入。");
     Task? identityPreload;
 
     public async Task<AccountSwitchResultInfo> RestoreSelectedAsync()
@@ -166,7 +166,7 @@ internal sealed class AccountModeCommands(
         bool verified = true,
         AccountIdentity? identity = null)
     {
-        Apply(writer, mode, session, verified, persist: false, identity: identity);
+        Apply(accountWriter, mode, session, verified, persist: false, identity: identity);
         try
         {
             await context.Store.SaveAsync(context.Config);
@@ -211,7 +211,7 @@ internal sealed class AccountModeCommands(
         if (revision != context.AccountRevision)
             return new(false, false, "账号移除已被更新的账号操作取代。");
         if (context.Config.AccountType == mode)
-            Apply(writer, "offline", null);
+            Apply(accountWriter, "offline", null);
         return new(true, false, "已移除本机保存的账号。");
     }
 }

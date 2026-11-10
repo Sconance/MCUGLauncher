@@ -5,15 +5,15 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 namespace MCUGLauncher.UseCases;
 
 [FeatureHandler(nameof(ILauncherService.LoginMicrosoftAsync))]
-internal sealed class MicrosoftLoginFeatureHandler(IAccountContext context)
+internal sealed class MicrosoftLoginFeatureHandler(IAccountContext context, IAccountStateWriter writer)
     : IFeatureHandler<AuthResultInfo>
 {
     public Task<AuthResultInfo> HandleAsync(JsonElement arguments, CancellationToken token) =>
-        new AccountCommands(context, context.StateWriter).LoginMicrosoftAsync();
+        new AccountCommands(context, writer).LoginMicrosoftAsync();
 }
 
 [FeatureHandler(nameof(ILauncherService.SelectMuaProfileAsync))]
-internal sealed class SelectMuaProfileFeatureHandler(IAccountContext context)
+internal sealed class SelectMuaProfileFeatureHandler(IAccountContext context, IAccountStateWriter writer)
     : IFeatureHandler<SavedInfo>
 {
     public Task<SavedInfo> HandleAsync(JsonElement arguments, CancellationToken token)
@@ -24,38 +24,38 @@ internal sealed class SelectMuaProfileFeatureHandler(IAccountContext context)
 }
 
 [FeatureHandler(nameof(ILauncherService.LoginMuaAsync))]
-internal sealed class MuaLoginFeatureHandler(IAccountContext context)
+internal sealed class MuaLoginFeatureHandler(IAccountContext context, IAccountStateWriter writer)
     : IFeatureHandler<AuthResultInfo>
 {
     public Task<AuthResultInfo> HandleAsync(JsonElement arguments, CancellationToken token) =>
-        new AccountCommands(context, context.StateWriter).LoginMuaAsync(
+        new AccountCommands(context, writer).LoginMuaAsync(
             ReadString(arguments, "account"),
             ReadString(arguments, "password"));
 }
 
 [FeatureHandler(nameof(ILauncherService.SwitchAccountModeAsync))]
-internal sealed class AccountModeFeatureHandler(IAccountContext context)
+internal sealed class AccountModeFeatureHandler(IAccountContext context, IAccountStateWriter writer)
     : IFeatureHandler<AccountSwitchResultInfo>
 {
     public Task<AccountSwitchResultInfo> HandleAsync(JsonElement arguments, CancellationToken token) =>
-        new AccountModeCommands(context, writer: context.StateWriter).SwitchAsync(ReadString(arguments, "mode"));
+        new AccountModeCommands(context, writer: writer).SwitchAsync(ReadString(arguments, "mode"));
 }
 
 [FeatureHandler(nameof(ILauncherService.ForgetAccountAsync))]
-internal sealed class ForgetAccountFeatureHandler(IAccountContext context)
+internal sealed class ForgetAccountFeatureHandler(IAccountContext context, IAccountStateWriter writer)
     : IFeatureHandler<AuthResultInfo>
 {
     public Task<AuthResultInfo> HandleAsync(JsonElement arguments, CancellationToken token) =>
-        new AccountModeCommands(context, writer: context.StateWriter).ForgetAsync(ReadString(arguments, "mode"));
+        new AccountModeCommands(context, writer: writer).ForgetAsync(ReadString(arguments, "mode"));
 }
 
 [FeatureHandler(nameof(ILauncherService.LogoutAccountAsync))]
-internal sealed class LogoutAccountFeatureHandler(IAccountContext context)
+internal sealed class LogoutAccountFeatureHandler(IAccountContext context, IAccountStateWriter writer)
     : IFeatureHandler<AuthResultInfo>
 {
     public async Task<AuthResultInfo> HandleAsync(JsonElement arguments, CancellationToken token)
     {
-        var result = await new AccountModeCommands(context, writer: context.StateWriter).SwitchAsync("offline");
+        var result = await new AccountModeCommands(context, writer: writer).SwitchAsync("offline");
         return new(true, false, result.Message);
     }
 }

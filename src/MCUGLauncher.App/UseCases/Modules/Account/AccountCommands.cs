@@ -4,9 +4,8 @@ using MCUGLauncher.Contracts;
 namespace MCUGLauncher.UseCases;
 
 // Handles account use cases; no WPF controls or browser access.
-internal sealed class AccountCommands(IAccountContext context, IAccountStateWriter? writer = null)
+internal sealed class AccountCommands(IAccountContext context, IAccountStateWriter writer)
 {
-    readonly IAccountStateWriter writer = writer ?? context.StateWriter;
     readonly MuaProfileSelection profiles = new(context);
     public void SelectMuaProfile(System.Text.Json.JsonElement message) => profiles.Select(message);
 

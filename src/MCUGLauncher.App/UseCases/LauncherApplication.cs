@@ -43,8 +43,16 @@ internal sealed class LauncherApplication : IDisposable
         saveCommands = new SaveCommands(context);
         bookmarkCommands = new BookmarkCommands(context);
         installationCommands = context.Installations;
-        accountCommands = new AccountCommands(context);
-        accountModes = new AccountModeCommands(context);
+        Accounts = new AccountModule(
+            new AccountFeatureInvoker(this),
+            context.AccountStore,
+            context,
+            context,
+            context,
+            mode => new AccountModeCommands(context, writer: Accounts).EnsureFreshAsync(mode));
+        context.AttachAccounts(Accounts);
+        accountCommands = new AccountCommands(context, Accounts);
+        accountModes = new AccountModeCommands(context, writer: Accounts);
         gameCommands = new GameCommands(context);
         instanceCommands = new InstanceCommands(context);
         resourceCommands = new ResourceCommands(context);

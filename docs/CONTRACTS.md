@@ -70,7 +70,8 @@ Modules/Account/
 
 ## 账号模块 P0/P1/P2 进展
 
-- P0：`IAccountContext` 已移除 `Accounts`，新增 `IAccountStateWriter`，`AccountModeCommands` 通过写入端口提交状态，不再直接访问模块；
+- P0：`IAccountContext` 已移除 `Accounts` 与 `StateWriter`；`AccountCommands`/`AccountModeCommands` 构造时必须显式注入 `IAccountStateWriter`；
+- P0：`LauncherApplication` 先创建 `AccountModule` 再创建账号命令，消除命令捕获回退模块的问题；
 - P0：`AccountModule.StateChanged` 已删除，只保留 `AccountStateChanged`；
 - P0：账号 `FeatureHandler` 改为注入 `IAccountContext`，`FeatureDispatcher` 支持 `LauncherContext`/`IAccountContext` 两种构造；`AccountCommands` 显式接收 `IAccountStateWriter`；
 - P1：新增 `IAccountStateProvider` / `IAccountSessionProvider`，`LauncherStateBuilder` 通过状态提供者读取账号快照；

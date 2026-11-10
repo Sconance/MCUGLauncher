@@ -55,9 +55,17 @@ internal sealed class FeatureDispatcher
                 ?? type.GetConstructor(
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                     binder: null,
+                    [typeof(IAccountContext), typeof(IAccountStateWriter)],
+                    modifiers: null)
+                ?? type.GetConstructor(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    binder: null,
                     [typeof(IAccountContext)],
                     modifiers: null);
-            var handler = constructor?.Invoke([context])
+            var arguments = constructor?.GetParameters().Length == 2
+                ? new object[] { context, context.StateWriter }
+                : new object[] { context };
+            var handler = constructor?.Invoke(arguments)
                 ?? throw new InvalidOperationException(
                     $"Feature handler '{type.FullName}' must have a LauncherContext or IAccountContext constructor.");
             var adapterType = typeof(FeatureHandlerAdapter<>).MakeGenericType(responseType);

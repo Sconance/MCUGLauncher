@@ -41,10 +41,6 @@ internal interface IAccountContext
         get;
     }
     long NextRevision();
-    IAccountStateWriter StateWriter
-    {
-        get;
-    }
     Action<object> Send
     {
         get;

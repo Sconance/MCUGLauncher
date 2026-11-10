@@ -28,7 +28,7 @@ internal static class AccountModeScenarios
         {
             restores++;
             return Task.FromResult(new MSession { Username = kind == "mua" ? "MuaName" : "MicrosoftName" });
-        }, ReadIdentity);
+        }, ReadIdentity, context.StateWriter);
         context.Config.AccountType = "microsoft";
         context.Config.Player = "MicrosoftName";
         await modes.RestoreSelectedAsync();
@@ -61,7 +61,7 @@ internal static class AccountModeScenarios
         Check(cache.Find("mua") != null && cache.Fresh("mua") == null, "stale session remains selectable but requires verification before launch");
         context.AccountSessions.Forget("mua");
         var pending = new TaskCompletionSource<AccountIdentity?>();
-        var delayed = new AccountModeCommands(context, readIdentity: _ => pending.Task);
+        var delayed = new AccountModeCommands(context, readIdentity: _ => pending.Task, writer: context.StateWriter);
         var switchTask = delayed.SwitchAsync("mua");
         await modes.SwitchAsync("offline");
         pending.SetResult(new AccountIdentity("LateName", Guid.NewGuid().ToString("N")));
@@ -71,7 +71,7 @@ internal static class AccountModeScenarios
         context.AccountSessions.RememberIdentity("microsoft", new("MicrosoftName", Guid.NewGuid().ToString("N")));
         try
         {
-            await new AccountModeCommands(context, _ => throw new HttpRequestException("private payload"))
+            await new AccountModeCommands(context, _ => throw new HttpRequestException("private payload"), writer: context.StateWriter)
                 .EnsureFreshAsync("microsoft");
             Check(false, "network failure is reported during authorization");
         }
@@ -83,7 +83,8 @@ internal static class AccountModeScenarios
         var expired = await new AccountModeCommands(
             context,
             _ => throw new AccountLoginException("expired", true),
-            _ => Task.FromResult<AccountIdentity?>(null))
+            _ => Task.FromResult<AccountIdentity?>(null),
+            context.StateWriter)
             .SwitchAsync("mua");
         Check(expired.NeedsLogin, "missing local identity requests login");
         Check(store.Load().OfflinePlayer == "OfflineName", "offline player persists independently");
