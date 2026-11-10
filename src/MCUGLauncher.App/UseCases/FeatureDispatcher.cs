@@ -49,13 +49,18 @@ internal sealed class FeatureDispatcher
                     $"Feature handler '{type.FullName}' returns '{responseType}', but '{operation.Name}' declares '{expectedResponseType}'.");
 
             var constructor = type.GetConstructor(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                binder: null,
-                [typeof(LauncherContext)],
-                modifiers: null);
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    binder: null,
+                    [typeof(LauncherContext)],
+                    modifiers: null)
+                ?? type.GetConstructor(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    binder: null,
+                    [typeof(IAccountContext)],
+                    modifiers: null);
             var handler = constructor?.Invoke([context])
                 ?? throw new InvalidOperationException(
-                    $"Feature handler '{type.FullName}' must have a LauncherContext constructor.");
+                    $"Feature handler '{type.FullName}' must have a LauncherContext or IAccountContext constructor.");
             var adapterType = typeof(FeatureHandlerAdapter<>).MakeGenericType(responseType);
             var adapter = (IFeatureHandlerAdapter)Activator.CreateInstance(adapterType, handler)!;
             if (!handlers.TryAdd(registration.Operation, adapter))

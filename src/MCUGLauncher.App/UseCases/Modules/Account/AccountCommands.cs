@@ -4,8 +4,9 @@ using MCUGLauncher.Contracts;
 namespace MCUGLauncher.UseCases;
 
 // Handles account use cases; no WPF controls or browser access.
-internal sealed class AccountCommands(IAccountContext context)
+internal sealed class AccountCommands(IAccountContext context, IAccountStateWriter? writer = null)
 {
+    readonly IAccountStateWriter writer = writer ?? context.StateWriter;
     readonly MuaProfileSelection profiles = new(context);
     public void SelectMuaProfile(System.Text.Json.JsonElement message) => profiles.Select(message);
 
@@ -19,7 +20,7 @@ internal sealed class AccountCommands(IAccountContext context)
             var session = await context.Microsoft.Authenticate(true, context.Token);
             if (revision != context.AccountRevision)
                 return new(false, false, "登录已被更新的账号操作取代。");
-            AccountModeCommands.Apply(context.StateWriter, "microsoft", session);
+            AccountModeCommands.Apply(writer, "microsoft", session);
             return new(true, false, $"已登录正版账号 {session.Username}");
         }
         catch (Exception ex)
@@ -42,7 +43,7 @@ internal sealed class AccountCommands(IAccountContext context)
                 profiles.ChooseAsync, context.Token);
             if (revision != context.AccountRevision)
                 return new(false, false, "登录已被更新的账号操作取代。");
-            AccountModeCommands.Apply(context.StateWriter, "mua", MuaAccountService.Session(credential));
+            AccountModeCommands.Apply(writer, "mua", MuaAccountService.Session(credential));
             return new(true, false, $"已登录 MUA 账号 {credential.Profile.Name}");
         }
         catch (Exception)
