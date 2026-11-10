@@ -229,12 +229,14 @@ internal partial class InstancePickerView : UserControl
         var launch = new Button
         {
             Classes = { "link" },
-            Width = 30, Height = 30,
+            Width = 30,
+            Height = 30,
             Padding = new Thickness(0),
             Content = new global::Avalonia.Svg.Skia.Svg(new Uri("avares://MCUGLauncher/"))
             {
                 Path = "/Assets/LaunchIcon.svg",
-                Height = 16, Width = 16
+                Height = 16,
+                Width = 16
             }
         };
         ToolTip.SetTip(launch, "用这个实例启动");
@@ -245,7 +247,8 @@ internal partial class InstancePickerView : UserControl
             Content = new global::Avalonia.Svg.Skia.Svg(new Uri("avares://MCUGLauncher/"))
             {
                 Path = "/Assets/SettingsIcon.svg",
-                Height = 16, Width = 16
+                Height = 16,
+                Width = 16
             },
             Classes = { "link" },
             Width = 30,

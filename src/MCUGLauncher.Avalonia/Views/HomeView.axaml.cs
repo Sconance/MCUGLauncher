@@ -337,7 +337,8 @@ internal partial class HomeView : UserControl
                 Child = new SSvg(new Uri("avares://MCUGLauncher/"))
                 {
                     Path = "/Assets/ServerIcon.svg",
-                    Height = 16, Width = 16,
+                    Height = 16,
+                    Width = 16,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 }
@@ -570,7 +571,8 @@ internal partial class HomeView : UserControl
                 Child = new SSvg(new Uri("avares://MCUGLauncher/"))
                 {
                     Path = "/Assets/" + iconFile + ".svg",
-                    Height = 16, Width = 16,
+                    Height = 16,
+                    Width = 16,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 }

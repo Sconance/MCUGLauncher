@@ -329,7 +329,11 @@ internal partial class InstancesView : UserControl
         foreach (var mod in state.Mods)
         {
             var check = new CheckBox
-                { Content = mod.Name, IsChecked = mod.Enabled, VerticalAlignment = VerticalAlignment.Center };
+            {
+                Content = mod.Name,
+                IsChecked = mod.Enabled,
+                VerticalAlignment = VerticalAlignment.Center
+            };
             var file = mod.File;
             var enabled = mod.Enabled;
             check.Click += async (_, _) =>
@@ -346,7 +350,11 @@ internal partial class InstancesView : UserControl
                 TextWrapping = TextWrapping.Wrap
             });
             var delete = new Button
-                { Content = "删除", Classes = { "ghost" }, VerticalAlignment = VerticalAlignment.Center };
+            {
+                Content = "删除",
+                Classes = { "ghost" },
+                VerticalAlignment = VerticalAlignment.Center
+            };
             var name = mod.Name;
             delete.Click += async (_, _) =>
             {
@@ -382,7 +390,11 @@ internal partial class InstancesView : UserControl
         UninstallPanel.Children.Add(Muted(preview.Notice));
         foreach (var path in preview.Paths)
             UninstallPanel.Children.Add(new TextBlock
-                { Text = "· " + path, TextWrapping = TextWrapping.Wrap, Classes = { "muted" } });
+            {
+                Text = "· " + path,
+                TextWrapping = TextWrapping.Wrap,
+                Classes = { "muted" }
+            });
         var confirm = new CheckBox { Content = "我已检查删除范围并确认备份" };
         var apply = new Button { Content = "确认卸载", IsEnabled = false, HorizontalAlignment = HorizontalAlignment.Left };
         confirm.Click += (_, _) => apply.IsEnabled = confirm.IsChecked == true;

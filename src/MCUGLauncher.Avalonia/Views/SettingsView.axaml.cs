@@ -587,12 +587,24 @@ internal partial class SettingsView : UserControl
                 FontWeight = FontWeight.SemiBold
             });
             copy.Children.Add(new TextBlock
-                { Text = item.Path, Classes = { "muted" }, TextWrapping = TextWrapping.Wrap });
+            {
+                Text = item.Path,
+                Classes = { "muted" },
+                TextWrapping = TextWrapping.Wrap
+            });
             if (item.Error.Length > 0)
                 copy.Children.Add(new TextBlock
-                    { Text = item.Error, Foreground = Brushes.Firebrick, TextWrapping = TextWrapping.Wrap });
+                {
+                    Text = item.Error,
+                    Foreground = Brushes.Firebrick,
+                    TextWrapping = TextWrapping.Wrap
+                });
             var use = new Button
-                { Content = "使用", Classes = { "ghost" }, VerticalAlignment = VerticalAlignment.Center };
+            {
+                Content = "使用",
+                Classes = { "ghost" },
+                VerticalAlignment = VerticalAlignment.Center
+            };
             var path = item.Path;
             use.Click += (_, _) =>
             {
@@ -624,7 +636,11 @@ internal partial class SettingsView : UserControl
             foreach (var world in backup.Worlds)
             {
                 var restore = new Button
-                    { Content = "恢复为 " + world, Classes = { "ghost" }, HorizontalAlignment = HorizontalAlignment.Left };
+                {
+                    Content = "恢复为 " + world,
+                    Classes = { "ghost" },
+                    HorizontalAlignment = HorizontalAlignment.Left
+                };
                 var id = backup.Id;
                 var name = world;
                 restore.Click += async (_, _) =>
