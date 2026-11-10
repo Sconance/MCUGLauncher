@@ -5,7 +5,7 @@ using static MCUGLauncher.UseCases.ProtocolValues;
 namespace MCUGLauncher.UseCases;
 
 // Holds only a short-lived profile choice, never the password or access token.
-internal sealed class MuaProfileSelection(LauncherContext context)
+internal sealed class MuaProfileSelection(IAccountContext context)
 {
     string? token;
     IReadOnlyList<MuaProfile>? profiles;

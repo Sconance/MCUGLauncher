@@ -81,7 +81,7 @@ internal sealed class AccountModeCommands(
     {
         if (mode is not ("offline" or "microsoft" or "mua"))
             throw new ArgumentException("未知的账号模式。");
-        var revision = Interlocked.Increment(ref context.AccountRevision);
+        var revision = context.NextRevision();
         if (mode == "offline")
         {
             await ApplySelectionAsync(mode, null);
@@ -188,7 +188,7 @@ internal sealed class AccountModeCommands(
     }
 
     public static void Apply(
-        LauncherContext context,
+        IAccountContext context,
         string mode,
         MSession? session,
         bool verified = true,
@@ -212,7 +212,7 @@ internal sealed class AccountModeCommands(
 
     public async Task<AuthResultInfo> ForgetAsync(string mode)
     {
-        var revision = Interlocked.Increment(ref context.AccountRevision);
+        var revision = context.NextRevision();
         context.AccountSessions.Forget(mode);
         if (mode == "microsoft")
             context.Microsoft?.Forget();

@@ -6,10 +6,12 @@ using MCUGLauncher.Services;
 
 namespace MCUGLauncher.UseCases;
 
-internal sealed class LauncherContext : IDisposable
+internal sealed class LauncherContext : IDisposable, IAccountContext
 {
     readonly CancellationTokenSource lifetime = new();
-    public long AccountRevision;
+    long accountRevision;
+    public long AccountRevision => accountRevision;
+    public long NextRevision() => Interlocked.Increment(ref accountRevision);
     public string AvatarIdentity
     {
         get

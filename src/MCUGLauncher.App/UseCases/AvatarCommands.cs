@@ -211,7 +211,7 @@ internal sealed class AvatarCommands(LauncherContext context, Func<byte[]?, stri
             await File.WriteAllBytesAsync(destination, bytes, context.Token);
             context.Config.SkinFile = destination;
         }
-        Interlocked.Increment(ref context.AccountRevision);
+        context.NextRevision();
         context.Store.Save(context.Config);
         return await ReadAsync(force: true);
     }
