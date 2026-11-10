@@ -25,7 +25,7 @@ internal sealed class AccountModeCommands(
             : new AccountSwitchResultInfo(mode, false, "账号恢复已被更新的账号操作取代。");
         if (mode != "offline")
         {
-            if (context.Config.AccountType == mode && context.OnlineSession != null)
+            if (context.Config.AccountType == mode && context.SessionStore.Current != null)
                 context.Send(new
                 {
                     type = "authResult",
@@ -132,7 +132,7 @@ internal sealed class AccountModeCommands(
             {
                 context.AccountSessions.Remember(mode, session);
                 if (context.Config.AccountType == mode)
-                    context.OnlineSession = session;
+                    context.SessionStore.Set(session);
             }
             return session;
         }
@@ -142,7 +142,7 @@ internal sealed class AccountModeCommands(
                 throw;
             context.AccountSessions.Forget(mode);
             if (context.Config.AccountType == mode)
-                context.OnlineSession = null;
+                context.SessionStore.Set(null);
             throw;
         }
     }

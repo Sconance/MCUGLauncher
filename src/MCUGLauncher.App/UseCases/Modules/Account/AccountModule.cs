@@ -7,7 +7,7 @@ using MCUGLauncher.Services;
 namespace MCUGLauncher.UseCases;
 
 /// <summary>账号领域模块：登录、账号切换、MUA 档案、头像皮肤、账号状态与事件。</summary>
-internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider, IAccountSessionProvider, IAccountSessionService
+internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider, IAccountSessionProvider, IAccountSessionStore, IAccountSessionService
 {
     readonly IAccountFeatureInvoker invoker;
     readonly IAccountContext context;
@@ -20,9 +20,8 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
             context.Config.Player,
             context.Config.AccountType,
             context.Config.OfflinePlayer,
-            context.OnlineSession != null || context.Config.AccountType == "offline",
+            context.Config.AccountType == "offline",
             context.AccountRevision);
-        Session = context.OnlineSession;
     }
 
     public AccountStateInfo? State
@@ -34,6 +33,8 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
     {
         get; private set;
     }
+    public MSession? Current => Session;
+    public void Set(MSession? session) => Session = session;
 
     public event Action<AuthResultInfo>? AuthResultReceived;
     public event Action<AccountStateInfo>? AccountStateChanged;
@@ -54,13 +55,12 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
             context.Config.OfflinePlayer = context.Config.Player;
         if (session != null && verified)
             context.AccountSessions.Remember(mode, session);
-        context.OnlineSession = session;
+        Session = session;
         context.Config.AccountType = mode;
         context.Config.Player = player;
         if (persist)
             context.Store.Save(context.Config);
         context.SendAccountState();
-        Session = session;
         Publish(new AccountStateInfo(
             player,
             mode,
@@ -153,7 +153,7 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
                 var state = AccountStateInfo.From(root) with
                 {
                     OfflinePlayer = context.Config.OfflinePlayer,
-                    Authenticated = context.OnlineSession != null || context.Config.AccountType == "offline",
+                    Authenticated = Session != null || context.Config.AccountType == "offline",
                     Revision = context.AccountRevision
                 };
                 Publish(state);

@@ -25,7 +25,7 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
         get
         {
             var mode = Config.AccountType;
-            var uuid = OnlineSession?.UUID ?? AccountSessions.Identity(mode)?.Uuid ?? "";
+            var uuid = accounts?.Session?.UUID ?? AccountSessions.Identity(mode)?.Uuid ?? "";
             return mode + ":" + (mode == "mua" ? MuaAccountService.Api : "minecraft") + ":"
                 + (uuid.Length > 0 ? uuid : Config.Player)
                 + (mode == "offline" ? ":" + Config.SkinFile : "");
@@ -64,10 +64,7 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
     {
         get; private set;
     }
-    public MSession? OnlineSession
-    {
-        get; set;
-    }
+    public IAccountSessionStore SessionStore => accounts ?? throw new InvalidOperationException("账号模块尚未装配。");
     public AppConfig Config
     {
         get;

@@ -28,9 +28,9 @@ internal interface IAccountContext
     {
         get;
     }
-    MSession? OnlineSession
+    IAccountSessionStore SessionStore
     {
-        get; set;
+        get;
     }
     CancellationToken Token
     {

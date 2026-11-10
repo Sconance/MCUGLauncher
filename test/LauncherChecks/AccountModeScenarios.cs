@@ -32,16 +32,16 @@ internal static class AccountModeScenarios
         context.Config.AccountType = "microsoft";
         context.Config.Player = "MicrosoftName";
         await modes.RestoreSelectedAsync();
-        Check(restores == 0 && context.Config.AccountType == "microsoft" && context.OnlineSession == null,
+        Check(restores == 0 && context.Config.AccountType == "microsoft" && context.SessionStore.Current == null,
             "startup restores local account selection without network authentication");
         await modes.SwitchAsync("offline");
         foreach (var kind in new[] { "microsoft", "mua" })
         {
             await modes.SwitchAsync(kind);
-            Check(context.Config.AccountType == kind && context.OnlineSession == null && context.AccountSessions.Fresh(kind) == null,
+            Check(context.Config.AccountType == kind && context.SessionStore.Current == null && context.AccountSessions.Fresh(kind) == null,
                 "saved " + kind + " selects locally without fabricating a verified session");
             await modes.SwitchAsync("offline");
-            Check(context.Config.Player == "OfflineName" && context.OnlineSession == null, "offline ID survives " + kind + " selection");
+            Check(context.Config.Player == "OfflineName" && context.SessionStore.Current == null, "offline ID survives " + kind + " selection");
             await modes.SwitchAsync(kind);
             Check(context.Config.Player != "OfflineName", "switch back restores " + kind + " identity");
             await modes.SwitchAsync("offline");
