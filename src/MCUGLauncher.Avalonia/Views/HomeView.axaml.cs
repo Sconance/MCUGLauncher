@@ -338,7 +338,7 @@ internal partial class HomeView : UserControl
         AnnouncementMeta.Text = string.Join(" · ", new[]
         {
             item.Author,
-            item.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "",
+            item.PublishedAt?.ToString("yyyy-MM-dd") ?? "",
             item.ImageUrl.Length > 0 ? "含配图" : ""
         }.Where(value => value.Length > 0));
         OpenAnnouncementButton.IsVisible = item.Markdown.Length > 0;

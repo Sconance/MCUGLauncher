@@ -16,7 +16,7 @@ internal partial class AnnouncementWindow : Window
         {
             announcement.Tag,
             announcement.Author,
-            announcement.PublishedAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? ""
+            announcement.PublishedAt?.ToString("yyyy-MM-dd") ?? ""
         }.Where(value => value.Length > 0));
         MarkdownHost.Content = new MarkdownScrollViewer
         {
