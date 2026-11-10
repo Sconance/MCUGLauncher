@@ -52,6 +52,7 @@ Modules/Account/
   AccountModule.cs            方法/事件门面
   AccountFeatureInvoker.cs    适配 LauncherApplication，断开与 LauncherService 的环
   IAccountContext.cs          账号模块最小上下文
+  IAccountStore.cs            账号记录持久化端口与 AppConfig 适配器
   AccountCommands.cs          登录用例
   AccountModeCommands.cs      账号切换/忘记/恢复
   MuaProfileSelection.cs      MUA 角色选择
@@ -77,4 +78,4 @@ Modules/Account/
 - P1：账号契约改为纯抽象方法，UI 只走 `LauncherService → AccountModule → IAccountFeatureInvoker` 单一调用路径；
 - 启动会话：`AccountModule.PrepareLaunchSessionAsync` 统一生成离线会话、刷新在线会话并校验玩家名，`GameCommands` 不再自行构造 `MSession`；
 - 会话：`OnlineSession` 已从 `LauncherContext`/`IAccountContext` 移除，`IAccountSessionStore` 由 `AccountModule` 唯一实现，启动与账号命令通过会话存储读写；
-- P2（待做）：`IAccountStore` 尚未替代剩余配置/持久化依赖。
+- P2：新增 `IAccountStore`/`ConfigAccountStore`，`AccountModule` 不再直接读写 `AppConfig`/`ConfigStore`，账号记录的旧字段兼容集中在适配器；`persist=false` 时仍更新内存配置，由调用方异步落盘。

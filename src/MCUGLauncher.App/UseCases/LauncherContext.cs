@@ -48,6 +48,10 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
     {
         get;
     }
+    public IAccountStore AccountStore
+    {
+        get;
+    }
     public CommunityService Community
     {
         get;
@@ -118,6 +122,7 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
         AvatarEncoder = avatarEncoder ?? (_ => "");
         Store = store ?? new ConfigStore();
         Config = Store.Load();
+        AccountStore = new ConfigAccountStore(Config, Store);
         Avatars = new AvatarCommands(this, AvatarEncoder);
         Http = NetworkPolicyHandler.Create(Config.LegacyPreferences.Network);
         Community = new CommunityService(Http, Path.Combine(Store.DataDirectory, "announcements-cache"));
@@ -139,7 +144,7 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
             Config.AccountType = "offline";
         }
         // Direct LauncherContext users (tests/tools) still get a state sink; LauncherApplication replaces it with a real module.
-        AttachAccounts(new AccountModule(new UnavailableAccountFeatureInvoker(), this));
+        AttachAccounts(new AccountModule(new UnavailableAccountFeatureInvoker(), AccountStore, this));
     }
 
     public void Log(string message)

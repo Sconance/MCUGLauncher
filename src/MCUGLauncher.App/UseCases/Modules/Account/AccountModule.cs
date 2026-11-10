@@ -10,17 +10,20 @@ namespace MCUGLauncher.UseCases;
 internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider, IAccountSessionProvider, IAccountSessionStore, IAccountSessionService
 {
     readonly IAccountFeatureInvoker invoker;
+    readonly IAccountStore store;
     readonly IAccountContext context;
 
-    public AccountModule(IAccountFeatureInvoker invoker, IAccountContext context)
+    public AccountModule(IAccountFeatureInvoker invoker, IAccountStore store, IAccountContext context)
     {
         this.invoker = invoker;
+        this.store = store;
         this.context = context;
+        var record = store.Load();
         State = new AccountStateInfo(
-            context.Config.Player,
-            context.Config.AccountType,
-            context.Config.OfflinePlayer,
-            context.Config.AccountType == "offline",
+            record.Player,
+            record.Mode,
+            record.OfflinePlayer,
+            record.Mode == "offline",
             context.AccountRevision);
     }
 
@@ -48,31 +51,34 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
         bool persist = true,
         AccountIdentity? identity = null)
     {
-        var player = mode == "offline" ? context.Config.OfflinePlayer : identity?.Player ?? session?.Username;
+        var record = store.Load();
+        var player = mode == "offline" ? record.OfflinePlayer : identity?.Player ?? session?.Username;
         if (string.IsNullOrWhiteSpace(player))
             throw new AccountLoginException("账号没有有效的玩家名，请重新登录。", true);
-        if (context.Config.AccountType == "offline")
-            context.Config.OfflinePlayer = context.Config.Player;
+        if (record.Mode == "offline")
+            record = record with
+            {
+                OfflinePlayer = record.Player
+            };
         if (session != null && verified)
             context.AccountSessions.Remember(mode, session);
         Session = session;
-        context.Config.AccountType = mode;
-        context.Config.Player = player;
-        if (persist)
-            context.Store.Save(context.Config);
+        record = new AccountRecord(mode, player, record.OfflinePlayer);
+        store.Save(record, persist);
         context.SendAccountState();
         Publish(new AccountStateInfo(
             player,
             mode,
-            context.Config.OfflinePlayer,
+            record.OfflinePlayer,
             session != null || mode == "offline",
             context.AccountRevision));
     }
 
     public async Task<MSession> PrepareLaunchSessionAsync()
     {
-        var mode = context.Config.AccountType;
-        var player = context.Config.Player;
+        var record = store.Load();
+        var mode = record.Mode;
+        var player = record.Player;
         if (mode == "offline")
         {
             var offline = new MSession
@@ -150,10 +156,12 @@ internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider
                 AuthResultReceived?.Invoke(AuthResultInfo.From(root));
                 return true;
             case "accountState":
-                var state = AccountStateInfo.From(root) with
+                var incoming = AccountStateInfo.From(root);
+                var account = store.Load();
+                var state = incoming with
                 {
-                    OfflinePlayer = context.Config.OfflinePlayer,
-                    Authenticated = Session != null || context.Config.AccountType == "offline",
+                    OfflinePlayer = account.OfflinePlayer,
+                    Authenticated = Session != null || incoming.AccountType == "offline",
                     Revision = context.AccountRevision
                 };
                 Publish(state);
