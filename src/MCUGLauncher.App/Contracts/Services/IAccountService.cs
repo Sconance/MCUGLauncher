@@ -14,57 +14,26 @@ public interface IAccountService
     event Action<MuaProfilesInfo>? MuaProfilesReceived;
 
     [FeatureOperation]
-    Task<AuthResultInfo> LoginMicrosoftAsync() =>
-        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LoginMicrosoftAsync), new
-        {
-        });
+    Task<AuthResultInfo> LoginMicrosoftAsync();
 
     [FeatureOperation]
-    Task<AuthResultInfo> LoginMuaAsync(string account, string password) =>
-        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LoginMuaAsync), new
-        {
-            account,
-            password
-        });
+    Task<AuthResultInfo> LoginMuaAsync(string account, string password);
 
     [FeatureOperation]
-    Task<AccountSwitchResultInfo> SwitchAccountModeAsync(string mode) =>
-        FeatureRequest.InvokeAsync<AccountSwitchResultInfo>(this, nameof(SwitchAccountModeAsync), new
-        {
-            mode
-        });
+    Task<AccountSwitchResultInfo> SwitchAccountModeAsync(string mode);
 
     [FeatureOperation]
-    Task<AuthResultInfo> ForgetAccountAsync(string mode) =>
-        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(ForgetAccountAsync), new
-        {
-            mode
-        });
+    Task<AuthResultInfo> ForgetAccountAsync(string mode);
 
     [FeatureOperation]
-    Task<AuthResultInfo> LogoutAccountAsync() =>
-        FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LogoutAccountAsync), new
-        {
-        });
+    Task<AuthResultInfo> LogoutAccountAsync();
 
     [FeatureOperation]
-    Task<SavedInfo> SelectMuaProfileAsync(string token, string profileId) =>
-        FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SelectMuaProfileAsync), new
-        {
-            token,
-            profileId
-        });
+    Task<SavedInfo> SelectMuaProfileAsync(string token, string profileId);
 
     [FeatureOperation]
-    Task<AvatarInfo?> ReadAvatarAsync() =>
-        FeatureRequest.InvokeAsync<AvatarInfo?>(this, nameof(ReadAvatarAsync), new
-        {
-        });
+    Task<AvatarInfo?> ReadAvatarAsync();
 
     [FeatureOperation]
-    Task<AvatarInfo?> SetOfflineSkinAsync(string path) =>
-        FeatureRequest.InvokeAsync<AvatarInfo?>(this, nameof(SetOfflineSkinAsync), new
-        {
-            path
-        });
+    Task<AvatarInfo?> SetOfflineSkinAsync(string path);
 }

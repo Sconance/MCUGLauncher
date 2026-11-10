@@ -19,11 +19,10 @@ internal sealed class FeatureDispatcher
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
         foreach (var operation in operations.Values)
         {
-            if (operation.IsAbstract
-                || !operation.ReturnType.IsGenericType
+            if (!operation.ReturnType.IsGenericType
                 || operation.ReturnType.GetGenericTypeDefinition() != typeof(Task<>))
                 throw new InvalidOperationException(
-                    $"Feature operation '{operation.Name}' must be a default interface method returning Task<TResponse>.");
+                    $"Feature operation '{operation.Name}' must return Task<TResponse>.");
         }
 
         handlers = [];
