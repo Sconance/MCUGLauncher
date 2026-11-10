@@ -70,6 +70,14 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             version
         });
 
+    /// <summary>使用明确的实例和服务器地址启动；不永久修改实例启动设置。</summary>
+    public Task<LaunchResultInfo> LaunchToServerAsync(string instance, string serverAddress) =>
+        FeatureRequest.InvokeAsync<LaunchResultInfo>(this, nameof(LaunchToServerAsync), new
+        {
+            instance,
+            serverAddress
+        });
+
     public Task RequestStateAsync() => application.HandleAsync("""{"type":"requestState"}""");
 
     public Task<SavedInfo> SelectInstanceAsync(string instance) =>
@@ -375,7 +383,7 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
         {
         });
 
-    public Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "") =>
+    public Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "", string? instance = null) =>
         FeatureRequest.InvokeAsync<ServerResultInfo>(
             this,
             nameof(SaveServerAsync),
@@ -383,7 +391,8 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             {
                 name,
                 address,
-                oldAddress
+                oldAddress,
+                instance
             });
 
     public Task<SavedInfo> DeleteServerAsync(string address) =>

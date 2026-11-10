@@ -11,6 +11,16 @@ using MCUGLauncher;
 
 var fixture = Path.Combine(Path.GetTempPath(), "mcug-launcher-check-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(fixture);
+if (args.Contains("--server-favorites-only"))
+{
+    await ServerFavoriteScenarios.Run(fixture);
+    return;
+}
+if (args.Contains("--server-launch-only"))
+{
+    await ServerLaunchScenarios.Run(fixture);
+    return;
+}
 var store = new ConfigStore(fixture);
 var gameRoot = Path.Combine(fixture, "game");
 var versionDir = Path.Combine(gameRoot, "versions", "custom-fabric");
@@ -290,6 +300,8 @@ await LocalImportScenarios.Run(fixture);
 await CustomizationScenarios.Run(fixture);
 await MaintenanceScenarios.Run(fixture);
 await ServerPingScenarios.Run();
+await ServerFavoriteScenarios.Run(fixture);
+await ServerLaunchScenarios.Run(fixture);
 using (var service = new LauncherService(
            desktop,
            action => action(),

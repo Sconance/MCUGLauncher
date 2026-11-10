@@ -96,6 +96,14 @@ public interface ILauncherService : IDisposable
         {
             version
         });
+    /// <summary>使用明确的实例和服务器地址启动；不永久修改实例启动设置。</summary>
+    [FeatureOperation]
+    Task<LaunchResultInfo> LaunchToServerAsync(string instance, string serverAddress) =>
+        FeatureRequest.InvokeAsync<LaunchResultInfo>(this, nameof(LaunchToServerAsync), new
+        {
+            instance,
+            serverAddress
+        });
     Task RequestStateAsync();
     [FeatureOperation]
     Task<SavedInfo> SelectInstanceAsync(string instance) =>
@@ -298,8 +306,9 @@ public interface ILauncherService : IDisposable
         FeatureRequest.InvokeAsync<SystemInfoInfo>(this, nameof(SystemInfoAsync), new
         {
         });
+    /// <summary>保存服务器收藏；instance 为 null 时保留绑定，空字符串时清除绑定。</summary>
     [FeatureOperation]
-    Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "") =>
+    Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "", string? instance = null) =>
         FeatureRequest.InvokeAsync<ServerResultInfo>(
             this,
             nameof(SaveServerAsync),
@@ -307,7 +316,8 @@ public interface ILauncherService : IDisposable
             {
                 name,
                 address,
-                oldAddress
+                oldAddress,
+                instance
             });
     [FeatureOperation]
     Task<SavedInfo> DeleteServerAsync(string address) =>

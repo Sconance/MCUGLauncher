@@ -39,3 +39,25 @@ WebView2 的唯一用途是 `MicrosoftLoginWindow` 承载微软 OAuth 页面；�
 - 0.22.3 的 WebView2/HTML UI 架构与拆分记录保留在
   [0.22.3-fix 架构快照](archive/0.22.3-fix-architecture.md)；
   当前代码已删除 `Ui/` 与 `MainWindow`。
+
+
+## 服务器收藏的实例绑定
+
+`Models.SavedServer.Instance` 保存当前游戏根目录中的实例键，不保存完整路径，不增加编号。
+旧配置缺少该字段时默认为空。`Contracts.SavedServerInfo.Instance` 同步暴露只读状态快照。
+
+`ILauncherService.SaveServerAsync(name, address, oldAddress, instance)` 使用既有强类型 handler。
+省略或传 null 保留原绑定，空字符串清除绑定；新增收藏未提供实例时保持未绑定。
+因此既有 Avalonia/TUI 的三参数调用不会丢失收藏的实例。界面和 Core 无需修改。
+
+收藏进服已通过 `ILauncherService.LaunchToServerAsync(instance, serverAddress)` 接入。
+`LaunchToServerFeatureHandler` 调用 `GameCommands`，复用身份校验、任务互斥、实例快照和进程管理。
+实例必须明确指定，未绑定或已删除的实例返回失败，不会回退到当前选中实例；服务器地址由
+Core `ServerEndpoint.Parse` 校验并规范化。共享的目录预留会阻止普通启动和收藏启动并发准备同一实例。
+
+地址只覆盖本次启动快照的 `LaunchSettings.Server`，不永久改写全局/实例/收藏设置；
+普通 `LaunchAsync` 保持原有行为。参数生成继续交给 `Core.LaunchService`。
+调用方读取收藏的 `Instance` 和 `Address` 后传给接口，并展示 `LaunchResultInfo.Ok/Message`。
+Avalonia 主页已通过服务器卡片的“打开”按钮调用该接口；未绑定时引导编辑收藏。
+编辑窗口从 `State.Instances` 读取实例列表，经 `SaveServerAsync` 保存绑定。
+TUI 服务器收藏页暂未接入这一操作。

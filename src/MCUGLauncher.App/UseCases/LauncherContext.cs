@@ -24,7 +24,12 @@ internal sealed class LauncherContext : IDisposable
     public AccountSessionCache AccountSessions { get; } = new();
     readonly ConcurrentDictionary<string, string> preparing = new(StringComparer.OrdinalIgnoreCase);
     static string Full(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
-    public void MarkPreparing(string root, string directory) => preparing[Full(directory)] = Full(root);
+    /// <summary>原子预留正在启动的实例目录，阻止不同入口并发准备同一实例。</summary>
+    public void MarkPreparing(string root, string directory)
+    {
+        if (!preparing.TryAdd(Full(directory), Full(root)))
+            throw new IOException("该实例正在准备启动，请稍候。");
+    }
     public void ReleasePreparing(string directory) => preparing.TryRemove(Full(directory), out _);
     public bool IsInstanceInUse(string directory) => preparing.ContainsKey(Full(directory)) || Games.UsesDirectory(directory);
     public bool IsRootPreparing(string root) => preparing.Values.Any(value => value.Equals(Full(root), StringComparison.OrdinalIgnoreCase));

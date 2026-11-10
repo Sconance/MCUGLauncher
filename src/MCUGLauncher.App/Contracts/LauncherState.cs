@@ -69,7 +69,7 @@ public sealed record TaskInfo(
         JsonRead.Bool(element, "committing"));
 }
 
-public sealed record SavedServerInfo(string Name, string Address)
+public sealed record SavedServerInfo(string Name, string Address, string Instance = "")
 {
 }
 
