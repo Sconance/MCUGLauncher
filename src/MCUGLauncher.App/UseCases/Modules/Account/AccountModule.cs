@@ -7,7 +7,7 @@ using MCUGLauncher.Services;
 namespace MCUGLauncher.UseCases;
 
 /// <summary>账号领域模块：登录、账号切换、MUA 档案、头像皮肤、账号状态与事件。</summary>
-internal sealed class AccountModule
+internal sealed class AccountModule : IAccountStateWriter, IAccountStateProvider, IAccountSessionProvider
 {
     readonly IAccountFeatureInvoker invoker;
     readonly IAccountContext context;
@@ -16,14 +16,24 @@ internal sealed class AccountModule
     {
         this.invoker = invoker;
         this.context = context;
-        State = new AccountStateInfo(context.Config.Player, context.Config.AccountType);
+        State = new AccountStateInfo(
+            context.Config.Player,
+            context.Config.AccountType,
+            context.Config.OfflinePlayer,
+            context.OnlineSession != null || context.Config.AccountType == "offline",
+            context.AccountRevision);
+        Session = context.OnlineSession;
     }
 
     public AccountStateInfo? State
     {
         get; private set;
     }
-    public event Action<AccountStateInfo>? StateChanged;
+    public AccountStateInfo? AccountState => State;
+    public MSession? Session
+    {
+        get; private set;
+    }
 
     public event Action<AuthResultInfo>? AuthResultReceived;
     public event Action<AccountStateInfo>? AccountStateChanged;
@@ -50,7 +60,13 @@ internal sealed class AccountModule
         if (persist)
             context.Store.Save(context.Config);
         context.SendAccountState();
-        Publish(new AccountStateInfo(player, mode));
+        Session = session;
+        Publish(new AccountStateInfo(
+            player,
+            mode,
+            context.Config.OfflinePlayer,
+            session != null || mode == "offline",
+            context.AccountRevision));
     }
 
     public Task<AuthResultInfo> LoginMicrosoftAsync() =>
@@ -109,7 +125,12 @@ internal sealed class AccountModule
                 AuthResultReceived?.Invoke(AuthResultInfo.From(root));
                 return true;
             case "accountState":
-                var state = AccountStateInfo.From(root);
+                var state = AccountStateInfo.From(root) with
+                {
+                    OfflinePlayer = context.Config.OfflinePlayer,
+                    Authenticated = context.OnlineSession != null || context.Config.AccountType == "offline",
+                    Revision = context.AccountRevision
+                };
                 Publish(state);
                 AccountStateChanged?.Invoke(state);
                 return true;
@@ -124,9 +145,5 @@ internal sealed class AccountModule
         }
     }
 
-    void Publish(AccountStateInfo state)
-    {
-        State = state;
-        StateChanged?.Invoke(state);
-    }
+    void Publish(AccountStateInfo state) => State = state;
 }

@@ -66,3 +66,11 @@ Modules/Account/
 - `AccountModeCommands.Apply` 统一委托 `AccountModule.Apply`，账号模式、玩家名、会话与持久化写入只有一个入口；
 - `AppConfig` 仍是持久化载体，模块写入后镜像到配置，保证旧配置与启动流程兼容；
 - `LauncherStateBuilder` 优先使用模块状态，模块未装配时回退配置。
+
+## 账号模块 P0/P1/P2 进展
+
+- P0：`IAccountContext` 已移除 `Accounts`，新增 `IAccountStateWriter`，`AccountModeCommands` 通过写入端口提交状态，不再直接访问模块；
+- P0：`AccountModule.StateChanged` 已删除，只保留 `AccountStateChanged`；
+- P1：新增 `IAccountStateProvider` / `IAccountSessionProvider`，`LauncherStateBuilder` 通过状态提供者读取账号快照；
+- P2（部分）：`AccountStateInfo` 扩展为 `Player/AccountType/OfflinePlayer/Authenticated/Revision`，保留默认参数兼容旧构造；
+- P2（待做）：`IAccountStore` / `IAccountSessionStore` 尚未替代 `IAccountContext`，调用路径仍保留契约默认方法与模块适配两条入口。

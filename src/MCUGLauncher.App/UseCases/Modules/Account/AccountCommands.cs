@@ -19,7 +19,7 @@ internal sealed class AccountCommands(IAccountContext context)
             var session = await context.Microsoft.Authenticate(true, context.Token);
             if (revision != context.AccountRevision)
                 return new(false, false, "登录已被更新的账号操作取代。");
-            AccountModeCommands.Apply(context, "microsoft", session);
+            AccountModeCommands.Apply(context.StateWriter, "microsoft", session);
             return new(true, false, $"已登录正版账号 {session.Username}");
         }
         catch (Exception ex)
@@ -42,7 +42,7 @@ internal sealed class AccountCommands(IAccountContext context)
                 profiles.ChooseAsync, context.Token);
             if (revision != context.AccountRevision)
                 return new(false, false, "登录已被更新的账号操作取代。");
-            AccountModeCommands.Apply(context, "mua", MuaAccountService.Session(credential));
+            AccountModeCommands.Apply(context.StateWriter, "mua", MuaAccountService.Session(credential));
             return new(true, false, $"已登录 MUA 账号 {credential.Profile.Name}");
         }
         catch (Exception)

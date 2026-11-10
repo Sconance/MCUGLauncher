@@ -623,7 +623,7 @@ internal sealed class LauncherApplication : IDisposable
     {
         try
         {
-            var state = LauncherStateBuilder.Build(context.Config, bookmarkCommands.Snapshot(), context.AccountsOrNull?.State);
+            var state = LauncherStateBuilder.Build(context.Config, bookmarkCommands.Snapshot(), context.AccountStateProvider?.AccountState);
             context.Send(state);
         }
         catch (Exception ex)

@@ -39,7 +39,12 @@ public sealed record AccountSwitchResultInfo(string Account, bool NeedsLogin, st
         JsonRead.String(element, "message"));
 }
 
-public sealed record AccountStateInfo(string Player, string AccountType)
+public sealed record AccountStateInfo(
+    string Player,
+    string AccountType,
+    string OfflinePlayer = "",
+    bool Authenticated = true,
+    long Revision = 0)
 {
     internal static AccountStateInfo From(JsonElement element) => new(
         JsonRead.String(element, "player"),

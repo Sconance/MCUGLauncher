@@ -41,7 +41,7 @@ internal interface IAccountContext
         get;
     }
     long NextRevision();
-    AccountModule Accounts
+    IAccountStateWriter StateWriter
     {
         get;
     }

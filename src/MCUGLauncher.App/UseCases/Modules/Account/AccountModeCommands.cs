@@ -7,10 +7,12 @@ namespace MCUGLauncher.UseCases;
 
 // Mode selection preserves credentials. Only explicit removal deletes an account.
 internal sealed class AccountModeCommands(
-    LauncherContext context,
+    IAccountContext context,
     Func<string, Task<MSession>>? restore = null,
-    Func<string, Task<AccountIdentity?>>? readIdentity = null)
+    Func<string, Task<AccountIdentity?>>? readIdentity = null,
+    IAccountStateWriter? writer = null)
 {
+    readonly IAccountStateWriter writer = writer ?? context.StateWriter;
     Task? identityPreload;
 
     public async Task<AccountSwitchResultInfo> RestoreSelectedAsync()
@@ -164,7 +166,7 @@ internal sealed class AccountModeCommands(
         bool verified = true,
         AccountIdentity? identity = null)
     {
-        Apply(context, mode, session, verified, persist: false, identity: identity);
+        Apply(writer, mode, session, verified, persist: false, identity: identity);
         try
         {
             await context.Store.SaveAsync(context.Config);
@@ -188,13 +190,13 @@ internal sealed class AccountModeCommands(
     }
 
     public static void Apply(
-        IAccountContext context,
+        IAccountStateWriter writer,
         string mode,
         MSession? session,
         bool verified = true,
         bool persist = true,
         AccountIdentity? identity = null) =>
-        context.Accounts.Apply(mode, session, verified, persist, identity);
+        writer.Apply(mode, session, verified, persist, identity);
 
     public async Task<AuthResultInfo> ForgetAsync(string mode)
     {
@@ -209,7 +211,7 @@ internal sealed class AccountModeCommands(
         if (revision != context.AccountRevision)
             return new(false, false, "账号移除已被更新的账号操作取代。");
         if (context.Config.AccountType == mode)
-            Apply(context, "offline", null);
+            Apply(writer, "offline", null);
         return new(true, false, "已移除本机保存的账号。");
     }
 }

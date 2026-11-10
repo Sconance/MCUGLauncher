@@ -11,8 +11,10 @@ internal sealed class LauncherContext : IDisposable, IAccountContext
     readonly CancellationTokenSource lifetime = new();
     long accountRevision;
     AccountModule? accounts;
-    public AccountModule Accounts => accounts ?? throw new InvalidOperationException("账号模块尚未装配。");
     internal AccountModule? AccountsOrNull => accounts;
+    public IAccountStateProvider? AccountStateProvider => accounts;
+    public IAccountSessionProvider? SessionProvider => accounts;
+    public IAccountStateWriter StateWriter => accounts ?? throw new InvalidOperationException("账号模块尚未装配。");
     internal void AttachAccounts(AccountModule module) => accounts = module;
     public long AccountRevision => accountRevision;
     public long NextRevision() => Interlocked.Increment(ref accountRevision);
