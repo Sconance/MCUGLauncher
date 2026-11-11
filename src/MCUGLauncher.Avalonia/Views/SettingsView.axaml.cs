@@ -20,16 +20,13 @@ internal partial class SettingsView : UserControl
     public SettingsView()
     {
         InitializeComponent();
-        panels["launch"] = LaunchPanel;
-        panels["java"] = JavaPanel;
-        panels["datasources"] = DataSourcesPanel;
+        // 合并后的常规分组：一个 key 对应一组卡片，组内多张卡一起显示
+        panels["launch"] = LaunchGroup;
         panels["appearance"] = AppearancePanel;
-        panels["servers"] = ServersPanel;
+        panels["favorites"] = FavoritesGroup;
+        panels["community"] = CommunityGroup;
+        panels["devtools"] = DevToolsGroup;
         panels["saves"] = SavesPanel;
-        panels["recovery"] = RecoveryPanel;
-        panels["logs"] = LogsPanel;
-        panels["diagnose"] = DiagnosePanel;
-        panels["community"] = CommunityPanel;
         panels["about"] = AboutPanel;
         WireButtons();
         JavaListPanel.Children.Add(Muted("还没有扫描结果。点击“扫描本机 Java”。"));
@@ -58,7 +55,15 @@ internal partial class SettingsView : UserControl
         service.PathPicked += OnPathPicked;
         service.ToastReceived += info => Status(info.Message);
         service.ErrorReceived += message => Status("操作失败：" + message);
+        BuildPages(service);
         ApplyState(service.State);
+    }
+
+    /// <summary>内嵌的两个整页视图，与常规面板共用同一份服务实例。</summary>
+    void BuildPages(ILauncherService value)
+    {
+        BookmarksHost.Content = new BookmarksView(value);
+        CommunityHost.Content = new CommunityView(value);
     }
 
     void Detach()
@@ -68,6 +73,8 @@ internal partial class SettingsView : UserControl
         service.StateChanged -= ApplyState;
         service.PathPicked -= OnPathPicked;
         service = EmptyServiceFallback.Instance;
+        BookmarksHost.Content = null;
+        CommunityHost.Content = null;
     }
 
     void WireButtons()
@@ -95,8 +102,6 @@ internal partial class SettingsView : UserControl
         BrowseJavaButton.Click += async (_, _) => await Pick(service?.PickFileAsync("java"));
         ScanJavaButton.Click += async (_, _) => await ScanJava(JavaStatus);
         SaveLaunchButton.Click += async (_, _) => await SaveLaunch();
-        BrowseJavaPathButton.Click += async (_, _) => await Pick(service?.PickFileAsync("java"));
-        ScanJavaListButton.Click += async (_, _) => await ScanJava(JavaStatus);
         SaveJavaButton.Click += async (_, _) => await SaveJava();
         TestAnnouncementsButton.Click += async (_, _) => await TestSource("公告", SourceAnnouncementsBox);
         TestServersButton.Click += async (_, _) => await TestSource("服务器", SourceServersBox);
@@ -114,16 +119,40 @@ internal partial class SettingsView : UserControl
             RenderSaveBackups(await service.ListSaveBackupsAsync());
         };
         OpenSavesFolderButton.Click += async (_, _) => await service!.OpenFolderAsync("saves");
-        ResetWindowRecoveryButton.Click += async (_, _) => await service!.ResetWindowAsync();
         OpenConfigButton.Click += async (_, _) => await service!.OpenFolderAsync("config");
-        OpenRootButton.Click += async (_, _) => await service!.OpenFolderAsync("root");
         ReadLogButton.Click += async (_, _) => await ReadLog();
         OpenLogFolderButton.Click += async (_, _) => await service!.OpenFolderAsync("config");
         ReadSystemInfoButton.Click += async (_, _) => await ReadSystemInfo();
         CopyDiagnosticsButton.Click += async (_, _) => await CopyDiagnostics();
         SaveAnonymousButton.Click += async (_, _) => await SaveAnonymous();
         VerifyCommunityKeyButton.Click += async (_, _) => await VerifyKey("community", CommunityKeyBox);
-        VerifyAdminKeyButton.Click += async (_, _) => await VerifyKey("admin", AdminKeyBox);
+        SaveUiDebugButton.Click += async (_, _) => await SaveUiDebug();
+        ChooseSkinButton.Click += async (_, _) => await service!.PickFileAsync("offlineSkin");
+        ClearSkinButton.Click += async (_, _) =>
+        {
+            await service!.SetOfflineSkinAsync("");
+            SkinStatus.Text = "已清除本地皮肤。";
+        };
+        ForgetMicrosoftButton.Click += async (_, _) => await ForgetAccount("microsoft");
+        ForgetMuaButton.Click += async (_, _) => await ForgetAccount("mua");
+    }
+
+    async Task ForgetAccount(string mode)
+    {
+        if (service is null)
+            return;
+        AccountStatus.Text = "正在移除本机保存的账号…";
+        AccountStatus.Text = (await service.ForgetAccountAsync(mode)).Message;
+    }
+
+    async Task SaveUiDebug()
+    {
+        if (service is null)
+            return;
+        UiDebugStatus.Text = "正在保存…";
+        var result = await service.SaveSettingsAsync(new AppSettingsPatch(
+            ForceTasksButton: ForceTasksButtonBox.IsChecked == true));
+        UiDebugStatus.Text = result.Message;
     }
 
     static async Task Pick(Task? pending)
@@ -149,28 +178,28 @@ internal partial class SettingsView : UserControl
             LaunchStatus.Text = $"最大内存需在 {LaunchLimits.RamMin}–{LaunchLimits.RamMax} MB 之间。";
             return;
         }
-        if (!int.TryParse(WidthBox.Text, out var width) || width is < LaunchLimits.WindowWidthMin or > LaunchLimits.WindowWidthMax)
+
+        if (!int.TryParse(WidthBox.Text, out var width) ||
+            width is < LaunchLimits.WindowWidthMin or > LaunchLimits.WindowWidthMax)
         {
             LaunchStatus.Text = $"窗口宽需在 {LaunchLimits.WindowWidthMin}–{LaunchLimits.WindowWidthMax} 之间。";
             return;
         }
-        if (!int.TryParse(HeightBox.Text, out var height) || height is < LaunchLimits.WindowHeightMin or > LaunchLimits.WindowHeightMax)
+
+        if (!int.TryParse(HeightBox.Text, out var height) ||
+            height is < LaunchLimits.WindowHeightMin or > LaunchLimits.WindowHeightMax)
         {
             LaunchStatus.Text = $"窗口高需在 {LaunchLimits.WindowHeightMin}–{LaunchLimits.WindowHeightMax} 之间。";
             return;
         }
+
         var root = RootBox.Text?.Trim() ?? "";
         if (root.Length == 0)
         {
             LaunchStatus.Text = "请选择已有游戏目录。";
             return;
         }
-        var player = PlayerBox.Text?.Trim() ?? "";
-        if (state?.AccountType == "offline" && player.Length == 0)
-        {
-            LaunchStatus.Text = "离线账号需要填写玩家名。";
-            return;
-        }
+
         LaunchStatus.Text = "正在保存…";
         var result = await service.SaveSettingsAsync(new AppSettingsPatch(
             Root: root,
@@ -179,8 +208,7 @@ internal partial class SettingsView : UserControl
             Width: width,
             Height: height,
             AutoMemory: AutoMemoryBox.IsChecked == true,
-            AutoChinese: AutoChineseBox.IsChecked == true,
-            Player: state?.AccountType == "offline" ? player : null));
+            AutoChinese: AutoChineseBox.IsChecked == true));
         LaunchStatus.Text = result.Message;
     }
 
@@ -189,7 +217,7 @@ internal partial class SettingsView : UserControl
         if (service is null)
             return;
         JavaStatus.Text = "正在保存 Java 设置…";
-        var result = await service.SaveSettingsAsync(new AppSettingsPatch(Java: JavaPathBox.Text?.Trim() ?? ""));
+        var result = await service.SaveSettingsAsync(new AppSettingsPatch(Java: JavaBox.Text?.Trim() ?? ""));
         JavaStatus.Text = result.Message;
     }
 
@@ -203,6 +231,7 @@ internal partial class SettingsView : UserControl
             DataSourceStatus.Text = label + "地址为空。";
             return;
         }
+
         DataSourceStatus.Text = "正在测试" + label + "…";
         var result = await service.TestSourceAsync(label, url);
         OnTestResult(result);
@@ -240,6 +269,7 @@ internal partial class SettingsView : UserControl
             ServerStatus.Text = "请填写服务器地址。";
             return;
         }
+
         ServerStatus.Text = "正在保存…";
         var result = await service.SaveServerAsync(ServerNameBox.Text?.Trim() ?? "", address, editingServer);
         ServerStatus.Text = result.Message;
@@ -285,6 +315,7 @@ internal partial class SettingsView : UserControl
             CommunityStatus.Text = "请输入密钥。";
             return;
         }
+
         CommunityStatus.Text = "正在验证…";
         var result = await service.VerifyKeyAsync(role, key);
         CommunityStatus.Text = result.Message;
@@ -300,12 +331,14 @@ internal partial class SettingsView : UserControl
             DiagnoseStatus.Text = "请先读取系统信息。";
             return;
         }
+
         var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
         if (clipboard is null)
         {
             DiagnoseStatus.Text = "剪贴板不可用。";
             return;
         }
+
         await clipboard.SetTextAsync(text);
         DiagnoseStatus.Text = "诊断信息已复制。";
     }
@@ -316,6 +349,17 @@ internal partial class SettingsView : UserControl
             ShowPanel(key);
     }
 
+    /// <summary>供外壳跳转：key 是常规分组的面板名。</summary>
+    public void Open(string key)
+    {
+        if (!panels.ContainsKey(key))
+            return;
+        foreach (var item in Nav.Items.OfType<ListBoxItem>())
+            item.IsSelected = (string?)item.Tag == key;
+        ShowPanel(key);
+    }
+
+    /// <summary>只显示对应的设置组，其余隐藏。</summary>
     void ShowPanel(string key)
     {
         current = key;
@@ -323,10 +367,11 @@ internal partial class SettingsView : UserControl
             pair.Value.IsVisible = pair.Key == key;
         if (key == "saves")
             _ = LoadSaveBackups();
-        else if (key == "logs")
+        else if (key == "devtools")
+        {
             _ = ReadLog();
-        else if (key == "diagnose")
             _ = ReadSystemInfo();
+        }
     }
 
     async Task ReadLog()
@@ -364,9 +409,20 @@ internal partial class SettingsView : UserControl
         else if (info.Target == "java")
         {
             JavaBox.Text = info.Path;
-            JavaPathBox.Text = info.Path;
             JavaStatus.Text = "已选择 Java 路径，保存后生效。";
         }
+        else if (info.Target == "offlineSkin")
+        {
+            _ = ApplyOfflineSkin(info.Path);
+        }
+    }
+
+    async Task ApplyOfflineSkin(string path)
+    {
+        if (service is null)
+            return;
+        await service.SetOfflineSkinAsync(path);
+        SkinStatus.Text = "已应用本地皮肤。";
     }
 
     async Task PingServer(string address)
@@ -390,26 +446,17 @@ internal partial class SettingsView : UserControl
             case "launch":
                 LaunchStatus.Text = message;
                 break;
-            case "java":
-                JavaStatus.Text = message;
-                break;
-            case "datasources":
-                DataSourceStatus.Text = message;
-                break;
-            case "servers":
+            case "favorites":
                 ServerStatus.Text = message;
-                break;
-            case "saves":
-                SaveStatus.Text = message;
-                break;
-            case "recovery":
-                RecoveryStatus.Text = message;
-                break;
-            case "diagnose":
-                DiagnoseStatus.Text = message;
                 break;
             case "community":
                 CommunityStatus.Text = message;
+                break;
+            case "devtools":
+                DiagnoseStatus.Text = message;
+                break;
+            case "saves":
+                SaveStatus.Text = message;
                 break;
         }
     }
@@ -429,11 +476,9 @@ internal partial class SettingsView : UserControl
         GameRootBox.SelectedIndex = Array.IndexOf(roots, snapshot.Root);
         updatingRoots = false;
         SetText(JavaBox, snapshot.Java);
-        SetText(JavaPathBox, snapshot.Java);
         SetText(RamBox, snapshot.Ram.ToString());
         SetText(WidthBox, snapshot.Width.ToString());
         SetText(HeightBox, snapshot.Height.ToString());
-        SetText(PlayerBox, snapshot.Player);
         SetText(AboutVersion, "MCUG Launcher " + snapshot.AppVersion);
         if (!AutoMemoryBox.IsFocused)
             AutoMemoryBox.IsChecked = snapshot.AutoMemory;
@@ -441,8 +486,8 @@ internal partial class SettingsView : UserControl
             AutoChineseBox.IsChecked = snapshot.AutoChinese;
         if (!AnonymousBox.IsFocused)
             AnonymousBox.IsChecked = snapshot.Anonymous;
-        PlayerBox.IsEnabled = snapshot.AccountType == "offline";
-        PlayerLabel.Text = snapshot.AccountType == "offline" ? "离线玩家名" : "玩家名（在线账号不可修改）";
+        if (!ForceTasksButtonBox.IsFocused)
+            ForceTasksButtonBox.IsChecked = snapshot.ForceTasksButton;
         var sources = snapshot.CustomDataSources.Announcements.Length > 0
             ? snapshot.CustomDataSources
             : snapshot.DataSources;
@@ -451,16 +496,24 @@ internal partial class SettingsView : UserControl
         SetText(SourceRecommendationsBox, sources.Recommendations);
         SetText(SourceQuotesBox, sources.Quotes);
         var mode = snapshot.DataSourceMode == "custom" ? "自定义" : "默认";
-        var keys = $"身份密钥：{(snapshot.HasCommunityKey ? "已设置" : "未设置")} · 管理员密钥：{(snapshot.HasAdminKey ? "已设置" : "未设置")}";
-        if (current == "datasources")
-            DataSourceStatus.Text = $"当前使用{mode}数据源。";
+        var keys =
+            $"身份密钥：{(snapshot.HasCommunityKey ? "已设置" : "未设置")} · 管理员密钥：{(snapshot.HasAdminKey ? "已设置" : "未设置")}";
+        // 「社区」分组同时包含数据源与身份两块，两个状态一起刷新
         if (current == "community")
+        {
+            DataSourceStatus.Text = $"当前使用{mode}数据源。";
             CommunityStatus.Text = keys;
+        }
+
         RenderServers();
         if (service is { JavaList.Count: > 0 })
             RenderJavaList(service.JavaList);
         if (service is { SaveBackups.Count: > 0 })
             RenderSaveBackups(service.SaveBackups);
+        var offlineAccount = snapshot.AccountType == "offline";
+        ChooseSkinButton.IsEnabled = offlineAccount;
+        ClearSkinButton.IsEnabled = offlineAccount;
+        SkinStatus.Text = offlineAccount ? "" : "本地皮肤只对离线账号生效。";
     }
 
     void RenderJavaList(IReadOnlyList<JavaInfo> items)
@@ -472,6 +525,7 @@ internal partial class SettingsView : UserControl
             JavaListPanel.Children.Add(Muted("还没有扫描结果。点击“扫描本机 Java”。"));
             return;
         }
+
         foreach (var item in items)
         {
             var copy = new StackPanel { Spacing = 2 };
@@ -480,14 +534,16 @@ internal partial class SettingsView : UserControl
                 Text = $"Java {item.Major} · {item.Arch} {item.Vendor}".Trim(),
                 FontWeight = FontWeight.SemiBold
             });
-            copy.Children.Add(new TextBlock { Text = item.Path, Classes = { "muted" }, TextWrapping = TextWrapping.Wrap });
+            copy.Children.Add(new TextBlock
+                { Text = item.Path, Classes = { "muted" }, TextWrapping = TextWrapping.Wrap });
             if (item.Error.Length > 0)
-                copy.Children.Add(new TextBlock { Text = item.Error, Foreground = Brushes.Firebrick, TextWrapping = TextWrapping.Wrap });
-            var use = new Button { Content = "使用", Classes = { "ghost" }, VerticalAlignment = VerticalAlignment.Center };
+                copy.Children.Add(new TextBlock
+                    { Text = item.Error, Foreground = Brushes.Firebrick, TextWrapping = TextWrapping.Wrap });
+            var use = new Button
+                { Content = "使用", Classes = { "ghost" }, VerticalAlignment = VerticalAlignment.Center };
             var path = item.Path;
             use.Click += (_, _) =>
             {
-                JavaPathBox.Text = path;
                 JavaBox.Text = path;
                 JavaStatus.Text = "已填入 Java 路径，保存后生效。";
             };
@@ -503,6 +559,7 @@ internal partial class SettingsView : UserControl
             SaveListPanel.Children.Add(Muted("还没有存档备份。"));
             return;
         }
+
         foreach (var backup in items)
         {
             var copy = new StackPanel { Spacing = 4 };
@@ -513,7 +570,8 @@ internal partial class SettingsView : UserControl
             });
             foreach (var world in backup.Worlds)
             {
-                var restore = new Button { Content = "恢复为 " + world, Classes = { "ghost" }, HorizontalAlignment = HorizontalAlignment.Left };
+                var restore = new Button
+                    { Content = "恢复为 " + world, Classes = { "ghost" }, HorizontalAlignment = HorizontalAlignment.Left };
                 var id = backup.Id;
                 var name = world;
                 restore.Click += async (_, _) =>
@@ -523,6 +581,7 @@ internal partial class SettingsView : UserControl
                 };
                 copy.Children.Add(restore);
             }
+
             SaveListPanel.Children.Add(copy);
         }
     }
@@ -535,6 +594,7 @@ internal partial class SettingsView : UserControl
             ServerListPanel.Children.Add(Muted("还没有收藏服务器。"));
             return;
         }
+
         foreach (var server in state.Servers)
         {
             var copy = new StackPanel { Spacing = 2 };

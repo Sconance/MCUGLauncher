@@ -10,7 +10,8 @@ public sealed record AppSettingsPatch(
     bool? Anonymous = null,
     string? Player = null,
     DataSourceSet? DataSources = null,
-    bool? AutoChinese = null);
+    bool? AutoChinese = null,
+    bool? ForceTasksButton = null);
 
 public sealed record LaunchOptionsSettings(
     bool AutoMemory,

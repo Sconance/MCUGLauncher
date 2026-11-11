@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using MCUGLauncher.Models;
 using MCUGLauncher.Services;
+using ContractModInfo = MCUGLauncher.Contracts.ModInfo;
 using SavedInfo = MCUGLauncher.Contracts.SavedInfo;
 
 namespace MCUGLauncher.UseCases;
@@ -34,21 +35,40 @@ internal sealed class InstanceCommands(LauncherContext context)
         context.RefreshState();
     }
 
-    public void OpenFolder(string kind)
+    public void OpenFolder(string kind, string instance = "")
     {
-        var catalog = VersionCatalog.Load(context.Config.Root, context.Config.LastInstance);
-        var instance = VersionCatalog.InstanceDirectory(context.Config.Root, catalog.Selected);
+        // 指定实例时按该实例解析目录；留空仍跟随当前实例
+        var name = string.IsNullOrWhiteSpace(instance) ? context.Config.LastInstance : instance;
+        var catalog = VersionCatalog.Load(context.Config.Root, name);
+        var instancePath = VersionCatalog.InstanceDirectory(context.Config.Root, catalog.Selected);
         var path = kind switch
         {
-            "mods" => Path.Combine(instance, "mods"),
-            "saves" => Path.Combine(instance, "saves"),
-            "screenshots" => Path.Combine(instance, "screenshots"),
-            "version" => instance,
+            "mods" => Path.Combine(instancePath, "mods"),
+            "saves" => Path.Combine(instancePath, "saves"),
+            "screenshots" => Path.Combine(instancePath, "screenshots"),
+            "version" => instancePath,
             "config" => context.Store.DataDirectory,
             _ => context.Config.Root
         };
         Directory.CreateDirectory(path);
         Process.Start(new ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true });
+    }
+
+    /// <summary>按实例名读取模组，不改变当前启动实例。</summary>
+    public IReadOnlyList<ContractModInfo> ListMods(string instance)
+    {
+        var name = string.IsNullOrWhiteSpace(instance) ? context.Config.LastInstance : instance;
+        var catalog = VersionCatalog.Load(context.Config.Root, name);
+        return VersionCatalog.ReadMods(context.Config.Root, catalog.Selected)
+            .Select(item => new ContractModInfo(
+                item.Id,
+                item.Name,
+                item.File,
+                item.Version,
+                item.Enabled,
+                item.Path,
+                item.Size))
+            .ToArray();
     }
 
     public SavedInfo ToggleMod(string file, bool enabled)

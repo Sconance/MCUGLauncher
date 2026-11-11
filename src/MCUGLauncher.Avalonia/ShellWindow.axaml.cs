@@ -18,8 +18,8 @@ public partial class ShellWindow : Window
     ILauncherService service = null!;
     readonly ShellDesktopHost host;
     readonly SettingsView settingsView;
-    readonly ExtrasView extrasView;
     readonly HomeView homeView;
+    readonly TasksView tasksView;
     readonly DownloadView downloadView;
     readonly FileDropView fileDropView;
     readonly Dictionary<string, Button> navigation = new(StringComparer.Ordinal);
@@ -47,9 +47,13 @@ public partial class ShellWindow : Window
         ShellRoot.Children.Add(fileDropView);
         Grid.SetRowSpan(fileDropView, 2);
         settingsView = new SettingsView(service);
-        extrasView = new ExtrasView(service);
         homeView = new HomeView(service);
-        homeView.AccountRequested += () => OpenExtras("account");
+        // 顶栏只有「下载任务」一个快捷按钮；页面实例只建一次，打开浮窗时再拉数据
+        tasksView = new TasksView(service);
+        TasksHost.Content = tasksView;
+        TasksButton.Click += (_, _) => tasksView.Activate();
+        service.TasksChanged += _ => UpdateTrayButtons();
+        service.StateChanged += _ => UpdateTrayButtons();
         downloadView = new DownloadView(service);
         var placement = service.WindowPlacement;
         Width = Math.Clamp(placement.Width, LaunchLimits.ShellWidthMin, LaunchLimits.ShellWidthMax);
@@ -81,7 +85,6 @@ public partial class ShellWindow : Window
             Show("download");
         };
         SettingsButton.Click += (_, _) => Show("settings");
-        MoreButton.Click += (_, _) => OpenExtras();
         Render();
         Opened += async (_, _) =>
         {
@@ -89,6 +92,9 @@ public partial class ShellWindow : Window
             DwmSetWindowAttribute(Handle, 33, ref preference, sizeof(int));
             await service.StartAsync();
             homeView.Activate();
+            // 顶栏按钮按“有没有内容”显示，先拉一次初始任务列表
+            UpdateTrayButtons();
+            await service.RequestTasksAsync();
         };
         Closed += (_, _) =>
         {
@@ -103,22 +109,18 @@ public partial class ShellWindow : Window
         Render();
     }
 
+    /// <summary>顶栏快捷按钮只在有内容时出现；「开发者选项 → UI 调试」里可以强制常显。</summary>
+    void UpdateTrayButtons()
+    {
+        TasksButton.IsVisible = service.State?.ForceTasksButton == true || service.Tasks.Count > 0;
+    }
+
     void UpdateNavigation()
     {
         foreach (var button in navigation.Values)
             button.Classes.Remove("active");
         if (navigation.TryGetValue(page, out var active))
             active.Classes.Add("active");
-        MoreButton.Classes.Remove("active");
-        if (page == "extras")
-            MoreButton.Classes.Add("active");
-    }
-
-    void OpenExtras(string? section = null)
-    {
-        if (section is not null)
-            extrasView.Open(section);
-        Show("extras");
     }
 
     void OnMinimizeWindow(object? sender, RoutedEventArgs e) =>
@@ -151,12 +153,6 @@ public partial class ShellWindow : Window
         if (page == "settings")
         {
             PageHost.Content = settingsView;
-            return;
-        }
-
-        if (page == "extras")
-        {
-            PageHost.Content = extrasView;
             return;
         }
 

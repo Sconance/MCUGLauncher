@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:MCUGLauncher.Avalonia.Views">
     <Styles.Resources>
         <SolidColorBrush x:Key="AppBg" Color="#F3F7F6" />
         <SolidColorBrush x:Key="AppSide" Color="#F8FAF9" />
@@ -25,6 +26,41 @@
             <GradientStop Offset="0" Color="#3472AD" />
             <GradientStop Offset="1" Color="#2C6294" />
         </LinearGradientBrush>
+
+        <!--
+            实例下拉的行样式：左图标 + 右侧两行（上行名称、下行“版本 · 加载器”）。
+            两行文字限制 MaxWidth，下拉宽度就由 ComboBox 自身宽度决定，不再随条目内容变宽。
+        -->
+        <DataTemplate x:Key="InstanceRow" x:DataType="views:InstanceListItem">
+            <Grid ColumnDefinitions="Auto,*">
+                <Panel Width="26" Height="26" VerticalAlignment="Center">
+                    <!-- 有加载器图标就铺满并圆角裁剪 -->
+                    <Border CornerRadius="7" ClipToBounds="True" IsVisible="{Binding HasIcon}">
+                        <Image Source="{Binding Icon}" Stretch="Uniform" />
+                    </Border>
+                    <!-- 没有图标（Quilt / 占位行）时退回彩色徽标 + 字符 -->
+                    <Border CornerRadius="7" Background="{Binding Accent}" IsVisible="{Binding HasGlyph}">
+                        <TextBlock Text="{Binding Glyph}" Foreground="White" FontSize="13"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </Panel>
+                <StackPanel Grid.Column="1" Margin="9,0,0,0" Spacing="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="13"
+                               Foreground="{StaticResource AppInk}" HorizontalAlignment="Left"
+                               MaxWidth="208" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Subtitle}" FontSize="10.5"
+                               Foreground="{StaticResource AppInk3}" IsVisible="{Binding HasSubtitle}"
+                               HorizontalAlignment="Left"
+                               MaxWidth="208" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <!-- 收起状态只留上行，保证下拉框还是原来的 36px 高 -->
+        <DataTemplate x:Key="InstanceRowCompact" x:DataType="views:InstanceListItem">
+            <TextBlock Text="{Binding Title}" Foreground="{StaticResource AppInk}"
+                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        </DataTemplate>
     </Styles.Resources>
 
     <Style Selector="Window">
@@ -99,8 +135,9 @@
         </Setter>
     </Style>
 
+    <!-- 悬停底色与标题栏按钮（Button.topnav）保持一致，不再走 Fluent 的系统色 -->
     <Style Selector="Button:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+        <Setter Property="Background" Value="#E8F0F7" />
         <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
     </Style>
 
@@ -137,7 +174,7 @@
         <Setter Property="Foreground" Value="#414B55" />
     </Style>
     <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+        <Setter Property="Background" Value="#E8F0F7" />
         <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
     </Style>
 
@@ -154,12 +191,79 @@
         <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
     </Style>
 
+    <!-- 首页「当前实例」选择器：外观像输入框，点开的是二级页面 -->
+    <Style Selector="Button.instanceField">
+        <Setter Property="Background" Value="#FBFDFC" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppLine2}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="MinHeight" Value="44" />
+    </Style>
+    <Style Selector="Button.instanceField:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+    </Style>
+
+    <!-- 二级页面里的实例行；行高与内边距在 InstancePickerView 的常量里调 -->
+    <Style Selector="Button.instanceRow">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.instanceRow:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#EFF5FA" />
+    </Style>
+    <Style Selector="Button.instanceRow.selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="#E6F0FB" />
+    </Style>
+    <!--
+        Fluent 默认 Button:pressed 是 scale(0.98)。整行按钮很宽，以中心缩放会让左对齐的文字
+        明显右移，看起来像「平移 + 向内缩」，这里按下去只换底色，不动位置。
+    -->
+    <Style Selector="Button.instanceRow:pressed">
+        <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="Button.instanceRow:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="#DCE8F5" />
+    </Style>
+    <Style Selector="Button.groupHeader:pressed">
+        <Setter Property="RenderTransform" Value="none" />
+    </Style>
+
     <Style Selector="Button.avatar">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="Button.avatar:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+    </Style>
+
+    <!-- 首页账号模式切换：独立按钮，视觉沿用顶栏导航，只是更小 -->
+    <Style Selector="Button.accountMode">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="Foreground" Value="#545D66" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.accountMode:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#E8F0F7" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+    <Style Selector="Button.accountMode.active">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.accountMode.active:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
     </Style>
 
     <Style Selector="Button.topnav">
@@ -240,6 +344,28 @@
         <Setter Property="TextElement.Foreground" Value="White" />
     </Style>
 
+    <!--
+        启动按钮右侧的方形快捷入口（当前版本设置 / 正在运行的游戏）。
+        尺寸是 34×34，两个加起来加 4 的间隔正好等于 Button.launch 的 72 高。
+        换图标时只改 XAML 里的 Content；想换配色改下面四个 Setter。
+    -->
+    <Style Selector="Button.squareAction">
+        <Setter Property="Width" Value="34" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="{StaticResource LaunchGradient}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.squareAction:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#2C6294" />
+        <Setter Property="TextElement.Foreground" Value="White" />
+    </Style>
+
     <Style Selector="TextBox">
         <Setter Property="Background" Value="#FBFDFC" />
         <Setter Property="BorderBrush" Value="{StaticResource AppLine2}" />
@@ -261,10 +387,35 @@
         <Setter Property="MinHeight" Value="36" />
         <Setter Property="FontSize" Value="12" />
     </Style>
+    <!-- 两行实例行要贴合：默认内边距会把 26px 图标挤变形 -->
+    <Style Selector="ComboBoxItem">
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
 
     <Style Selector="CheckBox">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Foreground" Value="{StaticResource AppInk2}" />
+    </Style>
+    <!--
+        Fluent 的勾选框填充读系统强调色（Windows 设置里那个）。即使调色板已经改成
+        #326EA7，这里仍显式压一层，避免系统强调色被系统服务在运行时覆盖回来。
+        部件名 NormalRectangle / CheckGlyph 取自 Fluent 默认模板。
+    -->
+    <Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="{StaticResource AppAccent}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppAccent}" />
+    </Style>
+    <Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="#2C6193" />
+        <Setter Property="BorderBrush" Value="#2C6193" />
+    </Style>
+    <Style Selector="CheckBox:checked:pressed /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="{StaticResource AppAccentDark}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppAccentDark}" />
+    </Style>
+    <Style Selector="CheckBox:checked /template/ Path#CheckGlyph">
+        <Setter Property="Fill" Value="White" />
     </Style>
 
     <Style Selector="ListBox">
@@ -284,6 +435,33 @@
         <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
         <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
         <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="ListBoxItem:pressed">
+        <Setter Property="Background" Value="#DCE8F5" />
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+    <!--
+        Fluent 把 ListBoxItem 的状态底色画在模板内的 PART_ContentPresenter 上，
+        只设 ListBoxItem.Background 会被那一层盖住——左栏选中项一悬停就变深，就是这个原因。
+        这里把同一层也钉住，选中态在悬停 / 按下时保持 AppAccentSoft 不变。
+    -->
+    <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#E7EFF6" />
+    </Style>
+    <Style Selector="ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#DCE8F5" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
     </Style>
 
     <Style Selector="TabControl">

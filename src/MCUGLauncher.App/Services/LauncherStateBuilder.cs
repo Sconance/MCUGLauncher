@@ -1,7 +1,9 @@
+using System.Text.Json;
 using BlockLaunch;
 using MCUGLauncher.Contracts;
 using MCUGLauncher.Models;
 using InstanceDto = MCUGLauncher.Contracts.InstanceInfo;
+using InstanceModel = MCUGLauncher.Models.InstanceInfo;
 using ModDto = MCUGLauncher.Contracts.ModInfo;
 
 namespace MCUGLauncher.Services;
@@ -9,13 +11,20 @@ namespace MCUGLauncher.Services;
 // Reads one local snapshot; UI only receives the typed, presentation-neutral result.
 internal static class LauncherStateBuilder
 {
-    public static LauncherState Build(AppConfig config, IReadOnlyList<FavoriteInfo> favorites)
+    public static LauncherState Build(
+        AppConfig config,
+        IReadOnlyList<FavoriteInfo> favorites,
+        bool hasMicrosoftAccount = false,
+        bool hasMuaAccount = false)
     {
         var catalog = VersionCatalog.Load(config.Root, config.LastInstance);
-        var selectedVersion = catalog.Groups.Count == 0 ? "" :
-            catalog.Instances.Any(item => item.Name.Equals(config.LastVersion, StringComparison.OrdinalIgnoreCase))
-                ? config.LastVersion : catalog.Selected;
+        var selectedVersion = catalog.Groups.Count == 0
+            ? ""
+            : catalog.Instances.Any(item => item.Name.Equals(config.LastVersion, StringComparison.OrdinalIgnoreCase))
+                ? config.LastVersion
+                : catalog.Selected;
         var mods = VersionCatalog.ReadMods(config.Root, catalog.Selected);
+        var instances = catalog.Instances.Select(item => ToInstance(config.Root, item)).ToArray();
         return new LauncherState(
             ProductInfo.Version,
             config.Player,
@@ -37,14 +46,7 @@ internal static class LauncherStateBuilder
             config.Cape,
             selectedVersion,
             catalog.Selected,
-            catalog.Instances.Select(item => new InstanceDto(
-                item.Name,
-                item.Loader,
-                item.Mods,
-                item.Updates,
-                item.DisplayName,
-                item.Minecraft,
-                item.IsPlaceholder)).ToArray(),
+            instances,
             mods.Select(item => new ModDto(
                 item.Id,
                 item.Name,
@@ -65,7 +67,10 @@ internal static class LauncherStateBuilder
             ToSet(new DataSourceConfig()),
             ToSet(config.CustomDataSources ?? config.DataSources),
             config.EffectiveDataSourceMode,
-            config.LegacyPreferences.Launch.AutoChinese);
+            config.LegacyPreferences.Launch.AutoChinese,
+            config.ForceTasksButton,
+            hasMicrosoftAccount,
+            hasMuaAccount);
     }
 
     static DataSourceSet ToSet(DataSourceConfig sources) => new(
@@ -73,4 +78,46 @@ internal static class LauncherStateBuilder
         sources.Servers,
         sources.Recommendations,
         sources.Quotes);
+
+    /// <summary>
+    /// 版本号与类型由 <see cref="VersionCatalog"/> 按 PCL2 规则解析好；这里只补加载器版本，
+    /// 并在版本号缺失时用实例元数据兜底。元数据识别的加载器与目录扫描不一致时，
+    /// 加载器版本可能属于另一个加载器，宁可不写。
+    /// </summary>
+    static InstanceDto ToInstance(string root, InstanceModel source)
+    {
+        var inspected = Inspect(root, source.Name);
+        return new InstanceDto(
+            source.Name,
+            source.Loader,
+            source.Mods,
+            source.Updates,
+            source.DisplayName,
+            source.Minecraft.Length > 0 ? source.Minecraft : inspected?.Minecraft ?? "",
+            source.IsPlaceholder,
+            inspected is not null && inspected.Loader == LoaderKind(source.Loader) ? inspected.LoaderVersion : "",
+            source.VersionType);
+    }
+
+    static PackRequirements? Inspect(string root, string instance)
+    {
+        try
+        {
+            return InstanceRequirements.Read(root, instance);
+        }
+        catch (Exception error) when (error is IOException or JsonException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    static string LoaderKind(string loader) => loader switch
+    {
+        "Fabric" => "fabric",
+        "Forge" => "forge",
+        "NeoForge" => "neoforge",
+        "Quilt" => "quilt",
+        "OptiFine" => "optifine",
+        _ => "vanilla"
+    };
 }

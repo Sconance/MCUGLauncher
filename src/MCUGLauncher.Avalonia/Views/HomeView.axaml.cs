@@ -6,13 +6,13 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using MCUGLauncher.Contracts;
+using SSvg = Avalonia.Svg.Skia.Svg;
 
 namespace MCUGLauncher.Avalonia.Views;
 
 internal partial class HomeView : UserControl
 {
     readonly Dictionary<string, ServerPingInfo> pings = new(StringComparer.OrdinalIgnoreCase);
-    readonly List<InstanceInfo> dialogInstances = [];
     ILauncherService service = EmptyServiceFallback.Instance;
     LauncherState? state;
     CommunityData community = CommunityData.Empty;
@@ -21,10 +21,17 @@ internal partial class HomeView : UserControl
     int imageVersion;
     string serverSignature = "";
     string editingServer = "";
-    string dialogMissingInstance = "";
-    bool updatingInstances;
+    string dialogInstance = "";
+    bool dialogShowInstances;
     int quoteIndex;
+
     string avatarAccount = "";
+
+    // 当前正在查看的账号页签，可以停在「正版」但还没登录
+    string accountTab = "";
+
+    // 鼠标是否停在左栏上；刷新按钮只在这个状态下出现
+    bool accountHover;
 
     public HomeView()
     {
@@ -37,8 +44,6 @@ internal partial class HomeView : UserControl
         Attach(service);
     }
 
-    public event Action? AccountRequested;
-
     public void Attach(ILauncherService value)
     {
         service = value ?? EmptyServiceFallback.Instance;
@@ -46,6 +51,10 @@ internal partial class HomeView : UserControl
         service.CommunityChanged += OnCommunity;
         service.ToastReceived += info => Status(info.Message);
         service.ErrorReceived += message => Status("操作失败：" + message);
+        service.PathPicked += OnPathPicked;
+        service.MuaProfilesReceived += OnMuaProfiles;
+        // 顶部快捷按钮现在只有下载任务，「运行中的游戏」改为这里的浮窗；实例只建一次
+        GamesHost.Content ??= new GamesView(service);
         community = service.Community;
         ApplyState(service.State);
         RenderCommunity();
@@ -54,10 +63,144 @@ internal partial class HomeView : UserControl
     /// <summary>账号恢复完成后由外壳调用，避免在 ready 之前读取头像。</summary>
     public void Activate() => _ = ReadAvatar();
 
+    /// <summary>切换账号页签：先换视图，只有该模式已有凭据时才真正切换启动账号。</summary>
+    void ShowAccountTab(string mode)
+    {
+        accountTab = mode;
+        RenderAccount();
+        if (state is null || state.AccountType == mode)
+            return;
+        var hasIdentity = mode switch
+        {
+            "microsoft" => state.HasMicrosoftAccount,
+            "mua" => state.HasMuaAccount,
+            _ => true
+        };
+        if (hasIdentity)
+            _ = service!.SwitchAccountModeAsync(mode);
+    }
+
+    /// <summary>三按钮 + 差异化面板：没有凭据的模式只显示登录入口。</summary>
+    void RenderAccount()
+    {
+        var tab = accountTab.Length > 0 ? accountTab : "offline";
+        var microsoft = state?.HasMicrosoftAccount == true;
+        var mua = state?.HasMuaAccount == true;
+        var player = state?.Player ?? "";
+
+        MicrosoftModeButton.Classes.Set("active", tab == "microsoft");
+        OfflineModeButton.Classes.Set("active", tab == "offline");
+        MuaModeButton.Classes.Set("active", tab == "mua");
+
+        MicrosoftPanel.IsVisible = tab == "microsoft";
+        OfflinePanel.IsVisible = tab == "offline";
+        MuaPanel.IsVisible = tab == "mua";
+
+        // 没登录过的模式不显示头像，避免出现一张空图
+        AvatarBox.IsVisible = tab switch
+        {
+            "microsoft" => microsoft,
+            "mua" => mua,
+            _ => true
+        };
+
+        MicrosoftName.Text = player;
+        MicrosoftMeta.Text = AccountText.Label("microsoft");
+        MicrosoftName.IsVisible = microsoft;
+        MicrosoftMeta.IsVisible = microsoft;
+        MicrosoftHint.IsVisible = !microsoft;
+        MicrosoftHint.Text = "还没有登录过正版账号。";
+        MicrosoftLoginButton.IsVisible = !microsoft;
+
+        if (!OfflineNameBox.IsFocused)
+            OfflineNameBox.Text = player;
+
+        MuaName.Text = player;
+        MuaName.IsVisible = mua;
+        MuaAccountBox.IsVisible = !mua;
+        MuaPasswordBox.IsVisible = !mua;
+        MuaLoginButton.IsVisible = !mua;
+        if (mua)
+            MuaHint.Text = AccountText.Label("mua");
+        else if (string.IsNullOrEmpty(MuaHint.Text))
+            MuaHint.Text = "还没有登录过 MUA 账号。";
+
+        UpdateRefreshVisibility();
+    }
+
+    void OnAccountPanelPointerEntered(object? sender, PointerEventArgs e)
+    {
+        accountHover = true;
+        UpdateRefreshVisibility();
+    }
+
+    void OnAccountPanelPointerExited(object? sender, PointerEventArgs e)
+    {
+        accountHover = false;
+        UpdateRefreshVisibility();
+    }
+
+    /// <summary>
+    /// 悬停在账号栏、且当前页签真有皮肤可读时点亮按钮。
+    /// 只改 Opacity 不改 IsVisible：控件始终占位，淡入淡出才有动画可插值，
+    /// 也让下方「当前实例」那一行不会因为按钮显隐而跳动。
+    /// </summary>
+    void UpdateRefreshVisibility() =>
+        RefreshAccountButton.Opacity = accountHover && AvatarBox.IsVisible ? 1 : 0;
+
     void WireButtons()
     {
-        AccountButton.Click += (_, _) => AccountRequested?.Invoke();
-        AvatarButton.Click += (_, _) => AccountRequested?.Invoke();
+        MicrosoftModeButton.Click += (_, _) => ShowAccountTab("microsoft");
+        OfflineModeButton.Click += (_, _) => ShowAccountTab("offline");
+        MuaModeButton.Click += (_, _) => ShowAccountTab("mua");
+        MicrosoftLoginButton.Click += async (_, _) =>
+        {
+            MicrosoftHint.Text = "正在打开微软登录页…";
+            MicrosoftHint.IsVisible = true;
+            var result = await service!.LoginMicrosoftAsync();
+            MicrosoftHint.Text = result.Message;
+            await service.RequestStateAsync();
+        };
+        MuaLoginButton.Click += async (_, _) =>
+        {
+            var account = MuaAccountBox.Text?.Trim() ?? "";
+            var password = MuaPasswordBox.Text ?? "";
+            if (account.Length == 0 || password.Length == 0)
+            {
+                MuaHint.Text = "请填写 MUA 账号和密码。";
+                return;
+            }
+
+            MuaHint.Text = "正在登录 MUA…";
+            var result = await service!.LoginMuaAsync(account, password);
+            MuaHint.Text = result.Message;
+            await service.RequestStateAsync();
+        };
+        // 刷新：重新拉一次账号状态，再重读皮肤。头像缓存按「模式 + 玩家名」去重，
+        // 只在状态真正变化时才会自动重读，所以这里必须显式再读一遍。
+        RefreshAccountButton.Click += async (_, _) =>
+        {
+            RefreshAccountButton.IsEnabled = false;
+            try
+            {
+                await service!.RequestStateAsync();
+                await ReadAvatar();
+            }
+            finally
+            {
+                RefreshAccountButton.IsEnabled = true;
+            }
+        };
+        // 玩家名不用保存按钮：输入即静默写入配置，启动时直接读
+        OfflineNameBox.TextChanged += async (_, _) =>
+        {
+            if (accountTab != "offline")
+                return;
+            var name = OfflineNameBox.Text?.Trim() ?? "";
+            if (name.Length == 0 || name == state?.Player)
+                return;
+            await service!.SaveSettingsAsync(new AppSettingsPatch(Player: name));
+        };
         LaunchButton.Click += async (_, _) =>
         {
             var target = state?.SelectedInstance is { Length: > 0 } instance ? instance : state?.SelectedVersion ?? "";
@@ -70,19 +213,48 @@ internal partial class HomeView : UserControl
             Status("正在准备启动…");
             Status((await service!.LaunchAsync(target)).Message);
         };
-        RefreshButton.Click += async (_, _) => await service!.RequestStateAsync();
-        InstanceSelector.SelectionChanged += async (_, _) =>
+        InstanceButton.Click += (_, _) =>
         {
-            if (updatingInstances || state is null)
+            // 实例设置里点「当前实例」= 退出设置、直接回到实例选择
+            if (InstanceSettingsHost.IsVisible)
+            {
+                BackToInstancePicker();
                 return;
-            var instances = Instances();
-            if (InstanceSelector.SelectedIndex < 0 || InstanceSelector.SelectedIndex >= instances.Count)
-                return;
-            var name = instances[InstanceSelector.SelectedIndex].Name;
-            if (name != state.SelectedInstance)
-                await service!.SelectInstanceAsync(name);
+            }
+
+            ToggleInstances(!InstancePicker.IsVisible);
         };
+        VersionSettingsButton.Click += (_, _) =>
+        {
+            // 已在实例设置里，再点一次当作退出，回到信息流
+            if (InstanceSettingsHost.IsVisible)
+            {
+                ExitInstanceSettings();
+                return;
+            }
+
+            ShowInstanceSettings(state?.SelectedInstance ?? "");
+        };
+        RunningGameButton.Click += (_, _) => (GamesHost.Content as GamesView)?.Activate();
+        InstancePicker.CloseRequested += () => ToggleInstances(false);
+        InstancePicker.OpenRootRequested += async () => await service!.OpenFolderAsync("root");
+        InstancePicker.RefreshRequested += async () => await service!.RequestStateAsync();
+        InstancePicker.InstancePicked += async name =>
+        {
+            await service!.SelectVersionAsync(name);
+            await service!.SelectInstanceAsync(name);
+            // 留在二级页面：选中项会高亮，方便连续比较几个实例
+        };
+        InstancePicker.LaunchRequested += async name =>
+        {
+            InstancePicker.SetStatus("正在用 " + name + " 准备启动…");
+            InstancePicker.SetStatus((await service!.LaunchAsync(name)).Message);
+        };
+        // 只打开这一级的设置，不切换当前实例；模组列表跟随全局，需要时在设置页里手动切
+        InstancePicker.SettingsRequested += name => ShowInstanceSettings(name);
         AddServerButton.Click += (_, _) => ShowServerDialog(null);
+        AddRootButton.Click += async (_, _) => await service!.PickFolderAsync("root");
+        DialogInstanceButton.Click += (_, _) => RenderDialogPickers();
         DialogCancelButton.Click += (_, _) => HideServerDialog();
         DialogSaveButton.Click += async (_, _) => await SaveServerFromDialog();
         DialogServerNameBox.KeyDown += OnDialogTextBoxKeyDown;
@@ -114,9 +286,11 @@ internal partial class HomeView : UserControl
         state = snapshot;
         if (snapshot is null)
             return;
-        PlayerName.Text = snapshot.Player.Length > 0 ? snapshot.Player : "未登录";
-        AccountMeta.Text = AccountText.Label(snapshot.AccountType);
-        var avatarKey = snapshot.AccountType + "|" + snapshot.Player;
+        if (accountTab.Length == 0)
+            accountTab = snapshot.AccountType;
+        RenderAccount();
+        var avatarKey = snapshot.AccountType + "|" + snapshot.Player + "|"
+                        + snapshot.HasMicrosoftAccount + snapshot.HasMuaAccount;
         if (avatarKey != avatarAccount)
         {
             avatarAccount = avatarKey;
@@ -125,14 +299,9 @@ internal partial class HomeView : UserControl
 
         var current = snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)
                       ?? snapshot.Instances.FirstOrDefault(item => item.Name == snapshot.SelectedVersion);
-        LaunchTarget.Text = current is null
-            ? "请选择实例"
-            : $"{current.DisplayName} · {current.Minecraft} · {current.Loader}";
-        LaunchSubtitle.Text = current is null
-            ? "未选择实例"
-            : $"{current.Name} · " + (snapshot.AutoMemory ? "自动内存" : snapshot.Ram + " MB");
         LaunchButton.IsEnabled = current is not null;
-        RenderInstances();
+        ShowInstanceButton(current);
+        InstancePicker.SetState(snapshot, current?.Name ?? snapshot.SelectedInstance);
         var signature = string.Join("|", snapshot.Servers.Select(item => item.Address));
         if (signature != serverSignature)
         {
@@ -144,21 +313,189 @@ internal partial class HomeView : UserControl
         }
 
         RenderServers();
+        // 目录切换、实例增删都会重新推状态，两个列表跟着重建
+        if (RootPanel.IsVisible)
+            RenderRoots();
+        if (ServerDialogLayer.IsVisible)
+            RenderDialogPickers();
     }
 
-    void RenderInstances()
+    /// <summary>左侧「当前实例」按钮：图标、名称与「版本类型 版本号，加载器」一行说明。</summary>
+    void ShowInstanceButton(InstanceInfo? current)
     {
-        if (state is null)
+        if (current is null)
+        {
+            InstanceButtonIcon.Background = new SolidColorBrush(Color.Parse("#C9D2DA"));
+            InstanceButtonIcon.ClipToBounds = false;
+            InstanceButtonGlyph.IsVisible = true;
+            InstanceButtonGlyph.Text = "·";
+            InstanceButtonImage.IsVisible = false;
+            InstanceButtonImage.Source = null;
+            InstanceButtonTitle.Text = "未选择实例";
+            InstanceButtonDetail.Text = "点这里选择要启动的实例";
             return;
-        var instances = Instances();
-        var labels = instances
-            .Select(item => item.DisplayName + " · " + item.Loader + " · " + item.Minecraft)
-            .ToArray();
-        updatingInstances = true;
-        InstanceSelector.ItemsSource = labels;
-        var index = Array.FindIndex(instances.ToArray(), item => item.Name == state.SelectedInstance);
-        InstanceSelector.SelectedIndex = labels.Length == 0 ? -1 : Math.Max(0, index);
-        updatingInstances = false;
+        }
+
+        var row = InstanceListItem.From(current);
+        var icon = row.Icon;
+        // 有加载器图片就铺满图标框（圆角裁剪），否则退回彩色徽标 + 字符
+        InstanceButtonIcon.Background = icon is null ? row.Accent : Brushes.Transparent;
+        InstanceButtonIcon.ClipToBounds = icon is not null;
+        InstanceButtonGlyph.IsVisible = icon is null;
+        InstanceButtonGlyph.Text = row.Glyph;
+        InstanceButtonImage.Source = icon;
+        InstanceButtonImage.IsVisible = icon is not null;
+        InstanceButtonTitle.Text = row.Title;
+        InstanceButtonDetail.Text = row.Subtitle;
+    }
+
+    /// <summary>切换右侧信息流与实例选择二级页面；左侧账号栏同时换成实例目录栏，按钮右箭头翻转。</summary>
+    void ToggleInstances(bool open)
+    {
+        InstancePicker.IsVisible = open;
+        FeedScroll.IsVisible = !open;
+        AccountPanel.IsVisible = !open;
+        RootPanel.IsVisible = open;
+        InstanceButtonChevron.Text = open ? "‹" : "›";
+        if (open)
+            RenderRoots();
+        else
+            InstancePicker.SetStatus("");
+    }
+
+    /// <summary>打开实例设置：与「选择实例」同级的二级界面，但左栏保持账号栏。</summary>
+    void ShowInstanceSettings(string name)
+    {
+        if (InstanceSettingsHost.Content is not InstancesView view)
+        {
+            view = new InstancesView(service!);
+            // 设置页里的「收起」直接退回一级菜单（首页信息流），不经过实例选择
+            view.CloseRequested += ExitInstanceSettings;
+            InstanceSettingsHost.Content = view;
+        }
+
+        FeedScroll.IsVisible = false;
+        InstancePicker.IsVisible = false;
+        InstanceSettingsHost.IsVisible = true;
+        // 设置页里要能直接点「当前实例」或「版本设置」，所以左栏回到账号栏
+        AccountPanel.IsVisible = true;
+        RootPanel.IsVisible = false;
+        InstanceButtonChevron.Text = "‹";
+        view.Open(name ?? "");
+    }
+
+    /// <summary>「收起」与再点一次齿轮：退回一级菜单。</summary>
+    void ExitInstanceSettings()
+    {
+        InstanceSettingsHost.IsVisible = false;
+        ToggleInstances(false);
+    }
+
+    /// <summary>点「当前实例」：退回实例选择。</summary>
+    void BackToInstancePicker()
+    {
+        InstanceSettingsHost.IsVisible = false;
+        ToggleInstances(true);
+    }
+
+    /// <summary>左侧目录栏：列出所有游戏目录，当前目录高亮，点另一个即切换。</summary>
+    void RenderRoots()
+    {
+        RootList.Children.Clear();
+        if (state is null)
+        {
+            RootSummary.Text = "";
+            return;
+        }
+
+        var roots = state.GameRoots;
+        RootSummary.Text = roots.Count == 0
+            ? "还没有添加目录"
+            : "共 " + roots.Count + " 个目录 · 点选切换";
+        foreach (var root in roots)
+            RootList.Children.Add(RootRow(root, root.Equals(state.Root, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    Control RootRow(string path, bool active)
+    {
+        var folder = new SSvg(new Uri("avares://MCUGLauncher/"))
+        {
+            Path = "/Assets/Icons/FolderIcon.svg",
+            Height = 15,
+            Width = 15,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        SSvg.SetCss(folder, "path { stroke: white; }");
+        var icon = new Border
+        {
+            Width = 26,
+            Height = 26,
+            CornerRadius = new CornerRadius(7),
+            VerticalAlignment = VerticalAlignment.Center,
+            Background = new SolidColorBrush(Color.Parse(active ? "#3370AA" : "#C9D2DA")),
+            // 原来这里是 Segoe MDL2 的 \uE8B7 字形；换成统一的文件夹图标资源，
+            // 描边原是 #333，压在蓝/灰底章上要改成白色才看得清
+            Child = folder
+        };
+
+        var name = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        if (name.Length == 0)
+            name = path;
+        var lines = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
+        lines.Children.Add(new TextBlock
+        {
+            Text = name,
+            FontSize = 12.5,
+            FontWeight = FontWeight.SemiBold,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        lines.Children.Add(new TextBlock
+        {
+            Text = path,
+            FontSize = 10.5,
+            Classes = { "muted" },
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), ColumnSpacing = 9 };
+        grid.Children.Add(icon);
+        Grid.SetColumn(lines, 1);
+        grid.Children.Add(lines);
+
+        var row = new Button
+        {
+            Content = grid,
+            Classes = { "instanceRow" },
+            Padding = new Thickness(6, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
+        if (active)
+            row.Classes.Set("selected", true);
+        row.Click += async (_, _) =>
+        {
+            if (active)
+                return;
+            Status("正在切换到 " + name + "…");
+            var result = await service!.SaveSettingsAsync(new AppSettingsPatch(Root: path));
+            Status(result.Message);
+        };
+        return row;
+    }
+
+    void OnPathPicked(PickedPathInfo info)
+    {
+        if (info.Target != "root" || info.Path.Length == 0)
+            return;
+        _ = AddRootAsync(info.Path);
+    }
+
+    async Task AddRootAsync(string path)
+    {
+        Status("正在添加实例目录…");
+        var result = await service!.SaveSettingsAsync(new AppSettingsPatch(Root: path));
+        Status(result.Message);
     }
 
     IReadOnlyList<InstanceInfo> Instances() => state is null
@@ -191,11 +528,10 @@ internal partial class HomeView : UserControl
                 Height = 34,
                 CornerRadius = new CornerRadius(8),
                 Background = new SolidColorBrush(Color.Parse(ping?.Online == true ? "#3370AA" : "#8A96A0")),
-                Child = new TextBlock
+                Child = new SSvg(new Uri("avares://MCUGLauncher/"))
                 {
-                    Text = "▣",
-                    Foreground = Brushes.White,
-                    FontSize = 16,
+                    Path = "/Assets/Icons/ServerIcon.svg",
+                    Height = 16, Width = 16,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 }
@@ -406,6 +742,14 @@ internal partial class HomeView : UserControl
                     TextWrapping = TextWrapping.Wrap,
                     Classes = { "muted" }
                 });
+            // Svg 控件没有无参构造函数：XAML 里 <Svg/> 由加载器传 baseUri，代码里必须自己给一个，
+            // 否则 "/Assets/x.svg" 这种以 / 开头的路径无法解析成 avares 资源。
+            var iconFile = item.Type switch
+            {
+                "material" => "ResourcePackIcon",
+                "shader" => "ResourcePackIcon",
+                _ => "ServerIcon"
+            };
             var icon = new Border
             {
                 Width = 30,
@@ -417,11 +761,10 @@ internal partial class HomeView : UserControl
                     "shader" => "#7B5AC8",
                     _ => "#3370AA"
                 })),
-                Child = new TextBlock
+                Child = new SSvg(new Uri("avares://MCUGLauncher/"))
                 {
-                    Text = item.Type switch { "material" => "◆", "shader" => "✦", _ => "▣" },
-                    Foreground = Brushes.White,
-                    FontSize = 13,
+                    Path = "/Assets/Icons/" + iconFile + ".svg",
+                    Height = 16, Width = 16,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 }
@@ -501,6 +844,34 @@ internal partial class HomeView : UserControl
         var quote = community.Quotes[quoteIndex];
         QuoteText.Text = quote.Type == "image" ? "[图片语录] " + quote.Text : quote.Text;
         QuoteMeta.Text = string.Join(" · ", new[] { quote.Author, quote.Source }.Where(value => value.Length > 0));
+    }
+
+    /// <summary>MUA 账号下有多个角色时，在这里直接选。</summary>
+    void OnMuaProfiles(MuaProfilesInfo info)
+    {
+        MuaProfilesPanel.Children.Clear();
+        if (info.Items.Count == 0)
+            return;
+        MuaHint.Text = "这个账号有多个角色，请选择：";
+        foreach (var profile in info.Items)
+        {
+            var button = new Button
+            {
+                Content = profile.Name,
+                Classes = { "ghost" },
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Center
+            };
+            var token = info.Token;
+            var id = profile.Id;
+            button.Click += async (_, _) =>
+            {
+                await service!.SelectMuaProfileAsync(token, id);
+                MuaProfilesPanel.Children.Clear();
+                await service.RequestStateAsync();
+            };
+            MuaProfilesPanel.Children.Add(button);
+        }
     }
 
     void OnAvatar(AvatarInfo info)
@@ -584,44 +955,270 @@ internal partial class HomeView : UserControl
         PageRoot.Effect = null;
         DialogServerNameBox.Text = "";
         DialogServerAddressBox.Text = "";
-        DialogServerInstanceBox.SelectedIndex = -1;
-        DialogServerInstanceBox.ItemsSource = null;
-        dialogInstances.Clear();
-        dialogMissingInstance = "";
+        dialogInstance = "";
+        dialogShowInstances = false;
+        DialogRootList.Children.Clear();
+        DialogInstanceList.Children.Clear();
+        DialogInstanceButton.Flyout?.Hide();
         SetDialogStatus("");
     }
 
-    /// <summary>第一项是「不绑定」，其余按当前可用实例顺序排列，索引偏移 1。</summary>
+    /// <summary>打开弹窗时按当前绑定重建下拉按钮与两级列表。</summary>
     void FillDialogInstances(string selected)
     {
-        dialogInstances.Clear();
-        dialogInstances.AddRange(Instances());
-        dialogMissingInstance = "";
-        var labels = new List<string> { "不绑定实例" };
-        labels.AddRange(dialogInstances.Select(item =>
-            item.DisplayName + " · " + item.Loader + " · " + item.Minecraft));
-        var index = dialogInstances.FindIndex(item =>
-            item.Name.Equals(selected, StringComparison.OrdinalIgnoreCase));
-        // 记着的实例已被删除时也留一个补位项，避免保存时把它悄悄清掉
-        if (selected.Length > 0 && index < 0)
+        dialogInstance = selected.Trim();
+        // 绑定了实例才展开右侧实例列；「不绑定」时只留目录栏
+        dialogShowInstances = dialogInstance.Length > 0;
+        RenderDialogPickers();
+    }
+
+    void RenderDialogPickers()
+    {
+        UpdateDialogInstanceButton();
+        RenderDialogRoots();
+        RenderDialogInstances();
+        UpdateDialogColumns();
+    }
+
+    /// <summary>右侧「该目录下的实例」列随「不绑定实例」的选中状态收起 / 展开。</summary>
+    void UpdateDialogColumns()
+    {
+        DialogPickerGrid.ColumnDefinitions[2].Width = dialogShowInstances ? new GridLength(300) : new GridLength(0);
+        DialogPickerDivider.IsVisible = dialogShowInstances;
+        DialogInstanceColumn.IsVisible = dialogShowInstances;
+    }
+
+    /// <summary>下拉按钮正面：当前绑定的图标、名称与「版本类型 版本号，加载器」。</summary>
+    void UpdateDialogInstanceButton()
+    {
+        if (dialogInstance.Length == 0)
         {
-            dialogMissingInstance = selected;
-            labels.Add(selected + "（当前未安装）");
+            SetDialogInstanceFace(null, "不绑定实例", "只能手动进入服务器", "#C9D2DA", "–");
+            return;
         }
 
-        DialogServerInstanceBox.ItemsSource = labels;
-        DialogServerInstanceBox.SelectedIndex = selected.Length > 0
-            ? index >= 0 ? index + 1 : labels.Count - 1
-            : 0;
+        var info = Instances().FirstOrDefault(item =>
+            item.Name.Equals(dialogInstance, StringComparison.OrdinalIgnoreCase));
+        if (info is null)
+        {
+            SetDialogInstanceFace(null, dialogInstance, "当前目录下找不到这个实例", "#A5483F", "!");
+            return;
+        }
+
+        var row = InstanceListItem.From(info);
+        SetDialogInstanceFace(row.Icon, row.Title, row.Subtitle, "#C9D2DA", row.Glyph, row.Accent);
     }
 
-    string SelectedDialogInstance()
+    void SetDialogInstanceFace(Bitmap? icon, string title, string detail, string fallbackColor, string glyph,
+        IBrush? accent = null)
     {
-        var index = DialogServerInstanceBox.SelectedIndex - 1;
-        if (index >= 0 && index < dialogInstances.Count)
-            return dialogInstances[index].Name;
-        return index == dialogInstances.Count ? dialogMissingInstance : "";
+        DialogInstanceIcon.Background = icon is not null
+            ? Brushes.Transparent
+            : accent ?? new SolidColorBrush(Color.Parse(fallbackColor));
+        DialogInstanceIcon.ClipToBounds = icon is not null;
+        DialogInstanceGlyph.IsVisible = icon is null;
+        DialogInstanceGlyph.Text = glyph;
+        DialogInstanceImage.Source = icon;
+        DialogInstanceImage.IsVisible = icon is not null;
+        DialogInstanceTitle.Text = title;
+        DialogInstanceDetail.Text = detail;
     }
+
+    /// <summary>一级：实例目录。「不绑定实例」固定排在第一项，选中时右侧实例列收起。</summary>
+    void RenderDialogRoots()
+    {
+        DialogRootList.Children.Clear();
+        if (state is null)
+            return;
+        DialogRootList.Children.Add(DialogUnboundChoice(dialogInstance.Length == 0));
+        foreach (var root in state.GameRoots)
+            DialogRootList.Children.Add(
+                DialogRootChoice(root, root.Equals(state.Root, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    Control DialogUnboundChoice(bool active)
+    {
+        var lines = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
+        lines.Children.Add(new TextBlock
+        {
+            Text = "不绑定实例",
+            FontSize = 11.5,
+            FontWeight = active ? FontWeight.SemiBold : FontWeight.Normal,
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        lines.Children.Add(new TextBlock
+        {
+            Text = "只手动进入服务器",
+            FontSize = 9.5,
+            Classes = { "muted" },
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        var row = new Button
+        {
+            Content = lines,
+            Classes = { "instanceRow" },
+            Padding = new Thickness(6, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
+        if (active)
+            row.Classes.Set("selected", true);
+        row.Click += (_, _) =>
+        {
+            dialogInstance = "";
+            dialogShowInstances = false;
+            UpdateDialogInstanceButton();
+            UpdateDialogColumns();
+            DialogInstanceButton.Flyout?.Hide();
+        };
+        return row;
+    }
+
+    Control DialogRootChoice(string path, bool active)
+    {
+        var name = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        if (name.Length == 0)
+            name = path;
+        // 两行：目录名 + 绝对路径。路径被列宽截断，完整值仍由 ToolTip 兜底。
+        var lines = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
+        lines.Children.Add(new TextBlock
+        {
+            Text = name,
+            FontSize = 11.5,
+            FontWeight = active ? FontWeight.SemiBold : FontWeight.Normal,
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        lines.Children.Add(new TextBlock
+        {
+            Text = path,
+            FontSize = 9.5,
+            Classes = { "muted" },
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        var row = new Button
+        {
+            Content = lines,
+            Classes = { "instanceRow" },
+            Padding = new Thickness(6, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
+        if (active)
+            row.Classes.Set("selected", true);
+        ToolTip.SetTip(row, path);
+        row.Click += async (_, _) =>
+        {
+            // 点目录总是展开右侧实例列；只有真的换目录时才写配置
+            dialogShowInstances = true;
+            UpdateDialogColumns();
+            if (!active)
+            {
+                SetDialogStatus("正在切换到 " + name + "…");
+                var result = await service!.SaveSettingsAsync(new AppSettingsPatch(Root: path));
+                SetDialogStatus(result.Message);
+            }
+
+            // 指定目录后默认落到该目录下的第一个实例
+            dialogInstance = Instances().FirstOrDefault()?.Name ?? "";
+            UpdateDialogInstanceButton();
+            RenderDialogInstances();
+        };
+        return row;
+    }
+
+    /// <summary>二级：当前目录下的实例。「不绑定实例」已经放在目录栏，这里不再重复。</summary>
+    void RenderDialogInstances()
+    {
+        DialogInstanceList.Children.Clear();
+        var instances = Instances();
+        foreach (var info in instances)
+        {
+            var row = InstanceListItem.From(info);
+            DialogInstanceList.Children.Add(DialogInstanceChoice(
+                row, row.Instance.Equals(dialogInstance, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        // 记着的实例在当前目录里不存在时补一行，避免保存时被悄悄清空
+        if (dialogInstance.Length > 0 &&
+            !instances.Any(item => item.Name.Equals(dialogInstance, StringComparison.OrdinalIgnoreCase)))
+            DialogInstanceList.Children.Add(DialogInstanceChoice(InstanceListItem.Missing(dialogInstance), true));
+        else if (instances.Count == 0)
+            DialogInstanceList.Children.Add(Muted("这个目录下还没有实例。"));
+    }
+
+    Control DialogInstanceChoice(InstanceListItem row, bool active)
+    {
+        var icon = new Border
+        {
+            Width = 22,
+            Height = 22,
+            CornerRadius = new CornerRadius(6),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        if (row.Icon is { } bitmap)
+        {
+            icon.ClipToBounds = true;
+            icon.Child = new Image { Source = bitmap, Stretch = Stretch.Uniform };
+        }
+        else
+        {
+            icon.Background = row.Accent;
+            icon.Child = new TextBlock
+            {
+                Text = row.Glyph,
+                Foreground = Brushes.White,
+                FontSize = 11,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+        }
+
+        var lines = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
+        lines.Children.Add(new TextBlock
+        {
+            Text = row.Title,
+            FontSize = 11.5,
+            FontWeight = FontWeight.SemiBold,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        if (row.HasSubtitle)
+            lines.Children.Add(new TextBlock
+            {
+                Text = row.Subtitle,
+                FontSize = 10,
+                Classes = { "muted" },
+                TextTrimming = TextTrimming.CharacterEllipsis
+            });
+
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), ColumnSpacing = 8 };
+        grid.Children.Add(icon);
+        Grid.SetColumn(lines, 1);
+        grid.Children.Add(lines);
+
+        var button = new Button
+        {
+            Content = grid,
+            Classes = { "instanceRow" },
+            Padding = new Thickness(6, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
+        if (active)
+            button.Classes.Set("selected", true);
+        button.Click += (_, _) =>
+        {
+            dialogInstance = row.Instance;
+            UpdateDialogInstanceButton();
+            DialogInstanceButton.Flyout?.Hide();
+        };
+        return button;
+    }
+
+    string SelectedDialogInstance() => dialogInstance;
 
     async Task SaveServerFromDialog()
     {

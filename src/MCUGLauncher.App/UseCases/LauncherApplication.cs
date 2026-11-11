@@ -32,7 +32,10 @@ internal sealed class LauncherApplication : IDisposable
     readonly FeatureDispatcher featureDispatcher;
 
     public AppConfig Config => context.Config;
-    public LauncherApplication(Action<object> send, IDesktopHost desktop, ConfigStore? store = null, Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null, Func<byte[]?, string>? avatarEncoder = null)
+
+    public LauncherApplication(Action<object> send, IDesktopHost desktop, ConfigStore? store = null,
+        Func<string, XboxAuthNet.OAuth.CodeFlow.IWebUI>? microsoftBrowser = null,
+        Func<byte[]?, string>? avatarEncoder = null)
     {
         this.desktop = desktop;
         context = new LauncherContext(send, store, microsoftBrowser, avatarEncoder);
@@ -87,7 +90,8 @@ internal sealed class LauncherApplication : IDisposable
                     context.SendTasks();
                     context.SendGames();
                     context.Tasks.Start();
-                    await (startup ??= Task.WhenAll(communityCommands.SendCommunityAsync(), accountModes.RestoreSelectedAsync()));
+                    await (startup ??= Task.WhenAll(communityCommands.SendCommunityAsync(),
+                        accountModes.RestoreSelectedAsync()));
                     break;
                 case "cloneInstance":
                     maintenanceCommands.Clone(root);
@@ -161,7 +165,8 @@ internal sealed class LauncherApplication : IDisposable
                     context.Send(new
                     {
                         type = "saveBackups",
-                        items = listedBackups.Select(item => new { id = item.Id, created = item.Created, worlds = item.Worlds })
+                        items = listedBackups.Select(item =>
+                            new { id = item.Id, created = item.Created, worlds = item.Worlds })
                     });
                     break;
                 case "restoreSave":
@@ -343,7 +348,8 @@ internal sealed class LauncherApplication : IDisposable
                     var taskId = ReadString(root, "id");
                     var taskAction = ReadString(root, "action");
                     var pending = context.Tasks.History().FirstOrDefault(t => t.Id == taskId);
-                    if (taskAction == "resume" && pending?.Download?.Kind == "uninstall" && !desktop.ConfirmUninstall(pending.Name))
+                    if (taskAction == "resume" && pending?.Download?.Kind == "uninstall" &&
+                        !desktop.ConfirmUninstall(pending.Name))
                         break;
                     context.Tasks.Change(taskId, taskAction);
                     break;
@@ -369,7 +375,7 @@ internal sealed class LauncherApplication : IDisposable
                     desktop.Drag();
                     break;
                 case "openFolder":
-                    instanceCommands.OpenFolder(ReadString(root, "kind"));
+                    instanceCommands.OpenFolder(ReadString(root, "kind"), ReadString(root, "instance"));
                     break;
                 case "pingServer":
                     var ping = await communityCommands.PingAsync(ReadString(root, "address"), ReadString(root, "id"));
@@ -534,7 +540,8 @@ internal sealed class LauncherApplication : IDisposable
                     context.Send(new
                     {
                         type = "saveBackups",
-                        items = refreshedBackups.Select(item => new { id = item.Id, created = item.Created, worlds = item.Worlds })
+                        items = refreshedBackups.Select(item =>
+                            new { id = item.Id, created = item.Created, worlds = item.Worlds })
                     });
                     break;
                 case "readLog":
@@ -614,7 +621,11 @@ internal sealed class LauncherApplication : IDisposable
     {
         try
         {
-            var state = LauncherStateBuilder.Build(context.Config, bookmarkCommands.Snapshot());
+            var state = LauncherStateBuilder.Build(
+                context.Config,
+                bookmarkCommands.Snapshot(),
+                context.Microsoft?.ReadSavedAccount() is not null,
+                context.Mua?.Read() is not null);
             context.Send(state);
         }
         catch (Exception ex)

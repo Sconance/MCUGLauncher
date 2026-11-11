@@ -1,43 +1,37 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="MCUGLauncher.Avalonia.Views.CommunityView">
-  <Grid RowDefinitions="Auto,*">
-    <StackPanel Spacing="6">
-      <TextBlock Text="社区管理" Classes="pageTitle" />
-      <TextBlock Text="公告由社区数据源提供并在此展示；管理员密钥仅用于管理推荐内容。"
-                 Classes="muted" TextWrapping="Wrap" />
+    <!-- 已并入设置页「社区」分组，三张卡片直接排在数据源、社区身份之后 -->
+    <StackPanel Spacing="14">
+        <Border Classes="card">
+            <StackPanel Spacing="8">
+                <TextBlock Text="管理员身份" Classes="h2" />
+                <TextBlock x:Name="AdminHint" Classes="muted" TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBox x:Name="AdminKeyBox" PasswordChar="●" Watermark="首次输入即设置本机管理员密钥" />
+                    <Button x:Name="VerifyAdminButton" Grid.Column="1" Content="验证" Classes="ghost" Margin="8,0,0,0" />
+                </Grid>
+                <TextBlock x:Name="AdminStatus" Classes="status" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+            <StackPanel Spacing="8">
+                <TextBlock Text="当前公告" Classes="h2" />
+                <TextBlock Text="公告由社区数据源提供并在此展示；管理员密钥仅用于管理推荐内容。"
+                           Classes="muted" TextWrapping="Wrap" />
+                <StackPanel x:Name="AnnouncementsPanel" Spacing="6" />
+            </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+            <StackPanel Spacing="8">
+                <TextBlock Text="管理推荐" Classes="h2" />
+                <TextBlock Text="删除会重写本机推荐列表，保留未删除项及其原始字段；需要管理员密钥。"
+                           Classes="muted" TextWrapping="Wrap" />
+                <StackPanel x:Name="RecommendationManagePanel" Spacing="6" />
+                <TextBlock x:Name="ManageStatus" Classes="status" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
     </StackPanel>
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-      <StackPanel Spacing="14">
-        <Border Classes="card">
-          <StackPanel Spacing="8">
-            <TextBlock Text="管理员身份" Classes="h2" />
-            <TextBlock x:Name="AdminHint" Classes="muted" TextWrapping="Wrap" />
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBox x:Name="AdminKeyBox" PasswordChar="●" Watermark="首次输入即设置本机管理员密钥" />
-              <Button x:Name="VerifyAdminButton" Grid.Column="1" Content="验证" Classes="ghost" Margin="8,0,0,0" />
-            </Grid>
-            <TextBlock x:Name="AdminStatus" Classes="status" TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card">
-          <StackPanel Spacing="8">
-            <TextBlock Text="当前公告" Classes="h2" />
-            <StackPanel x:Name="AnnouncementsPanel" Spacing="6" />
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card">
-          <StackPanel Spacing="8">
-            <TextBlock Text="管理推荐" Classes="h2" />
-            <TextBlock Text="删除会重写本机推荐列表，保留未删除项及其原始字段；需要管理员密钥。"
-                       Classes="muted" TextWrapping="Wrap" />
-            <StackPanel x:Name="RecommendationManagePanel" Spacing="6" />
-            <TextBlock x:Name="ManageStatus" Classes="status" TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
-      </StackPanel>
-    </ScrollViewer>
-  </Grid>
 </UserControl>

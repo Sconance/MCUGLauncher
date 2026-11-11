@@ -18,6 +18,7 @@ internal sealed class SettingsCommands(LauncherContext context)
             if (!Directory.Exists(requestedRoot))
                 throw new ArgumentException("游戏目录不存在，请选择已有文件夹。");
         }
+
         if (root.TryGetProperty("player", out var player))
         {
             if (context.Config.AccountType != "offline")
@@ -25,6 +26,7 @@ internal sealed class SettingsCommands(LauncherContext context)
             context.Config.Player = player.GetString() ?? context.Config.Player;
             context.Config.OfflinePlayer = context.Config.Player;
         }
+
         if (root.TryGetProperty("anonymous", out var anonymous))
             context.Config.Anonymous = anonymous.GetBoolean();
         if (root.TryGetProperty("dataSources", out var sources))
@@ -34,10 +36,13 @@ internal sealed class SettingsCommands(LauncherContext context)
             context.Config.DataSources.Recommendations = ReadString(sources, "recommendations");
             context.Config.DataSources.Quotes = ReadString(sources, "quotes");
         }
+
         if (root.TryGetProperty("autoMemory", out var autoMemory))
             context.Config.AutoMemory = autoMemory.GetBoolean();
         if (root.TryGetProperty("autoChinese", out var autoChinese))
             context.Config.LegacyPreferences.Launch.AutoChinese = autoChinese.GetBoolean();
+        if (root.TryGetProperty("forceTasksButton", out var forceTasks))
+            context.Config.ForceTasksButton = forceTasks.GetBoolean();
         if (root.TryGetProperty("ram", out var ram) && ram.TryGetInt32(out var ramValue))
             context.Config.Ram = Math.Clamp(ramValue, LaunchLimits.RamMin, LaunchLimits.RamMax);
         if (requestedRoot.Length > 0)
@@ -48,6 +53,7 @@ internal sealed class SettingsCommands(LauncherContext context)
             context.Config.GameRoots = context.Config.GameRoots.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             context.Config.Root = requestedRoot;
         }
+
         if (root.TryGetProperty("java", out var java))
             context.Config.Java = java.GetString()?.Trim() ?? "";
         if (root.TryGetProperty("width", out var width) && width.TryGetInt32(out var widthValue))
@@ -111,5 +117,4 @@ internal sealed class SettingsCommands(LauncherContext context)
             item.Vendor,
             item.Error)).ToArray();
     }
-
 }

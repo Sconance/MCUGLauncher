@@ -2,7 +2,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="MCUGLauncher.Avalonia.App">
     <Application.Styles>
-        <FluentTheme />
+        <!--
+            默认的 FluentTheme 会从 Windows 系统强调色取 Accent，勾选框、列表选中条、
+            标签下划线等都会跟着系统主题走。这里把调色板的 Accent 固定成启动器的 #326EA7，
+            这些控件就统一用启动器的深蓝，不再受系统设置影响。
+        -->
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Light" Accent="#326EA7" />
+                <ColorPaletteResources x:Key="Dark" Accent="#326EA7" />
+            </FluentTheme.Palettes>
+        </FluentTheme>
         <StyleInclude Source="avares://MCUGLauncher/Styles/Theme.axaml" />
     </Application.Styles>
 
