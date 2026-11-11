@@ -12,10 +12,7 @@ public sealed class FeatureOperationAttribute : Attribute
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class FeatureHandlerAttribute(string operation) : Attribute
 {
-    public string Operation
-    {
-        get;
-    } = operation;
+    public string Operation { get; } = operation;
 }
 
 internal interface IFeatureRequestInvoker
@@ -61,37 +58,30 @@ public interface ILauncherService : IDisposable
     {
         get;
     }
-
     LauncherState? State
     {
         get;
     }
-
     IReadOnlyList<TaskInfo> Tasks
     {
         get;
     }
-
     IReadOnlyList<ContentItem> ContentItems
     {
         get;
     }
-
     IReadOnlyList<GameInfo> Games
     {
         get;
     }
-
     IReadOnlyList<JavaInfo> JavaList
     {
         get;
     }
-
     IReadOnlyList<SaveBackupInfo> SaveBackups
     {
         get;
     }
-
     CommunityData Community
     {
         get;
@@ -106,7 +96,6 @@ public interface ILauncherService : IDisposable
         {
             version
         });
-
     /// <summary>使用明确的实例和服务器地址启动；不永久修改实例启动设置。</summary>
     [FeatureOperation]
     Task<LaunchResultInfo> LaunchToServerAsync(string instance, string serverAddress) =>
@@ -115,55 +104,35 @@ public interface ILauncherService : IDisposable
             instance,
             serverAddress
         });
-
     Task RequestStateAsync();
-
     [FeatureOperation]
     Task<SavedInfo> SelectInstanceAsync(string instance) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SelectInstanceAsync), new
         {
             instance
         });
-
     [FeatureOperation]
     Task<SavedInfo> SelectVersionAsync(string version) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SelectVersionAsync), new
         {
             version
         });
-
-    /// <summary>按实例名读取该实例下的模组，不改变当前启动实例。</summary>
-    [FeatureOperation]
-    Task<IReadOnlyList<ModInfo>> ListInstanceModsAsync(string instance) =>
-        FeatureRequest.InvokeAsync<IReadOnlyList<ModInfo>>(
-            this,
-            nameof(ListInstanceModsAsync),
-            new
-            {
-                instance
-            });
-
     [FeatureOperation]
     Task<IReadOnlyList<JavaInfo>> ScanJavaAsync() =>
         FeatureRequest.InvokeAsync<IReadOnlyList<JavaInfo>>(this, nameof(ScanJavaAsync), new
         {
         });
-
     Task<SavedInfo> SaveSettingsAsync(string root, string java, int ram, string? player = null);
-
     [FeatureOperation]
     Task<SavedInfo> SaveSettingsAsync(AppSettingsPatch patch) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SaveSettingsAsync), patch);
-
     Task RequestTasksAsync();
     Task TaskActionAsync(string id, string action);
-
     [FeatureOperation]
     Task<AuthResultInfo> LoginMicrosoftAsync() =>
         FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LoginMicrosoftAsync), new
         {
         });
-
     [FeatureOperation]
     Task<AuthResultInfo> LoginMuaAsync(string account, string password) =>
         FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LoginMuaAsync), new
@@ -171,27 +140,23 @@ public interface ILauncherService : IDisposable
             account,
             password
         });
-
     [FeatureOperation]
     Task<AccountSwitchResultInfo> SwitchAccountModeAsync(string mode) =>
         FeatureRequest.InvokeAsync<AccountSwitchResultInfo>(this, nameof(SwitchAccountModeAsync), new
         {
             mode
         });
-
     [FeatureOperation]
     Task<AuthResultInfo> ForgetAccountAsync(string mode) =>
         FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(ForgetAccountAsync), new
         {
             mode
         });
-
     [FeatureOperation]
     Task<AuthResultInfo> LogoutAccountAsync() =>
         FeatureRequest.InvokeAsync<AuthResultInfo>(this, nameof(LogoutAccountAsync), new
         {
         });
-
     [FeatureOperation]
     Task<ContentSearchResultInfo> SearchContentAsync(string category, string query, string requestId = "") =>
         FeatureRequest.InvokeAsync<ContentSearchResultInfo>(
@@ -203,10 +168,8 @@ public interface ILauncherService : IDisposable
                 query,
                 requestId
             });
-
     Task InstallContentAsync(string id, string category, string versionId, string mode = "instance", string path = "");
     Task InstallModAsync(string id, string versionId, string mode, string path = "");
-
     [FeatureOperation]
     Task<ResourceVersionsResultInfo> ListContentVersionsAsync(
         string id,
@@ -227,17 +190,13 @@ public interface ILauncherService : IDisposable
                 loader,
                 requestId
             });
-
     Task QueueContentVersionAsync(string token, string versionId, string mode = "instance", string path = "");
-
     [FeatureOperation]
     Task<VanillaVersionsResultInfo> ListVanillaVersionsAsync() =>
         FeatureRequest.InvokeAsync<VanillaVersionsResultInfo>(this, nameof(ListVanillaVersionsAsync), new
         {
         });
-
     Task InstallVanillaAsync(string version);
-
     [FeatureOperation]
     Task<LoaderListResultInfo> ListLoadersAsync(string version, string loader) =>
         FeatureRequest.InvokeAsync<LoaderListResultInfo>(this, nameof(ListLoadersAsync), new
@@ -245,18 +204,14 @@ public interface ILauncherService : IDisposable
             version,
             loader
         });
-
     Task InstallLoaderAsync(string version, string loader, string loaderVersion);
-
     [FeatureOperation]
     Task<PackPreviewResultInfo> PreviewPackAsync(string path) =>
         FeatureRequest.InvokeAsync<PackPreviewResultInfo>(this, nameof(PreviewPackAsync), new
         {
             path
         });
-
     Task ConfirmPackAsync(string token, string name, string directory);
-
     [FeatureOperation]
     Task<LocalImportPreviewInfo> PreviewLocalImportAsync(string path, string instance, string resourceKind = "") =>
         FeatureRequest.InvokeAsync<LocalImportPreviewInfo>(this, nameof(PreviewLocalImportAsync), new
@@ -265,40 +220,33 @@ public interface ILauncherService : IDisposable
             instance,
             resourceKind
         });
-
     [FeatureOperation]
     Task<SavedInfo> ConfirmLocalImportAsync(string token) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ConfirmLocalImportAsync), new
         {
             token
         });
-
     Task CloneInstanceAsync(string version, string name, bool saves = false, bool servers = false);
     Task ExportInstanceAsync(string version, string path, bool servers = false, bool saves = false);
-
     [FeatureOperation]
     Task<UninstallPreviewInfo> PreviewUninstallAsync(string version) =>
         FeatureRequest.InvokeAsync<UninstallPreviewInfo>(this, nameof(PreviewUninstallAsync), new
         {
             version
         });
-
     [FeatureOperation]
     Task<UninstallPreviewInfo> PreviewDeleteVersionAsync(string version) =>
         FeatureRequest.InvokeAsync<UninstallPreviewInfo>(this, nameof(PreviewDeleteVersionAsync), new
         {
             version
         });
-
     Task ApplyUninstallAsync(string token);
-
     [FeatureOperation]
     Task<SavedInfo> DeleteModAsync(string file) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(DeleteModAsync), new
         {
             file
         });
-
     [FeatureOperation]
     Task<SavedInfo> ToggleModAsync(string file, bool enabled) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ToggleModAsync), new
@@ -306,14 +254,12 @@ public interface ILauncherService : IDisposable
             file,
             enabled
         });
-
     [FeatureOperation]
     Task<ContentUpdatesInfo> CheckUpdatesAsync(string version) =>
         FeatureRequest.InvokeAsync<ContentUpdatesInfo>(this, nameof(CheckUpdatesAsync), new
         {
             version
         });
-
     [FeatureOperation]
     Task<ContentUpdatePreviewInfo> PreviewUpdatesAsync(string token, IReadOnlyList<string> projects) =>
         FeatureRequest.InvokeAsync<ContentUpdatePreviewInfo>(
@@ -324,29 +270,24 @@ public interface ILauncherService : IDisposable
                 token,
                 projects
             });
-
     [FeatureOperation]
     Task<SavedInfo> ApplyUpdatesAsync(string token) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ApplyUpdatesAsync), new
         {
             token
         });
-
     Task RequestGamesAsync();
     Task StopGameAsync(string id);
-
     [FeatureOperation]
     Task<SavedInfo> BackupSavesAsync() =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(BackupSavesAsync), new
         {
         });
-
     [FeatureOperation]
     Task<IReadOnlyList<SaveBackupInfo>> ListSaveBackupsAsync() =>
         FeatureRequest.InvokeAsync<IReadOnlyList<SaveBackupInfo>>(this, nameof(ListSaveBackupsAsync), new
         {
         });
-
     [FeatureOperation]
     Task<SavedInfo> RestoreSaveAsync(string id, string world) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(RestoreSaveAsync), new
@@ -354,25 +295,20 @@ public interface ILauncherService : IDisposable
             id,
             world
         });
-
-    Task OpenFolderAsync(string kind, string instance = "");
-
+    Task OpenFolderAsync(string kind);
     [FeatureOperation]
     Task<string> ReadLogAsync() =>
         FeatureRequest.InvokeAsync<string>(this, nameof(ReadLogAsync), new
         {
         });
-
     [FeatureOperation]
     Task<SystemInfoInfo> SystemInfoAsync() =>
         FeatureRequest.InvokeAsync<SystemInfoInfo>(this, nameof(SystemInfoAsync), new
         {
         });
-
     /// <summary>保存服务器收藏；instance 为 null 时保留绑定，空字符串时清除绑定。</summary>
     [FeatureOperation]
-    Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "",
-        string? instance = null) =>
+    Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "", string? instance = null) =>
         FeatureRequest.InvokeAsync<ServerResultInfo>(
             this,
             nameof(SaveServerAsync),
@@ -383,14 +319,12 @@ public interface ILauncherService : IDisposable
                 oldAddress,
                 instance
             });
-
     [FeatureOperation]
     Task<SavedInfo> DeleteServerAsync(string address) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(DeleteServerAsync), new
         {
             address
         });
-
     [FeatureOperation]
     Task<ServerPingInfo> PingServerAsync(string address, string id) =>
         FeatureRequest.InvokeAsync<ServerPingInfo>(this, nameof(PingServerAsync), new
@@ -398,7 +332,6 @@ public interface ILauncherService : IDisposable
             address,
             id
         });
-
     [FeatureOperation]
     Task<TestResultInfo> TestSourceAsync(string name, string url) =>
         FeatureRequest.InvokeAsync<TestResultInfo>(
@@ -409,27 +342,23 @@ public interface ILauncherService : IDisposable
                 name,
                 url
             });
-
     [FeatureOperation]
     Task<SavedInfo> SaveCustomSourcesAsync(DataSourceSet sources) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SaveCustomSourcesAsync), new
         {
             dataSources = sources
         });
-
     [FeatureOperation]
     Task<SavedInfo> UseDataSourcesAsync(string mode) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(UseDataSourcesAsync), new
         {
             mode
         });
-
     [FeatureOperation]
     Task<SavedInfo> ResetDataSourcesAsync() =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(ResetDataSourcesAsync), new
         {
         });
-
     [FeatureOperation]
     Task<KeyResultInfo> VerifyKeyAsync(string role, string key) =>
         FeatureRequest.InvokeAsync<KeyResultInfo>(this, nameof(VerifyKeyAsync), new
@@ -437,16 +366,13 @@ public interface ILauncherService : IDisposable
             role,
             key
         });
-
     Task RefreshCommunityAsync();
-
     [FeatureOperation]
     Task<SavedInfo> SaveRecommendationsAsync(IReadOnlyList<RecommendationInfo> items) =>
         FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SaveRecommendationsAsync), new
         {
             items = items.Select(item => item.Raw).ToArray()
         });
-
     [FeatureOperation]
     Task<SavedInfo> ToggleBookmarkAsync(string id, string name, string description, string author, string kind) =>
         FeatureRequest.InvokeAsync<SavedInfo>(
@@ -460,36 +386,30 @@ public interface ILauncherService : IDisposable
                 author,
                 kind
             });
-
     [FeatureOperation]
     Task<byte[]> DownloadImageAsync(string url) =>
         FeatureRequest.InvokeAsync<byte[]>(this, nameof(DownloadImageAsync), new
         {
             url
         });
-
     [FeatureOperation]
     Task<AvatarInfo?> ReadAvatarAsync() =>
         FeatureRequest.InvokeAsync<AvatarInfo?>(this, nameof(ReadAvatarAsync), new
         {
         });
-
     [FeatureOperation]
     Task<AvatarInfo?> SetOfflineSkinAsync(string path) =>
         FeatureRequest.InvokeAsync<AvatarInfo?>(this, nameof(SetOfflineSkinAsync), new
         {
             path
         });
-
     Task SelectMuaProfileAsync(string token, string profileId);
     Task PickFolderAsync(string target);
     Task PickFileAsync(string target);
     Task PickSaveFileAsync(string target);
     Task ResetWindowAsync();
-
     [FeatureOperation]
-    Task<SavedInfo> SaveLaunchOptionsAsync(string token, string version, string name, LaunchOptionsSettings settings,
-        bool inherit) =>
+    Task<SavedInfo> SaveLaunchOptionsAsync(string token, string version, string name, LaunchOptionsSettings settings, bool inherit) =>
         FeatureRequest.InvokeAsync<SavedInfo>(
             this,
             nameof(SaveLaunchOptionsAsync),
@@ -501,7 +421,6 @@ public interface ILauncherService : IDisposable
                 settings,
                 inherit
             });
-
     [FeatureOperation]
     Task<LaunchOptionsInfo> ReadLaunchOptionsAsync(string version, string requestId = "") =>
         FeatureRequest.InvokeAsync<LaunchOptionsInfo>(

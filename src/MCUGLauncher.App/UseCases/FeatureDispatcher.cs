@@ -12,9 +12,11 @@ internal sealed class FeatureDispatcher
     public FeatureDispatcher(LauncherContext context)
     {
         token = context.Token;
-        var operations = typeof(ILauncherService).GetMethods()
+        var operations = EnumerateInterfaces(typeof(ILauncherService))
+            .SelectMany(type => type.GetMethods())
             .Where(method => method.IsDefined(typeof(FeatureOperationAttribute)))
-            .ToDictionary(method => method.Name, StringComparer.Ordinal);
+            .GroupBy(method => method.Name, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
         foreach (var operation in operations.Values)
         {
             if (operation.IsAbstract
@@ -65,6 +67,23 @@ internal sealed class FeatureDispatcher
         if (missing.Length > 0)
             throw new InvalidOperationException(
                 "Feature operations have no handler: " + string.Join(", ", missing));
+    }
+
+
+    static IEnumerable<Type> EnumerateInterfaces(Type root)
+    {
+        var seen = new HashSet<Type>();
+        var pending = new Stack<Type>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var current = pending.Pop();
+            if (!seen.Add(current))
+                continue;
+            yield return current;
+            foreach (var parent in current.GetInterfaces())
+                pending.Push(parent);
+        }
     }
 
     public async Task<TResponse> ExecuteAsync<TResponse>(string operation, object arguments)

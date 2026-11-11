@@ -22,7 +22,7 @@ UI 样式开发的性质是：
 
 ```text
 Views / ShellWindow
-        │  只依赖 Contracts.ILauncherService
+        │  优先依赖领域接口（IAccountService 等）；ILauncherService 为兼容聚合
         ▼
 App/Contracts（共享契约，业务侧所有）
         ▼
@@ -36,7 +36,7 @@ LauncherApplication / Commands / Services / Core
 - **业务层**：`src/MCUGLauncher.App/` 其余目录
 - **核心层**：`src/MCUGLauncher.Core/`
 
-页面只通过 `ILauncherService` 获取状态和调用操作。页面不得：
+页面通过领域接口（新代码）或 `ILauncherService`（兼容聚合）获取状态和调用操作。页面不得：
 
 - 读取 `AppConfig`；
 - 拼 JSON；

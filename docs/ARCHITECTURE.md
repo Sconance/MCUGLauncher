@@ -1,14 +1,14 @@
 # 当前架构
 
-界面使用 Avalonia 原生控件。`ShellWindow` 只负责导航、窗口生命周期和页面宿主；页面只依赖
-`Contracts.ILauncherService`，由 `UseCases.LauncherService` 统一实现业务入口。WebView2 仅保留给微软 OAuth 登录窗口。
+界面使用 Avalonia 原生控件。`ShellWindow` 只负责导航、窗口生命周期和页面宿主；页面依赖
+`Contracts` 下的领域接口（`IAccountService`、`IInstanceService`、`IDownloadService` 等）；`ILauncherService` 作为兼容聚合接口保留，由 `UseCases.LauncherService` 统一实现。WebView2 仅保留给微软 OAuth 登录窗口。
 
 | 层 | 主要模块 | 职责 |
 | --- | --- | --- |
-| 契约 | `App/Contracts`：`ILauncherService`、`LauncherState`、事件 DTO、`LaunchLimits`、`WindowPlacement` | UI 与业务共享的唯一类型化边界 |
+| 契约 | `App/Contracts`：分领域接口、`ILauncherService` 聚合、`LauncherState`、事件 DTO、`LaunchLimits`、`WindowPlacement` | UI 与业务共享的类型化边界 |
 | 原生壳 | `ShellWindow`、`ShellDesktopHost`、`NativeDialogs` | 窗口、导航、原生确认框与文件选择 |
 | 页面 | `Views/*View`（Home、Download、Instances、Account、Games、Bookmarks、Community、Settings、Tasks） | 展示、页面事件与状态订阅 |
-| 应用服务 | `UseCases/LauncherService` | 统一类型化入口、UI 线程调度、状态/事件分发 |
+| 应用服务 | `UseCases/LauncherService` | 实现领域接口与兼容聚合、UI 线程调度、状态/事件分发 |
 | 用例 | `UseCases/LauncherApplication` 及各 Commands | 校验输入、编排账号/游戏/内容/设置/维护 |
 | 适配与状态 | `Services`、`Authentication` | 配置、会话缓存、队列适配、外部认证与状态快照 |
 | 核心 | `MCUGLauncher.Core` | 校验下载、依赖解析、事务安装、实例和游戏会话 |
@@ -24,7 +24,7 @@ WebView2 的唯一用途是 `MicrosoftLoginWindow` 承载微软 OAuth 页面；�
 
 ## 行为约定
 
-- 页面只调用 `ILauncherService` 的强类型方法并订阅 `StateChanged`、`TasksChanged` 等领域事件；
+- 页面优先调用领域接口的强类型方法；现有页面可继续使用 `ILauncherService` 聚合，后续逐页迁移；
 - 一次性请求/响应通过接口默认方法返回 `Task<TResponse>`，由 `[FeatureOperation]` 与自动发现的 UseCase handler 配对；无需增加服务消息解析与应用命令分支；
   不得读取 `AppConfig`、不得拼 JSON、不得调用 `HandleAsync`。
 - 状态、请求和事件 DTO 位于 `App/Contracts`；`LauncherStateBuilder` 直接生成 `LauncherState`，
