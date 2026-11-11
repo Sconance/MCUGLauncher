@@ -37,6 +37,14 @@ public interface IInstanceMaintenanceService
             enabled
         });
 
+    /// <summary>按实例名读取模组清单；与全局当前实例无关，实例设置页可直接查看别的实例。</summary>
+    [FeatureOperation]
+    Task<IReadOnlyList<ModInfo>> ListInstanceModsAsync(string instance) =>
+        FeatureRequest.InvokeAsync<IReadOnlyList<ModInfo>>(this, nameof(ListInstanceModsAsync), new
+        {
+            instance
+        });
+
     [FeatureOperation]
     Task<ContentUpdatesInfo> CheckUpdatesAsync(string version) =>
         FeatureRequest.InvokeAsync<ContentUpdatesInfo>(this, nameof(CheckUpdatesAsync), new
