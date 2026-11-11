@@ -11,7 +11,11 @@ namespace MCUGLauncher.Services;
 // Reads one local snapshot; UI only receives the typed, presentation-neutral result.
 internal static class LauncherStateBuilder
 {
-    public static LauncherState Build(AppConfig config, IReadOnlyList<FavoriteInfo> favorites)
+    public static LauncherState Build(
+        AppConfig config,
+        IReadOnlyList<FavoriteInfo> favorites,
+        bool hasMicrosoftAccount = false,
+        bool hasMuaAccount = false)
     {
         var catalog = VersionCatalog.Load(config.Root, config.LastInstance);
         var selectedVersion = catalog.Groups.Count == 0
@@ -63,7 +67,10 @@ internal static class LauncherStateBuilder
             ToSet(new DataSourceConfig()),
             ToSet(config.CustomDataSources ?? config.DataSources),
             config.EffectiveDataSourceMode,
-            config.LegacyPreferences.Launch.AutoChinese);
+            config.LegacyPreferences.Launch.AutoChinese,
+            config.ForceTasksButton,
+            hasMicrosoftAccount,
+            hasMuaAccount);
     }
 
     static DataSourceSet ToSet(DataSourceConfig sources) => new(

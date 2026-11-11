@@ -120,6 +120,9 @@ public sealed record LauncherState(
     DataSourceSet DefaultDataSources,
     DataSourceSet CustomDataSources,
     string DataSourceMode,
-    bool AutoChinese = true)
+    bool AutoChinese = true,
+    bool ForceTasksButton = false,
+    bool HasMicrosoftAccount = false,
+    bool HasMuaAccount = false)
 {
 }

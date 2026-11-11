@@ -135,8 +135,9 @@
         </Setter>
     </Style>
 
+    <!-- 悬停底色与标题栏按钮（Button.topnav）保持一致，不再走 Fluent 的系统色 -->
     <Style Selector="Button:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+        <Setter Property="Background" Value="#E8F0F7" />
         <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
     </Style>
 
@@ -173,7 +174,7 @@
         <Setter Property="Foreground" Value="#414B55" />
     </Style>
     <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+        <Setter Property="Background" Value="#E8F0F7" />
         <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
     </Style>
 
@@ -237,6 +238,32 @@
     </Style>
     <Style Selector="Button.avatar:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource AppAccentWash}" />
+    </Style>
+
+    <!-- 首页账号模式切换：独立按钮，视觉沿用顶栏导航，只是更小 -->
+    <Style Selector="Button.accountMode">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="Foreground" Value="#545D66" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.accountMode:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#E8F0F7" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+    <Style Selector="Button.accountMode.active">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.accountMode.active:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+        <Setter Property="TextElement.Foreground" Value="{StaticResource AppAccentDeep}" />
     </Style>
 
     <Style Selector="Button.topnav">
@@ -370,6 +397,26 @@
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Foreground" Value="{StaticResource AppInk2}" />
     </Style>
+    <!--
+        Fluent 的勾选框填充读系统强调色（Windows 设置里那个）。即使调色板已经改成
+        #326EA7，这里仍显式压一层，避免系统强调色被系统服务在运行时覆盖回来。
+        部件名 NormalRectangle / CheckGlyph 取自 Fluent 默认模板。
+    -->
+    <Style Selector="CheckBox:checked /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="{StaticResource AppAccent}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppAccent}" />
+    </Style>
+    <Style Selector="CheckBox:checked:pointerover /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="#2C6193" />
+        <Setter Property="BorderBrush" Value="#2C6193" />
+    </Style>
+    <Style Selector="CheckBox:checked:pressed /template/ Border#NormalRectangle">
+        <Setter Property="Background" Value="{StaticResource AppAccentDark}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AppAccentDark}" />
+    </Style>
+    <Style Selector="CheckBox:checked /template/ Path#CheckGlyph">
+        <Setter Property="Fill" Value="White" />
+    </Style>
 
     <Style Selector="ListBox">
         <Setter Property="Background" Value="Transparent" />
@@ -388,6 +435,33 @@
         <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
         <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
         <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="ListBoxItem:pressed">
+        <Setter Property="Background" Value="#DCE8F5" />
+        <Setter Property="Foreground" Value="{StaticResource AppAccentDeep}" />
+    </Style>
+    <!--
+        Fluent 把 ListBoxItem 的状态底色画在模板内的 PART_ContentPresenter 上，
+        只设 ListBoxItem.Background 会被那一层盖住——左栏选中项一悬停就变深，就是这个原因。
+        这里把同一层也钉住，选中态在悬停 / 按下时保持 AppAccentSoft 不变。
+    -->
+    <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#E7EFF6" />
+    </Style>
+    <Style Selector="ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#DCE8F5" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AppAccentSoft}" />
     </Style>
 
     <Style Selector="TabControl">

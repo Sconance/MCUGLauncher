@@ -34,14 +34,45 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
 
     public LauncherState? State
     {
-        get; private set;
+        get;
+        private set;
     }
-    public IReadOnlyList<TaskInfo> Tasks { get; private set; } = Array.Empty<TaskInfo>();
-    public IReadOnlyList<ContentItem> ContentItems { get; private set; } = Array.Empty<ContentItem>();
-    public IReadOnlyList<GameInfo> Games { get; private set; } = Array.Empty<GameInfo>();
-    public IReadOnlyList<JavaInfo> JavaList { get; private set; } = Array.Empty<JavaInfo>();
-    public IReadOnlyList<SaveBackupInfo> SaveBackups { get; private set; } = Array.Empty<SaveBackupInfo>();
-    public CommunityData Community { get; private set; } = CommunityData.Empty;
+
+    public IReadOnlyList<TaskInfo> Tasks
+    {
+        get;
+        private set;
+    } = Array.Empty<TaskInfo>();
+
+    public IReadOnlyList<ContentItem> ContentItems
+    {
+        get;
+        private set;
+    } = Array.Empty<ContentItem>();
+
+    public IReadOnlyList<GameInfo> Games
+    {
+        get;
+        private set;
+    } = Array.Empty<GameInfo>();
+
+    public IReadOnlyList<JavaInfo> JavaList
+    {
+        get;
+        private set;
+    } = Array.Empty<JavaInfo>();
+
+    public IReadOnlyList<SaveBackupInfo> SaveBackups
+    {
+        get;
+        private set;
+    } = Array.Empty<SaveBackupInfo>();
+
+    public CommunityData Community
+    {
+        get;
+        private set;
+    } = CommunityData.Empty;
 
     public LauncherService(
         IDesktopHost desktop,
@@ -130,6 +161,8 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
                 ["recommendations"] = sources.Recommendations,
                 ["quotes"] = sources.Quotes
             };
+        if (patch.ForceTasksButton is { } forceTasks)
+            payload["forceTasksButton"] = forceTasks;
         return FeatureRequest.InvokeAsync<SavedInfo>(this, nameof(SaveSettingsAsync), payload);
     }
 
@@ -371,7 +404,8 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             world
         });
 
-    public Task OpenFolderAsync(string kind) => CommandAsync(new { type = "openFolder", kind });
+    public Task OpenFolderAsync(string kind, string instance = "") =>
+        CommandAsync(new { type = "openFolder", kind, instance });
 
     public Task<string> ReadLogAsync() =>
         FeatureRequest.InvokeAsync<string>(this, nameof(ReadLogAsync), new
@@ -383,7 +417,8 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
         {
         });
 
-    public Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "", string? instance = null) =>
+    public Task<ServerResultInfo> SaveServerAsync(string name, string address, string oldAddress = "",
+        string? instance = null) =>
         FeatureRequest.InvokeAsync<ServerResultInfo>(
             this,
             nameof(SaveServerAsync),
@@ -452,7 +487,8 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
                 items = items.Select(item => item.Raw).ToArray()
             });
 
-    public Task<SavedInfo> ToggleBookmarkAsync(string id, string name, string description, string author, string kind) =>
+    public Task<SavedInfo>
+        ToggleBookmarkAsync(string id, string name, string description, string author, string kind) =>
         FeatureRequest.InvokeAsync<SavedInfo>(
             this,
             nameof(ToggleBookmarkAsync),
@@ -498,7 +534,8 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
 
     public Task ResetWindowAsync() => application.HandleAsync("""{"type":"resetWindow"}""");
 
-    public Task<SavedInfo> SaveLaunchOptionsAsync(string token, string version, string name, LaunchOptionsSettings settings, bool inherit) =>
+    public Task<SavedInfo> SaveLaunchOptionsAsync(string token, string version, string name,
+        LaunchOptionsSettings settings, bool inherit) =>
         FeatureRequest.InvokeAsync<SavedInfo>(
             this,
             nameof(SaveLaunchOptionsAsync),
@@ -539,6 +576,7 @@ public sealed class LauncherService : ILauncherService, IFeatureRequestInvoker
             });
             return;
         }
+
         var json = JsonSerializer.Serialize(payload, Options);
         dispatch(() => Handle(json));
     }

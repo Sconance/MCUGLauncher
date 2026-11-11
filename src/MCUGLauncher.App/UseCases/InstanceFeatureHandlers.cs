@@ -26,6 +26,14 @@ internal sealed class SelectVersionFeatureHandler(LauncherContext context)
     }
 }
 
+[FeatureHandler(nameof(ILauncherService.ListInstanceModsAsync))]
+internal sealed class ListInstanceModsFeatureHandler(LauncherContext context)
+    : IFeatureHandler<IReadOnlyList<ModInfo>>
+{
+    public Task<IReadOnlyList<ModInfo>> HandleAsync(JsonElement arguments, CancellationToken token) =>
+        Task.FromResult(new InstanceCommands(context).ListMods(ReadString(arguments, "instance")));
+}
+
 [FeatureHandler(nameof(ILauncherService.PreviewUninstallAsync))]
 internal sealed class PreviewUninstallFeatureHandler(LauncherContext context)
     : IFeatureHandler<UninstallPreviewInfo>

@@ -3,14 +3,16 @@
              x:Class="MCUGLauncher.Avalonia.Views.InstancePickerView">
     <Border Classes="card" Padding="16">
         <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10">
-            <Grid ColumnDefinitions="*,Auto,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                 <StackPanel Spacing="2">
                     <TextBlock Text="选择实例" Classes="h2" />
                     <TextBlock x:Name="PickerSummary" Classes="muted" TextWrapping="Wrap" />
                 </StackPanel>
                 <Button x:Name="RefreshVersionsButton" Grid.Column="1" Content="刷新版本" Classes="link"
                         VerticalAlignment="Center" />
-                <Button x:Name="ClosePickerButton" Grid.Column="2" Content="收起" Classes="soft" Height="30"
+                <Button x:Name="OpenRootButton" Grid.Column="2" Content="打开实例目录" Classes="ghost" Height="30"
+                        Margin="10,0,0,0" VerticalAlignment="Center" />
+                <Button x:Name="ClosePickerButton" Grid.Column="3" Content="收起" Classes="soft" Height="30"
                         Margin="10,0,0,0" VerticalAlignment="Center" />
             </Grid>
 

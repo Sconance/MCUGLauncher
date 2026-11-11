@@ -9,7 +9,6 @@ namespace MCUGLauncher.Avalonia.Views;
 internal partial class SettingsView : UserControl
 {
     readonly Dictionary<string, Control> panels = new();
-    readonly Dictionary<string, Control> pages = new();
     readonly Dictionary<string, string> pings = new(StringComparer.OrdinalIgnoreCase);
     ILauncherService service = EmptyServiceFallback.Instance;
     LauncherState? state;
@@ -17,21 +16,17 @@ internal partial class SettingsView : UserControl
     string editingServer = "";
     bool updatingRoots;
     bool addRootOnPick;
-    bool navigating;
 
     public SettingsView()
     {
         InitializeComponent();
-        panels["launch"] = LaunchPanel;
-        panels["java"] = JavaPanel;
-        panels["datasources"] = DataSourcesPanel;
+        // 合并后的常规分组：一个 key 对应一组卡片，组内多张卡一起显示
+        panels["launch"] = LaunchGroup;
         panels["appearance"] = AppearancePanel;
-        panels["servers"] = ServersPanel;
+        panels["favorites"] = FavoritesGroup;
+        panels["community"] = CommunityGroup;
+        panels["devtools"] = DevToolsGroup;
         panels["saves"] = SavesPanel;
-        panels["recovery"] = RecoveryPanel;
-        panels["logs"] = LogsPanel;
-        panels["diagnose"] = DiagnosePanel;
-        panels["community"] = CommunityPanel;
         panels["about"] = AboutPanel;
         WireButtons();
         JavaListPanel.Children.Add(Muted("还没有扫描结果。点击“扫描本机 Java”。"));
@@ -64,17 +59,11 @@ internal partial class SettingsView : UserControl
         ApplyState(service.State);
     }
 
-    /// <summary>「更多」分组的整页视图，与常规面板共用同一份服务实例。</summary>
+    /// <summary>内嵌的两个整页视图，与常规面板共用同一份服务实例。</summary>
     void BuildPages(ILauncherService value)
     {
-        pages.Clear();
-        PageHost.Content = null;
-        pages["instances"] = new InstancesView(value);
-        pages["account"] = new AccountView(value);
-        pages["tasks"] = new TasksView(value);
-        pages["games"] = new GamesView(value);
-        pages["bookmarks"] = new BookmarksView(value);
-        pages["moreCommunity"] = new CommunityView(value);
+        BookmarksHost.Content = new BookmarksView(value);
+        CommunityHost.Content = new CommunityView(value);
     }
 
     void Detach()
@@ -84,8 +73,8 @@ internal partial class SettingsView : UserControl
         service.StateChanged -= ApplyState;
         service.PathPicked -= OnPathPicked;
         service = EmptyServiceFallback.Instance;
-        pages.Clear();
-        PageHost.Content = null;
+        BookmarksHost.Content = null;
+        CommunityHost.Content = null;
     }
 
     void WireButtons()
@@ -113,8 +102,6 @@ internal partial class SettingsView : UserControl
         BrowseJavaButton.Click += async (_, _) => await Pick(service?.PickFileAsync("java"));
         ScanJavaButton.Click += async (_, _) => await ScanJava(JavaStatus);
         SaveLaunchButton.Click += async (_, _) => await SaveLaunch();
-        BrowseJavaPathButton.Click += async (_, _) => await Pick(service?.PickFileAsync("java"));
-        ScanJavaListButton.Click += async (_, _) => await ScanJava(JavaStatus);
         SaveJavaButton.Click += async (_, _) => await SaveJava();
         TestAnnouncementsButton.Click += async (_, _) => await TestSource("公告", SourceAnnouncementsBox);
         TestServersButton.Click += async (_, _) => await TestSource("服务器", SourceServersBox);
@@ -132,16 +119,40 @@ internal partial class SettingsView : UserControl
             RenderSaveBackups(await service.ListSaveBackupsAsync());
         };
         OpenSavesFolderButton.Click += async (_, _) => await service!.OpenFolderAsync("saves");
-        ResetWindowRecoveryButton.Click += async (_, _) => await service!.ResetWindowAsync();
         OpenConfigButton.Click += async (_, _) => await service!.OpenFolderAsync("config");
-        OpenRootButton.Click += async (_, _) => await service!.OpenFolderAsync("root");
         ReadLogButton.Click += async (_, _) => await ReadLog();
         OpenLogFolderButton.Click += async (_, _) => await service!.OpenFolderAsync("config");
         ReadSystemInfoButton.Click += async (_, _) => await ReadSystemInfo();
         CopyDiagnosticsButton.Click += async (_, _) => await CopyDiagnostics();
         SaveAnonymousButton.Click += async (_, _) => await SaveAnonymous();
         VerifyCommunityKeyButton.Click += async (_, _) => await VerifyKey("community", CommunityKeyBox);
-        VerifyAdminKeyButton.Click += async (_, _) => await VerifyKey("admin", AdminKeyBox);
+        SaveUiDebugButton.Click += async (_, _) => await SaveUiDebug();
+        ChooseSkinButton.Click += async (_, _) => await service!.PickFileAsync("offlineSkin");
+        ClearSkinButton.Click += async (_, _) =>
+        {
+            await service!.SetOfflineSkinAsync("");
+            SkinStatus.Text = "已清除本地皮肤。";
+        };
+        ForgetMicrosoftButton.Click += async (_, _) => await ForgetAccount("microsoft");
+        ForgetMuaButton.Click += async (_, _) => await ForgetAccount("mua");
+    }
+
+    async Task ForgetAccount(string mode)
+    {
+        if (service is null)
+            return;
+        AccountStatus.Text = "正在移除本机保存的账号…";
+        AccountStatus.Text = (await service.ForgetAccountAsync(mode)).Message;
+    }
+
+    async Task SaveUiDebug()
+    {
+        if (service is null)
+            return;
+        UiDebugStatus.Text = "正在保存…";
+        var result = await service.SaveSettingsAsync(new AppSettingsPatch(
+            ForceTasksButton: ForceTasksButtonBox.IsChecked == true));
+        UiDebugStatus.Text = result.Message;
     }
 
     static async Task Pick(Task? pending)
@@ -189,13 +200,6 @@ internal partial class SettingsView : UserControl
             return;
         }
 
-        var player = PlayerBox.Text?.Trim() ?? "";
-        if (state?.AccountType == "offline" && player.Length == 0)
-        {
-            LaunchStatus.Text = "离线账号需要填写玩家名。";
-            return;
-        }
-
         LaunchStatus.Text = "正在保存…";
         var result = await service.SaveSettingsAsync(new AppSettingsPatch(
             Root: root,
@@ -204,8 +208,7 @@ internal partial class SettingsView : UserControl
             Width: width,
             Height: height,
             AutoMemory: AutoMemoryBox.IsChecked == true,
-            AutoChinese: AutoChineseBox.IsChecked == true,
-            Player: state?.AccountType == "offline" ? player : null));
+            AutoChinese: AutoChineseBox.IsChecked == true));
         LaunchStatus.Text = result.Message;
     }
 
@@ -214,7 +217,7 @@ internal partial class SettingsView : UserControl
         if (service is null)
             return;
         JavaStatus.Text = "正在保存 Java 设置…";
-        var result = await service.SaveSettingsAsync(new AppSettingsPatch(Java: JavaPathBox.Text?.Trim() ?? ""));
+        var result = await service.SaveSettingsAsync(new AppSettingsPatch(Java: JavaBox.Text?.Trim() ?? ""));
         JavaStatus.Text = result.Message;
     }
 
@@ -342,94 +345,32 @@ internal partial class SettingsView : UserControl
 
     void OnNavSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (navigating)
-            return;
         if (Nav.SelectedItem is ListBoxItem { Tag: string key })
             ShowPanel(key);
     }
 
-    void OnMoreNavSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (navigating)
-            return;
-        if (MoreNav.SelectedItem is ListBoxItem { Tag: string key })
-            ShowPage(key);
-    }
-
-    /// <summary>供外壳跳转：key 可以是常规分组的面板名，也可以是更多分组的页面名。</summary>
+    /// <summary>供外壳跳转：key 是常规分组的面板名。</summary>
     public void Open(string key)
     {
-        var list = panels.ContainsKey(key) ? Nav : pages.ContainsKey(key) ? MoreNav : null;
-        if (list is null)
+        if (!panels.ContainsKey(key))
             return;
-        navigating = true;
-        try
-        {
-            foreach (var item in list.Items.OfType<ListBoxItem>())
-                item.IsSelected = (string?)item.Tag == key;
-        }
-        finally
-        {
-            navigating = false;
-        }
-
-        if (panels.ContainsKey(key))
-            ShowPanel(key);
-        else
-            ShowPage(key);
+        foreach (var item in Nav.Items.OfType<ListBoxItem>())
+            item.IsSelected = (string?)item.Tag == key;
+        ShowPanel(key);
     }
 
-    /// <summary>常规分组：只显示对应的设置卡片，隐藏「更多」整页容器。</summary>
+    /// <summary>只显示对应的设置组，其余隐藏。</summary>
     void ShowPanel(string key)
     {
         current = key;
-        if (MoreNav.SelectedItem is not null)
-        {
-            navigating = true;
-            MoreNav.SelectedItem = null;
-            navigating = false;
-        }
-
-        PanelScroll.IsVisible = true;
-        PageHost.IsVisible = false;
-        PageHost.Content = null;
         foreach (var pair in panels)
             pair.Value.IsVisible = pair.Key == key;
         if (key == "saves")
             _ = LoadSaveBackups();
-        else if (key == "logs")
+        else if (key == "devtools")
+        {
             _ = ReadLog();
-        else if (key == "diagnose")
             _ = ReadSystemInfo();
-    }
-
-    /// <summary>更多分组：整页铺满右侧，常规面板滚动区让位。</summary>
-    void ShowPage(string key)
-    {
-        if (!pages.TryGetValue(key, out var target))
-            return;
-        current = key;
-        if (Nav.SelectedItem is not null)
-        {
-            navigating = true;
-            Nav.SelectedItem = null;
-            navigating = false;
-        }
-
-        PanelScroll.IsVisible = false;
-        PageHost.IsVisible = true;
-        PageHost.Content = target;
-        switch (target)
-        {
-            case AccountView account:
-                account.Activate();
-                break;
-            case TasksView tasks:
-                tasks.Activate();
-                break;
-            case GamesView games:
-                games.Activate();
-                break;
         }
     }
 
@@ -468,9 +409,20 @@ internal partial class SettingsView : UserControl
         else if (info.Target == "java")
         {
             JavaBox.Text = info.Path;
-            JavaPathBox.Text = info.Path;
             JavaStatus.Text = "已选择 Java 路径，保存后生效。";
         }
+        else if (info.Target == "offlineSkin")
+        {
+            _ = ApplyOfflineSkin(info.Path);
+        }
+    }
+
+    async Task ApplyOfflineSkin(string path)
+    {
+        if (service is null)
+            return;
+        await service.SetOfflineSkinAsync(path);
+        SkinStatus.Text = "已应用本地皮肤。";
     }
 
     async Task PingServer(string address)
@@ -494,26 +446,17 @@ internal partial class SettingsView : UserControl
             case "launch":
                 LaunchStatus.Text = message;
                 break;
-            case "java":
-                JavaStatus.Text = message;
-                break;
-            case "datasources":
-                DataSourceStatus.Text = message;
-                break;
-            case "servers":
+            case "favorites":
                 ServerStatus.Text = message;
-                break;
-            case "saves":
-                SaveStatus.Text = message;
-                break;
-            case "recovery":
-                RecoveryStatus.Text = message;
-                break;
-            case "diagnose":
-                DiagnoseStatus.Text = message;
                 break;
             case "community":
                 CommunityStatus.Text = message;
+                break;
+            case "devtools":
+                DiagnoseStatus.Text = message;
+                break;
+            case "saves":
+                SaveStatus.Text = message;
                 break;
         }
     }
@@ -533,11 +476,9 @@ internal partial class SettingsView : UserControl
         GameRootBox.SelectedIndex = Array.IndexOf(roots, snapshot.Root);
         updatingRoots = false;
         SetText(JavaBox, snapshot.Java);
-        SetText(JavaPathBox, snapshot.Java);
         SetText(RamBox, snapshot.Ram.ToString());
         SetText(WidthBox, snapshot.Width.ToString());
         SetText(HeightBox, snapshot.Height.ToString());
-        SetText(PlayerBox, snapshot.Player);
         SetText(AboutVersion, "MCUG Launcher " + snapshot.AppVersion);
         if (!AutoMemoryBox.IsFocused)
             AutoMemoryBox.IsChecked = snapshot.AutoMemory;
@@ -545,8 +486,8 @@ internal partial class SettingsView : UserControl
             AutoChineseBox.IsChecked = snapshot.AutoChinese;
         if (!AnonymousBox.IsFocused)
             AnonymousBox.IsChecked = snapshot.Anonymous;
-        PlayerBox.IsEnabled = snapshot.AccountType == "offline";
-        PlayerLabel.Text = snapshot.AccountType == "offline" ? "离线玩家名" : "玩家名（在线账号不可修改）";
+        if (!ForceTasksButtonBox.IsFocused)
+            ForceTasksButtonBox.IsChecked = snapshot.ForceTasksButton;
         var sources = snapshot.CustomDataSources.Announcements.Length > 0
             ? snapshot.CustomDataSources
             : snapshot.DataSources;
@@ -557,15 +498,22 @@ internal partial class SettingsView : UserControl
         var mode = snapshot.DataSourceMode == "custom" ? "自定义" : "默认";
         var keys =
             $"身份密钥：{(snapshot.HasCommunityKey ? "已设置" : "未设置")} · 管理员密钥：{(snapshot.HasAdminKey ? "已设置" : "未设置")}";
-        if (current == "datasources")
-            DataSourceStatus.Text = $"当前使用{mode}数据源。";
+        // 「社区」分组同时包含数据源与身份两块，两个状态一起刷新
         if (current == "community")
+        {
+            DataSourceStatus.Text = $"当前使用{mode}数据源。";
             CommunityStatus.Text = keys;
+        }
+
         RenderServers();
         if (service is { JavaList.Count: > 0 })
             RenderJavaList(service.JavaList);
         if (service is { SaveBackups.Count: > 0 })
             RenderSaveBackups(service.SaveBackups);
+        var offlineAccount = snapshot.AccountType == "offline";
+        ChooseSkinButton.IsEnabled = offlineAccount;
+        ClearSkinButton.IsEnabled = offlineAccount;
+        SkinStatus.Text = offlineAccount ? "" : "本地皮肤只对离线账号生效。";
     }
 
     void RenderJavaList(IReadOnlyList<JavaInfo> items)
@@ -596,7 +544,6 @@ internal partial class SettingsView : UserControl
             var path = item.Path;
             use.Click += (_, _) =>
             {
-                JavaPathBox.Text = path;
                 JavaBox.Text = path;
                 JavaStatus.Text = "已填入 Java 路径，保存后生效。";
             };

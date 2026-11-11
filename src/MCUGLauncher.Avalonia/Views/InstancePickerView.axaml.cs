@@ -31,6 +31,7 @@ internal partial class InstancePickerView : UserControl
     {
         InitializeComponent();
         RefreshVersionsButton.Click += (_, _) => RefreshRequested?.Invoke();
+        OpenRootButton.Click += (_, _) => OpenRootRequested?.Invoke();
         ClosePickerButton.Click += (_, _) => CloseRequested?.Invoke();
         PickerSearch.TextChanged += (_, _) =>
         {
@@ -41,6 +42,9 @@ internal partial class InstancePickerView : UserControl
 
     /// <summary>请求收起二级页面，回到首页信息流。</summary>
     public event Action? CloseRequested;
+
+    /// <summary>请求在资源管理器里打开当前实例目录。</summary>
+    public event Action? OpenRootRequested;
 
     /// <summary>按「刷新版本」重新扫描本机。</summary>
     public event Action? RefreshRequested;

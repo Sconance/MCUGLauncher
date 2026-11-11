@@ -31,6 +31,15 @@ public sealed class AppConfig
     }
 
     /// <summary>
+    /// 获取或设置 是否强制显示顶栏的「下载任务」按钮（UI 调试）。
+    /// </summary>
+    public bool ForceTasksButton
+    {
+        get;
+        set;
+    }
+
+    /// <summary>
     /// 获取或设置 根目录。
     /// </summary>
     public string Root

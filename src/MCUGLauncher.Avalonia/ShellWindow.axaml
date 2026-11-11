@@ -46,6 +46,27 @@
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8"
                             Margin="0,0,8,0">
+                    <!--
+                        标签页性质的快捷按钮：只有图标，没有下载任务时隐藏；
+                        开发者选项里的「UI 调试」可以强制常显，方便调样式。
+                        原图标是白色描边（给深色按钮用的），这里用 Css 压成标题栏的灰色。
+                        「运行中的游戏」不放在这里——首页启动按钮旁已有入口，点了直接弹浮窗。
+                    -->
+                    <Button x:Name="TasksButton" Classes="titlebarbtn" IsVisible="False"
+                            AutomationProperties.Name="下载任务" ToolTip.Tip="下载任务">
+                        <Svg Path="/Assets/DownloadIcon.svg" Height="18" Width="18"
+                             Css="path { stroke: #505961; }" />
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight">
+                                <Border Width="440" Height="380" Padding="16"
+                                        Background="{StaticResource AppBg}" CornerRadius="10">
+                                    <ContentControl x:Name="TasksHost"
+                                                    HorizontalContentAlignment="Stretch"
+                                                    VerticalContentAlignment="Stretch" />
+                                </Border>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
                     <Button x:Name="MinimizeButton" Classes="titlebarbtn" Click="OnMinimizeWindow"
                             AutomationProperties.Name="最小化">
                         <Svg Path="/Assets/MinimizeIcon.svg" Height="24" Width="24" />

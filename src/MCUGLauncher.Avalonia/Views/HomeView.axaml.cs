@@ -22,8 +22,16 @@ internal partial class HomeView : UserControl
     string serverSignature = "";
     string editingServer = "";
     string dialogInstance = "";
+    bool dialogShowInstances;
     int quoteIndex;
+
     string avatarAccount = "";
+
+    // 当前正在查看的账号页签，可以停在「正版」但还没登录
+    string accountTab = "";
+
+    // 鼠标是否停在左栏上；刷新按钮只在这个状态下出现
+    bool accountHover;
 
     public HomeView()
     {
@@ -36,14 +44,6 @@ internal partial class HomeView : UserControl
         Attach(service);
     }
 
-    public event Action? AccountRequested;
-
-    /// <summary>二级页面里点「⚙」时请求外壳切到实例管理页。</summary>
-    public event Action? InstancesRequested;
-
-    /// <summary>启动按钮右侧「▣」：请求外壳切到运行中的游戏页。</summary>
-    public event Action? RunningGamesRequested;
-
     public void Attach(ILauncherService value)
     {
         service = value ?? EmptyServiceFallback.Instance;
@@ -52,6 +52,9 @@ internal partial class HomeView : UserControl
         service.ToastReceived += info => Status(info.Message);
         service.ErrorReceived += message => Status("操作失败：" + message);
         service.PathPicked += OnPathPicked;
+        service.MuaProfilesReceived += OnMuaProfiles;
+        // 顶部快捷按钮现在只有下载任务，「运行中的游戏」改为这里的浮窗；实例只建一次
+        GamesHost.Content ??= new GamesView(service);
         community = service.Community;
         ApplyState(service.State);
         RenderCommunity();
@@ -60,10 +63,144 @@ internal partial class HomeView : UserControl
     /// <summary>账号恢复完成后由外壳调用，避免在 ready 之前读取头像。</summary>
     public void Activate() => _ = ReadAvatar();
 
+    /// <summary>切换账号页签：先换视图，只有该模式已有凭据时才真正切换启动账号。</summary>
+    void ShowAccountTab(string mode)
+    {
+        accountTab = mode;
+        RenderAccount();
+        if (state is null || state.AccountType == mode)
+            return;
+        var hasIdentity = mode switch
+        {
+            "microsoft" => state.HasMicrosoftAccount,
+            "mua" => state.HasMuaAccount,
+            _ => true
+        };
+        if (hasIdentity)
+            _ = service!.SwitchAccountModeAsync(mode);
+    }
+
+    /// <summary>三按钮 + 差异化面板：没有凭据的模式只显示登录入口。</summary>
+    void RenderAccount()
+    {
+        var tab = accountTab.Length > 0 ? accountTab : "offline";
+        var microsoft = state?.HasMicrosoftAccount == true;
+        var mua = state?.HasMuaAccount == true;
+        var player = state?.Player ?? "";
+
+        MicrosoftModeButton.Classes.Set("active", tab == "microsoft");
+        OfflineModeButton.Classes.Set("active", tab == "offline");
+        MuaModeButton.Classes.Set("active", tab == "mua");
+
+        MicrosoftPanel.IsVisible = tab == "microsoft";
+        OfflinePanel.IsVisible = tab == "offline";
+        MuaPanel.IsVisible = tab == "mua";
+
+        // 没登录过的模式不显示头像，避免出现一张空图
+        AvatarBox.IsVisible = tab switch
+        {
+            "microsoft" => microsoft,
+            "mua" => mua,
+            _ => true
+        };
+
+        MicrosoftName.Text = player;
+        MicrosoftMeta.Text = AccountText.Label("microsoft");
+        MicrosoftName.IsVisible = microsoft;
+        MicrosoftMeta.IsVisible = microsoft;
+        MicrosoftHint.IsVisible = !microsoft;
+        MicrosoftHint.Text = "还没有登录过正版账号。";
+        MicrosoftLoginButton.IsVisible = !microsoft;
+
+        if (!OfflineNameBox.IsFocused)
+            OfflineNameBox.Text = player;
+
+        MuaName.Text = player;
+        MuaName.IsVisible = mua;
+        MuaAccountBox.IsVisible = !mua;
+        MuaPasswordBox.IsVisible = !mua;
+        MuaLoginButton.IsVisible = !mua;
+        if (mua)
+            MuaHint.Text = AccountText.Label("mua");
+        else if (string.IsNullOrEmpty(MuaHint.Text))
+            MuaHint.Text = "还没有登录过 MUA 账号。";
+
+        UpdateRefreshVisibility();
+    }
+
+    void OnAccountPanelPointerEntered(object? sender, PointerEventArgs e)
+    {
+        accountHover = true;
+        UpdateRefreshVisibility();
+    }
+
+    void OnAccountPanelPointerExited(object? sender, PointerEventArgs e)
+    {
+        accountHover = false;
+        UpdateRefreshVisibility();
+    }
+
+    /// <summary>
+    /// 悬停在账号栏、且当前页签真有皮肤可读时点亮按钮。
+    /// 只改 Opacity 不改 IsVisible：控件始终占位，淡入淡出才有动画可插值，
+    /// 也让下方「当前实例」那一行不会因为按钮显隐而跳动。
+    /// </summary>
+    void UpdateRefreshVisibility() =>
+        RefreshAccountButton.Opacity = accountHover && AvatarBox.IsVisible ? 1 : 0;
+
     void WireButtons()
     {
-        AccountButton.Click += (_, _) => AccountRequested?.Invoke();
-        AvatarButton.Click += (_, _) => AccountRequested?.Invoke();
+        MicrosoftModeButton.Click += (_, _) => ShowAccountTab("microsoft");
+        OfflineModeButton.Click += (_, _) => ShowAccountTab("offline");
+        MuaModeButton.Click += (_, _) => ShowAccountTab("mua");
+        MicrosoftLoginButton.Click += async (_, _) =>
+        {
+            MicrosoftHint.Text = "正在打开微软登录页…";
+            MicrosoftHint.IsVisible = true;
+            var result = await service!.LoginMicrosoftAsync();
+            MicrosoftHint.Text = result.Message;
+            await service.RequestStateAsync();
+        };
+        MuaLoginButton.Click += async (_, _) =>
+        {
+            var account = MuaAccountBox.Text?.Trim() ?? "";
+            var password = MuaPasswordBox.Text ?? "";
+            if (account.Length == 0 || password.Length == 0)
+            {
+                MuaHint.Text = "请填写 MUA 账号和密码。";
+                return;
+            }
+
+            MuaHint.Text = "正在登录 MUA…";
+            var result = await service!.LoginMuaAsync(account, password);
+            MuaHint.Text = result.Message;
+            await service.RequestStateAsync();
+        };
+        // 刷新：重新拉一次账号状态，再重读皮肤。头像缓存按「模式 + 玩家名」去重，
+        // 只在状态真正变化时才会自动重读，所以这里必须显式再读一遍。
+        RefreshAccountButton.Click += async (_, _) =>
+        {
+            RefreshAccountButton.IsEnabled = false;
+            try
+            {
+                await service!.RequestStateAsync();
+                await ReadAvatar();
+            }
+            finally
+            {
+                RefreshAccountButton.IsEnabled = true;
+            }
+        };
+        // 玩家名不用保存按钮：输入即静默写入配置，启动时直接读
+        OfflineNameBox.TextChanged += async (_, _) =>
+        {
+            if (accountTab != "offline")
+                return;
+            var name = OfflineNameBox.Text?.Trim() ?? "";
+            if (name.Length == 0 || name == state?.Player)
+                return;
+            await service!.SaveSettingsAsync(new AppSettingsPatch(Player: name));
+        };
         LaunchButton.Click += async (_, _) =>
         {
             var target = state?.SelectedInstance is { Length: > 0 } instance ? instance : state?.SelectedVersion ?? "";
@@ -76,10 +213,31 @@ internal partial class HomeView : UserControl
             Status("正在准备启动…");
             Status((await service!.LaunchAsync(target)).Message);
         };
-        InstanceButton.Click += (_, _) => ToggleInstances(!InstancePicker.IsVisible);
-        VersionSettingsButton.Click += (_, _) => InstancesRequested?.Invoke();
-        RunningGameButton.Click += (_, _) => RunningGamesRequested?.Invoke();
+        InstanceButton.Click += (_, _) =>
+        {
+            // 实例设置里点「当前实例」= 退出设置、直接回到实例选择
+            if (InstanceSettingsHost.IsVisible)
+            {
+                BackToInstancePicker();
+                return;
+            }
+
+            ToggleInstances(!InstancePicker.IsVisible);
+        };
+        VersionSettingsButton.Click += (_, _) =>
+        {
+            // 已在实例设置里，再点一次当作退出，回到信息流
+            if (InstanceSettingsHost.IsVisible)
+            {
+                ExitInstanceSettings();
+                return;
+            }
+
+            ShowInstanceSettings(state?.SelectedInstance ?? "");
+        };
+        RunningGameButton.Click += (_, _) => (GamesHost.Content as GamesView)?.Activate();
         InstancePicker.CloseRequested += () => ToggleInstances(false);
+        InstancePicker.OpenRootRequested += async () => await service!.OpenFolderAsync("root");
         InstancePicker.RefreshRequested += async () => await service!.RequestStateAsync();
         InstancePicker.InstancePicked += async name =>
         {
@@ -92,12 +250,8 @@ internal partial class HomeView : UserControl
             InstancePicker.SetStatus("正在用 " + name + " 准备启动…");
             InstancePicker.SetStatus((await service!.LaunchAsync(name)).Message);
         };
-        InstancePicker.SettingsRequested += async name =>
-        {
-            await service!.SelectInstanceAsync(name);
-            ToggleInstances(false);
-            InstancesRequested?.Invoke();
-        };
+        // 只打开这一级的设置，不切换当前实例；模组列表跟随全局，需要时在设置页里手动切
+        InstancePicker.SettingsRequested += name => ShowInstanceSettings(name);
         AddServerButton.Click += (_, _) => ShowServerDialog(null);
         AddRootButton.Click += async (_, _) => await service!.PickFolderAsync("root");
         DialogInstanceButton.Click += (_, _) => RenderDialogPickers();
@@ -132,9 +286,11 @@ internal partial class HomeView : UserControl
         state = snapshot;
         if (snapshot is null)
             return;
-        PlayerName.Text = snapshot.Player.Length > 0 ? snapshot.Player : "未登录";
-        AccountMeta.Text = AccountText.Label(snapshot.AccountType);
-        var avatarKey = snapshot.AccountType + "|" + snapshot.Player;
+        if (accountTab.Length == 0)
+            accountTab = snapshot.AccountType;
+        RenderAccount();
+        var avatarKey = snapshot.AccountType + "|" + snapshot.Player + "|"
+                        + snapshot.HasMicrosoftAccount + snapshot.HasMuaAccount;
         if (avatarKey != avatarAccount)
         {
             avatarAccount = avatarKey;
@@ -205,6 +361,41 @@ internal partial class HomeView : UserControl
             RenderRoots();
         else
             InstancePicker.SetStatus("");
+    }
+
+    /// <summary>打开实例设置：与「选择实例」同级的二级界面，但左栏保持账号栏。</summary>
+    void ShowInstanceSettings(string name)
+    {
+        if (InstanceSettingsHost.Content is not InstancesView view)
+        {
+            view = new InstancesView(service!);
+            // 设置页里的「收起」直接退回一级菜单（首页信息流），不经过实例选择
+            view.CloseRequested += ExitInstanceSettings;
+            InstanceSettingsHost.Content = view;
+        }
+
+        FeedScroll.IsVisible = false;
+        InstancePicker.IsVisible = false;
+        InstanceSettingsHost.IsVisible = true;
+        // 设置页里要能直接点「当前实例」或「版本设置」，所以左栏回到账号栏
+        AccountPanel.IsVisible = true;
+        RootPanel.IsVisible = false;
+        InstanceButtonChevron.Text = "‹";
+        view.Open(name ?? "");
+    }
+
+    /// <summary>「收起」与再点一次齿轮：退回一级菜单。</summary>
+    void ExitInstanceSettings()
+    {
+        InstanceSettingsHost.IsVisible = false;
+        ToggleInstances(false);
+    }
+
+    /// <summary>点「当前实例」：退回实例选择。</summary>
+    void BackToInstancePicker()
+    {
+        InstanceSettingsHost.IsVisible = false;
+        ToggleInstances(true);
     }
 
     /// <summary>左侧目录栏：列出所有游戏目录，当前目录高亮，点另一个即切换。</summary>
@@ -652,6 +843,34 @@ internal partial class HomeView : UserControl
         QuoteMeta.Text = string.Join(" · ", new[] { quote.Author, quote.Source }.Where(value => value.Length > 0));
     }
 
+    /// <summary>MUA 账号下有多个角色时，在这里直接选。</summary>
+    void OnMuaProfiles(MuaProfilesInfo info)
+    {
+        MuaProfilesPanel.Children.Clear();
+        if (info.Items.Count == 0)
+            return;
+        MuaHint.Text = "这个账号有多个角色，请选择：";
+        foreach (var profile in info.Items)
+        {
+            var button = new Button
+            {
+                Content = profile.Name,
+                Classes = { "ghost" },
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Center
+            };
+            var token = info.Token;
+            var id = profile.Id;
+            button.Click += async (_, _) =>
+            {
+                await service!.SelectMuaProfileAsync(token, id);
+                MuaProfilesPanel.Children.Clear();
+                await service.RequestStateAsync();
+            };
+            MuaProfilesPanel.Children.Add(button);
+        }
+    }
+
     void OnAvatar(AvatarInfo info)
     {
         avatar?.Dispose();
@@ -734,6 +953,7 @@ internal partial class HomeView : UserControl
         DialogServerNameBox.Text = "";
         DialogServerAddressBox.Text = "";
         dialogInstance = "";
+        dialogShowInstances = false;
         DialogRootList.Children.Clear();
         DialogInstanceList.Children.Clear();
         DialogInstanceButton.Flyout?.Hide();
@@ -744,6 +964,8 @@ internal partial class HomeView : UserControl
     void FillDialogInstances(string selected)
     {
         dialogInstance = selected.Trim();
+        // 绑定了实例才展开右侧实例列；「不绑定」时只留目录栏
+        dialogShowInstances = dialogInstance.Length > 0;
         RenderDialogPickers();
     }
 
@@ -752,6 +974,15 @@ internal partial class HomeView : UserControl
         UpdateDialogInstanceButton();
         RenderDialogRoots();
         RenderDialogInstances();
+        UpdateDialogColumns();
+    }
+
+    /// <summary>右侧「该目录下的实例」列随「不绑定实例」的选中状态收起 / 展开。</summary>
+    void UpdateDialogColumns()
+    {
+        DialogPickerGrid.ColumnDefinitions[2].Width = dialogShowInstances ? new GridLength(300) : new GridLength(0);
+        DialogPickerDivider.IsVisible = dialogShowInstances;
+        DialogInstanceColumn.IsVisible = dialogShowInstances;
     }
 
     /// <summary>下拉按钮正面：当前绑定的图标、名称与「版本类型 版本号，加载器」。</summary>
@@ -790,15 +1021,56 @@ internal partial class HomeView : UserControl
         DialogInstanceDetail.Text = detail;
     }
 
-    /// <summary>一级：实例目录。当前目录高亮，点别的目录会真的切换过去（首页实例随之变化）。</summary>
+    /// <summary>一级：实例目录。「不绑定实例」固定排在第一项，选中时右侧实例列收起。</summary>
     void RenderDialogRoots()
     {
         DialogRootList.Children.Clear();
         if (state is null)
             return;
+        DialogRootList.Children.Add(DialogUnboundChoice(dialogInstance.Length == 0));
         foreach (var root in state.GameRoots)
             DialogRootList.Children.Add(
                 DialogRootChoice(root, root.Equals(state.Root, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    Control DialogUnboundChoice(bool active)
+    {
+        var lines = new StackPanel { Spacing = 1, VerticalAlignment = VerticalAlignment.Center };
+        lines.Children.Add(new TextBlock
+        {
+            Text = "不绑定实例",
+            FontSize = 11.5,
+            FontWeight = active ? FontWeight.SemiBold : FontWeight.Normal,
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        lines.Children.Add(new TextBlock
+        {
+            Text = "只手动进入服务器",
+            FontSize = 9.5,
+            Classes = { "muted" },
+            TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        var row = new Button
+        {
+            Content = lines,
+            Classes = { "instanceRow" },
+            Padding = new Thickness(6, 4),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
+        };
+        if (active)
+            row.Classes.Set("selected", true);
+        row.Click += (_, _) =>
+        {
+            dialogInstance = "";
+            dialogShowInstances = false;
+            UpdateDialogInstanceButton();
+            UpdateDialogColumns();
+            DialogInstanceButton.Flyout?.Hide();
+        };
+        return row;
     }
 
     Control DialogRootChoice(string path, bool active)
@@ -837,20 +1109,28 @@ internal partial class HomeView : UserControl
         ToolTip.SetTip(row, path);
         row.Click += async (_, _) =>
         {
-            if (active)
-                return;
-            SetDialogStatus("正在切换到 " + name + "…");
-            var result = await service!.SaveSettingsAsync(new AppSettingsPatch(Root: path));
-            SetDialogStatus(result.Message);
+            // 点目录总是展开右侧实例列；只有真的换目录时才写配置
+            dialogShowInstances = true;
+            UpdateDialogColumns();
+            if (!active)
+            {
+                SetDialogStatus("正在切换到 " + name + "…");
+                var result = await service!.SaveSettingsAsync(new AppSettingsPatch(Root: path));
+                SetDialogStatus(result.Message);
+            }
+
+            // 指定目录后默认落到该目录下的第一个实例
+            dialogInstance = Instances().FirstOrDefault()?.Name ?? "";
+            UpdateDialogInstanceButton();
+            RenderDialogInstances();
         };
         return row;
     }
 
-    /// <summary>二级：当前目录下的实例，首项是「不绑定实例」。</summary>
+    /// <summary>二级：当前目录下的实例。「不绑定实例」已经放在目录栏，这里不再重复。</summary>
     void RenderDialogInstances()
     {
         DialogInstanceList.Children.Clear();
-        DialogInstanceList.Children.Add(DialogInstanceChoice(InstanceListItem.None, dialogInstance.Length == 0));
         var instances = Instances();
         foreach (var info in instances)
         {
@@ -863,6 +1143,8 @@ internal partial class HomeView : UserControl
         if (dialogInstance.Length > 0 &&
             !instances.Any(item => item.Name.Equals(dialogInstance, StringComparison.OrdinalIgnoreCase)))
             DialogInstanceList.Children.Add(DialogInstanceChoice(InstanceListItem.Missing(dialogInstance), true));
+        else if (instances.Count == 0)
+            DialogInstanceList.Children.Add(Muted("这个目录下还没有实例。"));
     }
 
     Control DialogInstanceChoice(InstanceListItem row, bool active)

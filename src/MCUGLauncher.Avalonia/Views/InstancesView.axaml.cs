@@ -17,7 +17,8 @@ internal partial class InstancesView : UserControl
     (string Version, bool Saves, bool Servers)? pendingExport;
     string selected = "";
     string optionsRequest = "";
-    bool updatingSelector;
+    string modsRequest = "";
+    IReadOnlyList<ModInfo> mods = Array.Empty<ModInfo>();
     bool updatingOptions;
 
     public InstancesView()
@@ -29,6 +30,30 @@ internal partial class InstancesView : UserControl
     public InstancesView(ILauncherService service) : this()
     {
         Attach(service);
+    }
+
+    /// <summary>请求收起实例设置，回到实例选择二级页。</summary>
+    public event Action? CloseRequested;
+
+    /// <summary>从上一级进来时指定要设置的实例；留空则跟随全局当前实例。</summary>
+    public void Open(string name)
+    {
+        selected = name.Trim();
+        options = null;
+        uninstall = null;
+        updates = null;
+        updatePreview = null;
+        mods = Array.Empty<ModInfo>();
+        modsRequest = "";
+        if (state is not null)
+            ApplyState(state);
+        else
+        {
+            RenderUninstall();
+            RenderUpdates();
+            RenderUpdatePreview();
+            _ = LoadOptions(force: true);
+        }
     }
 
     public void Attach(ILauncherService value)
@@ -43,15 +68,8 @@ internal partial class InstancesView : UserControl
 
     void WireButtons()
     {
-        InstanceSelector.SelectionChanged += (_, _) => SelectInstance();
-        LaunchButton.Click += async (_, _) =>
-        {
-            if (selected.Length == 0)
-                return;
-            Status("正在准备启动…");
-            Status((await service!.LaunchAsync(selected)).Message);
-        };
-        OpenVersionFolderButton.Click += async (_, _) => await service!.OpenFolderAsync("version");
+        CloseButton.Click += (_, _) => CloseRequested?.Invoke();
+        OpenVersionFolderButton.Click += async (_, _) => await service!.OpenFolderAsync("version", selected);
         RefreshButton.Click += async (_, _) => await service!.RequestStateAsync();
         BrowseJavaButton.Click += async (_, _) => await service!.PickFileAsync("java");
         LoadOptionsButton.Click += async (_, _) => await LoadOptions(force: true);
@@ -104,44 +122,42 @@ internal partial class InstancesView : UserControl
             return;
         var instances = ValidInstances(snapshot);
         var previous = selected;
-        // 当前实例可能在别处被切换（首页二级页面、服务器卡片），这里跟随全局选择，
-        // 否则会一直停在「正在切换实例…」。
-        var target = instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)?.Name ?? "";
-        if (target.Length > 0)
-            selected = target;
-        else if (selected.Length == 0 || !instances.Any(item => item.Name == selected))
-            selected = instances.FirstOrDefault()?.Name ?? "";
-        updatingSelector = true;
-        InstanceSelector.ItemsSource = instances.Count == 0
-            ? new[] { InstanceListItem.Empty("尚未安装实例", "先去下载页安装或导入整合包") }
-            : instances.Select(InstanceListItem.From).ToArray();
-        InstanceSelector.SelectedIndex = instances.Count == 0
-            ? 0
-            : Math.Max(0, Array.FindIndex(instances.ToArray(), item => item.Name == selected));
-        updatingSelector = false;
+        // 保留上一级传进来的实例；它不在列表里时才退回全局选择 / 第一个
+        if (selected.Length == 0 || !instances.Any(item => item.Name == selected))
+            selected = instances.FirstOrDefault(item => item.Name == snapshot.SelectedInstance)?.Name
+                       ?? instances.FirstOrDefault()?.Name
+                       ?? "";
         var current = instances.FirstOrDefault(item => item.Name == selected);
         var currentRow = current is null ? null : InstanceListItem.From(current);
-        Summary.Text = instances.Count == 0
-            ? "尚未找到已安装实例。请先在下载页安装或导入整合包。"
-            : "共 " + instances.Count + " 个实例"
-              + (currentRow is null
-                  ? ""
-                  : " · 当前 " + currentRow.Title
-                             + (currentRow.Subtitle.Length > 0 ? " · " + currentRow.Subtitle : ""));
-        LaunchButton.IsEnabled = current is not null;
+        var isCurrent = snapshot.SelectedInstance == selected;
+        SettingsSubtitle.Text = currentRow is null
+            ? "该实例已不存在，请返回上一级重新选择。"
+            : currentRow.Title
+              + (currentRow.Subtitle.Length > 0 ? " · " + currentRow.Subtitle : "")
+              + (isCurrent ? "" : " · 未设为当前实例");
+        // 文件夹与模组都按实例名读取，不要求切换当前实例
         OpenVersionFolderButton.IsEnabled = current is not null;
+        ToolTip.SetTip(OpenVersionFolderButton, "打开该实例的版本文件夹");
         if (previous != selected)
         {
             options = null;
             uninstall = null;
             updates = null;
             updatePreview = null;
+            mods = Array.Empty<ModInfo>();
+            modsRequest = "";
             RenderUninstall();
             RenderUpdates();
             RenderUpdatePreview();
         }
 
-        RenderMods(current);
+        if (current is null)
+        {
+            RenderMods(null);
+        }
+        else
+            _ = LoadMods();
+
         if (current is not null && (options is null || options.Version != selected))
             _ = LoadOptions();
     }
@@ -150,26 +166,6 @@ internal partial class InstancesView : UserControl
         snapshot.Instances
             .Where(item => item.Name.Length > 0 && !item.IsPlaceholder)
             .ToArray();
-
-    void SelectInstance()
-    {
-        if (updatingSelector || service is null || state is null)
-            return;
-        var next = (InstanceSelector.SelectedItem as InstanceListItem)?.Instance ?? "";
-        if (next.Length == 0 || next == selected)
-            return;
-        selected = next;
-        options = null;
-        uninstall = null;
-        updates = null;
-        updatePreview = null;
-        RenderUninstall();
-        RenderUpdates();
-        RenderUpdatePreview();
-        Status("正在切换实例…");
-        _ = service.SelectInstanceAsync(next);
-        _ = LoadOptions();
-    }
 
     async Task LoadOptions(bool force = false)
     {
@@ -303,6 +299,23 @@ internal partial class InstancesView : UserControl
         }
     }
 
+    /// <summary>按实例名拉取模组清单；和全局当前实例无关，所以不切换也能看。</summary>
+    async Task LoadMods(bool force = false)
+    {
+        if (service is null || selected.Length == 0)
+            return;
+        if (!force && modsRequest == selected)
+            return;
+        var target = selected;
+        modsRequest = target;
+        ContentSummary.Text = "正在读取模组…";
+        var list = await service.ListInstanceModsAsync(target);
+        if (target != selected)
+            return;
+        mods = list;
+        RenderMods(state?.Instances.FirstOrDefault(item => item.Name == selected));
+    }
+
     void RenderMods(InstanceInfo? instance)
     {
         ModsPanel.Children.Clear();
@@ -312,21 +325,15 @@ internal partial class InstancesView : UserControl
             return;
         }
 
-        if (state?.SelectedInstance != selected)
-        {
-            ContentSummary.Text = "正在切换实例…";
-            return;
-        }
-
         ContentSummary.Text =
-            $"{instance.DisplayName} · {instance.Loader} · {instance.Minecraft} · {instance.Mods} 个模组，{instance.Updates} 个可更新";
-        if (state?.Mods.Count is not > 0)
+            $"{instance.DisplayName} · {instance.Loader} · {instance.Minecraft} · {mods.Count} 个模组，{instance.Updates} 个可更新";
+        if (mods.Count == 0)
         {
-            ModsPanel.Children.Add(Muted("当前实例没有可管理的模组。"));
+            ModsPanel.Children.Add(Muted("这个实例还没有可管理的模组。"));
             return;
         }
 
-        foreach (var mod in state.Mods)
+        foreach (var mod in mods)
         {
             var check = new CheckBox
                 { Content = mod.Name, IsChecked = mod.Enabled, VerticalAlignment = VerticalAlignment.Center };
@@ -336,6 +343,7 @@ internal partial class InstancesView : UserControl
             {
                 ContentSummary.Text = (await service!.ToggleModAsync(file, !enabled)).Message;
                 await service.RequestStateAsync();
+                await LoadMods(force: true);
             };
             var copy = new StackPanel { Spacing = 2 };
             copy.Children.Add(check);
@@ -352,6 +360,7 @@ internal partial class InstancesView : UserControl
             {
                 Status((await service!.DeleteModAsync(file)).Message + " " + name);
                 await service.RequestStateAsync();
+                await LoadMods(force: true);
             };
             ModsPanel.Children.Add(Row(copy, delete));
         }
