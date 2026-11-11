@@ -418,22 +418,25 @@ internal partial class HomeView : UserControl
 
     Control RootRow(string path, bool active)
     {
+        var folder = new SSvg(new Uri("avares://MCUGLauncher/"))
+        {
+            Path = "/Assets/Icons/FolderIcon.svg",
+            Height = 15,
+            Width = 15,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        SSvg.SetCss(folder, "path { stroke: white; }");
         var icon = new Border
         {
             Width = 26,
             Height = 26,
             CornerRadius = new CornerRadius(7),
             VerticalAlignment = VerticalAlignment.Center,
-            Background = new SolidColorBrush(Color.Parse(active ? "#3370AA" : "#C9D2DA"))
-        };
-        icon.Child = new TextBlock
-        {
-            Text = "\uE8B7",
-            FontFamily = new FontFamily("Segoe MDL2 Assets"),
-            FontSize = 13,
-            Foreground = Brushes.White,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
+            Background = new SolidColorBrush(Color.Parse(active ? "#3370AA" : "#C9D2DA")),
+            // 原来这里是 Segoe MDL2 的 \uE8B7 字形；换成统一的文件夹图标资源，
+            // 描边原是 #333，压在蓝/灰底章上要改成白色才看得清
+            Child = folder
         };
 
         var name = Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
@@ -527,7 +530,7 @@ internal partial class HomeView : UserControl
                 Background = new SolidColorBrush(Color.Parse(ping?.Online == true ? "#3370AA" : "#8A96A0")),
                 Child = new SSvg(new Uri("avares://MCUGLauncher/"))
                 {
-                    Path = "/Assets/ServerIcon.svg",
+                    Path = "/Assets/Icons/ServerIcon.svg",
                     Height = 16, Width = 16,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
@@ -760,7 +763,7 @@ internal partial class HomeView : UserControl
                 })),
                 Child = new SSvg(new Uri("avares://MCUGLauncher/"))
                 {
-                    Path = "/Assets/" + iconFile + ".svg",
+                    Path = "/Assets/Icons/" + iconFile + ".svg",
                     Height = 16, Width = 16,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center

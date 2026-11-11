@@ -237,7 +237,7 @@ internal partial class InstancePickerView : UserControl
             Padding = new Thickness(0),
             Content = new global::Avalonia.Svg.Skia.Svg(new Uri("avares://MCUGLauncher/"))
             {
-                Path = "/Assets/LaunchIcon.svg",
+                Path = "/Assets/Icons/LaunchIcon.svg",
                 Height = 16, Width = 16
             }
         };
@@ -248,7 +248,7 @@ internal partial class InstancePickerView : UserControl
         {
             Content = new global::Avalonia.Svg.Skia.Svg(new Uri("avares://MCUGLauncher/"))
             {
-                Path = "/Assets/SettingsIcon.svg",
+                Path = "/Assets/Icons/SettingsIcon.svg",
                 Height = 16, Width = 16
             },
             Classes = { "link" },

@@ -21,29 +21,27 @@
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
                                 <Button x:Name="MicrosoftModeButton" Classes="accountMode">
                                     <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="11"
-                                                   VerticalAlignment="Center" />
+                                        <Svg Path="/Assets/Icons/MsIcon.svg" Height="14" Width="14" />
                                         <TextBlock Text="正版" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
                                 <Button x:Name="OfflineModeButton" Grid.Column="1" Classes="accountMode">
                                     <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <TextBlock Text="&#xE7FC;" FontFamily="Segoe MDL2 Assets" FontSize="11"
-                                                   VerticalAlignment="Center" />
+                                        <Svg Path="/Assets/Icons/OfflineModeIcon.svg" Height="14" Width="14" />
                                         <TextBlock Text="离线" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
                                 <Button x:Name="MuaModeButton" Grid.Column="2" Classes="accountMode">
                                     <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="11"
-                                                   VerticalAlignment="Center" />
+                                        <Svg Path="/Assets/Icons/MuaIcon.svg" Height="14" Width="14" />
                                         <TextBlock Text="MUA" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
                             </Grid>
 
-                            <!-- 头像：正版已登录、离线、MUA 已登录时显示；没登录就整块不出现 -->
-                            <Grid x:Name="AvatarBox" Width="100" Height="100">
+                            <!-- 头像：正版已登录、离线、MUA 已登录时显示；没登录就整块不出现。
+                                 上边额外留 8px，让头像与上面的模式按钮拉开一点距离。 -->
+                            <Grid x:Name="AvatarBox" Width="100" Height="100" Margin="0,60,0,0">
                                 <Border Width="82" Height="82" Background="Transparent" IsHitTestVisible="False"
                                         HorizontalAlignment="Center" VerticalAlignment="Center"
                                         BoxShadow="0 3 10 0 #220E2B3F" />
@@ -160,13 +158,13 @@
                                         ToolTip.Tip="当前版本设置"
                                         AutomationProperties.Name="当前版本设置">
                                     <!-- SettingsIcon.svg 的两条路径只有 stroke、没有 fill，所以必须覆盖 stroke 才能变白 -->
-                                    <Svg Path="/Assets/SettingsIcon.svg" Height="16" Width="16"
+                                    <Svg Path="/Assets/Icons/SettingsIcon.svg" Height="16" Width="16"
                                          Css="path { stroke: white; }" />
                                 </Button>
                                 <Button x:Name="RunningGameButton" Classes="squareAction"
                                         ToolTip.Tip="正在运行的游戏"
                                         AutomationProperties.Name="正在运行的游戏">
-                                    <Svg Path="/Assets/RunningInstancesIcon.svg" Height="18" Width="18" />
+                                    <Svg Path="/Assets/Icons/RunningInstancesIcon.svg" Height="18" Width="18" />
                                     <Button.Flyout>
                                         <!-- 按钮在窗口左下角，向上会顶住卡片，改成向右展开 -->
                                         <Flyout Placement="RightEdgeAlignedTop">

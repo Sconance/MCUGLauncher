@@ -13,50 +13,50 @@
                              SelectionChanged="OnNavSelectionChanged">
                         <ListBoxItem Tag="launch">
                             <StackPanel Orientation="Horizontal" Spacing="9">
-                                <Svg Path="/Assets/LaunchIcon.svg" Height="13" Width="13"
+                                <Svg Path="/Assets/Icons/LaunchIcon.svg" Height="14" Width="14"
                                      VerticalAlignment="Center" />
                                 <TextBlock Text="启动" VerticalAlignment="Center" />
                             </StackPanel>
                         </ListBoxItem>
                         <ListBoxItem Tag="appearance">
                             <StackPanel Orientation="Horizontal" Spacing="9">
-                                <TextBlock Text="&#xE790;" FontFamily="Segoe MDL2 Assets" FontSize="13"
-                                           VerticalAlignment="Center" />
+                                <Svg Path="/Assets/Icons/ResourcePackIcon.svg" Height="14" Width="14"
+                                     VerticalAlignment="Center" Css="path { stroke: #333333; }" />
                                 <TextBlock Text="个性化" VerticalAlignment="Center" />
                             </StackPanel>
                         </ListBoxItem>
                         <ListBoxItem Tag="favorites">
                             <StackPanel Orientation="Horizontal" Spacing="9">
-                                <TextBlock Text="&#xE734;" FontFamily="Segoe MDL2 Assets" FontSize="13"
-                                           VerticalAlignment="Center" />
+                                <Svg Path="/Assets/Icons/StarIcon.svg" Height="14" Width="14"
+                                     VerticalAlignment="Center" />
                                 <TextBlock Text="收藏" VerticalAlignment="Center" />
                             </StackPanel>
                         </ListBoxItem>
                         <ListBoxItem Tag="community">
                             <StackPanel Orientation="Horizontal" Spacing="9">
-                                <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="13"
-                                           VerticalAlignment="Center" />
+                                <Svg Path="/Assets/Icons/CommunityIcon.svg" Height="14" Width="14"
+                                     VerticalAlignment="Center" />
                                 <TextBlock Text="社区" VerticalAlignment="Center" />
                             </StackPanel>
                         </ListBoxItem>
                         <ListBoxItem Tag="devtools">
                             <StackPanel Orientation="Horizontal" Spacing="9">
-                                <TextBlock Text="&#xE756;" FontFamily="Segoe MDL2 Assets" FontSize="13"
-                                           VerticalAlignment="Center" />
+                                <Svg Path="/Assets/Icons/DeveloperSettingsIcon.svg" Height="14" Width="14"
+                                     VerticalAlignment="Center" />
                                 <TextBlock Text="开发者选项" VerticalAlignment="Center" />
                             </StackPanel>
                         </ListBoxItem>
                         <ListBoxItem Tag="saves">
                             <StackPanel Orientation="Horizontal" Spacing="9">
-                                <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="13"
-                                           VerticalAlignment="Center" />
+                                <Svg Path="/Assets/Icons/FolderIcon.svg" Height="14" Width="14"
+                                     VerticalAlignment="Center" />
                                 <TextBlock Text="存档保护" VerticalAlignment="Center" />
                             </StackPanel>
                         </ListBoxItem>
                         <ListBoxItem Tag="about">
                             <StackPanel Orientation="Horizontal" Spacing="9">
-                                <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="13"
-                                           VerticalAlignment="Center" />
+                                <Svg Path="/Assets/Icons/AboutIcon.svg" Height="14" Width="14"
+                                     VerticalAlignment="Center" />
                                 <TextBlock Text="关于与许可" VerticalAlignment="Center" />
                             </StackPanel>
                         </ListBoxItem>

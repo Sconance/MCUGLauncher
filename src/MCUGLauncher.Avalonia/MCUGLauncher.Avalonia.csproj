@@ -19,16 +19,6 @@
   </PropertyGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets/MCUGLogo.png" />
-    <AvaloniaResource Include="Assets/LaunchIcon.svg" />
-    <AvaloniaResource Include="Assets/DownloadIcon.svg" />
-    <AvaloniaResource Include="Assets/SettingsIcon.svg" />
-    <AvaloniaResource Include="Assets/ExtraIcon.svg" />
-    <AvaloniaResource Include="Assets/MinimizeIcon.svg" />
-    <AvaloniaResource Include="Assets/MaximizeIcon.svg" />
-    <AvaloniaResource Include="Assets/CloseIcon.svg" />
-    <AvaloniaResource Include="Assets/RunningInstancesIcon.svg"/>
-    <AvaloniaResource Include="Assets/ServerIcon.svg"/>
-    <AvaloniaResource Include="Assets/ResourcePackIcon.svg"/>
     <!--
         实例列表的加载器图标取自 PCL2（Plain Craft Launcher 2）的 Images/Blocks/，
         按《PCL 存储库合理使用指南》的“轻度使用”条款引用，仅用于标识加载器类型。
@@ -38,6 +28,24 @@
     <AvaloniaResource Include="Assets/Loaders/NeoForge.png"/>
     <AvaloniaResource Include="Assets/Loaders/Fabric.png"/>
     <AvaloniaResource Include="Assets/Loaders/OptiFine.png"/>
+    <AvaloniaResource Include="Assets\Icons\CloseIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\DownloadIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\LaunchIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\MaximizeIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\MinimizeIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\MsIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\MuaIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\OfflineModeIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\ResourcePackIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\RunningInstancesIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\ServerIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\SettingsIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\OfflineModeIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\StarIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\CommunityIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\DeveloperSettingsIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\FolderIcon.svg"/>
+    <AvaloniaResource Include="Assets\Icons\AboutIcon.svg"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../MCUGLauncher.App/MCUGLauncher.App.csproj" />
