@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { launcher } from "../api/launcher";
+import { useState } from "react";
+import * as accounts from "../api/commands/accounts";
 import PathPrompt from "../components/PathPrompt";
-import type { AvatarInfo, LauncherState, MuaProfileInfo } from "../types/launcher";
+import { useLauncher } from "../state/launcher";
+import type { MuaProfileInfo } from "../types/launcher";
 import "./AccountPage.css";
 
 function modeLabel(mode: string): string {
@@ -10,83 +11,14 @@ function modeLabel(mode: string): string {
   return "离线账号 · 本地启动";
 }
 
-/** 账号页：当前账号、模式切换、MUA 登录与角色选择、本地皮肤。 */
+/** 账号页：账号状态由后端事件同步，操作通过命令提交。 */
 export default function AccountPage() {
-  const [state, setState] = useState<LauncherState | null>(null);
-  const [avatar, setAvatar] = useState<AvatarInfo | null>(null);
+  const { state, avatar } = useLauncher();
   const [status, setStatus] = useState("");
-  const [skinHint, setSkinHint] = useState("");
   const [muaAccount, setMuaAccount] = useState("");
   const [muaPassword, setMuaPassword] = useState("");
   const [profiles, setProfiles] = useState<MuaProfileInfo[]>([]);
   const [skinPrompt, setSkinPrompt] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    void Promise.all([launcher.getState(), launcher.readAvatar()]).then(([snapshot, avatarInfo]) => {
-      if (!alive) return;
-      setState(snapshot);
-      setAvatar(avatarInfo);
-      setSkinHint(
-        snapshot.accountType === "offline"
-          ? "本地皮肤仅对离线账号生效；选择 PNG 后立即生效。"
-          : "在线账号的皮肤来自认证站，不能在此选择本地皮肤。",
-      );
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const refresh = async () => {
-    const [snapshot, avatarInfo] = await Promise.all([launcher.getState(), launcher.readAvatar()]);
-    setState(snapshot);
-    setAvatar(avatarInfo);
-    return snapshot;
-  };
-
-  const applyAuth = async (ok: boolean, message: string) => {
-    setStatus(message);
-    if (!ok) return;
-    await refresh();
-  };
-
-  const loginMicrosoft = async () => {
-    setStatus("正在打开微软登录页…");
-    const result = await launcher.loginMicrosoft();
-    await applyAuth(result.ok, result.message);
-  };
-
-  const loginMua = async () => {
-    if (muaAccount.trim().length === 0 || muaPassword.length === 0) {
-      setStatus("请填写 MUA 账号和密码。");
-      return;
-    }
-    setStatus("正在登录 MUA…");
-    const result = await launcher.loginMua(muaAccount.trim(), muaPassword);
-    await applyAuth(result.ok, result.message);
-    if (result.ok) setProfiles(await launcher.listMuaProfiles());
-  };
-
-  const switchOffline = async () => {
-    setStatus("正在切换到离线账号…");
-    const result = await launcher.switchAccountMode("offline");
-    setStatus(result.message);
-    if (!result.needsLogin) await refresh();
-  };
-
-  const forget = async (mode: string) => {
-    setStatus("正在移除本机保存的账号…");
-    const result = await launcher.forgetAccount(mode);
-    await applyAuth(result.ok, result.message);
-  };
-
-  const applySkin = async (path: string) => {
-    setStatus("正在应用本地皮肤…");
-    const info = await launcher.setOfflineSkin(path);
-    setAvatar(info);
-    setSkinHint(path.length === 0 ? "正在使用默认头像；离线模式可选择本地皮肤。" : "本地皮肤仅对离线账号生效");
-  };
 
   if (!state) {
     return (
@@ -97,6 +29,46 @@ export default function AccountPage() {
   }
 
   const offline = state.accountType === "offline";
+  const skinHint = !offline
+    ? "在线账号的皮肤来自认证站，不能在此选择本地皮肤。"
+    : avatar?.fallback
+      ? "正在使用默认头像；离线模式可选择本地皮肤。"
+      : "本地皮肤仅对离线账号生效";
+
+  const loginMicrosoft = async () => {
+    setStatus("正在打开微软登录页…");
+    const result = await accounts.loginMicrosoft();
+    setStatus(result.message);
+  };
+
+  const loginMua = async () => {
+    if (muaAccount.trim().length === 0 || muaPassword.length === 0) {
+      setStatus("请填写 MUA 账号和密码。");
+      return;
+    }
+    setStatus("正在登录 MUA…");
+    const result = await accounts.loginMua(muaAccount.trim(), muaPassword);
+    setStatus(result.message);
+    if (result.ok) setProfiles(await accounts.listMuaProfiles());
+  };
+
+  const switchOffline = async () => {
+    setStatus("正在切换到离线账号…");
+    const result = await accounts.switchAccountMode("offline");
+    setStatus(result.message);
+  };
+
+  const forget = async (mode: string) => {
+    setStatus("正在移除本机保存的账号…");
+    const result = await accounts.forgetAccount(mode);
+    setStatus(result.message);
+  };
+
+  const applySkin = async (path: string) => {
+    setStatus("正在应用本地皮肤…");
+    await accounts.setOfflineSkin(path);
+    setStatus(path.length === 0 ? "已清除本地皮肤。" : "已应用本地皮肤。");
+  };
 
   return (
     <div className="subpage account-scroll">
@@ -183,10 +155,7 @@ export default function AccountPage() {
                 onClick={() => {
                   setProfiles([]);
                   setStatus(`已选择角色 ${profile.name}，正在完成登录…`);
-                  void launcher.selectMuaProfile("token", profile.id).then(async (result) => {
-                    await refresh();
-                    setStatus(result.message);
-                  });
+                  void accounts.selectMuaProfile("token", profile.id).then((result) => setStatus(result.message));
                 }}
               >
                 {profile.name}

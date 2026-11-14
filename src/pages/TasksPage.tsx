@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { launcher } from "../api/launcher";
-import type { TaskInfo } from "../types/launcher";
+import { useState } from "react";
+import { taskAction } from "../api/commands/tasks";
+import { useLauncher } from "../state/launcher";
 import "./TasksPage.css";
 
 const ACTIONS = [
@@ -10,27 +10,14 @@ const ACTIONS = [
   ["delete", "删除"],
 ] as const;
 
-/** 下载任务页：持久队列中的任务、进度与操作。 */
+/** 下载任务页：任务来自后端事件，操作通过命令提交。 */
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<TaskInfo[]>([]);
+  const { tasks, refreshTasks } = useLauncher();
   const [status, setStatus] = useState("");
 
-  const load = async () => setTasks(await launcher.listTasks());
-
-  useEffect(() => {
-    let alive = true;
-    void launcher.listTasks().then((items) => {
-      if (alive) setTasks(items);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   const act = async (id: string, action: string) => {
-    const result = await launcher.taskAction(id, action);
+    const result = await taskAction(id, action);
     setStatus(result.message);
-    await load();
   };
 
   return (
@@ -74,7 +61,7 @@ export default function TasksPage() {
           </div>
 
           <div className="row" style={{ gap: 10 }}>
-            <button type="button" className="btn ghost" onClick={() => void load()}>
+            <button type="button" className="btn ghost" onClick={() => void refreshTasks()}>
               刷新任务
             </button>
             <span className="status">{status}</span>

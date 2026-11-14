@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { launcher } from "../api/launcher";
+import { useState } from "react";
+import { listContentVersions, queueContentVersion, toggleBookmark } from "../api/commands/content";
 import PathPrompt from "../components/PathPrompt";
-import type { FavoriteInfo, LauncherState, ResourceVersionsInfo } from "../types/launcher";
+import { useLauncher } from "../state/launcher";
+import type { FavoriteInfo, ResourceVersionsInfo } from "../types/launcher";
 import "./BookmarksPage.css";
 
 function kindLabel(kind: string): string {
@@ -21,9 +22,9 @@ function kindLabel(kind: string): string {
   }
 }
 
-/** 我的收藏：收藏列表、选择版本安装与取消收藏。 */
+/** 我的收藏：收藏列表来自后端状态，安装与取消均通过命令提交。 */
 export default function BookmarksPage() {
-  const [state, setState] = useState<LauncherState | null>(null);
+  const { state } = useLauncher();
   const [status, setStatus] = useState("");
   const [selected, setSelected] = useState<FavoriteInfo | null>(null);
   const [versions, setVersions] = useState<ResourceVersionsInfo | null>(null);
@@ -32,17 +33,13 @@ export default function BookmarksPage() {
   const [hint, setHint] = useState("");
   const [folderPrompt, setFolderPrompt] = useState(false);
 
-  useEffect(() => {
-    let alive = true;
-    void launcher.getState().then((snapshot) => {
-      if (alive) setState(snapshot);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const refresh = async () => setState(await launcher.getState());
+  if (!state) {
+    return (
+      <div className="subpage">
+        <div className="empty">正在读取收藏…</div>
+      </div>
+    );
+  }
 
   const openInstall = async (favorite: FavoriteInfo) => {
     setSelected(favorite);
@@ -50,7 +47,7 @@ export default function BookmarksPage() {
     setVersionId("");
     setMode("instance");
     setHint("正在读取兼容版本…");
-    const result = await launcher.listContentVersions(favorite.id);
+    const result = await listContentVersions(favorite.id);
     if (!result.ok || !result.result) {
       setHint(`读取版本失败：${result.error}`);
       return;
@@ -74,14 +71,13 @@ export default function BookmarksPage() {
       setFolderPrompt(true);
       return;
     }
-    await launcher.queueContentVersion(versions.token, versionId, "instance");
+    await queueContentVersion(versions.token, versionId, "instance");
     setStatus("下载请求已提交，请查看任务列表。");
   };
 
   const removeFavorite = async (favorite: FavoriteInfo) => {
     if (selected?.id === favorite.id) closeInstall();
-    const result = await launcher.toggleBookmark(favorite.id, favorite.name, favorite.description, "", favorite.kind);
-    await refresh();
+    const result = await toggleBookmark(favorite.id, favorite.name, favorite.description, favorite.kind);
     setStatus(`${result.message} ${favorite.name}`);
   };
 
@@ -91,14 +87,6 @@ export default function BookmarksPage() {
     setVersionId("");
     setHint("");
   };
-
-  if (!state) {
-    return (
-      <div className="subpage">
-        <div className="empty">正在读取收藏…</div>
-      </div>
-    );
-  }
 
   return (
     <div className="subpage">
@@ -198,7 +186,7 @@ export default function BookmarksPage() {
           onConfirm={(path) => {
             setFolderPrompt(false);
             if (!versions || versionId.length === 0) return;
-            void launcher.queueContentVersion(versions.token, versionId, "local", path);
+            void queueContentVersion(versions.token, versionId, "local", path);
             setStatus("下载请求已提交，请查看任务列表。");
           }}
         />

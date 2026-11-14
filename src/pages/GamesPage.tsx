@@ -1,30 +1,17 @@
-import { useEffect, useState } from "react";
-import { launcher } from "../api/launcher";
-import type { GameInfo } from "../types/launcher";
+import { useState } from "react";
+import { stopGame } from "../api/commands/games";
+import { useLauncher } from "../state/launcher";
 import "./GamesPage.css";
 
-/** 运行中的游戏：只列出本进程启动的游戏。 */
+/** 运行中的游戏：列表来自事件，关闭通过命令提交。 */
 export default function GamesPage() {
-  const [games, setGames] = useState<GameInfo[]>([]);
+  const { games, refreshGames } = useLauncher();
   const [status, setStatus] = useState("");
 
-  const load = async () => setGames(await launcher.listGames());
-
-  useEffect(() => {
-    let alive = true;
-    void launcher.listGames().then((items) => {
-      if (alive) setGames(items);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const stop = async (game: GameInfo) => {
-    setStatus("正在请求关闭 " + game.version + "…");
-    const result = await launcher.stopGame(game.id);
+  const stop = async (id: string, version: string) => {
+    setStatus("正在请求关闭 " + version + "…");
+    const result = await stopGame(id);
     setStatus(result.message);
-    await load();
   };
 
   return (
@@ -32,7 +19,7 @@ export default function GamesPage() {
       <div className="row" style={{ gap: 10 }}>
         <h1 className="page-title">运行中的游戏</h1>
         <span className="spacer" />
-        <button type="button" className="btn ghost" onClick={() => void load()}>
+        <button type="button" className="btn ghost" onClick={() => void refreshGames()}>
           刷新
         </button>
       </div>
@@ -51,7 +38,7 @@ export default function GamesPage() {
                     玩家 {game.player} · PID {game.pid}
                   </span>
                 </div>
-                <button type="button" className="btn ghost" onClick={() => void stop(game)}>
+                <button type="button" className="btn ghost" onClick={() => void stop(game.id, game.version)}>
                   关闭游戏
                 </button>
               </article>

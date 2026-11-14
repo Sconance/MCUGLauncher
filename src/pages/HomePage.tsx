@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
-import { launcher } from "../api/launcher";
+import { launchGame, launchToServer } from "../api/commands/launch";
+import {
+  deleteServer as deleteServerCommand,
+  pingServer,
+  saveServer as saveServerCommand,
+} from "../api/commands/servers";
+import { selectInstance as selectInstanceCommand } from "../api/commands/state";
 import type {
   AnnouncementInfo,
-  AvatarInfo,
-  CommunityData,
-  LauncherState,
   RecommendationInfo,
   SavedServerInfo,
   ServerPingInfo,
@@ -13,6 +16,7 @@ import Field from "../components/Field";
 import Markdown from "../components/Markdown";
 import Modal from "../components/Modal";
 import { useNavigation } from "../shell/navigation";
+import { useLauncher } from "../state/launcher";
 import "./HomePage.css";
 
 interface ServerDraft {
@@ -44,9 +48,7 @@ function pingText(ping: ServerPingInfo | undefined): string {
 /** 主页：账号卡、实例启动、服务器收藏、公告、推荐与语录。 */
 export default function HomePage() {
   const { openAccount } = useNavigation();
-  const [state, setState] = useState<LauncherState | null>(null);
-  const [avatar, setAvatar] = useState<AvatarInfo | null>(null);
-  const [community, setCommunity] = useState<CommunityData | null>(null);
+  const { state, avatar, community, refreshState, refreshCommunity } = useLauncher();
   const [pings, setPings] = useState<Record<string, ServerPingInfo>>({});
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [status, setStatus] = useState("");
@@ -55,28 +57,10 @@ export default function HomePage() {
   const [menu, setMenu] = useState<MenuState | null>(null);
 
   useEffect(() => {
-    let alive = true;
-    void (async () => {
-      const [next, avatarInfo, communityData] = await Promise.all([
-        launcher.getState(),
-        launcher.readAvatar(),
-        launcher.getCommunity(),
-      ]);
-      if (!alive) return;
-      setState(next);
-      setAvatar(avatarInfo);
-      setCommunity(communityData);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!state) return;
     let alive = true;
     for (const server of state.servers) {
-      void launcher.pingServer(server.address).then((info) => {
+      void pingServer(server.address).then((info) => {
         if (alive) setPings((previous) => ({ ...previous, [info.id]: info }));
       });
     }
@@ -112,16 +96,12 @@ export default function HomePage() {
   const quote = community.quotes[quoteIndex];
 
   const refresh = async () => {
-    const next = await launcher.requestState();
-    setState(next);
+    await refreshState();
     setStatus("状态已刷新。");
   };
 
   const selectInstance = async (name: string) => {
-    const result = await launcher.selectInstance(name);
-    setState((previous) =>
-      previous ? { ...previous, selectedInstance: name, selectedVersion: name } : previous,
-    );
+    const result = await selectInstanceCommand(name);
     setStatus(result.message);
   };
 
@@ -131,7 +111,7 @@ export default function HomePage() {
       return;
     }
     setStatus("正在准备启动…");
-    const result = await launcher.launch(current.name);
+    const result = await launchGame(current.name);
     setStatus(result.message);
   };
 
@@ -151,7 +131,7 @@ export default function HomePage() {
       return;
     }
     setDialog({ ...dialog, status: "正在保存…" });
-    const result = await launcher.saveServer(
+    const result = await saveServerCommand(
       dialog.draft.name.trim(),
       address,
       dialog.editing?.address ?? "",
@@ -162,15 +142,11 @@ export default function HomePage() {
       return;
     }
     setDialog(null);
-    await refresh();
     setStatus(result.message);
   };
 
   const deleteServer = async (server: SavedServerInfo) => {
-    const result = await launcher.deleteServer(server.address);
-    setState((previous) =>
-      previous ? { ...previous, servers: previous.servers.filter((item) => item.address !== server.address) } : previous,
-    );
+    const result = await deleteServerCommand(server.address);
     setPings((previous) => {
       const next = { ...previous };
       delete next[server.address];
@@ -180,7 +156,7 @@ export default function HomePage() {
   };
 
   const queryServer = async (server: SavedServerInfo) => {
-    const info = await launcher.pingServer(server.address);
+    const info = await pingServer(server.address);
     setPings((previous) => ({ ...previous, [info.id]: info }));
     setStatus("服务器状态已刷新。");
   };
@@ -191,7 +167,7 @@ export default function HomePage() {
       return;
     }
     setStatus(`正在用 ${server.instance} 打开 ${server.address}…`);
-    const result = await launcher.launchToServer(server.instance, server.address);
+    const result = await launchToServer(server.instance, server.address);
     setStatus(result.message);
   };
 
@@ -206,8 +182,7 @@ export default function HomePage() {
       setStatus(`「${item.name.length > 0 ? item.name : address}」已经在收藏里了。`);
       return;
     }
-    const result = await launcher.saveServer(item.name.trim(), address, "");
-    await refresh();
+    const result = await saveServerCommand(item.name.trim(), address, "");
     setStatus(result.message);
   };
 
@@ -368,7 +343,7 @@ export default function HomePage() {
               <button
                 type="button"
                 className="btn link"
-                onClick={() => void launcher.refreshCommunity().then(setCommunity)}
+                onClick={() => void refreshCommunity()}
               >
                 刷新社区内容
               </button>

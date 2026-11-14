@@ -7,7 +7,7 @@
 - **只做前端**：页面布局、样式、交互状态与本地演示数据；业务由后续的 Tauri command 提供。
 - **视觉对齐 `origin`**：颜色、字号、圆角、间距来自 `origin/src/MCUGLauncher.Avalonia/Styles/Theme.axaml`，统一收敛到 `src/styles/tokens.css`。
 - **页面与外壳分离**：外壳负责标题栏、导航和全局提示；页面只负责自己的内容。
-- **数据边界固定**：页面不直接读假数据文件，统一调用 `src/api/launcher.ts`；接入后端时只替换该文件的实现。
+- **数据边界固定**：页面不直接拼接 `invoke`，统一调用 `src/api/commands/*`；全局状态统一从 `useLauncher()` 读取。
 - **每完成一页提交一次**，提交信息为 `feat: 移植<页面>页面 UI`。
 
 ## 2. 目录结构
@@ -15,16 +15,27 @@
 ```
 src/
 ├── api/
-│   ├── launcher.ts      # 业务门面：当前返回演示数据，之后替换为 invoke(...)
-│   └── window.ts        # Tauri 窗口操作（最小化/最大化/关闭），浏览器下静默降级
+│   ├── invoke.ts        # invoke 包装：非 Tauri 环境提示、错误归一化
+│   ├── events.ts        # 事件名常量与 listen 订阅
+│   ├── commands/        # 按领域拆分的命令封装（每个函数一次 invoke）
+│   │   ├── state.ts     # 状态与实例选择
+│   │   ├── launch.ts    # 启动
+│   │   ├── servers.ts   # 服务器收藏与查询
+│   │   ├── accounts.ts  # 账号、头像与 MUA
+│   │   ├── settings.ts  # 设置、Java、数据源、诊断
+│   │   ├── saves.ts     # 存档备份
+│   │   ├── tasks.ts     # 任务队列
+│   │   ├── games.ts     # 运行中游戏
+│   │   ├── content.ts   # 搜索、版本、下载、收藏
+│   │   ├── instances.ts # 克隆/导出/卸载/更新/启动设置
+│   │   └── community.ts # 公告与推荐
+│   └── window.ts        # Tauri 窗口操作（最小化/最大化/关闭）
 ├── components/
 │   ├── Field.tsx        # 表单行：标题 + 控件 + 说明
 │   ├── Markdown.tsx     # 公告用轻量 Markdown 渲染
 │   ├── Modal.tsx        # 居中弹层，Esc 关闭
 │   └── PathPrompt.tsx   # 路径输入弹层，替代原生文件对话框
 ├── config.ts            # 应用版本等常量
-├── data/
-│   └── mock.ts          # 演示数据（接入后端后删除）
 ├── pages/
 │   ├── HomePage.tsx         # 启动主页
 │   ├── DownloadPage.tsx     # 下载：搜索/原版/加载器/整合包
@@ -37,15 +48,18 @@ src/
 │   ├── BookmarksPage.tsx    # 我的收藏
 │   └── CommunityPage.tsx    # 社区管理
 ├── shell/
-│   ├── Shell.tsx        # 标题栏 + 顶部导航 + 页面宿主 + Toast
+│   ├── Shell.tsx        # 标题栏 + 顶部导航 + 页面宿主 + 后端错误提示
 │   ├── Shell.css
-│   └── toast.ts         # ToastContext / useToast
+│   ├── navigation.ts    # 跨页导航（账号入口）
+│   └── toast.tsx        # ToastProvider / useToast
+├── state/
+│   └── launcher.tsx     # 后端状态容器：订阅事件、提供 useLauncher()
 ├── styles/
 │   ├── tokens.css       # 设计令牌（对应 Theme.axaml 的色值与圆角）
 │   ├── base.css         # 重置、字体、细滚动条
 │   └── components.css   # 按钮/表单/卡片/标签页/列表/弹层等公共样式
 └── types/
-    └── launcher.ts      # 与 App/Contracts 对应的前端模型
+    └── launcher.ts      # 与 src-tauri/src/model.rs 一一对应
 ```
 
 ## 3. 样式约定
@@ -87,13 +101,22 @@ npm run tauri dev    # 桌面窗口（Windows 需 Rust 工具链）
 
 ## 6. 与后端的衔接
 
-`src/api/launcher.ts` 中每个方法对应一个 `ILauncherService` 强类型调用。接入时：
+前端只通过 Tauri 命令与事件访问后端，完整清单见 [BACKEND_CONTRACT](BACKEND_CONTRACT.md)。
 
-1. 在 `src-tauri` 注册 command；
-2. 把方法体替换为 `invoke<T>("命令名", 参数)`；
-3. `data/mock.ts` 删除，`types/launcher.ts` 保持与 `App/Contracts` 同步。
+1. 页面动作调用 `src/api/commands/*` 中的函数，每个函数对应一次 `invoke`；
+2. 全局状态由 `src/state/launcher.tsx` 订阅 `launcher://*` 事件维护，页面用 `useLauncher()` 读取；
+3. `src-tauri` 中已有可运行的命令骨架（`commands.rs`）与内存演示数据（`demo.rs`）；
+4. 重写内核时替换 `demo.rs` 与命令实现，保持命令名、参数与返回类型不变，前端无需改动。
 
-页面不感知这一步，`launcher` 之外不出现后端调用。
+新增一个功能的标准步骤：
+
+```
+src-tauri/src/commands.rs   新增 #[tauri::command]，注册到 lib.rs，状态变化时 emit 事件
+src-tauri/src/model.rs      新增/复用 DTO（camelCase）
+src/api/commands/<domain>.ts 增加 invoke 封装
+src/types/launcher.ts       同步类型
+docs/BACKEND_CONTRACT.md    登记命令与事件
+```
 
 ## 7. 已知差异（后续补齐）
 
@@ -102,4 +125,4 @@ npm run tauri dev    # 桌面窗口（Windows 需 Rust 工具链）
 - 拖拽导入覆盖层（`FileDropView`）、本地导入对话框（`LocalImportDialog`）尚未移植；下载页暂以路径输入提示替代。
 - 微软登录窗口（WebView2）属于后端登录流程，不在 UI 移植范围内。
 - 窗口尺寸记忆、任务栏图标等桌面特性待接入 Tauri 配置。
-- 演示数据仍来自 `data/mock.ts`；接入后端后按第 6 节替换 `api/launcher.ts` 并删除该文件。
+- `src-tauri` 当前是演示内核：数据保存在内存，重启即重置；真实实现见 BACKEND_CONTRACT 第 4 节。

@@ -58,6 +58,16 @@
   overflow: hidden;
 }
 
+.backend-error {
+  margin: 12px 20px 0 20px;
+  padding: 8px 12px;
+  border: 1px solid #e8c4c0;
+  border-radius: 8px;
+  background: var(--app-red-bg);
+  color: var(--app-red);
+  font-size: 11.5px;
+}
+
 .toast {
   position: fixed;
   right: 24px;

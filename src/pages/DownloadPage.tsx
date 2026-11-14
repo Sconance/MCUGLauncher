@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
-import { launcher } from "../api/launcher";
+import {
+  confirmPack,
+  installLoader,
+  installVanilla,
+  listContentVersions,
+  listLoaders,
+  listVanillaVersions,
+  previewPack,
+  queueContentVersion,
+  searchContent,
+  toggleBookmark,
+} from "../api/commands/content";
 import Field from "../components/Field";
 import PathPrompt from "../components/PathPrompt";
+import { useLauncher } from "../state/launcher";
 import type {
   ContentItem,
-  LauncherState,
   PackPreviewInfo,
   ResourceVersionsInfo,
   VanillaVersionInfo,
@@ -37,7 +48,7 @@ const PAGE_SIZE = 50;
 
 /** 下载页：搜索安装、原版版本、加载器与整合包导入。 */
 export default function DownloadPage() {
-  const [state, setState] = useState<LauncherState | null>(null);
+  const { state } = useLauncher();
   const [tab, setTab] = useState<"search" | "vanilla" | "loader" | "pack">("search");
   const [status, setStatus] = useState("");
 
@@ -73,15 +84,11 @@ export default function DownloadPage() {
 
   useEffect(() => {
     let alive = true;
-    void Promise.all([launcher.getState(), launcher.listVanillaVersions()]).then(([snapshot, vanillaResult]) => {
+    void listVanillaVersions().then((vanillaResult) => {
       if (!alive) return;
-      setState(snapshot);
       if (vanillaResult.ok) {
         setVanilla(vanillaResult.items);
         setVanillaHint(`已读取 ${vanillaResult.items.length} 个正式版、快照和远古版本。`);
-        const instanceGame =
-          snapshot.instances.find((item) => item.name === snapshot.selectedInstance)?.minecraft ?? "";
-        setLoaderGame(instanceGame || vanillaResult.items[0]?.id || "");
       } else {
         setVanillaHint(vanillaResult.error);
       }
@@ -90,6 +97,12 @@ export default function DownloadPage() {
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!state) return;
+    const instanceGame = state.instances.find((item) => item.name === state.selectedInstance)?.minecraft ?? "";
+    setLoaderGame((current) => current || instanceGame || vanilla[0]?.id || "");
+  }, [state, vanilla]);
 
   const filteredVanilla = vanilla.filter((item) => {
     const matchesType =
@@ -118,7 +131,7 @@ export default function DownloadPage() {
     setSearching(true);
     setResults([]);
     setStatus("正在搜索 Modrinth…");
-    const result = await launcher.searchContent(category, query.trim());
+    const result = await searchContent(category, query.trim());
     setSearching(false);
     if (result.error.length > 0) {
       setStatus(`搜索失败：${result.error}`);
@@ -138,7 +151,7 @@ export default function DownloadPage() {
 
   const loadVersions = async (item: ContentItem) => {
     setVersionsHint("正在读取兼容版本…");
-    const result = await launcher.listContentVersions(item.id);
+    const result = await listContentVersions(item.id);
     if (result.ok && result.result) {
       setVersions(result.result);
       setVersionId(result.result.items[0]?.id ?? "");
@@ -158,23 +171,22 @@ export default function DownloadPage() {
       setPrompt("download");
       return;
     }
-    await launcher.queueContentVersion(versions.token, versionId, "instance");
+    await queueContentVersion(versions.token, versionId, "instance");
     setStatus("下载请求已提交，请查看任务列表。");
   };
 
-  const toggleBookmark = async (item: ContentItem) => {
-    const result = await launcher.toggleBookmark(item.id, item.name, item.description, item.author, category);
-    setState(await launcher.getState());
+  const bookmark = async (item: ContentItem) => {
+    const result = await toggleBookmark(item.id, item.name, item.description, category);
     setStatus(result.message);
   };
 
-  const installVanilla = async () => {
+  const installSelectedVanilla = async () => {
     if (vanillaSelected.length === 0) {
       setVanillaHint("请先读取并选择一个原版版本。");
       return;
     }
     setVanillaHint("正在提交原版安装…");
-    await launcher.installVanilla(vanillaSelected);
+    await installVanilla(vanillaSelected);
     setVanillaHint(`原版安装请求已提交：${vanillaSelected}`);
   };
 
@@ -185,7 +197,7 @@ export default function DownloadPage() {
     }
     setLoaderVersions([]);
     setLoaderHint(`正在读取 ${LOADERS.find(([value]) => value === loaderType)?.[1] ?? ""} 版本…`);
-    const result = await launcher.listLoaders(loaderGame, loaderType);
+    const result = await listLoaders(loaderGame, loaderType);
     if (result.ok && result.result) {
       setLoaderVersions(result.result.versions);
       setLoaderVersion(result.result.versions[0] ?? "");
@@ -201,34 +213,34 @@ export default function DownloadPage() {
     }
   };
 
-  const installLoader = async () => {
+  const installConfiguredLoader = async () => {
     if (loaderGame.length === 0 || loaderVersion.length === 0) {
       setLoaderHint("请先选择游戏版本和加载器版本。");
       return;
     }
-    await launcher.installLoader(loaderGame, loaderType, loaderVersion);
+    await installLoader(loaderGame, loaderType, loaderVersion);
     setLoaderHint(
       `安装请求已提交：${loaderGame} / ${LOADERS.find(([value]) => value === loaderType)?.[1] ?? ""} ${loaderVersion}`,
     );
   };
 
-  const previewPack = async (path: string) => {
+  const pickPackFile = async (path: string) => {
     setPackHint("正在读取整合包…");
-    const preview = await launcher.previewPack(path);
+    const preview = await previewPack(path);
     setPack(preview);
     setPackName(preview.name);
     setPackRoot(preview.root);
     setPackHint("已读取整合包信息，确认后加入导入队列。");
   };
 
-  const confirmPack = async () => {
+  const importPack = async () => {
     if (!pack) return;
     if (packName.trim().length === 0 || packRoot.trim().length === 0) {
       setPackHint("请填写实例名称并选择已存在的安装目录。");
       return;
     }
     setPackHint("正在提交导入…");
-    await launcher.confirmPack(pack.token, packName.trim(), packRoot.trim());
+    await confirmPack(pack.token, packName.trim(), packRoot.trim());
     setPackHint("整合包导入请求已提交，请查看任务列表。");
   };
 
@@ -394,7 +406,7 @@ export default function DownloadPage() {
                         >
                           选择版本
                         </button>
-                        <button type="button" className="btn ghost" onClick={() => void toggleBookmark(item)}>
+                        <button type="button" className="btn ghost" onClick={() => void bookmark(item)}>
                           {bookmarked ? "取消收藏" : "收藏"}
                         </button>
                       </div>
@@ -438,7 +450,7 @@ export default function DownloadPage() {
                 type="button"
                 className="btn ghost"
                 onClick={() =>
-                  void launcher.listVanillaVersions().then((result) => {
+                  void listVanillaVersions().then((result) => {
                     if (!result.ok) {
                       setVanillaHint(result.error);
                       return;
@@ -453,7 +465,7 @@ export default function DownloadPage() {
               </button>
             </div>
             <div className="row" style={{ gap: 8 }}>
-              <button type="button" className="btn primary" onClick={() => void installVanilla()}>
+              <button type="button" className="btn primary" onClick={() => void installSelectedVanilla()}>
                 安装所选原版
               </button>
             </div>
@@ -534,7 +546,7 @@ export default function DownloadPage() {
                 ))}
               </select>
             </div>
-            <button type="button" className="btn primary" style={{ alignSelf: "flex-start" }} onClick={() => void installLoader()}>
+            <button type="button" className="btn primary" style={{ alignSelf: "flex-start" }} onClick={() => void installConfiguredLoader()}>
               安装加载器
             </button>
             <p className="muted">{loaderHint}</p>
@@ -579,7 +591,7 @@ export default function DownloadPage() {
                     </button>
                   </div>
                 </Field>
-                <button type="button" className="btn primary" style={{ alignSelf: "flex-start" }} onClick={() => void confirmPack()}>
+                <button type="button" className="btn primary" style={{ alignSelf: "flex-start" }} onClick={() => void importPack()}>
                   确认导入
                 </button>
               </section>
@@ -602,7 +614,7 @@ export default function DownloadPage() {
           onCancel={() => setPrompt(null)}
           onConfirm={(path) => {
             setPrompt(null);
-            void previewPack(path);
+            void pickPackFile(path);
           }}
         />
       ) : null}
@@ -645,7 +657,7 @@ export default function DownloadPage() {
           onConfirm={(path) => {
             setPrompt(null);
             if (!versions || versionId.length === 0) return;
-            void launcher.queueContentVersion(versions.token, versionId, "local", path);
+            void queueContentVersion(versions.token, versionId, "local", path);
             setStatus("下载请求已提交，请查看任务列表。");
           }}
         />

@@ -1,15 +1,31 @@
 import { useEffect, useState } from "react";
-import { launcher } from "../api/launcher";
+import {
+  getSystemInfo as getSystemInfoCommand,
+  openFolder as openFolderCommand,
+  readLog as readLogCommand,
+  resetWindow as resetWindowCommand,
+  saveCustomSources as saveCustomSourcesCommand,
+  saveSettings as saveSettingsCommand,
+  scanJava as scanJavaCommand,
+  testDataSource as testDataSourceCommand,
+  useDataSources as useDataSourcesCommand,
+  verifyKey as verifyKeyCommand,
+} from "../api/commands/settings";
+import {
+  backupSaves as backupSavesCommand,
+  listSaveBackups as listSaveBackupsCommand,
+  restoreSave as restoreSaveCommand,
+} from "../api/commands/saves";
+import {
+  deleteServer as deleteServerCommand,
+  pingServer as pingServerCommand,
+  saveServer as saveServerCommand,
+} from "../api/commands/servers";
 import Field from "../components/Field";
 import PathPrompt from "../components/PathPrompt";
 import { LIMITS } from "../constants";
-import type {
-  DataSourceSet,
-  JavaInfo,
-  LauncherState,
-  SaveBackupInfo,
-  SavedServerInfo,
-} from "../types/launcher";
+import { useLauncher } from "../state/launcher";
+import type { DataSourceSet, JavaInfo, SaveBackupInfo, SavedServerInfo } from "../types/launcher";
 import "./SettingsPage.css";
 
 const SECTIONS = [
@@ -32,7 +48,7 @@ const EMPTY_SOURCES: DataSourceSet = { announcements: "", servers: "", recommend
 
 /** 设置页：左侧十一个分区，右侧表单与列表。 */
 export default function SettingsPage() {
-  const [state, setState] = useState<LauncherState | null>(null);
+  const { state } = useLauncher();
   const [section, setSection] = useState<SectionKey>("launch");
   const [statuses, setStatuses] = useState<Record<string, string>>({});
   const [hydrated, setHydrated] = useState(false);
@@ -65,16 +81,6 @@ export default function SettingsPage() {
   const status = statuses[section] ?? "";
 
   useEffect(() => {
-    let alive = true;
-    void launcher.getState().then((snapshot) => {
-      if (alive) setState(snapshot);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!state || hydrated) return;
     setRoot(state.root);
     setJava(state.java);
@@ -92,16 +98,10 @@ export default function SettingsPage() {
     setHydrated(true);
   }, [state, hydrated]);
 
-  const refresh = async () => {
-    const snapshot = await launcher.getState();
-    setState(snapshot);
-    return snapshot;
-  };
-
-  const loadBackups = async () => setBackups(await launcher.listSaveBackups());
-  const readLog = async () => setLog(await launcher.readLog());
+  const loadBackups = async () => setBackups(await listSaveBackupsCommand());
+  const readLog = async () => setLog(await readLogCommand());
   const readSystemInfo = async () => {
-    const info = await launcher.getSystemInfo();
+    const info = await getSystemInfoCommand();
     setDiagnostics(
       [
         `MCUG Launcher ${info.app}`,
@@ -158,7 +158,7 @@ export default function SettingsPage() {
       return;
     }
     say("正在保存…");
-    const result = await launcher.saveSettings({
+    const result = await saveSettingsCommand({
       root: root.trim(),
       java: java.trim(),
       ram: ramValue,
@@ -168,29 +168,26 @@ export default function SettingsPage() {
       autoChinese,
       ...(offline ? { player: player.trim() } : {}),
     });
-    await refresh();
     say(result.message);
   };
 
   const switchRoot = async (value: string) => {
     setRoot(value);
     say("正在切换游戏目录…");
-    const result = await launcher.saveSettings({ root: value });
-    await refresh();
+    const result = await saveSettingsCommand({ root: value });
     say(result.message);
   };
 
   const saveJava = async () => {
     say("正在保存 Java 设置…");
-    const result = await launcher.saveSettings({ java: javaPath.trim() });
+    const result = await saveSettingsCommand({ java: javaPath.trim() });
     setJava(javaPath.trim());
-    await refresh();
     say(result.message);
   };
 
   const scanJava = async () => {
     say("正在扫描本机 Java…");
-    const items = await launcher.scanJava();
+    const items = await scanJavaCommand();
     setJavaList(items);
     say(items.length === 0 ? "没有找到可用的 Java。" : `找到 ${items.length} 个 Java。`);
   };
@@ -201,14 +198,13 @@ export default function SettingsPage() {
       return;
     }
     say(`正在测试${label}…`);
-    const result = await launcher.testSource(label, url.trim());
+    const result = await testDataSourceCommand(label, url.trim());
     say(`${result.name}：${result.ok ? "可用" : "失败"} · ${result.message} · ${result.ms} ms`);
   };
 
   const saveSources = async (use: boolean) => {
-    await launcher.saveCustomSources(sources);
-    if (use) await launcher.useDataSources("custom");
-    await refresh();
+    await saveCustomSourcesCommand(sources);
+    if (use) await useDataSourcesCommand("custom");
     say(use ? "已保存并切换到自定义数据源。" : "已保存自定义数据源，可点击「使用自定义」切换。");
   };
 
@@ -218,13 +214,12 @@ export default function SettingsPage() {
       return;
     }
     say("正在保存…");
-    const result = await launcher.saveServer(serverName.trim(), serverAddress.trim(), editingServer);
+    const result = await saveServerCommand(serverName.trim(), serverAddress.trim(), editingServer);
     say(result.message);
     if (result.ok) {
       setEditingServer("");
       setServerName("");
       setServerAddress("");
-      await refresh();
     }
   };
 
@@ -237,7 +232,7 @@ export default function SettingsPage() {
 
   const pingServer = async (address: string) => {
     say(`正在查询 ${address}…`);
-    const info = await launcher.pingServer(address);
+    const info = await pingServerCommand(address);
     setPings((previous) => ({
       ...previous,
       [address]: info.online ? `${info.players}/${info.max} 人 · ${info.ping} ms · ${info.motd}` : `离线 · ${info.error}`,
@@ -245,26 +240,25 @@ export default function SettingsPage() {
   };
 
   const deleteServer = async (address: string) => {
-    const result = await launcher.deleteServer(address);
+    const result = await deleteServerCommand(address);
     setPings((previous) => {
       const next = { ...previous };
       delete next[address];
       return next;
     });
-    await refresh();
     say(result.message);
   };
 
   const backupSaves = async () => {
     say("正在备份存档…");
-    const result = await launcher.backupSaves();
+    const result = await backupSavesCommand();
     await loadBackups();
     say(result.message);
   };
 
   const restoreSave = async (id: string, world: string) => {
     say("正在恢复存档…");
-    const result = await launcher.restoreSave(id, world);
+    const result = await restoreSaveCommand(id, world);
     say(result.message);
   };
 
@@ -274,7 +268,7 @@ export default function SettingsPage() {
       return;
     }
     say("正在验证…");
-    const result = await launcher.verifyKey(role, key.trim());
+    const result = await verifyKeyCommand(role, key.trim());
     say(result.message);
     if (result.ok && clear) clear();
   };
@@ -483,8 +477,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void launcher.useDataSources("default").then(async (result) => {
-                    await refresh();
+                  onClick={() => void useDataSourcesCommand("default").then(async (result) => {
                     say(result.message);
                   })}
                 >
@@ -507,7 +500,7 @@ export default function SettingsPage() {
                 type="button"
                 className="btn ghost"
                 style={{ alignSelf: "flex-start" }}
-                onClick={() => void launcher.resetWindow().then((result) => say(result.message))}
+                onClick={() => void resetWindowCommand().then((result) => say(result.message))}
               >
                 恢复默认窗口 1200 × 780
               </button>
@@ -591,7 +584,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void launcher.openFolder("saves").then((result) => say(result.message))}
+                  onClick={() => void openFolderCommand("saves").then((result) => say(result.message))}
                 >
                   打开存档文件夹
                 </button>
@@ -630,21 +623,21 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void launcher.resetWindow().then((result) => say(result.message))}
+                  onClick={() => void resetWindowCommand().then((result) => say(result.message))}
                 >
                   恢复窗口尺寸
                 </button>
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void launcher.openFolder("config").then((result) => say(result.message))}
+                  onClick={() => void openFolderCommand("config").then((result) => say(result.message))}
                 >
                   打开配置目录
                 </button>
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void launcher.openFolder("root").then((result) => say(result.message))}
+                  onClick={() => void openFolderCommand("root").then((result) => say(result.message))}
                 >
                   打开游戏目录
                 </button>
@@ -664,7 +657,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void launcher.openFolder("config").then((result) => say(result.message))}
+                  onClick={() => void openFolderCommand("config").then((result) => say(result.message))}
                 >
                   打开日志目录
                 </button>
@@ -704,8 +697,7 @@ export default function SettingsPage() {
                 className="btn ghost"
                 style={{ alignSelf: "flex-start" }}
                 onClick={() =>
-                  void launcher.saveSettings({ anonymous }).then(async (result) => {
-                    await refresh();
+                  void saveSettingsCommand({ anonymous }).then(async (result) => {
                     say(result.message);
                   })
                 }

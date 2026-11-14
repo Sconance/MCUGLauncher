@@ -1,6 +1,6 @@
 /*
- * 与 origin/src/MCUGLauncher.App/Contracts 对应的前端数据模型。
- * 字段名保持 C# JSON(Web) 的 camelCase，后端接入后可直接反序列化。
+ * 与 src-tauri/src/model.rs 一一对应的前端数据模型。
+ * 字段名与 Rust 的 serde(camelCase) 输出一致，命令返回值可直接使用。
  */
 
 export interface InstanceInfo {
@@ -331,6 +331,35 @@ export interface TestResultInfo {
 
 export interface SavedInfo {
   message: string;
+}
+
+export interface AuthResultInfo {
+  ok: boolean | null;
+  pending: boolean;
+  message: string;
+}
+
+export interface AccountSwitchResultInfo {
+  account: string;
+  needsLogin: boolean;
+  message: string;
+}
+
+export interface ToastInfo {
+  message: string;
+}
+
+/** `save_settings` 的补丁：只提交需要修改的字段。 */
+export interface AppSettingsPatch {
+  root?: string;
+  java?: string;
+  ram?: number;
+  width?: number;
+  height?: number;
+  autoMemory?: boolean;
+  autoChinese?: boolean;
+  anonymous?: boolean;
+  player?: string;
 }
 
 export interface LaunchResultInfo {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import closeIcon from "../assets/CloseIcon.svg";
 import downloadIcon from "../assets/DownloadIcon.svg";
 import extraIcon from "../assets/ExtraIcon.svg";
@@ -12,8 +12,8 @@ import DownloadPage from "../pages/DownloadPage";
 import ExtrasPage from "../pages/ExtrasPage";
 import HomePage from "../pages/HomePage";
 import SettingsPage from "../pages/SettingsPage";
+import { useLauncher } from "../state/launcher";
 import { NavigationContext } from "./navigation";
-import { ToastContext } from "./toast";
 
 type PageKey = "home" | "download" | "settings" | "extras";
 
@@ -24,23 +24,16 @@ const NAV: { key: PageKey; label: string; icon: string }[] = [
   { key: "extras", label: "更多", icon: extraIcon },
 ];
 
-/** 应用外壳：标题栏、顶部导航、页面宿主与全局提示。 */
+/** 应用外壳：标题栏、顶部导航、页面宿主与后端错误提示。 */
 export default function Shell() {
+  const { error } = useLauncher();
   const [page, setPage] = useState<PageKey>("home");
   const [extrasSection, setExtrasSection] = useState("instances");
-  const [toast, setToast] = useState("");
 
-  const notify = useCallback((message: string) => setToast(message), []);
   const openAccount = useCallback(() => {
     setExtrasSection("account");
     setPage("extras");
   }, []);
-
-  useEffect(() => {
-    if (toast.length === 0) return;
-    const timer = window.setTimeout(() => setToast(""), 3000);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
 
   let content;
   switch (page) {
@@ -60,58 +53,57 @@ export default function Shell() {
 
   return (
     <NavigationContext.Provider value={{ openAccount }}>
-      <ToastContext.Provider value={notify}>
-        <div className="shell">
-          <header
-            className="titlebar"
-            data-tauri-drag-region
-            onDoubleClick={(event) => {
-              if ((event.target as HTMLElement).closest("button")) return;
-              void appWindow.toggleMaximize();
-            }}
-          >
-            <div className="brand" data-tauri-drag-region>
-              <span className="brand-title">MCUG Launcher</span>
-              <span className="brand-version">{APP_VERSION}</span>
-            </div>
+      <div className="shell">
+        <header
+          className="titlebar"
+          data-tauri-drag-region
+          onDoubleClick={(event) => {
+            if ((event.target as HTMLElement).closest("button")) return;
+            void appWindow.toggleMaximize();
+          }}
+        >
+          <div className="brand" data-tauri-drag-region>
+            <span className="brand-title">MCUG Launcher</span>
+            <span className="brand-version">{APP_VERSION}</span>
+          </div>
 
-            <nav className="topnav" aria-label="主导航">
-              {NAV.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={`btn topnav ${item.key === page ? "active" : ""}`}
-                  onClick={() => setPage(item.key)}
-                >
-                  <img src={item.icon} alt="" width={16} height={16} />
-                  {item.label}
-                </button>
-              ))}
-            </nav>
-
-            <div className="window-controls">
-              <button type="button" className="btn icon" aria-label="最小化" onClick={() => void appWindow.minimize()}>
-                <img src={minimizeIcon} alt="" />
-              </button>
+          <nav className="topnav" aria-label="主导航">
+            {NAV.map((item) => (
               <button
+                key={item.key}
                 type="button"
-                className="btn icon"
-                aria-label="最大化"
-                onClick={() => void appWindow.toggleMaximize()}
+                className={`btn topnav ${item.key === page ? "active" : ""}`}
+                onClick={() => setPage(item.key)}
               >
-                <img src={maximizeIcon} alt="" />
+                <img src={item.icon} alt="" width={16} height={16} />
+                {item.label}
               </button>
-              <button type="button" className="btn icon close" aria-label="关闭" onClick={() => void appWindow.close()}>
-                <img src={closeIcon} alt="" />
-              </button>
-            </div>
-          </header>
+            ))}
+          </nav>
 
-          <main className="page-host">{content}</main>
+          <div className="window-controls">
+            <button type="button" className="btn icon" aria-label="最小化" onClick={() => void appWindow.minimize()}>
+              <img src={minimizeIcon} alt="" />
+            </button>
+            <button
+              type="button"
+              className="btn icon"
+              aria-label="最大化"
+              onClick={() => void appWindow.toggleMaximize()}
+            >
+              <img src={maximizeIcon} alt="" />
+            </button>
+            <button type="button" className="btn icon close" aria-label="关闭" onClick={() => void appWindow.close()}>
+              <img src={closeIcon} alt="" />
+            </button>
+          </div>
+        </header>
 
-          {toast.length > 0 ? <div className="toast">{toast}</div> : null}
-        </div>
-      </ToastContext.Provider>
+        <main className="page-host">
+          {error.length > 0 ? <div className="backend-error">{error}</div> : null}
+          {content}
+        </main>
+      </div>
     </NavigationContext.Provider>
   );
 }

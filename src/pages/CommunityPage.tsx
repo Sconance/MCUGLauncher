@@ -1,55 +1,20 @@
-import { useEffect, useState } from "react";
-import { launcher } from "../api/launcher";
+import { useState } from "react";
+import { saveRecommendations } from "../api/commands/community";
+import { verifyKey } from "../api/commands/settings";
 import Markdown from "../components/Markdown";
 import Modal from "../components/Modal";
-import type { AnnouncementInfo, CommunityData, LauncherState } from "../types/launcher";
+import { useLauncher } from "../state/launcher";
+import type { AnnouncementInfo } from "../types/launcher";
 import "./CommunityPage.css";
 
-/** 社区管理：管理员身份、当前公告与推荐列表维护。 */
+/** 社区管理：公告来自后端事件，推荐维护通过命令提交。 */
 export default function CommunityPage() {
-  const [state, setState] = useState<LauncherState | null>(null);
-  const [community, setCommunity] = useState<CommunityData | null>(null);
+  const { state, community } = useLauncher();
   const [adminKey, setAdminKey] = useState("");
   const [adminStatus, setAdminStatus] = useState("");
   const [manageStatus, setManageStatus] = useState("");
-  const [canManage, setCanManage] = useState(false);
+  const [verified, setVerified] = useState(false);
   const [announcement, setAnnouncement] = useState<AnnouncementInfo | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    void Promise.all([launcher.getState(), launcher.getCommunity()]).then(([snapshot, data]) => {
-      if (!alive) return;
-      setState(snapshot);
-      setCommunity(data);
-      setCanManage(snapshot.hasAdminKey);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const verifyAdmin = async () => {
-    if (adminKey.trim().length === 0) {
-      setAdminStatus("请输入管理员密钥。");
-      return;
-    }
-    setAdminStatus("正在验证…");
-    const result = await launcher.verifyKey("admin", adminKey.trim());
-    setAdminStatus(result.message);
-    if (!result.ok) return;
-    setAdminKey("");
-    setCanManage(true);
-    setState(await launcher.getState());
-  };
-
-  const removeRecommendation = async (index: number) => {
-    if (!canManage || !community || index < 0 || index >= community.recommendations.length) return;
-    setManageStatus("正在保存推荐列表…");
-    const remaining = community.recommendations.filter((_, position) => position !== index);
-    const result = await launcher.saveRecommendations(remaining);
-    setCommunity(await launcher.getCommunity());
-    setManageStatus(result.message);
-  };
 
   if (!state || !community) {
     return (
@@ -58,6 +23,29 @@ export default function CommunityPage() {
       </div>
     );
   }
+
+  const canManage = verified || state.hasAdminKey;
+
+  const verifyAdmin = async () => {
+    if (adminKey.trim().length === 0) {
+      setAdminStatus("请输入管理员密钥。");
+      return;
+    }
+    setAdminStatus("正在验证…");
+    const result = await verifyKey("admin", adminKey.trim());
+    setAdminStatus(result.message);
+    if (!result.ok) return;
+    setAdminKey("");
+    setVerified(true);
+  };
+
+  const removeRecommendation = async (index: number) => {
+    if (!canManage || index < 0 || index >= community.recommendations.length) return;
+    setManageStatus("正在保存推荐列表…");
+    const remaining = community.recommendations.filter((_, position) => position !== index);
+    const result = await saveRecommendations(remaining);
+    setManageStatus(result.message);
+  };
 
   return (
     <div className="subpage">

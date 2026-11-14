@@ -1,8 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
-import { launcher } from "../api/launcher";
+import {
+  applyUninstall as applyUninstallCommand,
+  applyUpdates as applyUpdatesCommand,
+  checkUpdates as checkUpdatesCommand,
+  cloneInstance as cloneInstanceCommand,
+  deleteMod as deleteModCommand,
+  exportInstance as exportInstanceCommand,
+  previewUninstall as previewUninstallCommand,
+  previewUpdates as previewUpdatesCommand,
+  readLaunchOptions as readLaunchOptionsCommand,
+  saveLaunchOptions as saveLaunchOptionsCommand,
+  toggleMod as toggleModCommand,
+} from "../api/commands/instances";
+import { launchGame } from "../api/commands/launch";
+import { openFolder as openFolderCommand } from "../api/commands/settings";
+import { selectInstance as selectInstanceCommand } from "../api/commands/state";
 import Field from "../components/Field";
 import PathPrompt from "../components/PathPrompt";
 import { LIMITS } from "../constants";
+import { useLauncher } from "../state/launcher";
 import type {
   ContentUpdatePreviewInfo,
   ContentUpdatesInfo,
@@ -52,7 +68,7 @@ function formatSize(bytes: number): string {
 
 /** 实例页：内容（模组）、启动设置与维护（克隆/导出/卸载/更新）。 */
 export default function InstancesPage() {
-  const [state, setState] = useState<LauncherState | null>(null);
+  const { state, refreshState } = useLauncher();
   const [selected, setSelected] = useState("");
   const [tab, setTab] = useState<"content" | "launch" | "maintenance">("content");
   const [status, setStatus] = useState("");
@@ -74,22 +90,17 @@ export default function InstancesPage() {
   const [javaPrompt, setJavaPrompt] = useState(false);
 
   useEffect(() => {
-    let alive = true;
-    void launcher.getState().then((next) => {
-      if (!alive) return;
-      setState(next);
-      const instances = validInstances(next);
-      setSelected(next.selectedInstance || instances[0]?.name || "");
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
+    if (!state) return;
+    const instances = validInstances(state);
+    if (selected.length === 0 || !instances.some((item) => item.name === selected)) {
+      setSelected(state.selectedInstance || instances[0]?.name || "");
+    }
+  }, [state, selected]);
 
   const loadOptions = useCallback(async (version: string) => {
     if (version.length === 0) return;
     setOptionsStatus("正在读取启动设置…");
-    const info = await launcher.readLaunchOptions(version);
+    const info = await readLaunchOptionsCommand(version);
     setOptions(info);
     setInherit(info.inherited);
     setForm({
@@ -113,16 +124,8 @@ export default function InstancesPage() {
     void loadOptions(selected);
   }, [selected, loadOptions]);
 
-  const applyState = (next: LauncherState) => {
-    setState(next);
-    const instances = validInstances(next);
-    if (selected.length === 0 || !instances.some((item) => item.name === selected)) {
-      setSelected(next.selectedInstance || instances[0]?.name || "");
-    }
-  };
-
   const refresh = async () => {
-    applyState(await launcher.getState());
+    await refreshState();
     setStatus("状态已刷新。");
   };
 
@@ -133,29 +136,24 @@ export default function InstancesPage() {
     setUpdatePreview(null);
     setConfirmed(false);
     setStatus("正在切换实例…");
-    const result = await launcher.selectInstance(name);
-    setState((previous) =>
-      previous ? { ...previous, selectedInstance: name, selectedVersion: name } : previous,
-    );
+    const result = await selectInstanceCommand(name);
     setStatus(result.message);
   };
 
   const launch = async () => {
     if (selected.length === 0) return;
     setStatus("正在准备启动…");
-    const result = await launcher.launch(selected);
+    const result = await launchGame(selected);
     setStatus(result.message);
   };
 
   const toggleMod = async (file: string, enabled: boolean) => {
-    const result = await launcher.toggleMod(file, enabled);
-    applyState(await launcher.getState());
+    const result = await toggleModCommand(file, enabled);
     setStatus(result.message);
   };
 
   const deleteMod = async (file: string, name: string) => {
-    const result = await launcher.deleteMod(file);
-    applyState(await launcher.getState());
+    const result = await deleteModCommand(file);
     setStatus(`${result.message} ${name}`);
   };
 
@@ -185,20 +183,25 @@ export default function InstancesPage() {
       return;
     }
     setOptionsStatus("正在保存…");
-    const result = await launcher.saveLaunchOptions(options.token, {
-      autoMemory: form.autoMemory,
-      fullScreen: form.fullScreen,
-      ramMb: ram,
-      width,
-      height,
-      java: form.java.trim(),
-      jvmArguments: form.jvmArguments,
-      windowTitle: form.windowTitle.trim(),
-      server: form.server.trim(),
-      autoChinese: form.autoChinese,
-    });
+    const result = await saveLaunchOptionsCommand(
+      options.token,
+      selected,
+      name,
+      {
+        autoMemory: form.autoMemory,
+        fullScreen: form.fullScreen,
+        ramMb: ram,
+        width,
+        height,
+        java: form.java.trim(),
+        jvmArguments: form.jvmArguments,
+        windowTitle: form.windowTitle.trim(),
+        server: form.server.trim(),
+        autoChinese: form.autoChinese,
+      },
+      inherit,
+    );
     setOptionsStatus(result.message);
-    await refresh();
   };
 
   const clone = async () => {
@@ -207,12 +210,12 @@ export default function InstancesPage() {
       setStatus("请填写新实例名称。");
       return;
     }
-    await launcher.cloneInstance(selected, name);
+    await cloneInstanceCommand(selected, name);
     setStatus("克隆请求已提交，请查看任务列表。");
   };
 
   const previewUninstall = async () => {
-    const preview = await launcher.previewUninstall(selected);
+    const preview = await previewUninstallCommand(selected);
     setUninstall(preview);
     setConfirmed(false);
   };
@@ -222,7 +225,7 @@ export default function InstancesPage() {
     const token = uninstall.token;
     setUninstall(null);
     setConfirmed(false);
-    await launcher.applyUninstall(token);
+    await applyUninstallCommand(token);
     setStatus("卸载请求已提交，请在系统确认框核对。");
   };
 
@@ -230,7 +233,7 @@ export default function InstancesPage() {
     setUpdates(null);
     setUpdatePreview(null);
     setStatus("正在检查内容更新…");
-    const info = await launcher.checkUpdates(selected);
+    const info = await checkUpdatesCommand(selected);
     setUpdates(info);
     setSelectedUpdates(info.items.filter((item) => item.available).map((item) => item.id));
   };
@@ -243,7 +246,7 @@ export default function InstancesPage() {
     }
     setUpdatePreview(null);
     setStatus("正在解析更新及必需依赖…");
-    const preview = await launcher.previewUpdates(updates.token);
+    const preview = await previewUpdatesCommand(updates.token);
     setUpdatePreview(preview);
   };
 
@@ -251,7 +254,7 @@ export default function InstancesPage() {
     if (!updatePreview) return;
     const token = updatePreview.token;
     setUpdatePreview(null);
-    setStatus((await launcher.applyUpdates(token)).message);
+    setStatus((await applyUpdatesCommand(token)).message);
   };
 
   const instances = state ? validInstances(state) : [];
@@ -287,7 +290,7 @@ export default function InstancesPage() {
             type="button"
             className="btn ghost"
             disabled={!current}
-            onClick={() => void launcher.openFolder("version").then((result) => setStatus(result.message))}
+            onClick={() => void openFolderCommand("version").then((result) => setStatus(result.message))}
           >
             版本文件夹
           </button>
@@ -703,9 +706,9 @@ export default function InstancesPage() {
           onCancel={() => setExportPrompt(false)}
           onConfirm={(path) => {
             setExportPrompt(false);
-            void launcher
-              .exportInstance(selected, path, exportServers, exportSaves)
-              .then((result) => setStatus(result.message));
+            void exportInstanceCommand(selected, path, exportServers, exportSaves).then((result) =>
+              setStatus(result.message),
+            );
           }}
         />
       ) : null}
