@@ -1,0 +1,75 @@
+.shell {
+  display: grid;
+  grid-template-rows: var(--titlebar-height) minmax(0, 1fr);
+  height: 100%;
+  background: var(--app-bg);
+}
+
+.titlebar {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) auto;
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid var(--app-line);
+  user-select: none;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-left: 18px;
+  white-space: nowrap;
+}
+
+.brand-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1b3044;
+}
+
+.brand-version {
+  font-size: 9.5px;
+  color: #646d75;
+}
+
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-left: 10px;
+  min-width: 0;
+}
+
+.topnav .btn img {
+  width: 16px;
+  height: 16px;
+}
+
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 8px;
+}
+
+.page-host {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  max-width: 420px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--app-sidebar);
+  color: var(--app-sidebar-text);
+  font-size: 12px;
+  line-height: 1.55;
+  box-shadow: var(--shadow-card);
+  word-break: break-all;
+}

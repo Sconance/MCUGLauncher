@@ -1,0 +1,85 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--app-ink);
+  background: var(--app-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+img,
+svg {
+  display: block;
+}
+
+/* 细线滚动条：对应 Theme/App.axaml 的自定义 ScrollBar 模板 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(153 182 192 / 60%) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #99b6c0ca;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background-clip: content-box;
+  transition: background-color 120ms linear;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #cc8a97a3;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #e07a8792;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--app-accent-soft);
+  outline-offset: 1px;
+}

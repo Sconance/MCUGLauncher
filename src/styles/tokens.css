@@ -1,0 +1,57 @@
+/*
+ * 设计令牌：逐项对应 origin/src/MCUGLauncher.Avalonia/Styles/Theme.axaml。
+ * 修改颜色或圆角时先改这里，页面与组件只引用变量。
+ */
+:root {
+  /* 底色与文字 */
+  --app-bg: #f3f7f6;
+  --app-side: #f8faf9;
+  --app-card: #ffffff;
+  --app-ink: #1e252b;
+  --app-ink-2: #545d66;
+  --app-ink-3: #616a72;
+
+  /* 分隔线与控件边框 */
+  --app-line: #dde4eb;
+  --app-line-2: #d3dae0;
+
+  /* 主色阶 */
+  --app-accent: #326ea7;
+  --app-accent-dark: #25517a;
+  --app-accent-deep: #193753;
+  --app-accent-soft: #c9dff3;
+  --app-accent-tint: #e9f1f8;
+  --app-accent-wash: #ecf4fb;
+
+  /* 状态色 */
+  --app-amber: #8f5a0e;
+  --app-amber-bg: #fbf3e2;
+  --app-red: #bf443b;
+  --app-red-bg: #fbedeb;
+
+  /* 深色块与启动按钮 */
+  --app-sidebar: #1a2c3c;
+  --app-sidebar-text: #e6eef5;
+  --launch-gradient: linear-gradient(180deg, #3472ad 0%, #2c6294 100%);
+
+  /* 字体 */
+  --font-ui: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  --font-quote: Georgia, "Times New Roman", serif;
+
+  /* 圆角 */
+  --radius-card: 12px;
+  --radius-launch: 10px;
+  --radius-btn: 8px;
+  --radius-input: 7px;
+  --radius-pill: 18px;
+
+  /* 阴影 */
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 3%), 0 8px 24px 0 rgb(0 0 0 / 3.5%);
+  --shadow-dialog: 0 18px 48px 0 rgb(20 32 50 / 20%);
+  --shadow-avatar: 0 3px 10px 0 rgb(14 43 63 / 13%);
+
+  /* 尺寸 */
+  --titlebar-height: 52px;
+  --control-height: 36px;
+  --button-height: 34px;
+}
