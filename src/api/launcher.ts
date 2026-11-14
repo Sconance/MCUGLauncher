@@ -228,6 +228,11 @@ export const launcher = {
     return { ...systemInfo, root: current.root };
   },
 
+  async openFolder(kind: string): Promise<SavedInfo> {
+    await wait(80);
+    return saved(`已打开${folderLabel(kind)}。`);
+  },
+
   async testSource(name: string, url: string): Promise<TestResultInfo> {
     await wait(600);
     const valid = url.startsWith("http");
@@ -339,12 +344,12 @@ export const launcher = {
     return saved(`已加入卸载队列：${version}`);
   },
 
-  async cloneInstance(version: string, name: string): Promise<SavedInfo> {
+  async cloneInstance(version: string, name: string, _saves = false, _servers = false): Promise<SavedInfo> {
     await wait(400);
     return saved(`已克隆 ${version} 为 ${name}。`);
   },
 
-  async exportInstance(version: string, path: string): Promise<SavedInfo> {
+  async exportInstance(version: string, path: string, _servers = false, _saves = false): Promise<SavedInfo> {
     await wait(400);
     return saved(`已导出 ${version} 到 ${path}。`);
   },
@@ -478,4 +483,11 @@ function accountLabel(mode: string): string {
   if (mode === "microsoft") return "正版账号 · 在线验证";
   if (mode === "mua") return "MUA 账号 · 外置登录";
   return "离线账号 · 本地启动";
+}
+
+function folderLabel(kind: string): string {
+  if (kind === "version") return "版本文件夹";
+  if (kind === "saves") return "存档文件夹";
+  if (kind === "config") return "配置目录";
+  return "游戏目录";
 }

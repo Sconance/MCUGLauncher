@@ -64,7 +64,7 @@ src/
 | `pages/HomePage.tsx` | `Views/HomeView.axaml` + `.cs` | 已完成（账号卡、实例选择、服务器、公告、推荐、语录） |
 | `pages/DownloadPage.tsx` | `Views/DownloadView.axaml` + `.cs` | 待移植 |
 | `pages/SettingsPage.tsx` | `Views/SettingsView.axaml` + `.cs` | 待移植 |
-| `pages/InstancesPage.tsx` | `Views/InstancesView.axaml` + `.cs` | 待移植 |
+| `pages/InstancesPage.tsx` | `Views/InstancesView.axaml` + `.cs` | 已完成（模组、启动设置、克隆/导出/卸载/更新） |
 | `pages/AccountPage.tsx` | `Views/AccountView.axaml` + `.cs` | 待移植 |
 | `pages/TasksPage.tsx` | `Views/TasksView.axaml` + `.cs` | 待移植 |
 | `pages/GamesPage.tsx` | `Views/GamesView.axaml` + `.cs` | 待移植 |

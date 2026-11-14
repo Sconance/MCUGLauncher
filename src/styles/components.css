@@ -274,6 +274,19 @@ textarea.input {
   cursor: pointer;
 }
 
+.checkbox input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--app-accent);
+}
+
+.input:disabled,
+.select:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* ---------- 标签页 ---------- */
 
 .tabs {

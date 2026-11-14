@@ -1,0 +1,56 @@
+.instance-tab-body {
+  flex: 1;
+  min-height: 0;
+  margin-top: 10px;
+  padding-right: 20px;
+}
+
+.instance-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 16px;
+}
+
+.instance-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.mod-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+.mod-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #e3eaf0;
+}
+
+.mod-row:last-child {
+  border-bottom: 0;
+}
+
+.launch-numbers {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.2fr) repeat(3, minmax(96px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.launch-numbers .field {
+  min-width: 0;
+}
+
+@media (max-width: 1280px) {
+  .launch-numbers {
+    grid-template-columns: 1fr 1fr;
+  }
+}
