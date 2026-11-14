@@ -137,6 +137,7 @@ export default function InstancesPage() {
     setConfirmed(false);
     setStatus("正在切换实例…");
     const result = await selectInstanceCommand(name);
+    await refreshState();
     setStatus(result.message);
   };
 
@@ -149,11 +150,13 @@ export default function InstancesPage() {
 
   const toggleMod = async (file: string, enabled: boolean) => {
     const result = await toggleModCommand(file, enabled);
+    await refreshState();
     setStatus(result.message);
   };
 
   const deleteMod = async (file: string, name: string) => {
     const result = await deleteModCommand(file);
+    await refreshState();
     setStatus(`${result.message} ${name}`);
   };
 
@@ -201,6 +204,7 @@ export default function InstancesPage() {
       },
       inherit,
     );
+    await refreshState();
     setOptionsStatus(result.message);
   };
 
@@ -226,6 +230,7 @@ export default function InstancesPage() {
     setUninstall(null);
     setConfirmed(false);
     await applyUninstallCommand(token);
+    await refreshState();
     setStatus("卸载请求已提交，请在系统确认框核对。");
   };
 
@@ -254,7 +259,9 @@ export default function InstancesPage() {
     if (!updatePreview) return;
     const token = updatePreview.token;
     setUpdatePreview(null);
-    setStatus((await applyUpdatesCommand(token)).message);
+    await applyUpdatesCommand(token);
+    await refreshState();
+    setStatus("更新任务已加入队列。");
   };
 
   const instances = state ? validInstances(state) : [];

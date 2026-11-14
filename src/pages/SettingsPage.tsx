@@ -48,7 +48,7 @@ const EMPTY_SOURCES: DataSourceSet = { announcements: "", servers: "", recommend
 
 /** 设置页：左侧十一个分区，右侧表单与列表。 */
 export default function SettingsPage() {
-  const { state } = useLauncher();
+  const { state, refreshState } = useLauncher();
   const [section, setSection] = useState<SectionKey>("launch");
   const [statuses, setStatuses] = useState<Record<string, string>>({});
   const [hydrated, setHydrated] = useState(false);
@@ -168,6 +168,7 @@ export default function SettingsPage() {
       autoChinese,
       ...(offline ? { player: player.trim() } : {}),
     });
+    await refreshState();
     say(result.message);
   };
 
@@ -175,6 +176,7 @@ export default function SettingsPage() {
     setRoot(value);
     say("正在切换游戏目录…");
     const result = await saveSettingsCommand({ root: value });
+    await refreshState();
     say(result.message);
   };
 
@@ -182,6 +184,7 @@ export default function SettingsPage() {
     say("正在保存 Java 设置…");
     const result = await saveSettingsCommand({ java: javaPath.trim() });
     setJava(javaPath.trim());
+    await refreshState();
     say(result.message);
   };
 
@@ -205,6 +208,7 @@ export default function SettingsPage() {
   const saveSources = async (use: boolean) => {
     await saveCustomSourcesCommand(sources);
     if (use) await useDataSourcesCommand("custom");
+    await refreshState();
     say(use ? "已保存并切换到自定义数据源。" : "已保存自定义数据源，可点击「使用自定义」切换。");
   };
 
@@ -215,6 +219,7 @@ export default function SettingsPage() {
     }
     say("正在保存…");
     const result = await saveServerCommand(serverName.trim(), serverAddress.trim(), editingServer);
+    await refreshState();
     say(result.message);
     if (result.ok) {
       setEditingServer("");
@@ -246,6 +251,7 @@ export default function SettingsPage() {
       delete next[address];
       return next;
     });
+    await refreshState();
     say(result.message);
   };
 
@@ -478,6 +484,7 @@ export default function SettingsPage() {
                   type="button"
                   className="btn ghost"
                   onClick={() => void useDataSourcesCommand("default").then(async (result) => {
+                    await refreshState();
                     say(result.message);
                   })}
                 >
@@ -698,6 +705,7 @@ export default function SettingsPage() {
                 style={{ alignSelf: "flex-start" }}
                 onClick={() =>
                   void saveSettingsCommand({ anonymous }).then(async (result) => {
+                    await refreshState();
                     say(result.message);
                   })
                 }

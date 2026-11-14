@@ -16,7 +16,6 @@
 src/
 ├── api/
 │   ├── invoke.ts        # invoke 包装：非 Tauri 环境提示、错误归一化
-│   ├── events.ts        # 事件名常量与 listen 订阅
 │   ├── commands/        # 按领域拆分的命令封装（每个函数一次 invoke）
 │   │   ├── state.ts     # 状态与实例选择
 │   │   ├── launch.ts    # 启动
@@ -53,7 +52,7 @@ src/
 │   ├── navigation.ts    # 跨页导航（账号入口）
 │   └── toast.tsx        # ToastProvider / useToast
 ├── state/
-│   └── launcher.tsx     # 后端状态容器：订阅事件、提供 useLauncher()
+│   └── launcher.tsx     # 命令驱动的状态容器：提供 useLauncher() 与 refresh*
 ├── styles/
 │   ├── tokens.css       # 设计令牌（对应 Theme.axaml 的色值与圆角）
 │   ├── base.css         # 重置、字体、细滚动条
@@ -101,21 +100,22 @@ npm run tauri dev    # 桌面窗口（Windows 需 Rust 工具链）
 
 ## 6. 与后端的衔接
 
-前端只通过 Tauri 命令与事件访问后端，完整清单见 [BACKEND_CONTRACT](BACKEND_CONTRACT.md)。
+前端**只用 Tauri 命令**访问后端，完整清单见 [BACKEND_CONTRACT](BACKEND_CONTRACT.md)。
 
 1. 页面动作调用 `src/api/commands/*` 中的函数，每个函数对应一次 `invoke`；
-2. 全局状态由 `src/state/launcher.tsx` 订阅 `launcher://*` 事件维护，页面用 `useLauncher()` 读取；
-3. `src-tauri` 中已有可运行的命令骨架（`commands.rs`）与内存演示数据（`demo.rs`）；
-4. 重写内核时替换 `demo.rs` 与命令实现，保持命令名、参数与返回类型不变，前端无需改动。
+2. `src/state/launcher.tsx` 是命令驱动的状态容器：启动时用命令取数，写操作后由页面调用 `refresh*` 重新取数；
+3. 不订阅事件；任务页每 1.5 秒、游戏页每 3 秒用 `list_tasks` / `list_games` 轮询；
+4. `src-tauri` 中已有可运行的命令骨架（`commands.rs`）与内存演示数据（`demo.rs`）；
+5. 重写内核时替换 `demo.rs` 与命令实现，保持命令名、参数与返回类型不变，前端无需改动。
 
 新增一个功能的标准步骤：
 
 ```
-src-tauri/src/commands.rs   新增 #[tauri::command]，注册到 lib.rs，状态变化时 emit 事件
+src-tauri/src/commands.rs   新增 #[tauri::command] 并注册到 lib.rs
 src-tauri/src/model.rs      新增/复用 DTO（camelCase）
 src/api/commands/<domain>.ts 增加 invoke 封装
 src/types/launcher.ts       同步类型
-docs/BACKEND_CONTRACT.md    登记命令与事件
+docs/BACKEND_CONTRACT.md    登记命令
 ```
 
 ## 7. 已知差异（后续补齐）

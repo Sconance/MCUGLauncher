@@ -9,7 +9,7 @@ import "./CommunityPage.css";
 
 /** 社区管理：公告来自后端事件，推荐维护通过命令提交。 */
 export default function CommunityPage() {
-  const { state, community } = useLauncher();
+  const { state, community, refreshCommunity } = useLauncher();
   const [adminKey, setAdminKey] = useState("");
   const [adminStatus, setAdminStatus] = useState("");
   const [manageStatus, setManageStatus] = useState("");
@@ -44,6 +44,7 @@ export default function CommunityPage() {
     setManageStatus("正在保存推荐列表…");
     const remaining = community.recommendations.filter((_, position) => position !== index);
     const result = await saveRecommendations(remaining);
+    await refreshCommunity();
     setManageStatus(result.message);
   };
 

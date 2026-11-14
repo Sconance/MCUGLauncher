@@ -13,7 +13,7 @@ function modeLabel(mode: string): string {
 
 /** 账号页：账号状态由后端事件同步，操作通过命令提交。 */
 export default function AccountPage() {
-  const { state, avatar } = useLauncher();
+  const { state, avatar, refreshState, refreshAvatar } = useLauncher();
   const [status, setStatus] = useState("");
   const [muaAccount, setMuaAccount] = useState("");
   const [muaPassword, setMuaPassword] = useState("");
@@ -38,6 +38,7 @@ export default function AccountPage() {
   const loginMicrosoft = async () => {
     setStatus("正在打开微软登录页…");
     const result = await accounts.loginMicrosoft();
+    await Promise.all([refreshState(), refreshAvatar()]);
     setStatus(result.message);
   };
 
@@ -48,6 +49,7 @@ export default function AccountPage() {
     }
     setStatus("正在登录 MUA…");
     const result = await accounts.loginMua(muaAccount.trim(), muaPassword);
+    await Promise.all([refreshState(), refreshAvatar()]);
     setStatus(result.message);
     if (result.ok) setProfiles(await accounts.listMuaProfiles());
   };
@@ -55,18 +57,21 @@ export default function AccountPage() {
   const switchOffline = async () => {
     setStatus("正在切换到离线账号…");
     const result = await accounts.switchAccountMode("offline");
+    await Promise.all([refreshState(), refreshAvatar()]);
     setStatus(result.message);
   };
 
   const forget = async (mode: string) => {
     setStatus("正在移除本机保存的账号…");
     const result = await accounts.forgetAccount(mode);
+    await Promise.all([refreshState(), refreshAvatar()]);
     setStatus(result.message);
   };
 
   const applySkin = async (path: string) => {
     setStatus("正在应用本地皮肤…");
     await accounts.setOfflineSkin(path);
+    await refreshAvatar();
     setStatus(path.length === 0 ? "已清除本地皮肤。" : "已应用本地皮肤。");
   };
 
@@ -155,7 +160,10 @@ export default function AccountPage() {
                 onClick={() => {
                   setProfiles([]);
                   setStatus(`已选择角色 ${profile.name}，正在完成登录…`);
-                  void accounts.selectMuaProfile("token", profile.id).then((result) => setStatus(result.message));
+                  void accounts.selectMuaProfile("token", profile.id).then(async (result) => {
+                    await refreshState();
+                    setStatus(result.message);
+                  });
                 }}
               >
                 {profile.name}

@@ -24,7 +24,7 @@ function kindLabel(kind: string): string {
 
 /** 我的收藏：收藏列表来自后端状态，安装与取消均通过命令提交。 */
 export default function BookmarksPage() {
-  const { state } = useLauncher();
+  const { state, refreshState } = useLauncher();
   const [status, setStatus] = useState("");
   const [selected, setSelected] = useState<FavoriteInfo | null>(null);
   const [versions, setVersions] = useState<ResourceVersionsInfo | null>(null);
@@ -78,6 +78,7 @@ export default function BookmarksPage() {
   const removeFavorite = async (favorite: FavoriteInfo) => {
     if (selected?.id === favorite.id) closeInstall();
     const result = await toggleBookmark(favorite.id, favorite.name, favorite.description, favorite.kind);
+    await refreshState();
     setStatus(`${result.message} ${favorite.name}`);
   };
 

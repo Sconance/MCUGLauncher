@@ -48,7 +48,7 @@ const PAGE_SIZE = 50;
 
 /** 下载页：搜索安装、原版版本、加载器与整合包导入。 */
 export default function DownloadPage() {
-  const { state } = useLauncher();
+  const { state, refreshState } = useLauncher();
   const [tab, setTab] = useState<"search" | "vanilla" | "loader" | "pack">("search");
   const [status, setStatus] = useState("");
 
@@ -177,6 +177,7 @@ export default function DownloadPage() {
 
   const bookmark = async (item: ContentItem) => {
     const result = await toggleBookmark(item.id, item.name, item.description, category);
+    await refreshState();
     setStatus(result.message);
   };
 

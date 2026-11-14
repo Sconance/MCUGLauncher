@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { taskAction } from "../api/commands/tasks";
 import { useLauncher } from "../state/launcher";
 import "./TasksPage.css";
@@ -17,8 +17,16 @@ export default function TasksPage() {
 
   const act = async (id: string, action: string) => {
     const result = await taskAction(id, action);
+    await refreshTasks();
     setStatus(result.message);
   };
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refreshTasks();
+    }, 1500);
+    return () => window.clearInterval(timer);
+  }, [refreshTasks]);
 
   return (
     <div className="subpage">

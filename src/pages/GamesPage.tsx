@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { stopGame } from "../api/commands/games";
 import { useLauncher } from "../state/launcher";
 import "./GamesPage.css";
@@ -11,8 +11,16 @@ export default function GamesPage() {
   const stop = async (id: string, version: string) => {
     setStatus("正在请求关闭 " + version + "…");
     const result = await stopGame(id);
+    await refreshGames();
     setStatus(result.message);
   };
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refreshGames();
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [refreshGames]);
 
   return (
     <div className="subpage">

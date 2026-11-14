@@ -2,8 +2,8 @@
 //!
 //! 约定：
 //! - 命令名使用 snake_case，前端通过 `invoke("命令名", { camelCase 参数 })` 调用；
-//! - 所有会改变全局状态的命令都会 `emit` 对应事件，前端以事件为唯一数据源；
-//! - 命令返回语义化结果（SavedInfo / LaunchResultInfo 等），失败通过 `Err(String)` 抛出。
+//! - 命令返回语义化结果（SavedInfo / LaunchResultInfo 等），失败通过 `Err(String)` 抛出；
+//! - 状态变更由前端在命令返回后重新调用查询命令获取，事件仅作为可选的推送优化。
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};

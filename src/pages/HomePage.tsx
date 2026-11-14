@@ -102,6 +102,7 @@ export default function HomePage() {
 
   const selectInstance = async (name: string) => {
     const result = await selectInstanceCommand(name);
+    await refreshState();
     setStatus(result.message);
   };
 
@@ -112,6 +113,7 @@ export default function HomePage() {
     }
     setStatus("正在准备启动…");
     const result = await launchGame(current.name);
+    await refreshState();
     setStatus(result.message);
   };
 
@@ -142,6 +144,7 @@ export default function HomePage() {
       return;
     }
     setDialog(null);
+    await refreshState();
     setStatus(result.message);
   };
 
@@ -152,6 +155,7 @@ export default function HomePage() {
       delete next[server.address];
       return next;
     });
+    await refreshState();
     setStatus(result.message);
   };
 
@@ -183,6 +187,7 @@ export default function HomePage() {
       return;
     }
     const result = await saveServerCommand(item.name.trim(), address, "");
+    await refreshState();
     setStatus(result.message);
   };
 

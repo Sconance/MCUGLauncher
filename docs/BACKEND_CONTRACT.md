@@ -1,14 +1,16 @@
 # 前后端契约（Tauri 命令与事件）
 
-前端只通过 `@tauri-apps/api/core` 的 `invoke` 调用后端，通过 `@tauri-apps/api/event` 的 `listen` 接收状态推送。本文档是唯一的契约清单：改动命令名、参数或事件时必须同步修改本文档、`src/api/commands/*.ts` 与 `src/types/launcher.ts`。
+前端只通过 `@tauri-apps/api/core` 的 `invoke` 调用后端：**所有读取与写入都是命令**。前端不依赖事件推送；需要刷新时由页面在命令返回后调用对应的查询命令。事件仅作为后端可选的通知能力保留。
+
+本文档是唯一的契约清单：改动命令名、参数或事件时必须同步修改本文档、`src/api/commands/*.ts` 与 `src/types/launcher.ts`。
 
 ## 1. 约定
 
 - **命令名**：`snake_case`，动词在前，例如 `get_launcher_state`、`save_server`。
 - **参数**：前端传 `camelCase` 键（Tauri 默认映射到 Rust 的 `snake_case` 参数），可省略的参数在 Rust 侧声明为 `Option<T>`。
 - **返回值**：`camelCase` 的强类型 DTO，与 `src/types/launcher.ts` 一致；失败通过 `Err(String)` 抛出，前端包装为 `BackendError`。
-- **状态**：任何改变全局状态的命令都必须 `emit` 对应事件；前端以事件为唯一数据源，不在页面里维护第二份状态。
-- **事件名**：`launcher://<domain>`，只使用字母、数字、`-`、`/`、`:`、`_`。
+- **状态刷新**：写命令只返回操作结果；前端随后调用 `get_launcher_state` / `list_tasks` / `list_games` / `get_community` 等查询命令重新取数。
+- **事件（可选）**：后端可以继续 `emit`，但前端当前不订阅；内核重写时不需要实现事件。
 
 前端统一入口：
 
@@ -126,7 +128,9 @@ const state = await call<LauncherState>("get_launcher_state");
 | `refresh_community` | — | `CommunityData` | 刷新社区内容 |
 | `save_recommendations` | `items` | `SavedInfo` | 保存推荐列表，推送 `community` |
 
-## 3. 事件
+## 3. 事件（可选，当前前端不使用）
+
+后端可以继续 `emit` 以下事件作为推送优化；前端不订阅，删除这些 `emit` 不影响 UI。
 
 | 事件 | 载荷 | 触发时机 |
 | --- | --- | --- |
@@ -136,9 +140,7 @@ const state = await call<LauncherState>("get_launcher_state");
 | `launcher://community` | `CommunityData` | 社区内容刷新或推荐被修改 |
 | `launcher://avatar` | `AvatarInfo` | 账号切换或皮肤变更 |
 | `launcher://toast` | `ToastInfo` | 需要以提示形式展示的消息 |
-| `launcher://error` | `ToastInfo` | 后端主动上报的错误（当前预留） |
-
-前端在 `src/state/launcher.tsx` 订阅以上全部事件，页面通过 `useLauncher()` 读取 `state/tasks/games/community/avatar`。
+| `launcher://error` | `ToastInfo` | 后端主动上报的错误（预留） |
 
 ## 4. 内核重写指引
 
@@ -146,8 +148,8 @@ const state = await call<LauncherState>("get_launcher_state");
 
 1. 用真实配置、账号与队列替换 `demo::Data`，或改写 `state::Backend` 的持有方式；
 2. 逐个实现 `commands.rs` 中的命令体，保持命令名、参数名与返回类型不变；
-3. 修改状态的命令继续 `emit` 对应事件，前端不需要改；
-4. 长任务使用 `OperationCoordinator` 一类的队列，进度通过 `tasks` 事件推送；新增流式进度时优先使用 Tauri `Channel`；
+3. 不需要实现任何事件；前端在写命令返回后会重新调用查询命令；
+4. 长任务使用队列执行，`list_tasks` 返回最新进度；前端任务页每 1.5 秒轮询一次，游戏页每 3 秒轮询一次；
 5. 若确需修改契约，同时更新本文件、`src/api/commands/*`、`src/types/launcher.ts` 与 `src-tauri/src/model.rs`。
 
 ## 5. 待补命令（原生交互）
