@@ -10,6 +10,7 @@ import type {
   ServerPingInfo,
 } from "../types/launcher";
 import Field from "../components/Field";
+import Markdown from "../components/Markdown";
 import Modal from "../components/Modal";
 import { useNavigation } from "../shell/navigation";
 import "./HomePage.css";
@@ -38,23 +39,6 @@ function pingText(ping: ServerPingInfo | undefined): string {
   if (!ping) return "尚未查询";
   if (!ping.online) return "离线";
   return `${ping.players}/${ping.max} 人 · ${ping.ping} ms`;
-}
-
-function Markdown({ text }: { text: string }) {
-  return (
-    <div className="markdown">
-      {text.split("\n").map((line, index) => {
-        const key = `${index}-${line.length}`;
-        if (line.startsWith("### ")) return <h4 key={key}>{line.slice(4)}</h4>;
-        if (line.startsWith("## ")) return <h3 key={key}>{line.slice(3)}</h3>;
-        if (line.startsWith("# ")) return <h2 key={key}>{line.slice(2)}</h2>;
-        if (line.startsWith("> ")) return <blockquote key={key}>{line.slice(2)}</blockquote>;
-        if (line.startsWith("- ")) return <li key={key}>{line.slice(2)}</li>;
-        if (line.trim().length === 0) return <div key={key} className="md-gap" />;
-        return <p key={key}>{line}</p>;
-      })}
-    </div>
-  );
 }
 
 /** 主页：账号卡、实例启动、服务器收藏、公告、推荐与语录。 */

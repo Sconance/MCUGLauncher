@@ -21,7 +21,6 @@ import {
 import type {
   AvatarInfo,
   CommunityData,
-  ContentItem,
   ContentSearchResult,
   ContentUpdatePreviewInfo,
   ContentUpdatesInfo,
@@ -36,6 +35,7 @@ import type {
   LoaderListResult,
   MuaProfileInfo,
   PackPreviewInfo,
+  RecommendationInfo,
   ResourceVersionsResult,
   SaveBackupInfo,
   SavedInfo,
@@ -495,22 +495,9 @@ export const launcher = {
     return clone(communityData);
   },
 
-  async saveRecommendations(items: ContentItem[]): Promise<SavedInfo> {
+  async saveRecommendations(items: RecommendationInfo[]): Promise<SavedInfo> {
     await wait(300);
-    communityData = {
-      ...communityData,
-      recommendations: items.map((item, index) => ({
-        id: `local-${index}`,
-        type: "server" as const,
-        name: item.name,
-        author: item.author,
-        description: item.description,
-        tags: item.tags,
-        version: "",
-        size: "",
-        url: "",
-      })),
-    };
+    communityData = { ...communityData, recommendations: items };
     return saved("本地内容已更新。");
   },
 };
