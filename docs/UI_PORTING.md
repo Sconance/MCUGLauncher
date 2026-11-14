@@ -66,7 +66,7 @@ src/
 | `pages/SettingsPage.tsx` | `Views/SettingsView.axaml` + `.cs` | 已完成（11 个分区：启动/Java/数据源/外观/服务器/存档/恢复/日志/诊断/社区/关于） |
 | `pages/InstancesPage.tsx` | `Views/InstancesView.axaml` + `.cs` | 已完成（模组、启动设置、克隆/导出/卸载/更新） |
 | `pages/AccountPage.tsx` | `Views/AccountView.axaml` + `.cs` | 已完成（账号卡、模式切换、MUA 登录/角色、本地皮肤） |
-| `pages/TasksPage.tsx` | `Views/TasksView.axaml` + `.cs` | 待移植 |
+| `pages/TasksPage.tsx` | `Views/TasksView.axaml` + `.cs` | 已完成（任务列表、进度、暂停/继续/取消/删除） |
 | `pages/GamesPage.tsx` | `Views/GamesView.axaml` + `.cs` | 待移植 |
 | `pages/CommunityPage.tsx` | `Views/CommunityView.axaml` + `.cs` | 待移植 |
 | `pages/BookmarksPage.tsx` | `Views/BookmarksView.axaml` + `.cs` | 待移植 |

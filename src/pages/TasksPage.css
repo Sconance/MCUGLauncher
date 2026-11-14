@@ -1,0 +1,11 @@
+.task-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+}
+
+.task-name {
+  font-weight: 600;
+  word-break: break-word;
+}
