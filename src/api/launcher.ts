@@ -25,6 +25,7 @@ import type {
   ContentSearchResult,
   ContentUpdatePreviewInfo,
   ContentUpdatesInfo,
+  DataSourceSet,
   GameInfo,
   JavaInfo,
   KeyResultInfo,
@@ -182,10 +183,27 @@ export const launcher = {
 
   /* ---------- 设置 ---------- */
 
-  async saveSettings(patch: Partial<LauncherState> & { player?: string; ram?: number }): Promise<SavedInfo> {
+  async saveSettings(patch: Partial<LauncherState>): Promise<SavedInfo> {
     await wait(200);
+    if (patch.root && patch.root !== current.root) {
+      current = {
+        ...current,
+        gameRoots: Array.from(new Set([...current.gameRoots, current.root, patch.root])).filter((value) => value.length > 0),
+      };
+    }
     current = { ...current, ...patch };
     return saved("设置已保存。");
+  },
+
+  async saveCustomSources(sources: DataSourceSet): Promise<SavedInfo> {
+    await wait(160);
+    current = { ...current, customDataSources: sources };
+    return saved("已保存自定义数据源，可点击「使用自定义」切换。");
+  },
+
+  async resetWindow(): Promise<SavedInfo> {
+    await wait(80);
+    return saved("已恢复默认窗口尺寸。");
   },
 
   async scanJava(): Promise<JavaInfo[]> {

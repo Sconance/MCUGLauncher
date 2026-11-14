@@ -63,7 +63,7 @@ src/
 | `pages/ExtrasPage.tsx` | `Views/ExtrasView.axaml` | 已完成（左侧分区导航） |
 | `pages/HomePage.tsx` | `Views/HomeView.axaml` + `.cs` | 已完成（账号卡、实例选择、服务器、公告、推荐、语录） |
 | `pages/DownloadPage.tsx` | `Views/DownloadView.axaml` + `.cs` | 已完成（搜索/详情/版本、原版分页、加载器、整合包） |
-| `pages/SettingsPage.tsx` | `Views/SettingsView.axaml` + `.cs` | 待移植 |
+| `pages/SettingsPage.tsx` | `Views/SettingsView.axaml` + `.cs` | 已完成（11 个分区：启动/Java/数据源/外观/服务器/存档/恢复/日志/诊断/社区/关于） |
 | `pages/InstancesPage.tsx` | `Views/InstancesView.axaml` + `.cs` | 已完成（模组、启动设置、克隆/导出/卸载/更新） |
 | `pages/AccountPage.tsx` | `Views/AccountView.axaml` + `.cs` | 待移植 |
 | `pages/TasksPage.tsx` | `Views/TasksView.axaml` + `.cs` | 待移植 |
