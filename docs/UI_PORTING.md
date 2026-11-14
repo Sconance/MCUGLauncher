@@ -4,7 +4,7 @@
 
 ## 1. 范围与原则
 
-- **只做前端**：页面布局、样式、交互状态与本地演示数据；业务由后续的 Tauri command 提供。
+- **只做前端**：页面布局、样式、交互状态；`src-tauri` 仅提供命令契约与内存演示数据，不包含真实业务实现。
 - **视觉对齐 `origin`**：颜色、字号、圆角、间距来自 `origin/src/MCUGLauncher.Avalonia/Styles/Theme.axaml`，统一收敛到 `src/styles/tokens.css`。
 - **页面与外壳分离**：外壳负责标题栏、导航和全局提示；页面只负责自己的内容。
 - **数据边界固定**：页面不直接拼接 `invoke`，统一调用 `src/api/commands/*`；全局状态统一从 `useLauncher()` 读取。
@@ -74,7 +74,7 @@ src/
 
 | 目标文件 | 原实现 | 状态 |
 | --- | --- | --- |
-| `shell/Shell.tsx` | `ShellWindow.axaml` + `.cs` | 已完成（标题栏、导航、Toast、窗口控制） |
+| `shell/Shell.tsx` | `ShellWindow.axaml` + `.cs` | 已完成（标题栏、导航、窗口控制；Toast 由 `toast.tsx` 提供） |
 | `pages/ExtrasPage.tsx` | `Views/ExtrasView.axaml` | 已完成（左侧分区导航） |
 | `pages/HomePage.tsx` | `Views/HomeView.axaml` + `.cs` | 已完成（账号卡、实例选择、服务器、公告、推荐、语录） |
 | `pages/DownloadPage.tsx` | `Views/DownloadView.axaml` + `.cs` | 已完成（搜索/详情/版本、原版分页、加载器、整合包） |
