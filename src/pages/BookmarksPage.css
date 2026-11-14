@@ -1,0 +1,28 @@
+.favorite-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+}
+
+.favorite-name {
+  font-weight: 600;
+}
+
+.favorite-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 160px;
+  padding: 4px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--radius-btn);
+  overflow-y: auto;
+}

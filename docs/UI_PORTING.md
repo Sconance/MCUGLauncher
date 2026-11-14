@@ -69,7 +69,7 @@ src/
 | `pages/TasksPage.tsx` | `Views/TasksView.axaml` + `.cs` | 已完成（任务列表、进度、暂停/继续/取消/删除） |
 | `pages/GamesPage.tsx` | `Views/GamesView.axaml` + `.cs` | 已完成（运行中游戏列表、关闭游戏） |
 | `pages/CommunityPage.tsx` | `Views/CommunityView.axaml` + `.cs` | 已完成（管理员密钥、公告列表与全文、推荐维护） |
-| `pages/BookmarksPage.tsx` | `Views/BookmarksView.axaml` + `.cs` | 待移植 |
+| `pages/BookmarksPage.tsx` | `Views/BookmarksView.axaml` + `.cs` | 已完成（收藏列表、版本选择安装、取消收藏） |
 
 ## 5. 运行与构建
 
