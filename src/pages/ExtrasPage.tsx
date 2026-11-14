@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import AccountPage from "./AccountPage";
 import BookmarksPage from "./BookmarksPage";
 import CommunityPage from "./CommunityPage";
@@ -21,10 +21,13 @@ const SECTIONS: Section[] = [
   { key: "community", label: "社区管理", page: <CommunityPage /> },
 ];
 
-/** 对应原 ExtrasView：左侧分区导航，右侧承载六个子页面。 */
-export default function ExtrasPage() {
-  const [active, setActive] = useState(SECTIONS[0].key);
+interface ExtrasPageProps {
+  active: string;
+  onChange: (key: string) => void;
+}
 
+/** 对应原 ExtrasView：左侧分区导航，右侧承载六个子页面。 */
+export default function ExtrasPage({ active, onChange }: ExtrasPageProps) {
   return (
     <div className="extras">
       <aside className="extras-nav">
@@ -35,7 +38,7 @@ export default function ExtrasPage() {
               key={section.key}
               type="button"
               className={`list-item ${section.key === active ? "selected" : ""}`}
-              onClick={() => setActive(section.key)}
+              onClick={() => onChange(section.key)}
             >
               {section.label}
             </button>
