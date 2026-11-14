@@ -286,9 +286,17 @@ export const launcher = {
     };
   },
 
-  async queueContentVersion(_token: string, versionId: string): Promise<SavedInfo> {
+  async queueContentVersion(_token: string, versionId: string, _mode = "instance", _path = ""): Promise<SavedInfo> {
     await wait(240);
     return saved(`已加入下载队列：${versionId}`);
+  },
+
+  async toggleBookmark(id: string, name: string, description: string, _author: string, kind: string): Promise<SavedInfo> {
+    const exists = current.favorites.some((favorite) => favorite.id === id);
+    current.favorites = exists
+      ? current.favorites.filter((favorite) => favorite.id !== id)
+      : [...current.favorites, { id, kind, name, description }];
+    return saved(exists ? `已取消收藏 ${name}。` : `已收藏 ${name}。`);
   },
 
   async listVanillaVersions(): Promise<VanillaVersionsResult> {
@@ -311,9 +319,10 @@ export const launcher = {
     return saved(`已加入安装队列：${loader} ${loaderVersion} · ${version}`);
   },
 
-  async previewPack(name: string): Promise<PackPreviewInfo> {
+  async previewPack(path: string): Promise<PackPreviewInfo> {
     await wait(400);
-    return { token: "pack-1", name, root: current.root, game: "1.21.1", loader: "Fabric" };
+    const file = path.split(/[\\/]/).pop() ?? "整合包";
+    return { token: "pack-1", name: file.replace(/\.(mrpack|zip)$/i, ""), root: current.root, game: "1.21.1", loader: "Fabric" };
   },
 
   async confirmPack(_token: string, name: string, root: string): Promise<SavedInfo> {

@@ -1,0 +1,50 @@
+.download-body {
+  flex: 1;
+  min-height: 0;
+  margin-top: 12px;
+  padding-right: 11px;
+  overflow-y: auto;
+}
+
+.download-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.download-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 350px;
+}
+
+.download-name {
+  font-weight: 600;
+}
+
+.version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 180px;
+  padding: 4px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--radius-btn);
+  overflow-y: auto;
+}
+
+.version-list.tall {
+  height: 300px;
+}
+
+.pager {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.pager .muted {
+  text-align: center;
+}
