@@ -19,7 +19,9 @@ src/
 │   └── window.ts        # Tauri 窗口操作（最小化/最大化/关闭），浏览器下静默降级
 ├── components/
 │   ├── Field.tsx        # 表单行：标题 + 控件 + 说明
-│   └── Modal.tsx        # 居中弹层，Esc 关闭
+│   ├── Markdown.tsx     # 公告用轻量 Markdown 渲染
+│   ├── Modal.tsx        # 居中弹层，Esc 关闭
+│   └── PathPrompt.tsx   # 路径输入弹层，替代原生文件对话框
 ├── config.ts            # 应用版本等常量
 ├── data/
 │   └── mock.ts          # 演示数据（接入后端后删除）
@@ -33,8 +35,7 @@ src/
 │   ├── TasksPage.tsx        # 下载任务
 │   ├── GamesPage.tsx        # 运行中的游戏
 │   ├── BookmarksPage.tsx    # 我的收藏
-│   ├── CommunityPage.tsx    # 社区管理
-│   └── PagePlaceholder.tsx  # 未移植页的过渡占位
+│   └── CommunityPage.tsx    # 社区管理
 ├── shell/
 │   ├── Shell.tsx        # 标题栏 + 顶部导航 + 页面宿主 + Toast
 │   ├── Shell.css
@@ -71,6 +72,8 @@ src/
 | `pages/CommunityPage.tsx` | `Views/CommunityView.axaml` + `.cs` | 已完成（管理员密钥、公告列表与全文、推荐维护） |
 | `pages/BookmarksPage.tsx` | `Views/BookmarksView.axaml` + `.cs` | 已完成（收藏列表、版本选择安装、取消收藏） |
 
+以上 11 个页面已全部移植完成，每页对应一次独立提交；`origin/` 中仅剩 `LocalImportDialog`、`FileDropView`、`AnnouncementWindow` 与微软登录窗口未纳入本轮。
+
 ## 5. 运行与构建
 
 ```bash
@@ -94,7 +97,9 @@ npm run tauri dev    # 桌面窗口（Windows 需 Rust 工具链）
 
 ## 7. 已知差异（后续补齐）
 
-- 公告正文使用纯文本展示，原实现用 Markdown 渲染。
-- 右键「收藏」菜单、拖拽导入覆盖层、原生文件对话框尚未移植。
+- 公告正文使用轻量 Markdown（标题/列表/引用/段落），不是完整 Markdown 渲染器。
+- 文件与目录选择使用 `PathPrompt` 路径输入弹层，待接入 Tauri dialog 插件后替换为原生对话框。
+- 拖拽导入覆盖层（`FileDropView`）、本地导入对话框（`LocalImportDialog`）尚未移植；下载页暂以路径输入提示替代。
 - 微软登录窗口（WebView2）属于后端登录流程，不在 UI 移植范围内。
 - 窗口尺寸记忆、任务栏图标等桌面特性待接入 Tauri 配置。
+- 演示数据仍来自 `data/mock.ts`；接入后端后按第 6 节替换 `api/launcher.ts` 并删除该文件。
