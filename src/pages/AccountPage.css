@@ -1,0 +1,44 @@
+.account-scroll {
+  overflow-y: auto;
+  padding-right: 11px;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.account-player {
+  font-size: 20px;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.account-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 91px;
+  height: 91px;
+}
+
+.account-avatar-shadow {
+  position: absolute;
+  width: 75px;
+  height: 78px;
+  box-shadow: 0 0 15px 0 darkgray;
+}
+
+.account-avatar img {
+  width: 91px;
+  height: 91px;
+  image-rendering: pixelated;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

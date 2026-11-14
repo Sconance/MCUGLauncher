@@ -34,6 +34,7 @@ import type {
   LaunchSettings,
   LauncherState,
   LoaderListResult,
+  MuaProfileInfo,
   PackPreviewInfo,
   ResourceVersionsResult,
   SaveBackupInfo,
@@ -154,10 +155,18 @@ export const launcher = {
     return { ok: true, pending: false, message: "微软账号登录成功。" };
   },
 
-  async loginMua(account: string): Promise<{ ok: boolean; pending: boolean; message: string }> {
+  async loginMua(account: string, _password = ""): Promise<{ ok: boolean; pending: boolean; message: string }> {
     await wait(500);
     current = { ...current, player: account || "MuaPlayer", accountType: "mua" };
     return { ok: true, pending: false, message: "MUA 账号登录成功。" };
+  },
+
+  async listMuaProfiles(): Promise<MuaProfileInfo[]> {
+    await wait(200);
+    return [
+      { id: "p1", name: "MuaTester" },
+      { id: "p2", name: "OtherTester" },
+    ];
   },
 
   async switchAccountMode(mode: string): Promise<{ account: string; needsLogin: boolean; message: string }> {
