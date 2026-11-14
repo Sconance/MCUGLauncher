@@ -1,5 +1,5 @@
 {
-  "dotnet.defaultSolution": "MCUGLauncher.sln",
+  "dotnet.defaultSolution": "origin/MCUGLauncher.sln",
   "dotnet.backgroundAnalysis.analyzerDiagnosticsScope": "openFiles",
   "dotnet.backgroundAnalysis.compilerDiagnosticsScope": "openFiles",
   "dotnet.diagnostics.reportInformationAsHint": true,
