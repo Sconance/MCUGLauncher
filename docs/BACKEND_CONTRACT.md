@@ -1,5 +1,7 @@
 # 前后端契约（Tauri 命令与事件）
 
+> 本文记录当前 V1 接口。V2 目标及迁移状态见 [BACKEND_V2.md](BACKEND_V2.md)，尚未完成迁移的接口不得按 V2 调用。
+
 前端只通过 `@tauri-apps/api/core` 的 `invoke` 调用后端：**所有读取与写入都是命令**。前端不依赖事件推送；需要刷新时由页面在命令返回后调用对应的查询命令。事件仅作为后端可选的通知能力保留。
 
 本文档是唯一的契约清单：改动命令名、参数或事件时必须同步修改本文档、`src/api/commands/*.ts` 与 `src/types/launcher.ts`。
@@ -149,7 +151,7 @@ const state = await call<LauncherState>("get_launcher_state");
 1. 用真实配置、账号与队列替换 `demo::Data`，或改写 `state::Backend` 的持有方式；
 2. 逐个实现 `commands.rs` 中的命令体，保持命令名、参数名与返回类型不变；
 3. 不需要实现任何事件；前端在写命令返回后会重新调用查询命令；
-4. 长任务使用队列执行，`list_tasks` 返回最新进度；前端任务页每 1.5 秒轮询一次，游戏页每 3 秒轮询一次；
+4. 长任务使用队列执行，`list_tasks` 返回最新进度；前端全局每 3 秒同步任务、游戏和启动器状态，窗口重新获得焦点时同步；
 5. 若确需修改契约，同时更新本文件、`src/api/commands/*`、`src/types/launcher.ts` 与 `src-tauri/src/model.rs`。
 
 ## 5. 待补命令（原生交互）

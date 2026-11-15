@@ -1,10 +1,18 @@
 import { invoke } from "@tauri-apps/api/core";
 
+export interface ApiError {
+  code: string;
+  message: string;
+  retryable: boolean;
+  fieldErrors?: Record<string, string>;
+}
+
 /** 后端命令失败。`command` 保留原始命令名，便于定位。 */
 export class BackendError extends Error {
   constructor(
     message: string,
     readonly command: string,
+    readonly detail?: ApiError,
   ) {
     super(message);
     this.name = "BackendError";
@@ -36,6 +44,12 @@ export async function call<T>(command: string, args?: Record<string, unknown>): 
   try {
     return await invoke<T>(command, args);
   } catch (error) {
+    if (typeof error === "object" && error !== null &&
+        "code" in error && "message" in error && "retryable" in error &&
+        typeof error.code === "string" && typeof error.message === "string" &&
+        typeof error.retryable === "boolean") {
+      throw new BackendError(error.message, command, error as ApiError);
+    }
     throw new BackendError(normalize(error), command);
   }
 }
