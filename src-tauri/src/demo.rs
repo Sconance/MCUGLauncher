@@ -131,11 +131,11 @@ impl Data {
         self.snapshot()
     }
 
-    pub fn resource_snapshot<T>(&self, revision: u64, data: T) -> ResourceSnapshot<T> {
+    pub fn resource_snapshot<T: serde::Serialize>(&self, revision: u64, data: T) -> ResourceSnapshot {
         ResourceSnapshot {
             epoch: self.epoch.clone(),
             revision,
-            data,
+            data: serde_json::to_value(data).unwrap_or(serde_json::Value::Null),
         }
     }
 

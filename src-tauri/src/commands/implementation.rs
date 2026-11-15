@@ -42,7 +42,7 @@ fn generated_id(prefix: &str) -> String {
 
 /// 返回只包含全局选择的概览资源。
 #[tauri::command]
-pub fn get_overview(backend: State<'_, Backend>) -> ResourceSnapshot<LauncherOverview> {
+pub fn get_overview(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
     data.resource_snapshot(
         data.revisions.overview,
@@ -56,7 +56,7 @@ pub fn get_overview(backend: State<'_, Backend>) -> ResourceSnapshot<LauncherOve
 
 /// 返回全局设置资源。
 #[tauri::command]
-pub fn get_settings(backend: State<'_, Backend>) -> ResourceSnapshot<SettingsInfo> {
+pub fn get_settings(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
     let state = &data.state;
     data.resource_snapshot(
@@ -84,13 +84,13 @@ pub fn get_settings(backend: State<'_, Backend>) -> ResourceSnapshot<SettingsInf
 }
 
 #[tauri::command]
-pub fn list_accounts(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<AccountInfo>> {
+pub fn list_accounts(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
     data.resource_snapshot(data.revisions.accounts, data.state.accounts.clone())
 }
 
 #[tauri::command]
-pub fn list_instances(backend: State<'_, Backend>) -> ResourceSnapshot<InstanceCatalogInfo> {
+pub fn list_instances(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
     data.resource_snapshot(
         data.revisions.instances,
@@ -105,7 +105,7 @@ pub fn list_instances(backend: State<'_, Backend>) -> ResourceSnapshot<InstanceC
 pub fn list_instance_mods(
     backend: State<'_, Backend>,
     instance_id: String,
-) -> Result<ResourceSnapshot<Vec<ModInfo>>, ApiError> {
+) -> Result<ResourceSnapshot, ApiError> {
     let data = backend.data.lock().unwrap();
     if !data
         .state
@@ -129,13 +129,13 @@ pub fn list_instance_mods(
 }
 
 #[tauri::command]
-pub fn list_servers(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<SavedServerInfo>> {
+pub fn list_servers(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
     data.resource_snapshot(data.revisions.servers, data.state.servers.clone())
 }
 
 #[tauri::command]
-pub fn list_bookmarks(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<FavoriteInfo>> {
+pub fn list_bookmarks(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
     data.resource_snapshot(data.revisions.bookmarks, data.state.favorites.clone())
 }
@@ -650,9 +650,9 @@ pub fn restore_save(id: String, world: String) -> Result<SavedInfo, ApiError> {
 
 /// 列出任务队列与当前进度。
 #[tauri::command]
-pub fn list_tasks(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<TaskInfo>> {
+pub fn list_tasks(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
-    let tasks = data
+    let tasks: Vec<TaskInfo> = data
         .tasks
         .iter()
         .cloned()
@@ -707,7 +707,7 @@ pub fn task_action(
 
 /// 列出由本次启动器启动、仍在运行的游戏。
 #[tauri::command]
-pub fn list_game_sessions(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<GameSessionInfo>> {
+pub fn list_game_sessions(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
     data.resource_snapshot(data.revisions.game_sessions, data.games.clone())
 }
@@ -1131,14 +1131,14 @@ pub fn save_launch_options(
 
 /// 读取社区公告、推荐与语录。
 #[tauri::command]
-pub fn get_community(backend: State<'_, Backend>) -> ResourceSnapshot<CommunityData> {
+pub fn get_community(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
     data.resource_snapshot(data.revisions.community, data.community.clone())
 }
 
 /// 重新拉取社区内容。
 #[tauri::command]
-pub fn refresh_community(backend: State<'_, Backend>) -> ResourceSnapshot<CommunityData> {
+pub fn refresh_community(backend: State<'_, Backend>) -> ResourceSnapshot {
     get_community(backend)
 }
 
@@ -1165,3 +1165,4 @@ pub fn save_recommendations(
         Vec::new(),
     )
 }
+

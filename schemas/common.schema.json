@@ -109,7 +109,6 @@
       "properties": {
         "epoch": {
           "type": "string",
-          "minLength": 1,
           "description": "epoch 字段。"
         },
         "revision": {
