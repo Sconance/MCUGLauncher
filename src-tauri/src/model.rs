@@ -11,6 +11,7 @@ pub use crate::schema_dto::generated::content::{
     LoaderListInfo, ResourceVersionInfo, ResourceVersionsInfo, VanillaVersionInfo,
 };
 pub use crate::schema_dto::generated::accounts::{AvatarInfo, MuaProfileInfo};
+pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
 pub use crate::schema_dto::generated::instances::{
     DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
     SavedServerInfo,
@@ -258,26 +259,6 @@ pub enum LoginSessionInfo {
     Expired {
         auth_session_id: String,
     },
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ContentItem {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub author: String,
-    pub icon: String,
-    pub downloads: String,
-    pub tags: Vec<String>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ContentSearchResult {
-    pub category: String,
-    pub request_id: String,
-    pub items: Vec<ContentItem>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Default)]
