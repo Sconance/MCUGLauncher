@@ -48,7 +48,7 @@ const EMPTY_SOURCES: DataSourceSet = { announcements: "", servers: "", recommend
 
 /** 设置页：左侧十一个分区，右侧表单与列表。 */
 export default function SettingsPage() {
-  const { overview, settings, accounts, servers, stateRevision, refreshState } = useLauncher();
+  const { overview, settings, accounts, servers, resourceVersions, refreshState } = useLauncher();
   const [section, setSection] = useState<SectionKey>("launch");
   const [statuses, setStatuses] = useState<Record<string, string>>({});
   const [hydrated, setHydrated] = useState(false);
@@ -169,7 +169,7 @@ export default function SettingsPage() {
         autoChinese,
         ...(offline ? { player: player.trim() } : {}),
       },
-      stateRevision,
+      resourceVersions.settings?.revision ?? 0,
     );
     await refreshState();
     say(result.message);
@@ -178,14 +178,14 @@ export default function SettingsPage() {
   const switchRoot = async (value: string) => {
     setRoot(value);
     say("正在切换游戏目录…");
-    const result = await saveSettingsCommand({ root: value }, stateRevision);
+    const result = await saveSettingsCommand({ root: value }, resourceVersions.settings?.revision ?? 0);
     await refreshState();
     say(result.message);
   };
 
   const saveJava = async () => {
     say("正在保存 Java 设置…");
-    const result = await saveSettingsCommand({ java: javaPath.trim() }, stateRevision);
+    const result = await saveSettingsCommand({ java: javaPath.trim() }, resourceVersions.settings?.revision ?? 0);
     setJava(javaPath.trim());
     await refreshState();
     say(result.message);
@@ -705,7 +705,7 @@ export default function SettingsPage() {
                 className="btn ghost"
                 style={{ alignSelf: "flex-start" }}
                 onClick={() =>
-                  void saveSettingsCommand({ anonymous }, stateRevision).then(async (result) => {
+                  void saveSettingsCommand({ anonymous }, resourceVersions.settings?.revision ?? 0).then(async (result) => {
                     await refreshState();
                     say(result.message);
                   })

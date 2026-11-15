@@ -33,6 +33,7 @@ type CoreResource = "overview" | "settings" | "accounts" | "instances" | "mods" 
 type RuntimeResource = "tasks" | "games" | "community" | "avatar";
 type ResourceKey = CoreResource | RuntimeResource;
 type ResourceStatus = Record<ResourceKey, ResourceLoadState>;
+export type ResourceVersion = { epoch: string; revision: number };
 
 interface LauncherStore {
   overview: LauncherOverview | null;
@@ -43,7 +44,7 @@ interface LauncherStore {
   servers: SavedServerInfo[] | null;
   bookmarks: FavoriteInfo[] | null;
   stateEpoch: string;
-  stateRevision: number;
+  resourceVersions: Partial<Record<ResourceKey, ResourceVersion>>;
   tasks: TaskInfo[];
   games: GameSessionInfo[];
   community: CommunityData | null;
@@ -78,7 +79,6 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   const [servers, setServers] = useState<SavedServerInfo[] | null>(null);
   const [bookmarks, setBookmarks] = useState<FavoriteInfo[] | null>(null);
   const [stateEpoch, setStateEpoch] = useState("");
-  const [stateRevision, setStateRevision] = useState(0);
   const epochRef = useRef("");
   const resourceVersions = useRef<Partial<Record<ResourceKey, { epoch: string; revision: number }>>>({});
   const [tasks, setTasks] = useState<TaskInfo[]>([]);
@@ -166,8 +166,6 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     await Promise.allSettled([
       loadCore("settings", stateCommands.getSettings, (value) => {
         setSettings(value);
-        const version = resourceVersions.current.settings;
-        if (version) setStateRevision(version.revision);
       }),
       loadCore("accounts", stateCommands.listAccounts, setAccounts),
       loadCore("instances", stateCommands.listInstances, setInstances),
@@ -295,7 +293,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     servers,
     bookmarks,
     stateEpoch,
-    stateRevision,
+    resourceVersions: resourceVersions.current,
     tasks,
     games,
     community,
