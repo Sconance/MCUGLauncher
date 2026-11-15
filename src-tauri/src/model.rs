@@ -12,7 +12,8 @@ pub use crate::schema_dto::generated::content::{
     LaunchOptionsInfo, LaunchSettings, LoaderListInfo, ResourceVersionInfo, ResourceVersionsInfo,
     VanillaVersionInfo,
 };
-pub use crate::schema_dto::generated::accounts::{AvatarInfo, MuaProfileInfo};
+pub use crate::schema_dto::generated::accounts::AvatarInfo;
+pub use crate::schema_dto::generated::accounts::LoginSessionInfo;
 pub use crate::schema_dto::generated::accounts::AccountInfo;
 pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
 pub use crate::schema_dto::generated::content::{AnnouncementInfo, CommunityData, QuoteInfo, RecommendationInfo};
@@ -97,19 +98,6 @@ pub struct BackendState {
     pub custom_data_sources: DataSourceSet,
     pub data_source_mode: String,
     pub auto_chinese: bool,
-}
-
-/// 登录会话只暴露当前阶段所需的字段。
-#[derive(Clone, Serialize)]
-#[allow(dead_code)]
-#[serde(tag = "state", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum LoginSessionInfo {
-    AwaitingAuthorization { auth_session_id: String, authorization_url: String },
-    AwaitingProfile { auth_session_id: String, profiles: Vec<MuaProfileInfo> },
-    Succeeded { auth_session_id: String, account_id: String },
-    Failed { auth_session_id: String, error: ApiError },
-    Cancelled { auth_session_id: String },
-    Expired { auth_session_id: String },
 }
 
 impl SavedInfo {
@@ -214,9 +202,10 @@ mod tests {
 
     #[test]
     fn login_session_serializes_as_discriminated_union() {
-        let session = LoginSessionInfo::AwaitingAuthorization {
+        let session = LoginSessionInfo::Variant0 {
             auth_session_id: "auth-1".into(),
             authorization_url: "https://example.invalid/login".into(),
+            state: serde_json::json!("awaitingAuthorization"),
         };
         let value = serde_json::to_value(session).unwrap();
         assert_eq!(value["state"], "awaitingAuthorization");
