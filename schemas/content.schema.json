@@ -585,7 +585,7 @@
           "description": "inherited 字段。"
         },
         "settings": {
-          "type": "object",
+          "$ref": "#/$defs/LaunchSettings",
           "description": "settings 字段。"
         }
       },

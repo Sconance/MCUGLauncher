@@ -544,10 +544,52 @@ export interface LaunchOptionsInfo {
    * inherited 字段。
    */
   inherited: boolean;
+  settings: LaunchSettings1;
+}
+/**
+ * LaunchSettings：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface LaunchSettings1 {
   /**
-   * settings 字段。
+   * autoMemory 字段。
    */
-  settings: {};
+  autoMemory: boolean;
+  /**
+   * fullScreen 字段。
+   */
+  fullScreen: boolean;
+  /**
+   * ramMb 字段。
+   */
+  ramMb: number;
+  /**
+   * width 字段。
+   */
+  width: number;
+  /**
+   * height 字段。
+   */
+  height: number;
+  /**
+   * java 字段。
+   */
+  java: string;
+  /**
+   * jvmArguments 字段。
+   */
+  jvmArguments: string;
+  /**
+   * windowTitle 字段。
+   */
+  windowTitle: string;
+  /**
+   * server 字段。
+   */
+  server: string;
+  /**
+   * autoChinese 字段。
+   */
+  autoChinese: boolean;
 }
 /**
  * 版本选择项。

@@ -1100,9 +1100,9 @@ pub fn read_launch_options(
         settings: LaunchSettings {
             auto_memory: data.state.auto_memory,
             full_screen: false,
-            ram_mb: data.state.ram,
-            width: data.state.width,
-            height: data.state.height,
+            ram_mb: data.state.ram as i64,
+            width: data.state.width as i64,
+            height: data.state.height as i64,
             java: data.state.java.clone(),
             jvm_arguments: String::new(),
             window_title: "MCUG Launcher".into(),

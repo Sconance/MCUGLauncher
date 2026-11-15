@@ -3,12 +3,13 @@
 //! 字段与 `src/types/launcher.ts` 一一对应；序列化为 camelCase，前端可直接使用。
 //! 内核重写时保留这些结构体即可维持 UI 契约不变。
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::collections::HashMap;
 pub use crate::schema_dto::generated::common::{ResourceKeyInfo, SavedInfo};
 pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
 pub use crate::schema_dto::generated::content::{
-    LoaderListInfo, ResourceVersionInfo, ResourceVersionsInfo, VanillaVersionInfo,
+    LaunchOptionsInfo, LaunchSettings, LoaderListInfo, ResourceVersionInfo, ResourceVersionsInfo,
+    VanillaVersionInfo,
 };
 pub use crate::schema_dto::generated::accounts::{AvatarInfo, MuaProfileInfo};
 pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
@@ -169,32 +170,6 @@ pub enum LoginSessionInfo {
     Failed { auth_session_id: String, error: ApiError },
     Cancelled { auth_session_id: String },
     Expired { auth_session_id: String },
-}
-
-#[derive(Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase", default)]
-pub struct LaunchSettings {
-    pub auto_memory: bool,
-    pub full_screen: bool,
-    pub ram_mb: i32,
-    pub width: i32,
-    pub height: i32,
-    pub java: String,
-    pub jvm_arguments: String,
-    pub window_title: String,
-    pub server: String,
-    pub auto_chinese: bool,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct LaunchOptionsInfo {
-    pub request_id: String,
-    pub token: String,
-    pub instance_id: String,
-    pub display_name: String,
-    pub inherited: bool,
-    pub settings: LaunchSettings,
 }
 
 impl SavedInfo {
