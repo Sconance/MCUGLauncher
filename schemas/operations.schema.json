@@ -124,6 +124,89 @@
       "additionalProperties": false,
       "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
     },
+    "JavaInfo": {
+      "type": "object",
+      "required": [
+        "path",
+        "major",
+        "arch",
+        "vendor",
+        "error"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "path 字段。"
+        },
+        "major": {
+          "type": "integer",
+          "description": "major 字段。"
+        },
+        "arch": {
+          "type": "string",
+          "description": "arch 字段。"
+        },
+        "vendor": {
+          "type": "string",
+          "description": "vendor 字段。"
+        },
+        "error": {
+          "type": "string",
+          "description": "error 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "JavaInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ServerPingInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "online",
+        "players",
+        "max",
+        "ping",
+        "motd",
+        "version",
+        "error"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "online": {
+          "type": "boolean",
+          "description": "online 字段。"
+        },
+        "players": {
+          "type": "integer",
+          "description": "players 字段。"
+        },
+        "max": {
+          "type": "integer",
+          "description": "max 字段。"
+        },
+        "ping": {
+          "type": "integer",
+          "description": "ping 字段。"
+        },
+        "motd": {
+          "type": "string",
+          "description": "motd 字段。"
+        },
+        "version": {
+          "type": "string",
+          "description": "version 字段。"
+        },
+        "error": {
+          "type": "string",
+          "description": "error 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ServerPingInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
     "SaveBackupInfo": {
       "type": "object",
       "required": [

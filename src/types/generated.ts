@@ -62,6 +62,8 @@ export interface LauncherDTO {
   FavoriteInfo?: FavoriteInfo;
   DataSourceSet?: DataSourceSet;
   SettingsInfo?: SettingsInfo;
+  JavaInfo?: JavaInfo;
+  ServerPingInfo?: ServerPingInfo;
   SaveBackupInfo?: SaveBackupInfo;
   SystemInfoInfo?: SystemInfoInfo;
   KeyResultInfo?: KeyResultInfo;
@@ -748,6 +750,68 @@ export interface DataSourceSet3 {
    * quotes 字段。
    */
   quotes: string;
+}
+/**
+ * JavaInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface JavaInfo {
+  /**
+   * path 字段。
+   */
+  path: string;
+  /**
+   * major 字段。
+   */
+  major: number;
+  /**
+   * arch 字段。
+   */
+  arch: string;
+  /**
+   * vendor 字段。
+   */
+  vendor: string;
+  /**
+   * error 字段。
+   */
+  error: string;
+}
+/**
+ * ServerPingInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface ServerPingInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * online 字段。
+   */
+  online: boolean;
+  /**
+   * players 字段。
+   */
+  players: number;
+  /**
+   * max 字段。
+   */
+  max: number;
+  /**
+   * ping 字段。
+   */
+  ping: number;
+  /**
+   * motd 字段。
+   */
+  motd: string;
+  /**
+   * version 字段。
+   */
+  version: string;
+  /**
+   * error 字段。
+   */
+  error: string;
 }
 /**
  * SaveBackupInfo：通过 Tauri 命令在前后端之间传输的数据对象。

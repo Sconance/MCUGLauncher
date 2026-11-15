@@ -13,6 +13,7 @@ pub use crate::schema_dto::generated::content::{
 pub use crate::schema_dto::generated::accounts::{AvatarInfo, MuaProfileInfo};
 pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
 pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
+pub use crate::schema_dto::generated::operations::{JavaInfo, ServerPingInfo};
 pub use crate::schema_dto::generated::instances::{
     DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
     SavedServerInfo,
@@ -154,19 +155,6 @@ pub struct GameSessionInfo {
 
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct ServerPingInfo {
-    pub id: String,
-    pub online: bool,
-    pub players: u32,
-    pub max: u32,
-    pub ping: u32,
-    pub motd: String,
-    pub version: String,
-    pub error: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct AnnouncementInfo {
     pub id: String,
     pub title: String,
@@ -209,16 +197,6 @@ pub struct CommunityData {
     pub announcements: Vec<AnnouncementInfo>,
     pub recommendations: Vec<RecommendationInfo>,
     pub quotes: Vec<QuoteInfo>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct JavaInfo {
-    pub path: String,
-    pub major: i32,
-    pub arch: String,
-    pub vendor: String,
-    pub error: String,
 }
 
 /// 登录会话只暴露当前阶段所需的字段。
