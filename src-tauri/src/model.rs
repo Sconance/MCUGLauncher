@@ -10,6 +10,7 @@ pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
 pub use crate::schema_dto::generated::content::{
     LoaderListInfo, ResourceVersionInfo, ResourceVersionsInfo, VanillaVersionInfo,
 };
+pub use crate::schema_dto::generated::accounts::{AvatarInfo, MuaProfileInfo};
 pub use crate::schema_dto::generated::instances::{
     DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
     SavedServerInfo,
@@ -224,23 +225,6 @@ pub struct SaveBackupInfo {
     pub id: String,
     pub created: String,
     pub worlds: Vec<String>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarInfo {
-    pub image: String,
-    pub label: String,
-    pub fallback: bool,
-    pub account: String,
-    pub player: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct MuaProfileInfo {
-    pub id: String,
-    pub name: String,
 }
 
 /// 登录会话只暴露当前阶段所需的字段。
