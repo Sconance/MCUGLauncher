@@ -129,12 +129,6 @@ export interface InstanceCatalogInfo {
   versionGroups: VersionGroupInfo[];
 }
 
-export interface LauncherStateBundle {
-  epoch: string;
-  settingsRevision: number;
-  data: LauncherState;
-}
-
 export interface TaskInfo {
   id: string;
   name: string;
