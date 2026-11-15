@@ -4,6 +4,7 @@
 //! 内核重写时保留这些结构体即可维持 UI 契约不变。
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// 可缓存资源的版本化快照。
 #[derive(Clone, Serialize)]
@@ -103,7 +104,8 @@ pub struct VersionGroupInfo {
 
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct LauncherState {
+/// 演示内核的内部聚合存储，不是前端 DTO；查询接口必须返回独立资源快照。
+pub struct BackendState {
     pub app_version: String,
     pub active_account_id: Option<String>,
     pub accounts: Vec<AccountInfo>,
@@ -574,6 +576,8 @@ pub struct ApiError {
     pub code: &'static str,
     pub message: String,
     pub retryable: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub field_errors: Option<HashMap<String, String>>,
 }
 
 impl ApiError {
@@ -582,6 +586,18 @@ impl ApiError {
             code: "UNSUPPORTED",
             message: format!("演示后端尚未实现 {command}，操作未执行。"),
             retryable: false,
+            field_errors: None,
+        }
+    }
+
+    pub fn validation(message: impl Into<String>, field: &str, detail: impl Into<String>) -> Self {
+        let mut field_errors = HashMap::new();
+        field_errors.insert(field.into(), detail.into());
+        Self {
+            code: "VALIDATION_ERROR",
+            message: message.into(),
+            retryable: false,
+            field_errors: Some(field_errors),
         }
     }
 }
@@ -607,6 +623,7 @@ impl TaskInfo {
                 code: "CONFLICT",
                 message: "当前任务状态不允许此操作。".into(),
                 retryable: false,
+                field_errors: None,
             });
         }
         self.status = match action {
@@ -659,5 +676,13 @@ mod tests {
         assert_eq!(value["state"], "awaitingAuthorization");
         assert_eq!(value["authSessionId"], "auth-1");
         assert!(value.get("profiles").is_none());
+    }
+
+    #[test]
+    fn validation_error_serializes_field_errors() {
+        let error = ApiError::validation("设置校验失败。", "ram", "内存超出范围。");
+        let value = serde_json::to_value(error).unwrap();
+        assert_eq!(value["code"], "VALIDATION_ERROR");
+        assert_eq!(value["fieldErrors"]["ram"], "内存超出范围。");
     }
 }
