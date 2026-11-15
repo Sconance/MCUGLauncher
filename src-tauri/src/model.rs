@@ -137,11 +137,14 @@ pub struct TaskInfo {
 
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct GameInfo {
-    pub id: String,
-    pub version: String,
-    pub player: String,
-    pub pid: u32,
+pub struct GameSessionInfo {
+    pub session_id: String,
+    pub instance_id: String,
+    pub account_id: String,
+    pub status: String,
+    pub pid: Option<u32>,
+    pub exit_code: Option<i32>,
+    pub error: Option<ApiError>,
 }
 
 #[derive(Clone, Serialize, Default)]

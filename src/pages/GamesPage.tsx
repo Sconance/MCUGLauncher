@@ -5,12 +5,13 @@ import "./GamesPage.css";
 
 /** 运行中的游戏：列表来自全局命令同步，关闭通过命令提交。 */
 export default function GamesPage() {
-  const { games, refreshGames } = useLauncher();
+  const { state, games, refreshGames } = useLauncher();
   const [status, setStatus] = useState("");
 
-  const stop = async (id: string, version: string) => {
-    setStatus("正在请求关闭 " + version + "…");
-    const result = await stopGame(id);
+  const stop = async (sessionId: string, instanceId: string) => {
+    const name = state?.instances.find((item) => item.id === instanceId)?.displayName ?? instanceId;
+    setStatus("正在请求关闭 " + name + "…");
+    const result = await stopGame(sessionId);
     await refreshGames();
     setStatus(result.message);
   };
@@ -33,14 +34,21 @@ export default function GamesPage() {
             <div className="card muted">没有由本次启动器启动的游戏。</div>
           ) : (
             games.map((game) => (
-              <article className="card game-card" key={game.id}>
+              <article className="card game-card" key={game.sessionId}>
                 <div className="stack" style={{ gap: 2 }}>
-                  <span className="game-version">{game.version}</span>
+                  <span className="game-version">
+                    {state?.instances.find((item) => item.id === game.instanceId)?.displayName ?? game.instanceId}
+                  </span>
                   <span className="muted">
-                    玩家 {game.player} · PID {game.pid}
+                    {game.status} · {game.pid === null ? "PID 待分配" : `PID ${game.pid}`}
                   </span>
                 </div>
-                <button type="button" className="btn ghost" onClick={() => void stop(game.id, game.version)}>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={game.status !== "running"}
+                  onClick={() => void stop(game.sessionId, game.instanceId)}
+                >
                   关闭游戏
                 </button>
               </article>

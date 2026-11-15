@@ -6,14 +6,14 @@ import * as stateCommands from "../api/commands/state";
 import * as taskCommands from "../api/commands/tasks";
 import { isTauri } from "../api/invoke";
 import { useToast } from "../shell/toast";
-import type { AvatarInfo, CommunityData, GameInfo, LauncherState, TaskInfo } from "../types/launcher";
+import type { AvatarInfo, CommunityData, GameSessionInfo, LauncherState, TaskInfo } from "../types/launcher";
 
 interface LauncherStore {
   state: LauncherState | null;
   stateEpoch: string;
   stateRevision: number;
   tasks: TaskInfo[];
-  games: GameInfo[];
+  games: GameSessionInfo[];
   community: CommunityData | null;
   avatar: AvatarInfo | null;
   ready: boolean;
@@ -42,7 +42,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   const [stateRevision, setStateRevision] = useState(0);
   const stateVersion = useRef({ epoch: "", revision: 0 });
   const [tasks, setTasks] = useState<TaskInfo[]>([]);
-  const [games, setGames] = useState<GameInfo[]>([]);
+  const [games, setGames] = useState<GameSessionInfo[]>([]);
   const [community, setCommunity] = useState<CommunityData | null>(null);
   const [avatar, setAvatar] = useState<AvatarInfo | null>(null);
   const mounted = useRef(true);
@@ -83,7 +83,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     const sequence = (requests.current.Games ?? 0) + 1;
     requests.current.Games = sequence;
     try {
-      const next = await gameCommands.listGames();
+      const next = await gameCommands.listGameSessions();
       if (mounted.current && requests.current.Games === sequence) setGames(next);
     } catch (failure) {
       if (mounted.current) notify(messageOf(failure));

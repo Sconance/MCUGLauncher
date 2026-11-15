@@ -101,11 +101,14 @@ export interface TaskInfo {
   allowedActions: ("pause" | "resume" | "cancel" | "delete")[];
 }
 
-export interface GameInfo {
-  id: string;
-  version: string;
-  player: string;
-  pid: number;
+export interface GameSessionInfo {
+  sessionId: string;
+  instanceId: string;
+  accountId: string;
+  status: "preparing" | "starting" | "running" | "stopping" | "exited" | "failed";
+  pid: number | null;
+  exitCode: number | null;
+  error: { code: string; message: string; retryable: boolean } | null;
 }
 
 export interface ServerPingInfo {

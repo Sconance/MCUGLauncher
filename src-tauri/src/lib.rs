@@ -48,7 +48,7 @@ pub fn run() {
             // 任务与游戏
             commands::list_tasks,
             commands::task_action,
-            commands::list_games,
+            commands::list_game_sessions,
             commands::stop_game,
             // 内容与版本
             commands::search_content,

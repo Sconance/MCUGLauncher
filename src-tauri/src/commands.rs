@@ -453,14 +453,14 @@ pub fn task_action(
 
 /// 列出由本次启动器启动、仍在运行的游戏。
 #[tauri::command]
-pub fn list_games(backend: State<'_, Backend>) -> Vec<GameInfo> {
+pub fn list_game_sessions(backend: State<'_, Backend>) -> Vec<GameSessionInfo> {
     backend.data.lock().unwrap().games.clone()
 }
 
 /// 请求关闭指定游戏进程。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn stop_game(app: AppHandle, backend: State<'_, Backend>, id: String) -> Result<SavedInfo, ApiError> {
+pub fn stop_game(app: AppHandle, backend: State<'_, Backend>, session_id: String) -> Result<SavedInfo, ApiError> {
     Err(ApiError::unsupported("stop_game"))
 }
 

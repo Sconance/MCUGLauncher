@@ -17,7 +17,7 @@
 - **命令名**：`snake_case`，动词在前，例如 `get_launcher_state`、`save_server`。
 - **参数**：前端传 `camelCase` 键（Tauri 默认映射到 Rust 的 `snake_case` 参数），可省略的参数在 Rust 侧声明为 `Option<T>`。
 - **返回值**：`camelCase` 的强类型 DTO，与 `src/types/launcher.ts` 一致；失败通过 `Err(String)` 抛出，前端包装为 `BackendError`。
-- **状态刷新**：写命令只返回操作结果；前端随后调用 `get_launcher_state` / `list_tasks` / `list_games` / `get_community` 等查询命令重新取数。
+- **状态刷新**：写命令只返回操作结果；前端随后调用 `get_launcher_state` / `list_tasks` / `list_game_sessions` / `get_community` 等查询命令重新取数。
 - **事件（可选）**：后端可以继续 `emit`，但前端当前不订阅；内核重写时不需要实现事件。
 
 前端统一入口：
@@ -93,8 +93,8 @@ const state = await call<LauncherState>("get_launcher_state");
 | --- | --- | --- | --- |
 | `list_tasks` | — | `TaskInfo[]` | 任务列表 |
 | `task_action` | `id`, `action`（`pause`/`resume`/`cancel`/`delete`） | `SavedInfo` | 任务操作，推送 `tasks` |
-| `list_games` | — | `GameInfo[]` | 运行中游戏 |
-| `stop_game` | `id` | `SavedInfo` | 关闭游戏，推送 `games` |
+| `list_game_sessions` | — | `GameSessionInfo[]` | 游戏会话及其生命周期状态 |
+| `stop_game` | `sessionId` | `SavedInfo` | 请求停止游戏会话；当前演示后端返回 `UNSUPPORTED` |
 
 ### 内容与版本
 
@@ -143,7 +143,7 @@ const state = await call<LauncherState>("get_launcher_state");
 | --- | --- | --- |
 | `launcher://state` | `LauncherState` | 任何全局状态变化（实例、账号、设置、收藏、模组等） |
 | `launcher://tasks` | `TaskInfo[]` | 任务队列变化 |
-| `launcher://games` | `GameInfo[]` | 游戏启动/退出 |
+| `launcher://games` | `GameSessionInfo[]` | 游戏会话状态变化 |
 | `launcher://community` | `CommunityData` | 社区内容刷新或推荐被修改 |
 | `launcher://avatar` | `AvatarInfo` | 账号切换或皮肤变更 |
 | `launcher://toast` | `ToastInfo` | 需要以提示形式展示的消息 |
