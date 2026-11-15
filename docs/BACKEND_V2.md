@@ -14,7 +14,7 @@
 
 后端持久状态包括设置、实例配置、账号记录、收藏。后端运行状态包括任务、游戏会话、登录会话、探测结果。前端仅拥有页面、搜索条件、表单草稿和缓存状态。
 
-资源拆分为 overview、settings、accounts、instances、instanceMods(instanceId)、instanceLaunchSettings(instanceId)、tasks、gameSessions、servers、bookmarks、community。overview 仅包含 appVersion、selectedInstanceId、activeAccountId。未选择使用 null，不使用空字符串。
+资源拆分为 overview、settings、accounts、instances、instanceMods(instanceId)、instanceLaunchSettings(instanceId)、tasks、gameSessions、servers、bookmarks、community。前端状态容器直接保存这些独立资源，不再重新聚合 LauncherState。overview 仅包含 appVersion、selectedInstanceId、activeAccountId。未选择使用 null，不使用空字符串。
 
 实例使用持久稳定 ID；名称和目录不是主键。当前选择只保存 `selectedInstanceId`，版本清单属于安装目录。模组、存档、安装、启动、备份等请求必须显式携带 `instanceId`；服务器和账号也使用稳定 ID。重命名不能改变 ID。
 
@@ -22,7 +22,7 @@
 
 可缓存查询返回 { epoch, revision, data }。epoch 标识后端运行代次，revision 是同资源同代次递增的安全整数。不同资源的 revision 不可比较。epoch 改变时清空旧缓存并重新加载。
 
-短写入返回 { data, changed }。changed 是结构化资源键数组，例如 { kind: "instanceMods", instanceId }。命令成功表示实际提交成功；提示文本不得参与业务判断。配置写入携带 expectedRevision，过期返回 CONFLICT。
+短写入返回 { message, changed, entityIds }。changed 是结构化资源键数组，例如 { kind: "instanceMods", instanceId }；entityIds 列出新建、修改或删除的实体 ID。命令成功表示实际提交成功；提示文本不得参与业务判断。配置写入携带 expectedRevision，过期返回 CONFLICT。
 
 字段补丁：省略表示保持，允许清除的字段以 null 表示清除，后端必须区分这两种情况。配置持久化成功后才能返回成功。
 

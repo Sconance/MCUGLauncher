@@ -20,7 +20,7 @@
 - **参数**：前端传 `camelCase` 键（Tauri 默认映射到 Rust 的 `snake_case` 参数），可省略的参数在 Rust 侧声明为 `Option<T>`。
 - **返回值**：`camelCase` 的强类型 DTO，与 `src/types/launcher.ts` 一致；失败通过 `Err(ApiError)` 抛出，前端包装为 `BackendError`。
 - **错误**：统一为 `{ code, message, retryable, fieldErrors? }`。当前错误码包括 `VALIDATION_ERROR`、`NOT_FOUND`、`CONFLICT`、`BUSY`、`AUTH_REQUIRED`、`NETWORK_ERROR`、`IO_ERROR`、`PLAN_EXPIRED`、`INTERNAL_ERROR` 与 `UNSUPPORTED`。
-- **状态刷新**：写命令只返回操作结果；前端随后读取受影响的独立资源，例如 `get_overview`、`list_tasks`、`list_game_sessions`。
+- **写入结果**：写命令返回 `{ message, changed, entityIds }`；`changed` 列出受影响的资源键，前端随后按资源键读取对应独立资源。
 - **事件（可选）**：后端可以继续 `emit`，但前端当前不订阅；内核重写时不需要实现事件。
 
 前端统一入口：
@@ -49,8 +49,8 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `launch_game` | `instanceId` | `LaunchAcceptedInfo` | 接受后返回会话与准备任务 ID；演示后端返回 `UNSUPPORTED` |
-| `launch_to_server` | `instanceId`, `serverAddress` | `LaunchAcceptedInfo` | 接受直连启动；演示后端返回 `UNSUPPORTED` |
+| `launch_game` | `instanceId`, `accountId` | `LaunchAcceptedInfo` | 接受后返回会话与准备任务 ID；演示后端返回 `UNSUPPORTED` |
+| `launch_to_server` | `instanceId`, `accountId`, `serverAddress` | `LaunchAcceptedInfo` | 接受直连启动；演示后端返回 `UNSUPPORTED` |
 
 ### 服务器
 
@@ -114,9 +114,9 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `queue_content_version` | `token`, `versionId`, `mode?`, `path?` | `SavedInfo` | 加入下载队列 |
 | `toggle_bookmark` | `id`, `name`, `description`, `kind` | `SavedInfo` | 收藏/取消收藏，推送 `state` |
 | `list_vanilla_versions` | — | `VanillaVersionInfo[]` | 原版版本清单 |
-| `install_vanilla` | `version` | `SavedInfo` | 安装原版 |
-| `list_loaders` | `version`, `loader` | `LoaderListInfo` | 加载器版本 |
-| `install_loader` | `version`, `loader`, `loaderVersion` | `SavedInfo` | 安装加载器 |
+| `install_vanilla` | `minecraftVersion` | `SavedInfo` | 安装原版 |
+| `list_loaders` | `minecraftVersion`, `loader` | `LoaderListInfo` | 加载器版本 |
+| `install_loader` | `minecraftVersion`, `loader`, `loaderVersion` | `SavedInfo` | 安装加载器 |
 | `preview_pack` | `path` | `PackPreviewInfo` | 读取整合包计划；演示后端返回 `UNSUPPORTED` |
 | `confirm_pack` | `planId`, `name`, `directory` | `SavedInfo` | 按计划确认导入；演示后端返回 `UNSUPPORTED` |
 
@@ -126,15 +126,15 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | --- | --- | --- | --- |
 | `preview_uninstall` | `instanceId` | `UninstallPreviewInfo` | 生成绑定实例修订号、十分钟有效的计划 |
 | `apply_uninstall` | `planId` | `SavedInfo` | 校验计划后返回 `UNSUPPORTED`，不删除文件 |
-| `clone_instance` | `version`, `name`, `saves?`, `servers?` | `SavedInfo` | 克隆实例 |
-| `export_instance` | `version`, `path`, `servers?`, `saves?` | `SavedInfo` | 导出整合包 |
-| `check_updates` | `version` | `ContentUpdatesInfo` | 检查内容更新 |
+| `clone_instance` | `instanceId`, `displayName`, `saves?`, `servers?` | `SavedInfo` | 克隆实例 |
+| `export_instance` | `instanceId`, `path`, `servers?`, `saves?` | `SavedInfo` | 导出整合包 |
+| `check_updates` | `instanceId` | `ContentUpdatesInfo` | 检查内容更新 |
 | `preview_updates` | `checkId`, `projects?` | `ContentUpdatePreviewInfo` | 生成更新计划；演示后端返回 `UNSUPPORTED` |
 | `apply_updates` | `planId` | `SavedInfo` | 按计划执行更新；演示后端返回 `UNSUPPORTED` |
 | `toggle_mod` | `instanceId`, `modId`, `enabled` | `SavedInfo` | 按实例和模组 ID 启用/禁用，推送 `state` |
 | `delete_mod` | `instanceId`, `modId` | `SavedInfo` | 按实例和模组 ID 删除，推送 `state` |
-| `read_launch_options` | `version`, `requestId?` | `LaunchOptionsInfo` | 读取实例启动设置 |
-| `save_launch_options` | `token`, `version`, `name`, `settings`, `inherit?` | `SavedInfo` | 演示后端返回 `UNSUPPORTED`，不会改写全局设置 |
+| `read_launch_options` | `instanceId`, `requestId?` | `LaunchOptionsInfo` | 读取实例启动设置 |
+| `save_launch_options` | `token`, `instanceId`, `displayName`, `settings`, `inherit?` | `SavedInfo` | 演示后端返回 `UNSUPPORTED`，不会改写全局设置 |
 
 ### 社区
 
