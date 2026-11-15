@@ -177,7 +177,7 @@ export interface AccountInfo {
   /**
    * kind 字段。
    */
-  kind: "microsoft" | "mua" | "offline";
+  kind: string;
   /**
    * player 字段。
    */
@@ -185,7 +185,7 @@ export interface AccountInfo {
   /**
    * status 字段。
    */
-  status: "ready" | "expired" | "invalid";
+  status: string;
 }
 /**
  * MuaProfileInfo：通过 Tauri 命令在前后端之间传输的数据对象。

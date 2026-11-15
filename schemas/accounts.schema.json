@@ -139,11 +139,6 @@
         },
         "kind": {
           "type": "string",
-          "enum": [
-            "microsoft",
-            "mua",
-            "offline"
-          ],
           "description": "kind 字段。"
         },
         "player": {
@@ -152,11 +147,6 @@
         },
         "status": {
           "type": "string",
-          "enum": [
-            "ready",
-            "expired",
-            "invalid"
-          ],
           "description": "status 字段。"
         }
       },

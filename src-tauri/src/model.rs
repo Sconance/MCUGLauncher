@@ -13,6 +13,7 @@ pub use crate::schema_dto::generated::content::{
     VanillaVersionInfo,
 };
 pub use crate::schema_dto::generated::accounts::{AvatarInfo, MuaProfileInfo};
+pub use crate::schema_dto::generated::accounts::AccountInfo;
 pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
 pub use crate::schema_dto::generated::content::{AnnouncementInfo, CommunityData, QuoteInfo, RecommendationInfo};
 pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
@@ -64,15 +65,6 @@ impl Default for DataSourceSet {
     fn default() -> Self {
         Self::demo()
     }
-}
-
-#[derive(Clone, Debug, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct AccountInfo {
-    pub id: String,
-    pub kind: String,
-    pub player: String,
-    pub status: String,
 }
 
 #[derive(Clone, Serialize, Default)]
