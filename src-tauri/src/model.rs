@@ -10,7 +10,7 @@ pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
 pub use crate::schema_dto::generated::content::{
     LoaderListInfo, ResourceVersionInfo, ResourceVersionsInfo, VanillaVersionInfo,
 };
-pub use crate::schema_dto::generated::accounts::AvatarInfo;
+pub use crate::schema_dto::generated::accounts::{AvatarInfo, MuaProfileInfo};
 pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
 pub use crate::schema_dto::generated::content::{AnnouncementInfo, CommunityData, QuoteInfo, RecommendationInfo};
 pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
