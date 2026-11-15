@@ -3,8 +3,11 @@
 //! 全部集中在 `Data` 里，替换为真实实现时可以整块删除。
 
 use crate::model::*;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct Data {
+    pub epoch: String,
+    pub state_revision: u64,
     pub state: LauncherState,
     pub tasks: Vec<TaskInfo>,
     pub games: Vec<GameInfo>,
@@ -21,6 +24,11 @@ pub struct Data {
 impl Data {
     pub fn demo() -> Self {
         Self {
+            epoch: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|duration| format!("epoch-{}", duration.as_nanos()))
+                .unwrap_or_else(|_| "epoch-demo".into()),
+            state_revision: 1,
             state: demo_state(),
             tasks: demo_tasks(),
             games: vec![GameInfo {
@@ -62,8 +70,50 @@ impl Data {
         self.state.clone()
     }
 
+    pub fn versioned_snapshot(&self) -> ResourceSnapshot<LauncherState> {
+        ResourceSnapshot {
+            epoch: self.epoch.clone(),
+            revision: self.state_revision,
+            data: self.snapshot(),
+        }
+    }
+
+    pub fn mutating_snapshot(&mut self) -> LauncherState {
+        self.state_revision = self.state_revision.saturating_add(1);
+        self.snapshot()
+    }
+
+    pub fn ensure_state_revision(&self, expected: u64) -> Result<(), ApiError> {
+        if self.state_revision == expected {
+            Ok(())
+        } else {
+            Err(ApiError {
+                code: "CONFLICT",
+                message: "设置已在其他位置发生变化，请刷新后重试。".into(),
+                retryable: true,
+            })
+        }
+    }
+
     pub fn avatar_for_current(&self) -> AvatarInfo {
         avatar_for(&self.state.player, &self.state.account_type)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn state_revision_changes_only_after_mutation() {
+        let mut data = Data::demo();
+        let first = data.versioned_snapshot();
+        let second = data.versioned_snapshot();
+        assert_eq!(first.revision, second.revision);
+
+        data.mutating_snapshot();
+        assert_eq!(data.state_revision, first.revision + 1);
+        assert_eq!(data.ensure_state_revision(first.revision).unwrap_err().code, "CONFLICT");
     }
 }
 

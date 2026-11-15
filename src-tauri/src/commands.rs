@@ -40,8 +40,8 @@ fn generated_id(prefix: &str) -> String {
 
 /// 返回启动器完整状态快照。
 #[tauri::command]
-pub fn get_launcher_state(backend: State<'_, Backend>) -> LauncherState {
-    backend.data.lock().unwrap().snapshot()
+pub fn get_launcher_state(backend: State<'_, Backend>) -> ResourceSnapshot<LauncherState> {
+    backend.data.lock().unwrap().versioned_snapshot()
 }
 
 /// 切换当前实例并持久化选择。
@@ -61,7 +61,7 @@ pub fn select_instance(
             });
         }
         data.state.selected_instance_id = Some(instance_id.clone());
-        data.snapshot()
+        data.mutating_snapshot()
     };
     emit(&app, EVENT_STATE, state);
     Ok(SavedInfo::new("当前实例已切换。"))
@@ -129,7 +129,7 @@ pub fn save_server(
                 instance_id,
             });
         }
-        data.snapshot()
+        data.mutating_snapshot()
     };
     if ok {
         emit(&app, EVENT_STATE, state);
@@ -147,7 +147,7 @@ pub fn delete_server(app: AppHandle, backend: State<'_, Backend>, id: String) ->
         if data.state.servers.len() == before {
             return Err(ApiError { code: "NOT_FOUND", message: "服务器收藏不存在。".into(), retryable: false });
         }
-        data.snapshot()
+        data.mutating_snapshot()
     };
     emit(&app, EVENT_STATE, state);
     Ok(SavedInfo::new("服务器已删除。"))
@@ -214,7 +214,7 @@ pub fn switch_account_mode(
         data.state.account_type = mode.clone();
         let avatar = avatar_for(&data.state.player, &mode);
         data.avatar = avatar.clone();
-        (data.snapshot(), avatar)
+        (data.mutating_snapshot(), avatar)
     };
     emit(&app, EVENT_STATE, state);
     emit(&app, EVENT_AVATAR, avatar);
@@ -233,7 +233,7 @@ pub fn forget_account(app: AppHandle, backend: State<'_, Backend>, mode: String)
         data.state.account_type = "offline".into();
         let avatar = avatar_for(&data.state.player, "offline");
         data.avatar = avatar.clone();
-        (data.snapshot(), avatar)
+        (data.mutating_snapshot(), avatar)
     };
     emit(&app, EVENT_STATE, state);
     emit(&app, EVENT_AVATAR, avatar);
@@ -266,9 +266,11 @@ pub fn save_settings(
     app: AppHandle,
     backend: State<'_, Backend>,
     patch: AppSettingsPatch,
-) -> SavedInfo {
+    expected_revision: u64,
+) -> Result<SavedInfo, ApiError> {
     let state = {
         let mut data = backend.data.lock().unwrap();
+        data.ensure_state_revision(expected_revision)?;
         let state = &mut data.state;
         if let Some(root) = patch.root.filter(|value| !value.is_empty()) {
             if root != state.root {
@@ -305,10 +307,10 @@ pub fn save_settings(
                 state.player = player;
             }
         }
-        data.snapshot()
+        data.mutating_snapshot()
     };
     emit(&app, EVENT_STATE, state);
-    SavedInfo::new("设置已保存。")
+    Ok(SavedInfo::new("设置已保存。"))
 }
 
 /// 扫描本机可用的 Java 运行时。
@@ -328,7 +330,7 @@ pub fn save_custom_sources(
     let state = {
         let mut data = backend.data.lock().unwrap();
         data.state.custom_data_sources = sources;
-        data.snapshot()
+        data.mutating_snapshot()
     };
     emit(&app, EVENT_STATE, state);
     SavedInfo::new("已保存自定义数据源，可点击「使用自定义」切换。")
@@ -340,7 +342,7 @@ pub fn use_data_sources(app: AppHandle, backend: State<'_, Backend>, mode: Strin
     let state = {
         let mut data = backend.data.lock().unwrap();
         data.state.data_source_mode = mode.clone();
-        data.snapshot()
+        data.mutating_snapshot()
     };
     emit(&app, EVENT_STATE, state);
     let message = if mode == "custom" {
@@ -575,7 +577,7 @@ pub fn toggle_bookmark(
                 description,
             });
         }
-        data.snapshot()
+        data.mutating_snapshot()
     };
     emit(&app, EVENT_STATE, &state);
     if state.favorites.iter().any(|item| item.name == name) {
@@ -725,7 +727,7 @@ pub fn toggle_mod(
         let item = data.state.mods.iter_mut().find(|item| item.id == mod_id)
             .ok_or_else(|| ApiError { code: "NOT_FOUND", message: "模组不存在。".into(), retryable: false })?;
         item.enabled = enabled;
-        data.snapshot()
+        data.mutating_snapshot()
     };
     emit(&app, EVENT_STATE, state);
     Ok(SavedInfo::new(if enabled {
@@ -753,7 +755,7 @@ pub fn delete_mod(
         if data.state.mods.len() == before {
             return Err(ApiError { code: "NOT_FOUND", message: "模组不存在。".into(), retryable: false });
         }
-        data.snapshot()
+        data.mutating_snapshot()
     };
     emit(&app, EVENT_STATE, state);
     Ok(SavedInfo::new("模组已删除。"))
@@ -806,7 +808,7 @@ pub fn save_launch_options(
         data.state.width = settings.width;
         data.state.height = settings.height;
         data.state.java = settings.java;
-        data.snapshot()
+        data.mutating_snapshot()
     };
     emit(&app, EVENT_STATE, state);
     SavedInfo::new("启动选项已保存。")

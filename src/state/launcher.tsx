@@ -10,6 +10,8 @@ import type { AvatarInfo, CommunityData, GameInfo, LauncherState, TaskInfo } fro
 
 interface LauncherStore {
   state: LauncherState | null;
+  stateEpoch: string;
+  stateRevision: number;
   tasks: TaskInfo[];
   games: GameInfo[];
   community: CommunityData | null;
@@ -36,6 +38,9 @@ function messageOf(error: unknown): string {
 export function LauncherProvider({ children }: { children: ReactNode }) {
   const { notify } = useToast();
   const [state, setState] = useState<LauncherState | null>(null);
+  const [stateEpoch, setStateEpoch] = useState("");
+  const [stateRevision, setStateRevision] = useState(0);
+  const stateVersion = useRef({ epoch: "", revision: 0 });
   const [tasks, setTasks] = useState<TaskInfo[]>([]);
   const [games, setGames] = useState<GameInfo[]>([]);
   const [community, setCommunity] = useState<CommunityData | null>(null);
@@ -50,7 +55,14 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     requests.current.State = sequence;
     try {
       const next = await stateCommands.getState();
-      if (mounted.current && requests.current.State === sequence) setState(next);
+      const current = stateVersion.current;
+      const isCurrent = next.epoch === current.epoch;
+      if (mounted.current && requests.current.State === sequence && (!isCurrent || next.revision >= current.revision)) {
+        stateVersion.current = { epoch: next.epoch, revision: next.revision };
+        setStateEpoch(next.epoch);
+        setStateRevision(next.revision);
+        setState(next.data);
+      }
     } catch (failure) {
       if (mounted.current) notify(messageOf(failure));
     }
@@ -136,6 +148,8 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
 
   const value: LauncherStore = {
     state,
+    stateEpoch,
+    stateRevision,
     tasks,
     games,
     community,

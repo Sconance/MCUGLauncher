@@ -5,6 +5,15 @@
 
 use serde::{Deserialize, Serialize};
 
+/// 可缓存资源的版本化快照。
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceSnapshot<T> {
+    pub epoch: String,
+    pub revision: u64,
+    pub data: T,
+}
+
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceInfo {

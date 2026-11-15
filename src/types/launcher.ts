@@ -3,6 +3,12 @@
  * 字段名与 Rust 的 serde(camelCase) 输出一致，命令返回值可直接使用。
  */
 
+export interface ResourceSnapshot<T> {
+  epoch: string;
+  revision: number;
+  data: T;
+}
+
 export interface InstanceInfo {
   id: string;
   name: string;

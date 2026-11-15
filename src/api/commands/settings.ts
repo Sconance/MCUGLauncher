@@ -10,7 +10,8 @@ import type {
 } from "../../types/launcher";
 
 /** 按补丁更新启动设置；未提供的字段保持不变。 */
-export const saveSettings = (patch: AppSettingsPatch) => call<SavedInfo>("save_settings", { patch });
+export const saveSettings = (patch: AppSettingsPatch, expectedRevision: number) =>
+  call<SavedInfo>("save_settings", { patch, expectedRevision });
 
 /** 扫描本机可用的 Java 运行时。 */
 export const scanJava = () => call<JavaInfo[]>("scan_java");

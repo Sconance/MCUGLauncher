@@ -33,7 +33,7 @@ const state = await call<LauncherState>("get_launcher_state");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `get_launcher_state` | — | `LauncherState` | 获取完整状态快照 |
+| `get_launcher_state` | — | `ResourceSnapshot<LauncherState>` | 获取带 `epoch` 和 `revision` 的状态快照 |
 | `select_instance` | `instanceId` | `SavedInfo` | 按稳定 ID 切换当前实例；不存在时返回 `NOT_FOUND` |
 
 ### 启动
@@ -68,7 +68,7 @@ const state = await call<LauncherState>("get_launcher_state");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `save_settings` | `patch`（`AppSettingsPatch`） | `SavedInfo` | 部分字段更新，推送 `state` |
+| `save_settings` | `patch`（`AppSettingsPatch`）、`expectedRevision` | `SavedInfo` | 按预期修订号更新；过期返回 `CONFLICT` |
 | `scan_java` | — | `JavaInfo[]` | 扫描本机 Java |
 | `save_custom_sources` | `sources`（`DataSourceSet`） | `SavedInfo` | 保存自定义数据源 |
 | `use_data_sources` | `mode` | `SavedInfo` | 切换默认/自定义，推送 `state` |
