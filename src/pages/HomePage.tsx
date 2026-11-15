@@ -22,7 +22,7 @@ import "./HomePage.css";
 interface ServerDraft {
   name: string;
   address: string;
-  instance: string;
+  instanceId: string | null;
 }
 
 interface DialogState {
@@ -37,7 +37,7 @@ interface MenuState {
   y: number;
 }
 
-const EMPTY_DRAFT: ServerDraft = { name: "", address: "", instance: "" };
+const EMPTY_DRAFT: ServerDraft = { name: "", address: "", instanceId: null };
 
 function pingText(ping: ServerPingInfo | undefined): string {
   if (!ping) return "尚未查询";
@@ -85,9 +85,7 @@ export default function HomePage() {
   }
 
   const instances = state.instances.filter((item) => item.name.length > 0 && !item.isPlaceholder);
-  const current =
-    instances.find((item) => item.name === state.selectedInstance) ??
-    instances.find((item) => item.name === state.selectedVersion);
+  const current = instances.find((item) => item.id === state.selectedInstanceId);
   const launchTarget = current ? `${current.displayName} · ${current.minecraft} · ${current.loader}` : "请选择实例";
   const launchSubtitle = current
     ? `${current.name} · ${state.autoMemory ? "自动内存" : `${state.ram} MB`}`
@@ -100,8 +98,8 @@ export default function HomePage() {
     setStatus("状态已刷新。");
   };
 
-  const selectInstance = async (name: string) => {
-    const result = await selectInstanceCommand(name);
+  const selectInstance = async (instanceId: string) => {
+    const result = await selectInstanceCommand(instanceId);
     await refreshState();
     setStatus(result.message);
   };
@@ -120,7 +118,9 @@ export default function HomePage() {
   const openServerDialog = (server?: SavedServerInfo, message?: string) => {
     setDialog({
       editing: server ?? null,
-      draft: server ? { name: server.name, address: server.address, instance: server.instance } : { ...EMPTY_DRAFT },
+      draft: server
+        ? { name: server.name, address: server.address, instanceId: server.instanceId }
+        : { ...EMPTY_DRAFT },
       status: message ?? "",
     });
   };
@@ -136,8 +136,8 @@ export default function HomePage() {
     const result = await saveServerCommand(
       dialog.draft.name.trim(),
       address,
-      dialog.editing?.address ?? "",
-      dialog.draft.instance,
+      dialog.editing?.id ?? "",
+      dialog.draft.instanceId,
     );
     if (!result.ok) {
       setDialog({ ...dialog, status: result.message });
@@ -149,7 +149,7 @@ export default function HomePage() {
   };
 
   const deleteServer = async (server: SavedServerInfo) => {
-    const result = await deleteServerCommand(server.address);
+    const result = await deleteServerCommand(server.id);
     setPings((previous) => {
       const next = { ...previous };
       delete next[server.address];
@@ -166,12 +166,12 @@ export default function HomePage() {
   };
 
   const openServer = async (server: SavedServerInfo) => {
-    if (server.instance.length === 0) {
+    if (!server.instanceId) {
       openServerDialog(server, "先给这台服务器绑定实例，保存后就能一键进服。");
       return;
     }
-    setStatus(`正在用 ${server.instance} 打开 ${server.address}…`);
-    const result = await launchToServer(server.instance, server.address);
+    setStatus(`正在用所选实例打开 ${server.address}…`);
+    const result = await launchToServer(server.instanceId, server.address);
     setStatus(result.message);
   };
 
@@ -222,12 +222,12 @@ export default function HomePage() {
             </span>
             <select
               className="select"
-              value={current?.name ?? ""}
+              value={current?.id ?? ""}
               onChange={(event) => void selectInstance(event.target.value)}
             >
               {instances.length === 0 ? <option value="">暂无实例</option> : null}
               {instances.map((item) => (
-                <option key={item.name} value={item.name}>
+                <option key={item.id} value={item.id}>
                   {item.displayName} · {item.loader} · {item.minecraft}
                 </option>
               ))}
@@ -281,7 +281,11 @@ export default function HomePage() {
                         </div>
                       </div>
                       <span className="muted">{server.address}</span>
-                      <span className="muted">{server.instance.length > 0 ? `实例 · ${server.instance}` : "未绑定实例"}</span>
+                      <span className="muted">
+                        {server.instanceId
+                          ? `实例 · ${instances.find((item) => item.id === server.instanceId)?.displayName ?? "已移除"}`
+                          : "未绑定实例"}
+                      </span>
                       <span className="muted">{ping ? (ping.online ? ping.motd : "无法连接") : "等待查询"}</span>
                       <div className="server-actions">
                         <button type="button" className="btn link" onClick={() => void openServer(server)}>
@@ -444,18 +448,20 @@ export default function HomePage() {
           <Field label="打开所用的实例" hint="绑定后用卡片上的「打开」直连服务器；不绑定只能手动进入。">
             <select
               className="select"
-              value={dialog.draft.instance}
-              onChange={(event) => setDialog({ ...dialog, draft: { ...dialog.draft, instance: event.target.value } })}
+              value={dialog.draft.instanceId ?? ""}
+              onChange={(event) =>
+                setDialog({
+                  ...dialog,
+                  draft: { ...dialog.draft, instanceId: event.target.value.length > 0 ? event.target.value : null },
+                })
+              }
             >
               <option value="">不绑定实例</option>
               {instances.map((item) => (
-                <option key={item.name} value={item.name}>
+                <option key={item.id} value={item.id}>
                   {item.displayName} · {item.loader} · {item.minecraft}
                 </option>
               ))}
-              {dialog.draft.instance.length > 0 && !instances.some((item) => item.name === dialog.draft.instance) ? (
-                <option value={dialog.draft.instance}>{dialog.draft.instance}（当前未安装）</option>
-              ) : null}
             </select>
           </Field>
           {dialog.status.length > 0 ? <p className="status">{dialog.status}</p> : null}

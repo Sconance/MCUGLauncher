@@ -6,6 +6,7 @@
 //! - 状态变更由前端在命令返回后重新调用查询命令获取，事件仅作为可选的推送优化。
 
 use serde::Serialize;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
 
 use crate::{demo::avatar_for, model::*, state::Backend};
@@ -27,6 +28,14 @@ fn clamp(value: i32, min: i32, max: i32) -> i32 {
     value.min(max).max(min)
 }
 
+fn generated_id(prefix: &str) -> String {
+    let value = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or_default();
+    format!("{prefix}-{value}")
+}
+
 // ---------------------------------------------------------------- 状态
 
 /// 返回启动器完整状态快照。
@@ -37,28 +46,25 @@ pub fn get_launcher_state(backend: State<'_, Backend>) -> LauncherState {
 
 /// 切换当前实例并持久化选择。
 #[tauri::command]
-pub fn select_instance(app: AppHandle, backend: State<'_, Backend>, name: String) -> SavedInfo {
+pub fn select_instance(
+    app: AppHandle,
+    backend: State<'_, Backend>,
+    instance_id: String,
+) -> Result<SavedInfo, ApiError> {
     let state = {
         let mut data = backend.data.lock().unwrap();
-        data.state.selected_instance = name.clone();
-        data.state.selected_version = name.clone();
+        if !data.state.instances.iter().any(|item| item.id == instance_id) {
+            return Err(ApiError {
+                code: "NOT_FOUND",
+                message: "实例不存在。".into(),
+                retryable: false,
+            });
+        }
+        data.state.selected_instance_id = Some(instance_id.clone());
         data.snapshot()
     };
     emit(&app, EVENT_STATE, state);
-    SavedInfo::new(format!("已切换到 {name}"))
-}
-
-/// 切换当前版本并持久化选择。
-#[tauri::command]
-pub fn select_version(app: AppHandle, backend: State<'_, Backend>, version: String) -> SavedInfo {
-    let state = {
-        let mut data = backend.data.lock().unwrap();
-        data.state.selected_instance = version.clone();
-        data.state.selected_version = version.clone();
-        data.snapshot()
-    };
-    emit(&app, EVENT_STATE, state);
-    SavedInfo::new(format!("已切换到 {version}"))
+    Ok(SavedInfo::new("当前实例已切换。"))
 }
 
 // ---------------------------------------------------------------- 启动
@@ -66,45 +72,46 @@ pub fn select_version(app: AppHandle, backend: State<'_, Backend>, version: Stri
 /// 启动指定版本；内核重写后接入真实启动流程。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn launch_game(version: String) -> Result<LaunchResultInfo, ApiError> {
+pub fn launch_game(instance_id: String) -> Result<LaunchResultInfo, ApiError> {
     Err(ApiError::unsupported("launch_game"))
 }
 
 /// 使用指定实例直连服务器启动。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn launch_to_server(instance: String, server_address: String) -> Result<LaunchResultInfo, ApiError> {
+pub fn launch_to_server(instance_id: String, server_address: String) -> Result<LaunchResultInfo, ApiError> {
     Err(ApiError::unsupported("launch_to_server"))
 }
 
 // ---------------------------------------------------------------- 服务器
 
-/// 新增或更新服务器收藏；`old_address` 为空表示新增。
+/// 按稳定 ID 新增或更新服务器收藏。
 #[tauri::command]
 pub fn save_server(
     app: AppHandle,
     backend: State<'_, Backend>,
     name: String,
     address: String,
-    old_address: Option<String>,
-    instance: Option<String>,
-) -> ServerResultInfo {
-    let instance = instance.unwrap_or_default();
+    id: Option<String>,
+    instance_id: Option<String>,
+) -> Result<ServerResultInfo, ApiError> {
     let mut message = "服务器已添加。".to_string();
     let mut ok = true;
     let state = {
         let mut data = backend.data.lock().unwrap();
-        if let Some(old) = old_address.filter(|value| !value.is_empty()) {
+        if let Some(id) = id.filter(|value| !value.is_empty()) {
             if let Some(server) = data
                 .state
                 .servers
                 .iter_mut()
-                .find(|item| item.address == old)
+                .find(|item| item.id == id)
             {
                 server.name = name.clone();
                 server.address = address.clone();
-                server.instance = instance.clone();
+                server.instance_id = instance_id.clone();
                 message = "服务器已更新。".to_string();
+            } else {
+                return Err(ApiError { code: "NOT_FOUND", message: "服务器收藏不存在。".into(), retryable: false });
             }
         } else if data
             .state
@@ -116,9 +123,10 @@ pub fn save_server(
             message = "这个地址已经在收藏里了。".to_string();
         } else {
             data.state.servers.push(SavedServerInfo {
+                id: generated_id("server"),
                 name,
                 address,
-                instance,
+                instance_id,
             });
         }
         data.snapshot()
@@ -126,19 +134,23 @@ pub fn save_server(
     if ok {
         emit(&app, EVENT_STATE, state);
     }
-    ServerResultInfo { ok, message }
+    Ok(ServerResultInfo { ok, message })
 }
 
 /// 删除服务器收藏。
 #[tauri::command]
-pub fn delete_server(app: AppHandle, backend: State<'_, Backend>, address: String) -> SavedInfo {
+pub fn delete_server(app: AppHandle, backend: State<'_, Backend>, id: String) -> Result<SavedInfo, ApiError> {
     let state = {
         let mut data = backend.data.lock().unwrap();
-        data.state.servers.retain(|item| item.address != address);
+        let before = data.state.servers.len();
+        data.state.servers.retain(|item| item.id != id);
+        if data.state.servers.len() == before {
+            return Err(ApiError { code: "NOT_FOUND", message: "服务器收藏不存在。".into(), retryable: false });
+        }
         data.snapshot()
     };
     emit(&app, EVENT_STATE, state);
-    SavedInfo::new("服务器已删除。")
+    Ok(SavedInfo::new("服务器已删除。"))
 }
 
 /// 查询服务器在线状态与延迟。
@@ -701,34 +713,50 @@ pub fn apply_updates(token: String) -> Result<SavedInfo, ApiError> {
 pub fn toggle_mod(
     app: AppHandle,
     backend: State<'_, Backend>,
-    file: String,
+    instance_id: String,
+    mod_id: String,
     enabled: bool,
-) -> SavedInfo {
+) -> Result<SavedInfo, ApiError> {
     let state = {
         let mut data = backend.data.lock().unwrap();
-        for item in data.state.mods.iter_mut().filter(|item| item.file == file) {
-            item.enabled = enabled;
+        if data.state.selected_instance_id.as_deref() != Some(&instance_id) {
+            return Err(ApiError { code: "CONFLICT", message: "请先切换到目标实例。".into(), retryable: true });
         }
+        let item = data.state.mods.iter_mut().find(|item| item.id == mod_id)
+            .ok_or_else(|| ApiError { code: "NOT_FOUND", message: "模组不存在。".into(), retryable: false })?;
+        item.enabled = enabled;
         data.snapshot()
     };
     emit(&app, EVENT_STATE, state);
-    SavedInfo::new(if enabled {
+    Ok(SavedInfo::new(if enabled {
         "模组已启用。"
     } else {
         "模组已禁用。"
-    })
+    }))
 }
 
 /// 删除模组文件。
 #[tauri::command]
-pub fn delete_mod(app: AppHandle, backend: State<'_, Backend>, file: String) -> SavedInfo {
+pub fn delete_mod(
+    app: AppHandle,
+    backend: State<'_, Backend>,
+    instance_id: String,
+    mod_id: String,
+) -> Result<SavedInfo, ApiError> {
     let state = {
         let mut data = backend.data.lock().unwrap();
-        data.state.mods.retain(|item| item.file != file);
+        if data.state.selected_instance_id.as_deref() != Some(&instance_id) {
+            return Err(ApiError { code: "CONFLICT", message: "请先切换到目标实例。".into(), retryable: true });
+        }
+        let before = data.state.mods.len();
+        data.state.mods.retain(|item| item.id != mod_id);
+        if data.state.mods.len() == before {
+            return Err(ApiError { code: "NOT_FOUND", message: "模组不存在。".into(), retryable: false });
+        }
         data.snapshot()
     };
     emit(&app, EVENT_STATE, state);
-    SavedInfo::new("模组已删除。")
+    Ok(SavedInfo::new("模组已删除。"))
 }
 
 /// 读取实例启动设置与继承状态。

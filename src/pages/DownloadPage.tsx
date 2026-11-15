@@ -100,7 +100,7 @@ export default function DownloadPage() {
 
   useEffect(() => {
     if (!state) return;
-    const instanceGame = state.instances.find((item) => item.name === state.selectedInstance)?.minecraft ?? "";
+    const instanceGame = state.instances.find((item) => item.id === state.selectedInstanceId)?.minecraft ?? "";
     setLoaderGame((current) => current || instanceGame || vanilla[0]?.id || "");
   }, [state, vanilla]);
 
@@ -120,7 +120,7 @@ export default function DownloadPage() {
     }
   }, [visibleVanilla, vanillaSelected]);
 
-  const currentInstance = state?.instances.find((item) => item.name === state.selectedInstance);
+  const currentInstance = state?.instances.find((item) => item.id === state.selectedInstanceId);
   const instanceHint = currentInstance
     ? `当前实例：${currentInstance.displayName} · ${currentInstance.loader} · ${currentInstance.minecraft}`
     : "尚未选择实例";

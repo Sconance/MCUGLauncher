@@ -34,11 +34,12 @@ export const previewUpdates = (token: string, projects: string[] = []) =>
 export const applyUpdates = (token: string) => call<SavedInfo>("apply_updates", { token });
 
 /** 启用或禁用模组。 */
-export const toggleMod = (file: string, enabled: boolean) =>
-  call<SavedInfo>("toggle_mod", { file, enabled });
+export const toggleMod = (instanceId: string, modId: string, enabled: boolean) =>
+  call<SavedInfo>("toggle_mod", { instanceId, modId, enabled });
 
 /** 删除模组文件。 */
-export const deleteMod = (file: string) => call<SavedInfo>("delete_mod", { file });
+export const deleteMod = (instanceId: string, modId: string) =>
+  call<SavedInfo>("delete_mod", { instanceId, modId });
 
 /** 读取实例启动设置与继承状态。 */
 export const readLaunchOptions = (version: string, requestId = "") =>

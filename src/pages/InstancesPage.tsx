@@ -92,8 +92,8 @@ export default function InstancesPage() {
   useEffect(() => {
     if (!state) return;
     const instances = validInstances(state);
-    if (selected.length === 0 || !instances.some((item) => item.name === selected)) {
-      setSelected(state.selectedInstance || instances[0]?.name || "");
+    if (selected.length === 0 || !instances.some((item) => item.id === selected)) {
+      setSelected(state.selectedInstanceId ?? instances[0]?.id ?? "");
     }
   }, [state, selected]);
 
@@ -129,14 +129,14 @@ export default function InstancesPage() {
     setStatus("状态已刷新。");
   };
 
-  const changeInstance = async (name: string) => {
-    setSelected(name);
+  const changeInstance = async (instanceId: string) => {
+    setSelected(instanceId);
     setUninstall(null);
     setUpdates(null);
     setUpdatePreview(null);
     setConfirmed(false);
     setStatus("正在切换实例…");
-    const result = await selectInstanceCommand(name);
+    const result = await selectInstanceCommand(instanceId);
     await refreshState();
     setStatus(result.message);
   };
@@ -148,14 +148,14 @@ export default function InstancesPage() {
     setStatus(result.message);
   };
 
-  const toggleMod = async (file: string, enabled: boolean) => {
-    const result = await toggleModCommand(file, enabled);
+  const toggleMod = async (modId: string, enabled: boolean) => {
+    const result = await toggleModCommand(selected, modId, enabled);
     await refreshState();
     setStatus(result.message);
   };
 
-  const deleteMod = async (file: string, name: string) => {
-    const result = await deleteModCommand(file);
+  const deleteMod = async (modId: string, name: string) => {
+    const result = await deleteModCommand(selected, modId);
     await refreshState();
     setStatus(`${result.message} ${name}`);
   };
@@ -284,7 +284,7 @@ export default function InstancesPage() {
           >
             {instances.length === 0 ? <option value="">尚未安装实例</option> : null}
             {instances.map((item) => (
-              <option key={item.name} value={item.name}>
+              <option key={item.id} value={item.id}>
                 {item.displayName}
                 {item.minecraft.length > 0 ? ` · ${item.minecraft}` : ""} · {item.loader}
               </option>
@@ -343,13 +343,13 @@ export default function InstancesPage() {
               <div className="mod-list">
                 {state?.mods.length ? (
                   state.mods.map((mod) => (
-                    <div className="mod-row" key={mod.file}>
+                    <div className="mod-row" key={mod.id}>
                       <div className="stack" style={{ gap: 2 }}>
                         <label className="checkbox">
                           <input
                             type="checkbox"
                             checked={mod.enabled}
-                            onChange={(event) => void toggleMod(mod.file, event.target.checked)}
+                            onChange={(event) => void toggleMod(mod.id, event.target.checked)}
                           />
                           {mod.name}
                         </label>
@@ -361,7 +361,7 @@ export default function InstancesPage() {
                       <button
                         type="button"
                         className="btn ghost"
-                        onClick={() => void deleteMod(mod.file, mod.name)}
+                        onClick={() => void deleteMod(mod.id, mod.name)}
                       >
                         删除
                       </button>

@@ -229,7 +229,7 @@ export default function SettingsPage() {
   };
 
   const beginEdit = (server: SavedServerInfo) => {
-    setEditingServer(server.address);
+    setEditingServer(server.id);
     setServerName(server.name);
     setServerAddress(server.address);
     say(`正在编辑 ${server.address}`);
@@ -244,8 +244,8 @@ export default function SettingsPage() {
     }));
   };
 
-  const deleteServer = async (address: string) => {
-    const result = await deleteServerCommand(address);
+  const deleteServer = async (id: string, address: string) => {
+    const result = await deleteServerCommand(id);
     setPings((previous) => {
       const next = { ...previous };
       delete next[address];
@@ -570,7 +570,7 @@ export default function SettingsPage() {
                       <button type="button" className="btn ghost" onClick={() => beginEdit(server)}>
                         编辑
                       </button>
-                      <button type="button" className="btn ghost" onClick={() => void deleteServer(server.address)}>
+                      <button type="button" className="btn ghost" onClick={() => void deleteServer(server.id, server.address)}>
                         删除
                       </button>
                     </div>

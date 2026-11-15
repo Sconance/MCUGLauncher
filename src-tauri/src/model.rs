@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceInfo {
+    pub id: String,
     pub name: String,
     pub loader: String,
     pub mods: u32,
@@ -32,9 +33,10 @@ pub struct ModInfo {
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SavedServerInfo {
+    pub id: String,
     pub name: String,
     pub address: String,
-    pub instance: String,
+    pub instance_id: Option<String>,
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -99,8 +101,7 @@ pub struct LauncherState {
     pub has_admin_key: bool,
     pub skin_station: String,
     pub cape: String,
-    pub selected_version: String,
-    pub selected_instance: String,
+    pub selected_instance_id: Option<String>,
     pub instances: Vec<InstanceInfo>,
     pub mods: Vec<ModInfo>,
     pub servers: Vec<SavedServerInfo>,

@@ -14,7 +14,6 @@ pub fn run() {
             // 状态
             commands::get_launcher_state,
             commands::select_instance,
-            commands::select_version,
             // 启动
             commands::launch_game,
             commands::launch_to_server,

@@ -4,6 +4,7 @@
  */
 
 export interface InstanceInfo {
+  id: string;
   name: string;
   loader: string;
   mods: number;
@@ -24,9 +25,10 @@ export interface ModInfo {
 }
 
 export interface SavedServerInfo {
+  id: string;
   name: string;
   address: string;
-  instance: string;
+  instanceId: string | null;
 }
 
 export interface FavoriteInfo {
@@ -70,8 +72,7 @@ export interface LauncherState {
   hasAdminKey: boolean;
   skinStation: string;
   cape: string;
-  selectedVersion: string;
-  selectedInstance: string;
+  selectedInstanceId: string | null;
   instances: InstanceInfo[];
   mods: ModInfo[];
   servers: SavedServerInfo[];

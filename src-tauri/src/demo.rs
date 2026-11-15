@@ -102,10 +102,10 @@ fn demo_state() -> LauncherState {
         has_admin_key: true,
         skin_station: String::new(),
         cape: String::new(),
-        selected_version: "MCUG-1.21.1".into(),
-        selected_instance: "MCUG-1.21.1".into(),
+        selected_instance_id: Some("instance-mcug-1211".into()),
         instances: vec![
             InstanceInfo {
+                id: "instance-mcug-1211".into(),
                 name: "MCUG-1.21.1".into(),
                 loader: "Fabric 0.16.9".into(),
                 mods: 42,
@@ -115,6 +115,7 @@ fn demo_state() -> LauncherState {
                 is_placeholder: false,
             },
             InstanceInfo {
+                id: "instance-create-1201".into(),
                 name: "Create-1.20.1".into(),
                 loader: "Forge 47.2.0".into(),
                 mods: 18,
@@ -124,6 +125,7 @@ fn demo_state() -> LauncherState {
                 is_placeholder: false,
             },
             InstanceInfo {
+                id: "instance-vanilla-1206".into(),
                 name: "Vanilla-1.20.6".into(),
                 loader: "原版".into(),
                 mods: 0,
@@ -178,14 +180,16 @@ fn demo_state() -> LauncherState {
         ],
         servers: vec![
             SavedServerInfo {
+                id: "server-mcug-survival".into(),
                 name: "MCUG 生存服".into(),
                 address: "play.mcug.cn:25565".into(),
-                instance: "MCUG-1.21.1".into(),
+                instance_id: Some("instance-mcug-1211".into()),
             },
             SavedServerInfo {
+                id: "server-creative".into(),
                 name: "创造服".into(),
                 address: "creative.example.com:25566".into(),
-                instance: String::new(),
+                instance_id: None,
             },
         ],
         favorites: vec![

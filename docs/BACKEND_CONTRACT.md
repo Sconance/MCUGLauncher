@@ -34,8 +34,7 @@ const state = await call<LauncherState>("get_launcher_state");
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
 | `get_launcher_state` | — | `LauncherState` | 获取完整状态快照 |
-| `select_instance` | `name` | `SavedInfo` | 切换当前实例，推送 `state` |
-| `select_version` | `version` | `SavedInfo` | 切换当前版本，推送 `state` |
+| `select_instance` | `instanceId` | `SavedInfo` | 按稳定 ID 切换当前实例；不存在时返回 `NOT_FOUND` |
 
 ### 启动
 
@@ -48,8 +47,8 @@ const state = await call<LauncherState>("get_launcher_state");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `save_server` | `name`, `address`, `oldAddress?`, `instance?` | `ServerResultInfo` | 新增或更新收藏，推送 `state` |
-| `delete_server` | `address` | `SavedInfo` | 删除收藏，推送 `state` |
+| `save_server` | `name`, `address`, `id?`, `instanceId?` | `ServerResultInfo` | 按稳定 ID 新增或更新收藏，推送 `state` |
+| `delete_server` | `id` | `SavedInfo` | 按稳定 ID 删除收藏；不存在时返回 `NOT_FOUND` |
 | `ping_server` | `address` | `ServerPingInfo` | 查询在线状态 |
 
 ### 账号
@@ -123,8 +122,8 @@ const state = await call<LauncherState>("get_launcher_state");
 | `check_updates` | `version` | `ContentUpdatesInfo` | 检查内容更新 |
 | `preview_updates` | `token`, `projects?` | `ContentUpdatePreviewInfo` | 生成更新预览 |
 | `apply_updates` | `token` | `SavedInfo` | 执行更新 |
-| `toggle_mod` | `file`, `enabled` | `SavedInfo` | 启用/禁用模组，推送 `state` |
-| `delete_mod` | `file` | `SavedInfo` | 删除模组，推送 `state` |
+| `toggle_mod` | `instanceId`, `modId`, `enabled` | `SavedInfo` | 按实例和模组 ID 启用/禁用，推送 `state` |
+| `delete_mod` | `instanceId`, `modId` | `SavedInfo` | 按实例和模组 ID 删除，推送 `state` |
 | `read_launch_options` | `version`, `requestId?` | `LaunchOptionsInfo` | 读取实例启动设置 |
 | `save_launch_options` | `token`, `version`, `name`, `settings`, `inherit?` | `SavedInfo` | 保存启动设置，推送 `state` |
 
