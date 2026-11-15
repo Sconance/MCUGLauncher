@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { stopGame } from "../api/commands/games";
 import { useLauncher } from "../state/launcher";
 import "./GamesPage.css";
 
-/** 运行中的游戏：列表来自事件，关闭通过命令提交。 */
+/** 运行中的游戏：列表来自全局命令同步，关闭通过命令提交。 */
 export default function GamesPage() {
   const { games, refreshGames } = useLauncher();
   const [status, setStatus] = useState("");
@@ -15,12 +15,6 @@ export default function GamesPage() {
     setStatus(result.message);
   };
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      void refreshGames();
-    }, 3000);
-    return () => window.clearInterval(timer);
-  }, [refreshGames]);
 
   return (
     <div className="subpage">

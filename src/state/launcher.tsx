@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import * as accountCommands from "../api/commands/accounts";
 import * as communityCommands from "../api/commands/community";
 import * as gameCommands from "../api/commands/games";
@@ -40,46 +40,63 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   const [games, setGames] = useState<GameInfo[]>([]);
   const [community, setCommunity] = useState<CommunityData | null>(null);
   const [avatar, setAvatar] = useState<AvatarInfo | null>(null);
+  const mounted = useRef(true);
+  const requests = useRef<Record<string, number>>({});
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
 
   const refreshState = useCallback(async () => {
+    const sequence = (requests.current.State ?? 0) + 1;
+    requests.current.State = sequence;
     try {
-      setState(await stateCommands.getState());
+      const next = await stateCommands.getState();
+      if (mounted.current && requests.current.State === sequence) setState(next);
     } catch (failure) {
-      notify(messageOf(failure));
+      if (mounted.current) notify(messageOf(failure));
     }
   }, [notify]);
 
   const refreshTasks = useCallback(async () => {
+    const sequence = (requests.current.Tasks ?? 0) + 1;
+    requests.current.Tasks = sequence;
     try {
-      setTasks(await taskCommands.listTasks());
+      const next = await taskCommands.listTasks();
+      if (mounted.current && requests.current.Tasks === sequence) setTasks(next);
     } catch (failure) {
-      notify(messageOf(failure));
+      if (mounted.current) notify(messageOf(failure));
     }
   }, [notify]);
 
   const refreshGames = useCallback(async () => {
+    const sequence = (requests.current.Games ?? 0) + 1;
+    requests.current.Games = sequence;
     try {
-      setGames(await gameCommands.listGames());
+      const next = await gameCommands.listGames();
+      if (mounted.current && requests.current.Games === sequence) setGames(next);
     } catch (failure) {
-      notify(messageOf(failure));
+      if (mounted.current) notify(messageOf(failure));
     }
   }, [notify]);
 
   const refreshCommunity = useCallback(async () => {
+    const sequence = (requests.current.Community ?? 0) + 1;
+    requests.current.Community = sequence;
     try {
-      setCommunity(await communityCommands.refreshCommunity());
+      const next = await communityCommands.refreshCommunity();
+      if (mounted.current && requests.current.Community === sequence) setCommunity(next);
     } catch (failure) {
-      notify(messageOf(failure));
+      if (mounted.current) notify(messageOf(failure));
     }
   }, [notify]);
 
   const refreshAvatar = useCallback(async () => {
+    const sequence = (requests.current.Avatar ?? 0) + 1;
+    requests.current.Avatar = sequence;
     try {
-      setAvatar(await accountCommands.readAvatar());
+      const next = await accountCommands.readAvatar();
+      if (mounted.current && requests.current.Avatar === sequence) setAvatar(next);
     } catch (failure) {
-      notify(messageOf(failure));
+      if (mounted.current) notify(messageOf(failure));
     }
   }, [notify]);
 
@@ -90,37 +107,32 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    let disposed = false;
-    void (async () => {
-      try {
-        const [nextState, nextTasks, nextGames, nextCommunity, nextAvatar] = await Promise.all([
-          stateCommands.getState(),
-          taskCommands.listTasks(),
-          gameCommands.listGames(),
-          communityCommands.getCommunity(),
-          accountCommands.readAvatar(),
-        ]);
-        if (disposed) return;
-        setState(nextState);
-        setTasks(nextTasks);
-        setGames(nextGames);
-        setCommunity(nextCommunity);
-        setAvatar(nextAvatar);
-        setError("");
-      } catch (failure) {
-        if (disposed) return;
-        const message = messageOf(failure);
-        setError(message);
-        notify(message);
-      } finally {
-        if (!disposed) setReady(true);
-      }
-    })();
+    mounted.current = true;
+    void Promise.allSettled([
+      refreshState(), refreshTasks(), refreshGames(), refreshCommunity(), refreshAvatar(),
+    ]).then(() => {
+      if (mounted.current) setReady(true);
+    });
 
-    return () => {
-      disposed = true;
+    // 全局同步不依赖页面挂载；同时刷新任务产生的实例变化。
+    let busy = false;
+    const synchronize = async () => {
+      if (busy) return;
+      busy = true;
+      try {
+        await Promise.allSettled([refreshTasks(), refreshGames(), refreshState()]);
+      } finally {
+        busy = false;
+      }
     };
-  }, [notify]);
+    const timer = window.setInterval(() => void synchronize(), 3000);
+    window.addEventListener("focus", synchronize);
+    return () => {
+      mounted.current = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", synchronize);
+    };
+  }, [refreshState, refreshTasks, refreshGames, refreshCommunity, refreshAvatar]);
 
   const value: LauncherStore = {
     state,

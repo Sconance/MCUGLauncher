@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { taskAction } from "../api/commands/tasks";
 import { useLauncher } from "../state/launcher";
 import "./TasksPage.css";
@@ -10,7 +10,7 @@ const ACTIONS = [
   ["delete", "删除"],
 ] as const;
 
-/** 下载任务页：任务来自后端事件，操作通过命令提交。 */
+/** 下载任务页：任务来自全局命令同步，操作通过命令提交。 */
 export default function TasksPage() {
   const { tasks, refreshTasks } = useLauncher();
   const [status, setStatus] = useState("");
@@ -21,12 +21,6 @@ export default function TasksPage() {
     setStatus(result.message);
   };
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      void refreshTasks();
-    }, 1500);
-    return () => window.clearInterval(timer);
-  }, [refreshTasks]);
 
   return (
     <div className="subpage">
