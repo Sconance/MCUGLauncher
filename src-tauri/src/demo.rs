@@ -14,6 +14,9 @@ pub enum StateResource {
     InstanceMods,
     Servers,
     Bookmarks,
+    Tasks,
+    GameSessions,
+    Community,
 }
 
 pub struct ResourceRevisions {
@@ -24,11 +27,25 @@ pub struct ResourceRevisions {
     pub instance_mods: u64,
     pub servers: u64,
     pub bookmarks: u64,
+    pub tasks: u64,
+    pub game_sessions: u64,
+    pub community: u64,
 }
 
 impl Default for ResourceRevisions {
     fn default() -> Self {
-        Self { overview: 1, settings: 1, accounts: 1, instances: 1, instance_mods: 1, servers: 1, bookmarks: 1 }
+        Self {
+            overview: 1,
+            settings: 1,
+            accounts: 1,
+            instances: 1,
+            instance_mods: 1,
+            servers: 1,
+            bookmarks: 1,
+            tasks: 1,
+            game_sessions: 1,
+            community: 1,
+        }
     }
 }
 
@@ -102,22 +119,29 @@ impl Data {
 
     pub fn mutating_snapshot(&mut self, resources: &[StateResource]) -> LauncherState {
         for resource in resources {
-            let revision = match resource {
-                StateResource::Overview => &mut self.revisions.overview,
-                StateResource::Settings => &mut self.revisions.settings,
-                StateResource::Accounts => &mut self.revisions.accounts,
-                StateResource::Instances => &mut self.revisions.instances,
-                StateResource::InstanceMods => &mut self.revisions.instance_mods,
-                StateResource::Servers => &mut self.revisions.servers,
-                StateResource::Bookmarks => &mut self.revisions.bookmarks,
-            };
-            *revision = revision.saturating_add(1);
+            self.touch(*resource);
         }
         self.snapshot()
     }
 
     pub fn resource_snapshot<T>(&self, revision: u64, data: T) -> ResourceSnapshot<T> {
         ResourceSnapshot { epoch: self.epoch.clone(), revision, data }
+    }
+
+    pub fn touch(&mut self, resource: StateResource) {
+        let revision = match resource {
+            StateResource::Overview => &mut self.revisions.overview,
+            StateResource::Settings => &mut self.revisions.settings,
+            StateResource::Accounts => &mut self.revisions.accounts,
+            StateResource::Instances => &mut self.revisions.instances,
+            StateResource::InstanceMods => &mut self.revisions.instance_mods,
+            StateResource::Servers => &mut self.revisions.servers,
+            StateResource::Bookmarks => &mut self.revisions.bookmarks,
+            StateResource::Tasks => &mut self.revisions.tasks,
+            StateResource::GameSessions => &mut self.revisions.game_sessions,
+            StateResource::Community => &mut self.revisions.community,
+        };
+        *revision = revision.saturating_add(1);
     }
 
     pub fn ensure_settings_revision(&self, expected: u64) -> Result<(), ApiError> {
@@ -178,7 +202,12 @@ mod tests {
         data.mutating_snapshot(&[StateResource::Settings]);
         assert_eq!(data.revisions.settings, first + 1);
         assert_eq!(data.revisions.overview, 1);
+        assert_eq!(data.revisions.tasks, 1);
         assert_eq!(data.ensure_settings_revision(first).unwrap_err().code, "CONFLICT");
+
+        data.touch(StateResource::Tasks);
+        assert_eq!(data.revisions.tasks, 2);
+        assert_eq!(data.revisions.settings, first + 1);
     }
 
     #[test]

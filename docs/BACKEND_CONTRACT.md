@@ -97,9 +97,9 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `list_tasks` | — | `TaskInfo[]` | 任务列表 |
+| `list_tasks` | — | `ResourceSnapshot<TaskInfo[]>` | 带独立修订号的任务列表 |
 | `task_action` | `id`, `action`（`pause`/`resume`/`cancel`/`delete`） | `SavedInfo` | 任务操作，推送 `tasks` |
-| `list_game_sessions` | — | `GameSessionInfo[]` | 游戏会话及其生命周期状态 |
+| `list_game_sessions` | — | `ResourceSnapshot<GameSessionInfo[]>` | 带独立修订号的游戏会话 |
 | `stop_game` | `sessionId` | `SavedInfo` | 请求停止游戏会话；当前演示后端返回 `UNSUPPORTED` |
 
 ### 内容与版本
@@ -137,8 +137,8 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `get_community` | — | `CommunityData` | 公告/推荐/语录 |
-| `refresh_community` | — | `CommunityData` | 刷新社区内容 |
+| `get_community` | — | `ResourceSnapshot<CommunityData>` | 公告/推荐/语录 |
+| `refresh_community` | — | `ResourceSnapshot<CommunityData>` | 刷新社区内容 |
 | `save_recommendations` | `items` | `SavedInfo` | 保存推荐列表，推送 `community` |
 
 ## 3. 事件（可选，当前前端不使用）

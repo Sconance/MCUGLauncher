@@ -494,8 +494,13 @@ pub fn restore_save(id: String, world: String) -> Result<SavedInfo, ApiError> {
 
 /// 列出任务队列与当前进度。
 #[tauri::command]
-pub fn list_tasks(backend: State<'_, Backend>) -> Vec<TaskInfo> {
-    backend.data.lock().unwrap().tasks.iter().cloned().map(|mut task| { task.allowed_actions = task.actions(); task }).collect()
+pub fn list_tasks(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<TaskInfo>> {
+    let data = backend.data.lock().unwrap();
+    let tasks = data.tasks.iter().cloned().map(|mut task| {
+        task.allowed_actions = task.actions();
+        task
+    }).collect();
+    data.resource_snapshot(data.revisions.tasks, tasks)
 }
 
 /// 对任务执行暂停/继续/取消/删除。
@@ -512,6 +517,7 @@ pub fn task_action(
             .ok_or_else(|| ApiError { code: "NOT_FOUND", message: "任务不存在。".into(), retryable: false })?;
         task.apply_action(&action)?;
         if action == "delete" { data.tasks.retain(|task| task.id != id); }
+        data.touch(StateResource::Tasks);
         data.tasks.clone()
     };
     emit(&app, EVENT_TASKS, tasks);
@@ -520,8 +526,9 @@ pub fn task_action(
 
 /// 列出由本次启动器启动、仍在运行的游戏。
 #[tauri::command]
-pub fn list_game_sessions(backend: State<'_, Backend>) -> Vec<GameSessionInfo> {
-    backend.data.lock().unwrap().games.clone()
+pub fn list_game_sessions(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<GameSessionInfo>> {
+    let data = backend.data.lock().unwrap();
+    data.resource_snapshot(data.revisions.game_sessions, data.games.clone())
 }
 
 /// 请求关闭指定游戏进程。
@@ -876,14 +883,15 @@ pub fn save_launch_options(
 
 /// 读取社区公告、推荐与语录。
 #[tauri::command]
-pub fn get_community(backend: State<'_, Backend>) -> CommunityData {
-    backend.data.lock().unwrap().community.clone()
+pub fn get_community(backend: State<'_, Backend>) -> ResourceSnapshot<CommunityData> {
+    let data = backend.data.lock().unwrap();
+    data.resource_snapshot(data.revisions.community, data.community.clone())
 }
 
 /// 重新拉取社区内容。
 #[tauri::command]
-pub fn refresh_community(backend: State<'_, Backend>) -> CommunityData {
-    backend.data.lock().unwrap().community.clone()
+pub fn refresh_community(backend: State<'_, Backend>) -> ResourceSnapshot<CommunityData> {
+    get_community(backend)
 }
 
 /// 覆写本机推荐列表。
@@ -896,6 +904,7 @@ pub fn save_recommendations(
     let community = {
         let mut data = backend.data.lock().unwrap();
         data.community.recommendations = items;
+        data.touch(StateResource::Community);
         data.community.clone()
     };
     emit(&app, EVENT_COMMUNITY, community);

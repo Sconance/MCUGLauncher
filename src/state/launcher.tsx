@@ -41,6 +41,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   const [stateEpoch, setStateEpoch] = useState("");
   const [stateRevision, setStateRevision] = useState(0);
   const stateVersion = useRef({ epoch: "", revision: 0 });
+  const resourceVersions = useRef<Record<string, { epoch: string; revision: number }>>({});
   const [tasks, setTasks] = useState<TaskInfo[]>([]);
   const [games, setGames] = useState<GameSessionInfo[]>([]);
   const [community, setCommunity] = useState<CommunityData | null>(null);
@@ -73,7 +74,12 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     requests.current.Tasks = sequence;
     try {
       const next = await taskCommands.listTasks();
-      if (mounted.current && requests.current.Tasks === sequence) setTasks(next);
+      const current = resourceVersions.current.Tasks;
+      if (mounted.current && requests.current.Tasks === sequence &&
+          (!current || current.epoch !== next.epoch || next.revision >= current.revision)) {
+        resourceVersions.current.Tasks = { epoch: next.epoch, revision: next.revision };
+        setTasks(next.data);
+      }
     } catch (failure) {
       if (mounted.current) notify(messageOf(failure));
     }
@@ -84,7 +90,12 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     requests.current.Games = sequence;
     try {
       const next = await gameCommands.listGameSessions();
-      if (mounted.current && requests.current.Games === sequence) setGames(next);
+      const current = resourceVersions.current.Games;
+      if (mounted.current && requests.current.Games === sequence &&
+          (!current || current.epoch !== next.epoch || next.revision >= current.revision)) {
+        resourceVersions.current.Games = { epoch: next.epoch, revision: next.revision };
+        setGames(next.data);
+      }
     } catch (failure) {
       if (mounted.current) notify(messageOf(failure));
     }
@@ -95,7 +106,12 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     requests.current.Community = sequence;
     try {
       const next = await communityCommands.refreshCommunity();
-      if (mounted.current && requests.current.Community === sequence) setCommunity(next);
+      const current = resourceVersions.current.Community;
+      if (mounted.current && requests.current.Community === sequence &&
+          (!current || current.epoch !== next.epoch || next.revision >= current.revision)) {
+        resourceVersions.current.Community = { epoch: next.epoch, revision: next.revision };
+        setCommunity(next.data);
+      }
     } catch (failure) {
       if (mounted.current) notify(messageOf(failure));
     }
