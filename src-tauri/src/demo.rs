@@ -721,7 +721,7 @@ fn recommendation(
 ) -> RecommendationInfo {
     RecommendationInfo {
         id: id.into(),
-        r#type: kind.into(),
+        type_: kind.into(),
         name: name.into(),
         author: author.into(),
         description: description.into(),

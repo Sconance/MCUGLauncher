@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 pub use crate::schema_dto::generated::common::{ResourceKeyInfo, SavedInfo};
 pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
+pub use crate::schema_dto::generated::content::{
+    LoaderListInfo, ResourceVersionInfo, ResourceVersionsInfo, VanillaVersionInfo,
+};
 pub use crate::schema_dto::generated::instances::{
     DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
     SavedServerInfo,
@@ -291,40 +294,6 @@ pub struct ContentSearchResult {
     pub category: String,
     pub request_id: String,
     pub items: Vec<ContentItem>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ResourceVersionInfo {
-    pub id: String,
-    pub name: String,
-    pub files: Vec<String>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ResourceVersionsInfo {
-    pub request_id: String,
-    pub token: String,
-    pub game: String,
-    pub loader: String,
-    pub items: Vec<ResourceVersionInfo>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct VanillaVersionInfo {
-    pub id: String,
-    pub r#type: String,
-    pub released: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct LoaderListInfo {
-    pub minecraft_version: String,
-    pub loader: String,
-    pub versions: Vec<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Default)]

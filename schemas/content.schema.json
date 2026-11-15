@@ -124,6 +124,94 @@
       "additionalProperties": false,
       "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
     },
+    "ResourceVersionInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "files"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "name": {
+          "type": "string",
+          "description": "name 字段。"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "files 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ResourceVersionInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ResourceVersionsInfo": {
+      "type": "object",
+      "required": [
+        "requestId",
+        "token",
+        "game",
+        "loader",
+        "items"
+      ],
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "description": "requestId 字段。"
+        },
+        "token": {
+          "type": "string",
+          "description": "token 字段。"
+        },
+        "game": {
+          "type": "string",
+          "description": "game 字段。"
+        },
+        "loader": {
+          "type": "string",
+          "description": "loader 字段。"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceVersionInfo"
+          },
+          "description": "items 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ResourceVersionsInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "VanillaVersionInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "released"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "type": {
+          "type": "string",
+          "description": "type 字段。"
+        },
+        "released": {
+          "type": "string",
+          "description": "released 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "VanillaVersionInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
     "CommunityData": {
       "type": "object",
       "required": [

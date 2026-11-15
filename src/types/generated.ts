@@ -43,6 +43,9 @@ export interface LauncherDTO {
   MuaProfileInfo?: MuaProfileInfo;
   LoginSessionInfo?: LoginSessionInfo;
   AvatarInfo?: AvatarInfo;
+  ResourceVersionInfo?: ResourceVersionInfo;
+  ResourceVersionsInfo?: ResourceVersionsInfo;
+  VanillaVersionInfo?: VanillaVersionInfo;
   CommunityData?: CommunityData;
   ContentItem?: ContentItem;
   ContentSearchResult?: ContentSearchResult;
@@ -204,6 +207,65 @@ export interface AvatarInfo {
    * player 字段。
    */
   player: string;
+}
+/**
+ * ResourceVersionInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface ResourceVersionInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * name 字段。
+   */
+  name: string;
+  /**
+   * files 字段。
+   */
+  files: string[];
+}
+/**
+ * ResourceVersionsInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface ResourceVersionsInfo {
+  /**
+   * requestId 字段。
+   */
+  requestId: string;
+  /**
+   * token 字段。
+   */
+  token: string;
+  /**
+   * game 字段。
+   */
+  game: string;
+  /**
+   * loader 字段。
+   */
+  loader: string;
+  /**
+   * items 字段。
+   */
+  items: ResourceVersionInfo[];
+}
+/**
+ * VanillaVersionInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface VanillaVersionInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * type 字段。
+   */
+  type: string;
+  /**
+   * released 字段。
+   */
+  released: string;
 }
 /**
  * CommunityData：通过 Tauri 命令在前后端之间传输的数据对象。
