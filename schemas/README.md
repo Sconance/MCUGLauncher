@@ -19,3 +19,15 @@ npm run dto:check
 ```
 
 `dto:check` 会重新生成文件并检查 Git diff，确保生成文件没有被手工修改或落后于 Schema。生成文件禁止直接编辑。
+
+## Rust DTO
+
+Rust 使用 `typify` 在编译期导入同一份 Schema：
+
+```text
+src-tauri/src/schema_dto.rs
+  → typify::import_types!(schema = "../schemas/launcher.schema.json")
+  → Rust 编译期生成 generated 模块
+```
+
+因此执行 `cargo check --manifest-path src-tauri/Cargo.toml` 即会校验 Schema 是否能够生成合法 Rust 类型。业务行为扩展仍保留在 `src-tauri/src/model.rs`，迁移具体 DTO 时应优先使用 `schema_dto::generated` 中的类型。

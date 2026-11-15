@@ -1,6 +1,7 @@
 mod commands;
 mod demo;
 mod model;
+mod schema_dto;
 mod state;
 
 use state::Backend;

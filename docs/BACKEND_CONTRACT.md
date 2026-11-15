@@ -6,7 +6,7 @@
 
 本文档是唯一的契约清单：改动命令名、参数或事件时必须同步修改本文档、`src/api/commands/*.ts` 与 `src/types/launcher.ts`。
 
-DTO 的结构以 [schemas/launcher.schema.json](../schemas/launcher.schema.json) 为单一机器可读来源；Rust 模型、TypeScript 类型和本文档必须与 Schema 同步。
+DTO 的结构以 [schemas/launcher.schema.json](../schemas/launcher.schema.json) 为单一机器可读来源；TypeScript 通过生成文件消费 Schema，Rust 通过 Typify 在编译期生成类型，本文档只描述命令语义。
 
 ## 当前演示能力限制
 
