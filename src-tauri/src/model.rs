@@ -5,6 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+pub use crate::schema_dto::generated::common::{ResourceKeyInfo, SavedInfo};
 
 /// 可缓存资源的版本化快照。
 #[derive(Clone, Serialize)]
@@ -177,13 +178,6 @@ pub struct TaskProgressInfo {
     pub completed: u64,
     pub total: Option<u64>,
     pub unit: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ResourceKeyInfo {
-    pub kind: String,
-    pub instance_id: Option<String>,
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -505,14 +499,6 @@ pub struct SystemInfoInfo {
     pub os: String,
     pub root: String,
     pub data: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct SavedInfo {
-    pub message: String,
-    pub changed: Vec<ResourceKeyInfo>,
-    pub entity_ids: Vec<String>,
 }
 
 impl SavedInfo {
