@@ -122,6 +122,7 @@ pub struct TaskInfo {
     pub percent: f64,
     pub message: String,
     pub committing: bool,
+    pub allowed_actions: Vec<String>,
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -501,5 +502,57 @@ impl ApiError {
             message: format!("演示后端尚未实现 {command}，操作未执行。"),
             retryable: false,
         }
+    }
+}
+
+impl TaskInfo {
+    /// 可执行动作由后端统一计算；提交阶段禁止中断。
+    pub fn actions(&self) -> Vec<String> {
+        let actions: &[&str] = match self.state.as_str() {
+            "succeeded" | "failed" | "cancelled" => &["delete"],
+            _ if self.committing => &[],
+            "running" => &["pause", "cancel"],
+            "paused" => &["resume", "cancel"],
+            "queued" => &["cancel"],
+            _ => &[],
+        };
+        actions.iter().map(|value| (*value).into()).collect()
+    }
+
+    /// 取消请求只进入清理阶段，不提前报告取消完成。
+    pub fn apply_action(&mut self, action: &str) -> Result<(), ApiError> {
+        if !self.actions().iter().any(|item| item == action) {
+            return Err(ApiError { code: "CONFLICT", message: "当前任务状态不允许此操作。".into(), retryable: false });
+        }
+        self.state = match action {
+            "pause" => "paused",
+            "resume" => "running",
+            "cancel" => "cancelling",
+            _ => self.state.as_str(),
+        }.into();
+        self.allowed_actions = self.actions();
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cancellation_waits_for_cleanup() {
+        let mut task = TaskInfo { state: "running".into(), ..Default::default() };
+        task.apply_action("cancel").unwrap();
+        assert_eq!(task.state, "cancelling");
+        assert!(task.apply_action("delete").is_err());
+    }
+
+    #[test]
+    fn committing_cannot_be_interrupted() {
+        let mut task = TaskInfo { state: "running".into(), committing: true, ..Default::default() };
+        assert!(task.apply_action("pause").is_err());
+        assert!(task.apply_action("cancel").is_err());
+        task.state = "failed".into();
+        assert_eq!(task.actions(), vec!["delete"]);
     }
 }

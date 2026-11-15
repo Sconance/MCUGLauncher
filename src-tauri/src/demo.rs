@@ -263,26 +263,29 @@ fn demo_tasks() -> Vec<TaskInfo> {
         TaskInfo {
             id: "t1".into(),
             name: "下载 Sodium 0.6.13".into(),
-            state: "Running".into(),
+            state: "running".into(),
             percent: 46.0,
             message: "下载中 12.4 MB / 26.9 MB".into(),
             committing: false,
+            allowed_actions: vec![],
         },
         TaskInfo {
             id: "t2".into(),
             name: "安装 Fabric 0.16.9".into(),
-            state: "Queued".into(),
+            state: "queued".into(),
             percent: 0.0,
             message: "等待中".into(),
             committing: false,
+            allowed_actions: vec![],
         },
         TaskInfo {
             id: "t3".into(),
             name: "更新 Create 6.0.4".into(),
-            state: "Paused".into(),
+            state: "paused".into(),
             percent: 72.0,
             message: "已暂停".into(),
             committing: false,
+            allowed_actions: vec![],
         },
     ]
 }

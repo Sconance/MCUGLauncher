@@ -91,6 +91,7 @@ export interface TaskInfo {
   percent: number;
   message: string;
   committing: boolean;
+  allowedActions: ("pause" | "resume" | "cancel" | "delete")[];
 }
 
 export interface GameInfo {

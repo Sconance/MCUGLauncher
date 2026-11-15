@@ -16,9 +16,13 @@ export default function TasksPage() {
   const [status, setStatus] = useState("");
 
   const act = async (id: string, action: string) => {
-    const result = await taskAction(id, action);
-    await refreshTasks();
-    setStatus(result.message);
+    try {
+      const result = await taskAction(id, action);
+      await refreshTasks();
+      setStatus(result.message);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error));
+    }
   };
 
 
@@ -26,7 +30,7 @@ export default function TasksPage() {
     <div className="subpage">
       <div className="stack" style={{ gap: 6 }}>
         <h1 className="page-title">下载任务</h1>
-        <p className="muted">任务由持久队列管理；关闭页面或启动器不会丢失已提交的下载。</p>
+        <p className="muted">当前显示演示任务；重启应用会重置演示数据。</p>
       </div>
 
       <div className="page-scroll" style={{ marginTop: 14 }}>
@@ -48,6 +52,7 @@ export default function TasksPage() {
                   <div className="row" style={{ gap: 6 }}>
                     {ACTIONS.map(([action, label]) => (
                       <button
+                        disabled={!task.allowedActions.includes(action)}
                         key={action}
                         type="button"
                         className="btn ghost"

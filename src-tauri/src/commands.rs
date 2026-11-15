@@ -414,7 +414,7 @@ pub fn restore_save(id: String, world: String) -> Result<SavedInfo, ApiError> {
 /// 列出任务队列与当前进度。
 #[tauri::command]
 pub fn list_tasks(backend: State<'_, Backend>) -> Vec<TaskInfo> {
-    backend.data.lock().unwrap().tasks.clone()
+    backend.data.lock().unwrap().tasks.iter().cloned().map(|mut task| { task.allowed_actions = task.actions(); task }).collect()
 }
 
 /// 对任务执行暂停/继续/取消/删除。
@@ -424,32 +424,17 @@ pub fn task_action(
     backend: State<'_, Backend>,
     id: String,
     action: String,
-) -> SavedInfo {
+) -> Result<SavedInfo, ApiError> {
     let tasks = {
         let mut data = backend.data.lock().unwrap();
-        if action == "delete" {
-            data.tasks.retain(|task| task.id != id);
-        } else {
-            for task in data.tasks.iter_mut().filter(|task| task.id == id) {
-                task.state = match action.as_str() {
-                    "pause" => "Paused",
-                    "resume" => "Running",
-                    "cancel" => "Cancelled",
-                    _ => task.state.as_str(),
-                }
-                .into();
-            }
-        }
+        let task = data.tasks.iter_mut().find(|task| task.id == id)
+            .ok_or_else(|| ApiError { code: "NOT_FOUND", message: "任务不存在。".into(), retryable: false })?;
+        task.apply_action(&action)?;
+        if action == "delete" { data.tasks.retain(|task| task.id != id); }
         data.tasks.clone()
     };
     emit(&app, EVENT_TASKS, tasks);
-    let label = match action.as_str() {
-        "pause" => "暂停",
-        "resume" => "继续",
-        "cancel" => "取消",
-        _ => "删除",
-    };
-    SavedInfo::new(format!("任务已{label}。"))
+    Ok(SavedInfo::new("任务操作已接受。"))
 }
 
 /// 列出由本次启动器启动、仍在运行的游戏。

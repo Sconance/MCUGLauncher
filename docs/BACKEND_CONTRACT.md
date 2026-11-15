@@ -6,6 +6,12 @@
 
 本文档是唯一的契约清单：改动命令名、参数或事件时必须同步修改本文档、`src/api/commands/*.ts` 与 `src/types/launcher.ts`。
 
+## 当前演示能力限制
+
+安装、启动、在线登录、系统交互、网络探测、备份恢复和预览执行等尚未接入真实内核的命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。下表的成功类型仅是旧接口类型，不代表这些能力已经实现。
+
+任务状态使用小写 `queued`、`running`、`paused`、`cancelling`、`succeeded`、`failed`、`cancelled`；`allowedActions` 是后端计算的可执行动作。提交阶段禁止中断，取消请求不等于清理完成，终态才可删除。未知任务返回 `NOT_FOUND`，非法转换返回 `CONFLICT`。演示队列仅在内存中保存，重启重置。
+
 ## 1. 约定
 
 - **命令名**：`snake_case`，动词在前，例如 `get_launcher_state`、`save_server`。
