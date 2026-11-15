@@ -458,7 +458,7 @@ export interface InstanceCatalogInfo {
   /**
    * versionGroups 字段。
    */
-  versionGroups: unknown[];
+  versionGroups: VersionGroupInfo[];
 }
 /**
  * ModInfo：通过 Tauri 命令在前后端之间传输的数据对象。
@@ -608,18 +608,9 @@ export interface SettingsInfo {
    * cape 字段。
    */
   cape?: string;
-  /**
-   * dataSources 字段。
-   */
-  dataSources: {};
-  /**
-   * defaultDataSources 字段。
-   */
-  defaultDataSources?: {};
-  /**
-   * customDataSources 字段。
-   */
-  customDataSources?: {};
+  dataSources: DataSourceSet1;
+  defaultDataSources?: DataSourceSet2;
+  customDataSources?: DataSourceSet3;
   /**
    * dataSourceMode 字段。
    */
@@ -628,6 +619,69 @@ export interface SettingsInfo {
    * autoChinese 字段。
    */
   autoChinese: boolean;
+}
+/**
+ * DataSourceSet：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface DataSourceSet1 {
+  /**
+   * announcements 字段。
+   */
+  announcements: string;
+  /**
+   * servers 字段。
+   */
+  servers: string;
+  /**
+   * recommendations 字段。
+   */
+  recommendations: string;
+  /**
+   * quotes 字段。
+   */
+  quotes: string;
+}
+/**
+ * DataSourceSet：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface DataSourceSet2 {
+  /**
+   * announcements 字段。
+   */
+  announcements: string;
+  /**
+   * servers 字段。
+   */
+  servers: string;
+  /**
+   * recommendations 字段。
+   */
+  recommendations: string;
+  /**
+   * quotes 字段。
+   */
+  quotes: string;
+}
+/**
+ * DataSourceSet：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface DataSourceSet3 {
+  /**
+   * announcements 字段。
+   */
+  announcements: string;
+  /**
+   * servers 字段。
+   */
+  servers: string;
+  /**
+   * recommendations 字段。
+   */
+  recommendations: string;
+  /**
+   * quotes 字段。
+   */
+  quotes: string;
 }
 /**
  * UninstallPreviewInfo：通过 Tauri 命令在前后端之间传输的数据对象。

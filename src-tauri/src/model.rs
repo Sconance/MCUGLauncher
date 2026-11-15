@@ -8,7 +8,8 @@ use std::collections::HashMap;
 pub use crate::schema_dto::generated::common::{ResourceKeyInfo, SavedInfo};
 pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
 pub use crate::schema_dto::generated::instances::{
-    DataSourceSet, FavoriteInfo, InstanceInfo, ModInfo, SavedServerInfo,
+    DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
+    SavedServerInfo,
     VersionChoice, VersionGroupInfo,
 };
 
@@ -81,14 +82,6 @@ pub struct BackendState {
 
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct LauncherOverview {
-    pub app_version: String,
-    pub selected_instance_id: Option<String>,
-    pub active_account_id: Option<String>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct SettingsInfo {
     pub root: String,
     pub game_roots: Vec<String>,
@@ -107,13 +100,6 @@ pub struct SettingsInfo {
     pub custom_data_sources: DataSourceSet,
     pub data_source_mode: String,
     pub auto_chinese: bool,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct InstanceCatalogInfo {
-    pub items: Vec<InstanceInfo>,
-    pub version_groups: Vec<VersionGroupInfo>,
 }
 
 #[derive(Clone, Serialize, Default)]
