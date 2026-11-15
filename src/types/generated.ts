@@ -1,10 +1,13 @@
 /* eslint-disable */
 /**
  * GENERATED FILE — do not edit by hand.
- * Source: schemas/launcher.schema.json
+ * Source: schemas/*.schema.json
  * Run: npm run dto:generate
  */
 
+/**
+ * LoginSessionInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
 export type LoginSessionInfo =
   | {
       state: "awaitingAuthorization";
@@ -36,30 +39,36 @@ export interface LauncherDTO {
   ResourceKeyInfo?: ResourceKeyInfo;
   SavedInfo?: SavedInfo;
   ResourceSnapshot?: ResourceSnapshot;
+  AccountInfo?: AccountInfo;
+  MuaProfileInfo?: MuaProfileInfo;
+  LoginSessionInfo?: LoginSessionInfo;
+  AvatarInfo?: AvatarInfo;
+  CommunityData?: CommunityData;
+  ContentItem?: ContentItem;
+  ContentSearchResult?: ContentSearchResult;
+  LoaderListInfo?: LoaderListInfo;
+  LaunchSettings?: LaunchSettings;
+  LaunchOptionsInfo?: LaunchOptionsInfo;
   LauncherOverview?: LauncherOverview;
   InstanceInfo?: InstanceInfo;
   InstanceCatalogInfo?: InstanceCatalogInfo;
   ModInfo?: ModInfo;
-  AccountInfo?: AccountInfo;
   SavedServerInfo?: SavedServerInfo;
   FavoriteInfo?: FavoriteInfo;
   DataSourceSet?: DataSourceSet;
-  CommunityData?: CommunityData;
-  ContentItem?: ContentItem;
-  ContentSearchResult?: ContentSearchResult;
-  LaunchSettings?: LaunchSettings;
-  AvatarInfo?: AvatarInfo;
-  MuaProfileInfo?: MuaProfileInfo;
-  LaunchAcceptedInfo?: LaunchAcceptedInfo;
   SettingsInfo?: SettingsInfo;
+  UninstallPreviewInfo?: UninstallPreviewInfo;
   TaskInfo?: TaskInfo;
   GameSessionInfo?: GameSessionInfo;
-  LoginSessionInfo?: LoginSessionInfo;
-  LaunchOptionsInfo?: LaunchOptionsInfo;
-  LoaderListInfo?: LoaderListInfo;
-  UninstallPreviewInfo?: UninstallPreviewInfo;
+  LaunchAcceptedInfo?: LaunchAcceptedInfo;
 }
+/**
+ * ApiError：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
 export interface ApiError {
+  /**
+   * code 字段。
+   */
   code:
     | "VALIDATION_ERROR"
     | "NOT_FOUND"
@@ -71,186 +80,656 @@ export interface ApiError {
     | "PLAN_EXPIRED"
     | "INTERNAL_ERROR"
     | "UNSUPPORTED";
+  /**
+   * message 字段。
+   */
   message: string;
+  /**
+   * retryable 字段。
+   */
   retryable: boolean;
+  /**
+   * fieldErrors 字段。
+   */
   fieldErrors?: {
     [k: string]: string;
   };
 }
+/**
+ * ResourceKeyInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
 export interface ResourceKeyInfo {
+  /**
+   * kind 字段。
+   */
   kind: string;
+  /**
+   * instanceId 字段。
+   */
   instanceId: string | null;
 }
+/**
+ * SavedInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
 export interface SavedInfo {
+  /**
+   * message 字段。
+   */
   message: string;
+  /**
+   * changed 字段。
+   */
   changed: ResourceKeyInfo[];
+  /**
+   * entityIds 字段。
+   */
   entityIds: string[];
 }
+/**
+ * ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
 export interface ResourceSnapshot {
+  /**
+   * epoch 字段。
+   */
   epoch: string;
+  /**
+   * revision 字段。
+   */
   revision: number;
-  data: unknown;
+  /**
+   * data 字段。
+   */
+  data: {
+    [k: string]: unknown;
+  };
 }
-export interface LauncherOverview {
-  appVersion: string;
-  selectedInstanceId: string | null;
-  activeAccountId: string | null;
-}
-export interface InstanceInfo {
-  id: string;
-  name: string;
-  displayName: string;
-  loader: string;
-  minecraft: string;
-  mods?: number;
-  updates?: number;
-  isPlaceholder?: boolean;
-}
-export interface InstanceCatalogInfo {
-  items: InstanceInfo[];
-  versionGroups: unknown[];
-}
-export interface ModInfo {
-  id: string;
-  name: string;
-  file: string;
-  version: string;
-  enabled: boolean;
-  path: string;
-  size: number;
-}
+/**
+ * AccountInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
 export interface AccountInfo {
+  /**
+   * id 字段。
+   */
   id: string;
+  /**
+   * kind 字段。
+   */
   kind: "microsoft" | "mua" | "offline";
+  /**
+   * player 字段。
+   */
   player: string;
+  /**
+   * status 字段。
+   */
   status: "ready" | "expired" | "invalid";
 }
-export interface SavedServerInfo {
+/**
+ * MuaProfileInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface MuaProfileInfo {
+  /**
+   * id 字段。
+   */
   id: string;
+  /**
+   * name 字段。
+   */
   name: string;
-  address: string;
-  instanceId: string | null;
 }
-export interface FavoriteInfo {
-  id: string;
-  kind: string;
-  name: string;
-  description: string;
-}
-export interface DataSourceSet {
-  announcements: string;
-  servers: string;
-  recommendations: string;
-  quotes: string;
-}
-export interface CommunityData {
-  announcements: unknown[];
-  recommendations: unknown[];
-  quotes: unknown[];
-}
-export interface ContentItem {
-  id: string;
-  name: string;
-  description: string;
-  author: string;
-  icon: string;
-  downloads: string;
-  tags: string[];
-}
-export interface ContentSearchResult {
-  category: string;
-  requestId: string;
-  items: ContentItem[];
-}
-export interface LaunchSettings {
-  autoMemory: boolean;
-  fullScreen: boolean;
-  ramMb: number;
-  width: number;
-  height: number;
-  java: string;
-  jvmArguments: string;
-  windowTitle: string;
-  server: string;
-  autoChinese: boolean;
-}
+/**
+ * AvatarInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
 export interface AvatarInfo {
+  /**
+   * image 字段。
+   */
   image: string;
+  /**
+   * label 字段。
+   */
   label: string;
+  /**
+   * fallback 字段。
+   */
   fallback: boolean;
+  /**
+   * account 字段。
+   */
   account: string;
+  /**
+   * player 字段。
+   */
   player: string;
 }
-export interface MuaProfileInfo {
+/**
+ * CommunityData：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface CommunityData {
+  /**
+   * announcements 字段。
+   */
+  announcements: unknown[];
+  /**
+   * recommendations 字段。
+   */
+  recommendations: unknown[];
+  /**
+   * quotes 字段。
+   */
+  quotes: unknown[];
+}
+/**
+ * ContentItem：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface ContentItem {
+  /**
+   * id 字段。
+   */
   id: string;
+  /**
+   * name 字段。
+   */
   name: string;
+  /**
+   * description 字段。
+   */
+  description: string;
+  /**
+   * author 字段。
+   */
+  author: string;
+  /**
+   * icon 字段。
+   */
+  icon: string;
+  /**
+   * downloads 字段。
+   */
+  downloads: string;
+  /**
+   * tags 字段。
+   */
+  tags: string[];
 }
-export interface LaunchAcceptedInfo {
-  sessionId: string;
-  taskId: string;
-}
-export interface SettingsInfo {
-  root: string;
-  gameRoots: string[];
-  java: string;
-  width: number;
-  height: number;
-  ram: number;
-  autoMemory: boolean;
-  anonymous: boolean;
-  hasCommunityKey?: boolean;
-  hasAdminKey?: boolean;
-  skinStation?: string;
-  cape?: string;
-  dataSources: {};
-  defaultDataSources?: {};
-  customDataSources?: {};
-  dataSourceMode: string;
-  autoChinese: boolean;
-}
-export interface TaskInfo {
-  id: string;
-  name?: string;
-  kind: string;
-  instanceId: string | null;
-  status: "queued" | "running" | "paused" | "cancelling" | "succeeded" | "failed" | "cancelled";
-  phase: string;
-  progress?: {} | null;
-  allowedActions: string[];
-  error?: ApiError | null;
-  result?: {} | null;
-  createdAt: string;
-  updatedAt: string;
-}
-export interface GameSessionInfo {
-  sessionId: string;
-  instanceId: string;
-  accountId: string;
-  status: "preparing" | "starting" | "running" | "stopping" | "exited" | "failed";
-  pid: number | null;
-  exitCode: number | null;
-  error: ApiError | null;
-}
-export interface LaunchOptionsInfo {
+/**
+ * ContentSearchResult：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface ContentSearchResult {
+  /**
+   * category 字段。
+   */
+  category: string;
+  /**
+   * requestId 字段。
+   */
   requestId: string;
-  token: string;
-  instanceId: string;
-  displayName: string;
-  inherited: boolean;
-  settings: {};
+  /**
+   * items 字段。
+   */
+  items: ContentItem[];
 }
+/**
+ * LoaderListInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
 export interface LoaderListInfo {
+  /**
+   * minecraftVersion 字段。
+   */
   minecraftVersion: string;
+  /**
+   * loader 字段。
+   */
   loader: string;
+  /**
+   * versions 字段。
+   */
   versions: string[];
 }
-export interface UninstallPreviewInfo {
-  planId: string;
-  targetId: string;
-  targetRevision: number;
-  expiresAt: string;
+/**
+ * LaunchSettings：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface LaunchSettings {
+  /**
+   * autoMemory 字段。
+   */
+  autoMemory: boolean;
+  /**
+   * fullScreen 字段。
+   */
+  fullScreen: boolean;
+  /**
+   * ramMb 字段。
+   */
+  ramMb: number;
+  /**
+   * width 字段。
+   */
+  width: number;
+  /**
+   * height 字段。
+   */
+  height: number;
+  /**
+   * java 字段。
+   */
+  java: string;
+  /**
+   * jvmArguments 字段。
+   */
+  jvmArguments: string;
+  /**
+   * windowTitle 字段。
+   */
+  windowTitle: string;
+  /**
+   * server 字段。
+   */
+  server: string;
+  /**
+   * autoChinese 字段。
+   */
+  autoChinese: boolean;
+}
+/**
+ * LaunchOptionsInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface LaunchOptionsInfo {
+  /**
+   * requestId 字段。
+   */
+  requestId: string;
+  /**
+   * token 字段。
+   */
+  token: string;
+  /**
+   * instanceId 字段。
+   */
+  instanceId: string;
+  /**
+   * displayName 字段。
+   */
+  displayName: string;
+  /**
+   * inherited 字段。
+   */
+  inherited: boolean;
+  /**
+   * settings 字段。
+   */
+  settings: {};
+}
+/**
+ * LauncherOverview：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface LauncherOverview {
+  /**
+   * appVersion 字段。
+   */
+  appVersion: string;
+  /**
+   * selectedInstanceId 字段。
+   */
+  selectedInstanceId: string | null;
+  /**
+   * activeAccountId 字段。
+   */
+  activeAccountId: string | null;
+}
+/**
+ * InstanceInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface InstanceInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * name 字段。
+   */
   name: string;
+  /**
+   * displayName 字段。
+   */
+  displayName: string;
+  /**
+   * loader 字段。
+   */
+  loader: string;
+  /**
+   * minecraft 字段。
+   */
+  minecraft: string;
+  /**
+   * mods 字段。
+   */
+  mods?: number;
+  /**
+   * updates 字段。
+   */
+  updates?: number;
+  /**
+   * isPlaceholder 字段。
+   */
+  isPlaceholder?: boolean;
+}
+/**
+ * InstanceCatalogInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface InstanceCatalogInfo {
+  /**
+   * items 字段。
+   */
+  items: InstanceInfo[];
+  /**
+   * versionGroups 字段。
+   */
+  versionGroups: unknown[];
+}
+/**
+ * ModInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface ModInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * name 字段。
+   */
+  name: string;
+  /**
+   * file 字段。
+   */
+  file: string;
+  /**
+   * version 字段。
+   */
+  version: string;
+  /**
+   * enabled 字段。
+   */
+  enabled: boolean;
+  /**
+   * path 字段。
+   */
+  path: string;
+  /**
+   * size 字段。
+   */
+  size: number;
+}
+/**
+ * SavedServerInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface SavedServerInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * name 字段。
+   */
+  name: string;
+  /**
+   * address 字段。
+   */
+  address: string;
+  /**
+   * instanceId 字段。
+   */
+  instanceId: string | null;
+}
+/**
+ * FavoriteInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface FavoriteInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * kind 字段。
+   */
+  kind: string;
+  /**
+   * name 字段。
+   */
+  name: string;
+  /**
+   * description 字段。
+   */
+  description: string;
+}
+/**
+ * DataSourceSet：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface DataSourceSet {
+  /**
+   * announcements 字段。
+   */
+  announcements: string;
+  /**
+   * servers 字段。
+   */
+  servers: string;
+  /**
+   * recommendations 字段。
+   */
+  recommendations: string;
+  /**
+   * quotes 字段。
+   */
+  quotes: string;
+}
+/**
+ * SettingsInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface SettingsInfo {
+  /**
+   * root 字段。
+   */
+  root: string;
+  /**
+   * gameRoots 字段。
+   */
+  gameRoots: string[];
+  /**
+   * java 字段。
+   */
+  java: string;
+  /**
+   * width 字段。
+   */
+  width: number;
+  /**
+   * height 字段。
+   */
+  height: number;
+  /**
+   * ram 字段。
+   */
+  ram: number;
+  /**
+   * autoMemory 字段。
+   */
+  autoMemory: boolean;
+  /**
+   * anonymous 字段。
+   */
+  anonymous: boolean;
+  /**
+   * hasCommunityKey 字段。
+   */
+  hasCommunityKey?: boolean;
+  /**
+   * hasAdminKey 字段。
+   */
+  hasAdminKey?: boolean;
+  /**
+   * skinStation 字段。
+   */
+  skinStation?: string;
+  /**
+   * cape 字段。
+   */
+  cape?: string;
+  /**
+   * dataSources 字段。
+   */
+  dataSources: {};
+  /**
+   * defaultDataSources 字段。
+   */
+  defaultDataSources?: {};
+  /**
+   * customDataSources 字段。
+   */
+  customDataSources?: {};
+  /**
+   * dataSourceMode 字段。
+   */
+  dataSourceMode: string;
+  /**
+   * autoChinese 字段。
+   */
+  autoChinese: boolean;
+}
+/**
+ * UninstallPreviewInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface UninstallPreviewInfo {
+  /**
+   * planId 字段。
+   */
+  planId: string;
+  /**
+   * targetId 字段。
+   */
+  targetId: string;
+  /**
+   * targetRevision 字段。
+   */
+  targetRevision: number;
+  /**
+   * expiresAt 字段。
+   */
+  expiresAt: string;
+  /**
+   * name 字段。
+   */
+  name: string;
+  /**
+   * notice 字段。
+   */
   notice: string;
+  /**
+   * paths 字段。
+   */
   paths: string[];
+  /**
+   * shared 字段。
+   */
   shared: boolean;
+}
+/**
+ * TaskInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface TaskInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * name 字段。
+   */
+  name?: string;
+  /**
+   * kind 字段。
+   */
+  kind: string;
+  /**
+   * instanceId 字段。
+   */
+  instanceId: string | null;
+  /**
+   * status 字段。
+   */
+  status: "queued" | "running" | "paused" | "cancelling" | "succeeded" | "failed" | "cancelled";
+  /**
+   * phase 字段。
+   */
+  phase: string;
+  /**
+   * progress 字段。
+   */
+  progress?: {} | null;
+  /**
+   * allowedActions 字段。
+   */
+  allowedActions: string[];
+  /**
+   * error 字段。
+   */
+  error?: ApiError | null;
+  /**
+   * result 字段。
+   */
+  result?: {} | null;
+  /**
+   * createdAt 字段。
+   */
+  createdAt: string;
+  /**
+   * updatedAt 字段。
+   */
+  updatedAt: string;
+}
+/**
+ * GameSessionInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface GameSessionInfo {
+  /**
+   * sessionId 字段。
+   */
+  sessionId: string;
+  /**
+   * instanceId 字段。
+   */
+  instanceId: string;
+  /**
+   * accountId 字段。
+   */
+  accountId: string;
+  /**
+   * status 字段。
+   */
+  status: "preparing" | "starting" | "running" | "stopping" | "exited" | "failed";
+  /**
+   * pid 字段。
+   */
+  pid: number | null;
+  /**
+   * exitCode 字段。
+   */
+  exitCode: number | null;
+  /**
+   * error 字段。
+   */
+  error: ApiError | null;
+}
+/**
+ * LaunchAcceptedInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface LaunchAcceptedInfo {
+  /**
+   * sessionId 字段。
+   */
+  sessionId: string;
+  /**
+   * taskId 字段。
+   */
+  taskId: string;
 }

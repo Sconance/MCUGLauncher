@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "dto:generate": "node scripts/generate-dto.mjs",
+    "dto:generate": "node scripts/split-schemas.mjs && node scripts/annotate-schemas.mjs && node scripts/generate-dto.mjs",
     "dto:check": "npm run dto:generate && git diff --exit-code -- src/types/generated.ts",
     "preview": "vite preview",
     "tauri": "tauri"

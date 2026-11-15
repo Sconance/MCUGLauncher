@@ -1,0 +1,351 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcuglauncher.local/schemas/content.schema.json",
+  "title": "MCUGLauncher content DTO",
+  "description": "MCUGLauncher content 领域 DTO。字段名使用 camelCase。",
+  "$defs": {
+    "ApiError": {
+      "type": "object",
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "VALIDATION_ERROR",
+            "NOT_FOUND",
+            "CONFLICT",
+            "BUSY",
+            "AUTH_REQUIRED",
+            "NETWORK_ERROR",
+            "IO_ERROR",
+            "PLAN_EXPIRED",
+            "INTERNAL_ERROR",
+            "UNSUPPORTED"
+          ],
+          "description": "code 字段。"
+        },
+        "message": {
+          "type": "string",
+          "description": "message 字段。"
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "retryable 字段。"
+        },
+        "fieldErrors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "fieldErrors 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ApiError：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ResourceKeyInfo": {
+      "type": "object",
+      "required": [
+        "kind",
+        "instanceId"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "kind 字段。"
+        },
+        "instanceId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "instanceId 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ResourceKeyInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "SavedInfo": {
+      "type": "object",
+      "required": [
+        "message",
+        "changed",
+        "entityIds"
+      ],
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "message 字段。"
+        },
+        "changed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceKeyInfo"
+          },
+          "description": "changed 字段。"
+        },
+        "entityIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "entityIds 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "SavedInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ResourceSnapshot": {
+      "type": "object",
+      "required": [
+        "epoch",
+        "revision",
+        "data"
+      ],
+      "properties": {
+        "epoch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "epoch 字段。"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "revision 字段。"
+        },
+        "data": {
+          "description": "data 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "CommunityData": {
+      "type": "object",
+      "required": [
+        "announcements",
+        "recommendations",
+        "quotes"
+      ],
+      "properties": {
+        "announcements": {
+          "type": "array",
+          "description": "announcements 字段。"
+        },
+        "recommendations": {
+          "type": "array",
+          "description": "recommendations 字段。"
+        },
+        "quotes": {
+          "type": "array",
+          "description": "quotes 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "CommunityData：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ContentItem": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "description",
+        "author",
+        "icon",
+        "downloads",
+        "tags"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "name": {
+          "type": "string",
+          "description": "name 字段。"
+        },
+        "description": {
+          "type": "string",
+          "description": "description 字段。"
+        },
+        "author": {
+          "type": "string",
+          "description": "author 字段。"
+        },
+        "icon": {
+          "type": "string",
+          "description": "icon 字段。"
+        },
+        "downloads": {
+          "type": "string",
+          "description": "downloads 字段。"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "tags 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ContentItem：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ContentSearchResult": {
+      "type": "object",
+      "required": [
+        "category",
+        "requestId",
+        "items"
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "category 字段。"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "requestId 字段。"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentItem"
+          },
+          "description": "items 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ContentSearchResult：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "LoaderListInfo": {
+      "type": "object",
+      "required": [
+        "minecraftVersion",
+        "loader",
+        "versions"
+      ],
+      "properties": {
+        "minecraftVersion": {
+          "type": "string",
+          "description": "minecraftVersion 字段。"
+        },
+        "loader": {
+          "type": "string",
+          "description": "loader 字段。"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "versions 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "LoaderListInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "LaunchSettings": {
+      "type": "object",
+      "required": [
+        "autoMemory",
+        "fullScreen",
+        "ramMb",
+        "width",
+        "height",
+        "java",
+        "jvmArguments",
+        "windowTitle",
+        "server",
+        "autoChinese"
+      ],
+      "properties": {
+        "autoMemory": {
+          "type": "boolean",
+          "description": "autoMemory 字段。"
+        },
+        "fullScreen": {
+          "type": "boolean",
+          "description": "fullScreen 字段。"
+        },
+        "ramMb": {
+          "type": "integer",
+          "description": "ramMb 字段。"
+        },
+        "width": {
+          "type": "integer",
+          "description": "width 字段。"
+        },
+        "height": {
+          "type": "integer",
+          "description": "height 字段。"
+        },
+        "java": {
+          "type": "string",
+          "description": "java 字段。"
+        },
+        "jvmArguments": {
+          "type": "string",
+          "description": "jvmArguments 字段。"
+        },
+        "windowTitle": {
+          "type": "string",
+          "description": "windowTitle 字段。"
+        },
+        "server": {
+          "type": "string",
+          "description": "server 字段。"
+        },
+        "autoChinese": {
+          "type": "boolean",
+          "description": "autoChinese 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "LaunchSettings：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "LaunchOptionsInfo": {
+      "type": "object",
+      "required": [
+        "requestId",
+        "token",
+        "instanceId",
+        "displayName",
+        "inherited",
+        "settings"
+      ],
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "description": "requestId 字段。"
+        },
+        "token": {
+          "type": "string",
+          "description": "token 字段。"
+        },
+        "instanceId": {
+          "type": "string",
+          "description": "instanceId 字段。"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "displayName 字段。"
+        },
+        "inherited": {
+          "type": "boolean",
+          "description": "inherited 字段。"
+        },
+        "settings": {
+          "type": "object",
+          "description": "settings 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "LaunchOptionsInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    }
+  }
+}

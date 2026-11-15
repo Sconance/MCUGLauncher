@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcuglauncher.local/schemas/tasks.schema.json",
+  "title": "MCUGLauncher tasks DTO",
+  "description": "MCUGLauncher tasks 领域 DTO。字段名使用 camelCase。",
+  "$defs": {
+    "ApiError": {
+      "type": "object",
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "VALIDATION_ERROR",
+            "NOT_FOUND",
+            "CONFLICT",
+            "BUSY",
+            "AUTH_REQUIRED",
+            "NETWORK_ERROR",
+            "IO_ERROR",
+            "PLAN_EXPIRED",
+            "INTERNAL_ERROR",
+            "UNSUPPORTED"
+          ],
+          "description": "code 字段。"
+        },
+        "message": {
+          "type": "string",
+          "description": "message 字段。"
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "retryable 字段。"
+        },
+        "fieldErrors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "fieldErrors 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ApiError：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ResourceKeyInfo": {
+      "type": "object",
+      "required": [
+        "kind",
+        "instanceId"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "kind 字段。"
+        },
+        "instanceId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "instanceId 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ResourceKeyInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "SavedInfo": {
+      "type": "object",
+      "required": [
+        "message",
+        "changed",
+        "entityIds"
+      ],
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "message 字段。"
+        },
+        "changed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceKeyInfo"
+          },
+          "description": "changed 字段。"
+        },
+        "entityIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "entityIds 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "SavedInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ResourceSnapshot": {
+      "type": "object",
+      "required": [
+        "epoch",
+        "revision",
+        "data"
+      ],
+      "properties": {
+        "epoch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "epoch 字段。"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "revision 字段。"
+        },
+        "data": {
+          "description": "data 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "TaskInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "instanceId",
+        "status",
+        "phase",
+        "allowedActions",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "name": {
+          "type": "string",
+          "description": "name 字段。"
+        },
+        "kind": {
+          "type": "string",
+          "description": "kind 字段。"
+        },
+        "instanceId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "instanceId 字段。"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "paused",
+            "cancelling",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ],
+          "description": "status 字段。"
+        },
+        "phase": {
+          "type": "string",
+          "description": "phase 字段。"
+        },
+        "progress": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "progress 字段。"
+        },
+        "allowedActions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "allowedActions 字段。"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApiError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "error 字段。"
+        },
+        "result": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "result 字段。"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "createdAt 字段。"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "updatedAt 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "TaskInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "GameSessionInfo": {
+      "type": "object",
+      "required": [
+        "sessionId",
+        "instanceId",
+        "accountId",
+        "status",
+        "pid",
+        "exitCode",
+        "error"
+      ],
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "description": "sessionId 字段。"
+        },
+        "instanceId": {
+          "type": "string",
+          "description": "instanceId 字段。"
+        },
+        "accountId": {
+          "type": "string",
+          "description": "accountId 字段。"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "preparing",
+            "starting",
+            "running",
+            "stopping",
+            "exited",
+            "failed"
+          ],
+          "description": "status 字段。"
+        },
+        "pid": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "pid 字段。"
+        },
+        "exitCode": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "exitCode 字段。"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ApiError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "error 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "GameSessionInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "LaunchAcceptedInfo": {
+      "type": "object",
+      "required": [
+        "sessionId",
+        "taskId"
+      ],
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "description": "sessionId 字段。"
+        },
+        "taskId": {
+          "type": "string",
+          "description": "taskId 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "LaunchAcceptedInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    }
+  }
+}

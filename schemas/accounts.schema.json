@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcuglauncher.local/schemas/accounts.schema.json",
+  "title": "MCUGLauncher accounts DTO",
+  "description": "MCUGLauncher accounts 领域 DTO。字段名使用 camelCase。",
+  "$defs": {
+    "ApiError": {
+      "type": "object",
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "VALIDATION_ERROR",
+            "NOT_FOUND",
+            "CONFLICT",
+            "BUSY",
+            "AUTH_REQUIRED",
+            "NETWORK_ERROR",
+            "IO_ERROR",
+            "PLAN_EXPIRED",
+            "INTERNAL_ERROR",
+            "UNSUPPORTED"
+          ],
+          "description": "code 字段。"
+        },
+        "message": {
+          "type": "string",
+          "description": "message 字段。"
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "retryable 字段。"
+        },
+        "fieldErrors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "fieldErrors 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ApiError：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ResourceKeyInfo": {
+      "type": "object",
+      "required": [
+        "kind",
+        "instanceId"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "kind 字段。"
+        },
+        "instanceId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "instanceId 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ResourceKeyInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "SavedInfo": {
+      "type": "object",
+      "required": [
+        "message",
+        "changed",
+        "entityIds"
+      ],
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "message 字段。"
+        },
+        "changed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceKeyInfo"
+          },
+          "description": "changed 字段。"
+        },
+        "entityIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "entityIds 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "SavedInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ResourceSnapshot": {
+      "type": "object",
+      "required": [
+        "epoch",
+        "revision",
+        "data"
+      ],
+      "properties": {
+        "epoch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "epoch 字段。"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "revision 字段。"
+        },
+        "data": {
+          "description": "data 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "AccountInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "player",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "microsoft",
+            "mua",
+            "offline"
+          ],
+          "description": "kind 字段。"
+        },
+        "player": {
+          "type": "string",
+          "description": "player 字段。"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ready",
+            "expired",
+            "invalid"
+          ],
+          "description": "status 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "AccountInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "MuaProfileInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "name": {
+          "type": "string",
+          "description": "name 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "MuaProfileInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "LoginSessionInfo": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "state",
+            "authSessionId",
+            "authorizationUrl"
+          ],
+          "properties": {
+            "state": {
+              "const": "awaitingAuthorization"
+            },
+            "authSessionId": {
+              "type": "string"
+            },
+            "authorizationUrl": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "state",
+            "authSessionId",
+            "profiles"
+          ],
+          "properties": {
+            "state": {
+              "const": "awaitingProfile"
+            },
+            "authSessionId": {
+              "type": "string"
+            },
+            "profiles": {
+              "type": "array"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "state",
+            "authSessionId",
+            "accountId"
+          ],
+          "properties": {
+            "state": {
+              "const": "succeeded"
+            },
+            "authSessionId": {
+              "type": "string"
+            },
+            "accountId": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "state",
+            "authSessionId",
+            "error"
+          ],
+          "properties": {
+            "state": {
+              "const": "failed"
+            },
+            "authSessionId": {
+              "type": "string"
+            },
+            "error": {
+              "$ref": "#/$defs/ApiError"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "state",
+            "authSessionId"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "cancelled",
+                "expired"
+              ]
+            },
+            "authSessionId": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "LoginSessionInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "AvatarInfo": {
+      "type": "object",
+      "required": [
+        "image",
+        "label",
+        "fallback",
+        "account",
+        "player"
+      ],
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "image 字段。"
+        },
+        "label": {
+          "type": "string",
+          "description": "label 字段。"
+        },
+        "fallback": {
+          "type": "boolean",
+          "description": "fallback 字段。"
+        },
+        "account": {
+          "type": "string",
+          "description": "account 字段。"
+        },
+        "player": {
+          "type": "string",
+          "description": "player 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "AvatarInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    }
+  }
+}
