@@ -124,6 +124,53 @@
       "additionalProperties": false,
       "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
     },
+    "VersionChoice": {
+      "description": "版本选择项。",
+      "type": "object",
+      "required": [
+        "name",
+        "meta"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "版本名称。"
+        },
+        "meta": {
+          "type": "string",
+          "description": "版本元数据。"
+        }
+      },
+      "additionalProperties": false
+    },
+    "VersionGroupInfo": {
+      "description": "按标签聚合的版本列表。",
+      "type": "object",
+      "required": [
+        "label",
+        "count",
+        "versions"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "分组标签。"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "版本数量。"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/VersionChoice"
+          },
+          "description": "分组中的版本。"
+        }
+      },
+      "additionalProperties": false
+    },
     "LauncherOverview": {
       "type": "object",
       "required": [
@@ -161,7 +208,10 @@
         "name",
         "displayName",
         "loader",
-        "minecraft"
+        "minecraft",
+        "mods",
+        "updates",
+        "isPlaceholder"
       ],
       "properties": {
         "id": {

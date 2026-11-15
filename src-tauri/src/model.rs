@@ -7,6 +7,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 pub use crate::schema_dto::generated::common::{ResourceKeyInfo, SavedInfo};
 pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
+pub use crate::schema_dto::generated::instances::{
+    DataSourceSet, FavoriteInfo, InstanceInfo, ModInfo, SavedServerInfo,
+    VersionChoice, VersionGroupInfo,
+};
 
 /// 可缓存资源的版本化快照。
 #[derive(Clone, Serialize)]
@@ -15,67 +19,6 @@ pub struct ResourceSnapshot<T> {
     pub epoch: String,
     pub revision: u64,
     pub data: T,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct InstanceInfo {
-    pub id: String,
-    pub name: String,
-    pub loader: String,
-    pub mods: u32,
-    pub updates: u32,
-    pub display_name: String,
-    pub minecraft: String,
-    pub is_placeholder: bool,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ModInfo {
-    pub id: String,
-    pub name: String,
-    pub file: String,
-    pub version: String,
-    pub enabled: bool,
-    pub path: String,
-    pub size: i64,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct SavedServerInfo {
-    pub id: String,
-    pub name: String,
-    pub address: String,
-    pub instance_id: Option<String>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct FavoriteInfo {
-    pub id: String,
-    pub kind: String,
-    pub name: String,
-    pub description: String,
-}
-
-#[derive(Clone, Debug, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct AccountInfo {
-    pub id: String,
-    pub kind: String,
-    pub player: String,
-    pub status: String,
-}
-
-#[derive(Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct DataSourceSet {
-    pub announcements: String,
-    pub servers: String,
-    pub recommendations: String,
-    pub quotes: String,
 }
 
 impl DataSourceSet {
@@ -89,19 +32,19 @@ impl DataSourceSet {
     }
 }
 
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct VersionChoice {
-    pub name: String,
-    pub meta: String,
+impl Default for DataSourceSet {
+    fn default() -> Self {
+        Self::demo()
+    }
 }
 
-#[derive(Clone, Serialize, Default)]
+#[derive(Clone, Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct VersionGroupInfo {
-    pub label: String,
-    pub count: u32,
-    pub versions: Vec<VersionChoice>,
+pub struct AccountInfo {
+    pub id: String,
+    pub kind: String,
+    pub player: String,
+    pub status: String,
 }
 
 #[derive(Clone, Serialize, Default)]

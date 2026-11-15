@@ -49,6 +49,8 @@ export interface LauncherDTO {
   LoaderListInfo?: LoaderListInfo;
   LaunchSettings?: LaunchSettings;
   LaunchOptionsInfo?: LaunchOptionsInfo;
+  VersionChoice?: VersionChoice;
+  VersionGroupInfo?: VersionGroupInfo;
   LauncherOverview?: LauncherOverview;
   InstanceInfo?: InstanceInfo;
   InstanceCatalogInfo?: InstanceCatalogInfo;
@@ -362,6 +364,36 @@ export interface LaunchOptionsInfo {
   settings: {};
 }
 /**
+ * 版本选择项。
+ */
+export interface VersionChoice {
+  /**
+   * 版本名称。
+   */
+  name: string;
+  /**
+   * 版本元数据。
+   */
+  meta: string;
+}
+/**
+ * 按标签聚合的版本列表。
+ */
+export interface VersionGroupInfo {
+  /**
+   * 分组标签。
+   */
+  label: string;
+  /**
+   * 版本数量。
+   */
+  count: number;
+  /**
+   * 分组中的版本。
+   */
+  versions: VersionChoice[];
+}
+/**
  * LauncherOverview：通过 Tauri 命令在前后端之间传输的数据对象。
  */
 export interface LauncherOverview {
@@ -405,15 +437,15 @@ export interface InstanceInfo {
   /**
    * mods 字段。
    */
-  mods?: number;
+  mods: number;
   /**
    * updates 字段。
    */
-  updates?: number;
+  updates: number;
   /**
    * isPlaceholder 字段。
    */
-  isPlaceholder?: boolean;
+  isPlaceholder: boolean;
 }
 /**
  * InstanceCatalogInfo：通过 Tauri 命令在前后端之间传输的数据对象。
