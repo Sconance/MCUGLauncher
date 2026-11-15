@@ -110,6 +110,23 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     setStateEpoch(epoch);
   }, []);
 
+  const receiveSnapshot = useCallback(<T,>(
+    key: ResourceKey,
+    next: ResourceSnapshot<T>,
+    apply: (value: T) => void,
+  ): boolean => {
+    resetForEpoch(next.epoch);
+    const current = resourceVersions.current[key];
+    if (current && current.epoch === next.epoch && next.revision < current.revision) return false;
+    resourceVersions.current[key] = { epoch: next.epoch, revision: next.revision };
+    apply(next.data);
+    setResourceStatus((previous) => ({
+      ...previous,
+      [key]: { status: "ready", refreshing: false, error: "" },
+    }));
+    return true;
+  }, [resetForEpoch]);
+
   const loadCore = useCallback(async <T,>(
     key: CoreResource,
     loader: () => Promise<ResourceSnapshot<T>>,
@@ -124,15 +141,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     try {
       const next = await loader();
       if (!mounted.current || requests.current[key] !== sequence) return null;
-      resetForEpoch(next.epoch);
-      const current = resourceVersions.current[key];
-      if (current && current.epoch === next.epoch && next.revision < current.revision) return null;
-      resourceVersions.current[key] = { epoch: next.epoch, revision: next.revision };
-      apply(next.data);
-      setResourceStatus((previous) => ({
-        ...previous,
-        [key]: { status: "ready", refreshing: false, error: "" },
-      }));
+      receiveSnapshot(key, next, apply);
       return next;
     } catch (failure) {
       const message = messageOf(failure);
@@ -145,7 +154,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       }
       return null;
     }
-  }, [notify, resetForEpoch]);
+  }, [notify, receiveSnapshot]);
 
   const refreshState = useCallback(async () => {
     const overview = await loadCore(
@@ -176,13 +185,8 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     setResourceStatus((previous) => ({ ...previous, tasks: { status: previous.tasks?.status === "ready" ? "ready" : "loading", refreshing: true, error: "" } }));
     try {
       const next = await taskCommands.listTasks();
-      resetForEpoch(next.epoch);
-      const current = resourceVersions.current.tasks;
-      if (mounted.current && requests.current.tasks === sequence &&
-          (!current || current.epoch !== next.epoch || next.revision >= current.revision)) {
-        resourceVersions.current.tasks = { epoch: next.epoch, revision: next.revision };
-        setTasks(next.data);
-        setResourceStatus((previous) => ({ ...previous, tasks: { status: "ready", refreshing: false, error: "" } }));
+      if (mounted.current && requests.current.tasks === sequence) {
+        receiveSnapshot("tasks", next, setTasks);
       }
     } catch (failure) {
       if (mounted.current) {
@@ -191,7 +195,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         notify(message);
       }
     }
-  }, [notify, resetForEpoch]);
+  }, [notify, receiveSnapshot]);
 
   const refreshGames = useCallback(async () => {
     const sequence = (requests.current.games ?? 0) + 1;
@@ -199,13 +203,8 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     setResourceStatus((previous) => ({ ...previous, games: { status: previous.games?.status === "ready" ? "ready" : "loading", refreshing: true, error: "" } }));
     try {
       const next = await gameCommands.listGameSessions();
-      resetForEpoch(next.epoch);
-      const current = resourceVersions.current.games;
-      if (mounted.current && requests.current.games === sequence &&
-          (!current || current.epoch !== next.epoch || next.revision >= current.revision)) {
-        resourceVersions.current.games = { epoch: next.epoch, revision: next.revision };
-        setGames(next.data);
-        setResourceStatus((previous) => ({ ...previous, games: { status: "ready", refreshing: false, error: "" } }));
+      if (mounted.current && requests.current.games === sequence) {
+        receiveSnapshot("games", next, setGames);
       }
     } catch (failure) {
       if (mounted.current) {
@@ -214,7 +213,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         notify(message);
       }
     }
-  }, [notify, resetForEpoch]);
+  }, [notify, receiveSnapshot]);
 
   const refreshCommunity = useCallback(async () => {
     const sequence = (requests.current.community ?? 0) + 1;
@@ -222,13 +221,8 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     setResourceStatus((previous) => ({ ...previous, community: { status: previous.community?.status === "ready" ? "ready" : "loading", refreshing: true, error: "" } }));
     try {
       const next = await communityCommands.refreshCommunity();
-      resetForEpoch(next.epoch);
-      const current = resourceVersions.current.community;
-      if (mounted.current && requests.current.community === sequence &&
-          (!current || current.epoch !== next.epoch || next.revision >= current.revision)) {
-        resourceVersions.current.community = { epoch: next.epoch, revision: next.revision };
-        setCommunity(next.data);
-        setResourceStatus((previous) => ({ ...previous, community: { status: "ready", refreshing: false, error: "" } }));
+      if (mounted.current && requests.current.community === sequence) {
+        receiveSnapshot("community", next, setCommunity);
       }
     } catch (failure) {
       if (mounted.current) {
@@ -237,7 +231,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         notify(message);
       }
     }
-  }, [notify, resetForEpoch]);
+  }, [notify, receiveSnapshot]);
 
   const refreshAvatar = useCallback(async () => {
     const sequence = (requests.current.avatar ?? 0) + 1;
