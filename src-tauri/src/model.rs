@@ -6,6 +6,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 pub use crate::schema_dto::generated::common::{ResourceKeyInfo, SavedInfo};
+pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
 
 /// 可缓存资源的版本化快照。
 #[derive(Clone, Serialize)]
@@ -513,13 +514,6 @@ impl SavedInfo {
             entity_ids,
         }
     }
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct LaunchAcceptedInfo {
-    pub session_id: String,
-    pub task_id: String,
 }
 
 #[derive(Clone, Serialize, Default)]
