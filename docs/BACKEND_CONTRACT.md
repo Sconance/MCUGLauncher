@@ -1,6 +1,6 @@
 # 前后端契约（Tauri 命令与事件）
 
-> 本文记录当前 V1 接口。V2 目标及迁移状态见 [BACKEND_V2.md](BACKEND_V2.md)，尚未完成迁移的接口不得按 V2 调用。
+> 本文记录当前 V2 接口，是前后端实现的基准。设计原则与迁移验收记录见 [BACKEND_V2.md](BACKEND_V2.md)。
 
 前端只通过 `@tauri-apps/api/core` 的 `invoke` 调用后端：**所有读取与写入都是命令**。前端不依赖事件推送；需要刷新时由页面在命令返回后调用对应的查询命令。事件仅作为后端可选的通知能力保留。
 
@@ -8,7 +8,7 @@
 
 ## 当前演示能力限制
 
-安装、启动、在线登录、系统交互、网络探测、备份恢复和预览执行等尚未接入真实内核的命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。下表的成功类型仅是旧接口类型，不代表这些能力已经实现。
+安装、启动、在线登录、系统交互、网络探测、备份恢复和部分计划执行尚未接入真实内核，相应命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。表中的成功类型定义真实适配器接入后必须遵守的返回契约，不表示演示后端已具备该能力。
 
 任务状态使用小写 `queued`、`running`、`paused`、`cancelling`、`succeeded`、`failed`、`cancelled`；`allowedActions` 是后端计算的可执行动作。提交阶段禁止中断，取消请求不等于清理完成，终态才可删除。未知任务返回 `NOT_FOUND`，非法转换返回 `CONFLICT`。演示队列仅在内存中保存，重启重置。
 
@@ -18,7 +18,8 @@
 
 - **命令名**：`snake_case`，动词在前，例如 `get_overview`、`save_server`。
 - **参数**：前端传 `camelCase` 键（Tauri 默认映射到 Rust 的 `snake_case` 参数），可省略的参数在 Rust 侧声明为 `Option<T>`。
-- **返回值**：`camelCase` 的强类型 DTO，与 `src/types/launcher.ts` 一致；失败通过 `Err(String)` 抛出，前端包装为 `BackendError`。
+- **返回值**：`camelCase` 的强类型 DTO，与 `src/types/launcher.ts` 一致；失败通过 `Err(ApiError)` 抛出，前端包装为 `BackendError`。
+- **错误**：统一为 `{ code, message, retryable, fieldErrors? }`。当前错误码包括 `VALIDATION_ERROR`、`NOT_FOUND`、`CONFLICT`、`BUSY`、`AUTH_REQUIRED`、`NETWORK_ERROR`、`IO_ERROR`、`PLAN_EXPIRED`、`INTERNAL_ERROR` 与 `UNSUPPORTED`。
 - **状态刷新**：写命令只返回操作结果；前端随后读取受影响的独立资源，例如 `get_overview`、`list_tasks`、`list_game_sessions`。
 - **事件（可选）**：后端可以继续 `emit`，但前端当前不订阅；内核重写时不需要实现事件。
 
@@ -151,11 +152,8 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | --- | --- | --- |
 | `launcher://state` | `LauncherState` | 任何全局状态变化（实例、账号、设置、收藏、模组等） |
 | `launcher://tasks` | `TaskInfo[]` | 任务队列变化 |
-| `launcher://games` | `GameSessionInfo[]` | 游戏会话状态变化 |
 | `launcher://community` | `CommunityData` | 社区内容刷新或推荐被修改 |
 | `launcher://avatar` | `AvatarInfo` | 账号切换或皮肤变更 |
-| `launcher://toast` | `ToastInfo` | 需要以提示形式展示的消息 |
-| `launcher://error` | `ToastInfo` | 后端主动上报的错误（预留） |
 
 ## 4. 内核重写指引
 
@@ -167,9 +165,9 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 4. 长任务使用队列执行，`list_tasks` 返回最新进度；前端全局每 3 秒同步任务、游戏和启动器状态，窗口重新获得焦点时同步；
 5. 若确需修改契约，同时更新本文件、`src/api/commands/*`、`src/types/launcher.ts` 与 `src-tauri/src/model.rs`。
 
-## 5. 待补命令（原生交互）
+## 5. 演示后端之外的原生适配
 
-当前文件/目录选择由前端的 `PathPrompt` 弹层模拟。接入 `tauri-plugin-dialog` 后计划增加：
+当前文件/目录选择由前端的 `PathPrompt` 弹层模拟。真实内核可接入 `tauri-plugin-dialog` 或等价能力；这属于平台适配，不阻塞 V2 契约：
 
 | 命令 / 插件 | 用途 |
 | --- | --- |

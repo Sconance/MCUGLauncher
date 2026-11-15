@@ -1,14 +1,14 @@
 # V2 后端契约与状态方案
 
-本文是迁移目标，不替代尚在运行的 V1 接口。传输继续使用 Tauri invoke，字段使用 camelCase，命令使用 snake_case。
+本文记录 V2 契约的设计原则、迁移结果与验收边界。当前可调用接口以 [BACKEND_CONTRACT.md](BACKEND_CONTRACT.md) 为准。传输使用 Tauri invoke，字段使用 camelCase，命令使用 snake_case。
 
 ## 实施状态
 
-已完成：全局三秒同步任务、游戏、启动器状态；聚焦刷新；各初始化请求独立提交；同资源旧刷新响应丢弃；前端识别结构化错误并兼容 V1 字符串错误。
+契约迁移已完成：全局三秒同步任务和游戏状态；聚焦刷新；各初始化请求独立提交；同资源旧刷新响应丢弃；前端识别结构化错误。
 
 已补充：未实现的系统、网络、登录和长操作返回 UNSUPPORTED；任务动作由后端校验，提交阶段禁止中断，取消进入 cancelling，终态才允许删除。实例、服务器和模组使用稳定 ID，选择实例不再混用版本名称。启动器状态查询返回 epoch/revision 快照，设置写入校验 expectedRevision，前端拒绝同代次的旧修订。任务页明确标识演示数据。
 
-待完成：游戏会话的真实启动与停止转换、登录会话的真实认证适配器，以及更新和整合包计划的真实预览适配器。卸载预览已经生成十分钟有效的 planId，绑定实例 ID 和实例资源修订号；执行前会区分 PLAN_EXPIRED、CONFLICT 和有效但未实现的 UNSUPPORTED，演示后端不会删除文件。所有当前查询资源均已返回独立 epoch/revision；前端逐项加载资源，一个资源失败时保留其他资源与已有数据。当前仍使用内存演示后端，不具备真实安装、持久队列或事务保证。
+能力边界：当前仍使用内存演示后端，不具备真实安装、持久队列或事务保证。游戏启动与停止、在线认证、更新和整合包处理需要后续接入真实适配器；未接入的命令明确返回 `UNSUPPORTED`，不伪造成功。卸载预览会生成十分钟有效的 `planId`，绑定实例 ID 和实例资源修订号；执行前区分 `PLAN_EXPIRED`、`CONFLICT` 和有效但未实现的 `UNSUPPORTED`，演示后端不会删除文件。所有当前查询资源均返回独立 `epoch/revision`；前端逐项加载资源，一个资源失败时保留其他资源与已有数据。
 
 ## 状态归属
 
@@ -16,7 +16,7 @@
 
 资源拆分为 overview、settings、accounts、instances、instanceMods(instanceId)、instanceLaunchSettings(instanceId)、tasks、gameSessions、servers、bookmarks、community。overview 仅包含 appVersion、selectedInstanceId、activeAccountId。未选择使用 null，不使用空字符串。
 
-实例使用持久稳定 ID；名称和目录不是主键。删除 selectedVersion，版本清单属于安装目录。模组、存档、安装、启动、备份等请求必须显式携带 instanceId；服务器和账号也使用稳定 ID。重命名不能改变 ID。
+实例使用持久稳定 ID；名称和目录不是主键。当前选择只保存 `selectedInstanceId`，版本清单属于安装目录。模组、存档、安装、启动、备份等请求必须显式携带 `instanceId`；服务器和账号也使用稳定 ID。重命名不能改变 ID。
 
 ## 查询与写入
 
@@ -26,7 +26,7 @@
 
 字段补丁：省略表示保持，允许清除的字段以 null 表示清除，后端必须区分这两种情况。配置持久化成功后才能返回成功。
 
-失败统一通过 Err(ApiError) 返回：{ code, message, retryable, fieldErrors? }。code 包括 VALIDATION_ERROR、NOT_FOUND、CONFLICT、BUSY、AUTH_REQUIRED、NETWORK_ERROR、IO_ERROR、PLAN_EXPIRED、INTERNAL_ERROR。移除重复的 ok/error 包装。探测成功发现离线是正常数据结果。
+失败统一通过 Err(ApiError) 返回：{ code, message, retryable, fieldErrors? }。code 包括 VALIDATION_ERROR、NOT_FOUND、CONFLICT、BUSY、AUTH_REQUIRED、NETWORK_ERROR、IO_ERROR、PLAN_EXPIRED、INTERNAL_ERROR、UNSUPPORTED。移除重复的 ok/error 包装。探测成功发现离线是正常数据结果。
 
 ## 长任务
 
@@ -52,12 +52,12 @@ Task 包含 id、kind、instanceId、status、phase、progress、allowedActions�
 
 全局同步器负责运行状态；任务终态引起相关资源失效。写入后按 changed 刷新。可选事件只传失效通知，事件丢失由轮询和聚焦刷新恢复。请求卸载时停止更新，避免无效通知。
 
-## 迁移顺序与验收
+## 迁移结果与验收
 
-1. 全局同步与独立初始化（已落地）。
-2. 后端统一错误及稳定 ID，迁移选择实例和服务器、模组操作。
-3. 资源查询拆分与修订号，前端引入按资源缓存和冲突处理。
-4. 任务、游戏、登录状态机与计划校验，迁移所有长操作。
-5. 移除 V1 适配，更新主契约为 V2。
+1. 全局同步与独立初始化已落地。
+2. 后端已统一结构化错误和稳定 ID，实例、账号、服务器与模组操作不再依赖名称定位。
+3. 查询已拆分为独立资源快照，前端按资源缓存、保留旧数据并处理修订冲突。
+4. 任务、游戏、登录和危险操作计划均有明确状态/契约；演示后端无法执行的能力返回 `UNSUPPORTED`。
+5. 旧聚合查询和旧结果包装已移除，主契约已更新为 V2。
 
 每步运行前端构建、Rust 检查及相关状态转换测试。最终验收覆盖：社区失败不阻断首页；后台任务完成刷新实例；重命名后 ID 不变；并发编辑冲突；取消提交阶段任务被拒绝；过期计划无法执行；重复提交不创建重复任务；重启恢复无永久 running；旧响应不能覆盖新实例数据。
