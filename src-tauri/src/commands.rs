@@ -10,7 +10,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
 use time::Duration;
 
-use crate::{demo::{avatar_for, StateResource}, model::*, state::Backend};
+use crate::{
+    demo::{StateResource, avatar_for},
+    model::*,
+    state::Backend,
+};
 
 pub const EVENT_STATE: &str = "launcher://state";
 pub const EVENT_TASKS: &str = "launcher://tasks";
@@ -43,11 +47,14 @@ fn generated_id(prefix: &str) -> String {
 #[tauri::command]
 pub fn get_overview(backend: State<'_, Backend>) -> ResourceSnapshot<LauncherOverview> {
     let data = backend.data.lock().unwrap();
-    data.resource_snapshot(data.revisions.overview, LauncherOverview {
-        app_version: data.state.app_version.clone(),
-        selected_instance_id: data.state.selected_instance_id.clone(),
-        active_account_id: data.state.active_account_id.clone(),
-    })
+    data.resource_snapshot(
+        data.revisions.overview,
+        LauncherOverview {
+            app_version: data.state.app_version.clone(),
+            selected_instance_id: data.state.selected_instance_id.clone(),
+            active_account_id: data.state.active_account_id.clone(),
+        },
+    )
 }
 
 /// 返回全局设置资源。
@@ -55,25 +62,28 @@ pub fn get_overview(backend: State<'_, Backend>) -> ResourceSnapshot<LauncherOve
 pub fn get_settings(backend: State<'_, Backend>) -> ResourceSnapshot<SettingsInfo> {
     let data = backend.data.lock().unwrap();
     let state = &data.state;
-    data.resource_snapshot(data.revisions.settings, SettingsInfo {
-        root: state.root.clone(),
-        game_roots: state.game_roots.clone(),
-        java: state.java.clone(),
-        width: state.width,
-        height: state.height,
-        ram: state.ram,
-        auto_memory: state.auto_memory,
-        anonymous: state.anonymous,
-        has_community_key: state.has_community_key,
-        has_admin_key: state.has_admin_key,
-        skin_station: state.skin_station.clone(),
-        cape: state.cape.clone(),
-        data_sources: state.data_sources.clone(),
-        default_data_sources: state.default_data_sources.clone(),
-        custom_data_sources: state.custom_data_sources.clone(),
-        data_source_mode: state.data_source_mode.clone(),
-        auto_chinese: state.auto_chinese,
-    })
+    data.resource_snapshot(
+        data.revisions.settings,
+        SettingsInfo {
+            root: state.root.clone(),
+            game_roots: state.game_roots.clone(),
+            java: state.java.clone(),
+            width: state.width,
+            height: state.height,
+            ram: state.ram,
+            auto_memory: state.auto_memory,
+            anonymous: state.anonymous,
+            has_community_key: state.has_community_key,
+            has_admin_key: state.has_admin_key,
+            skin_station: state.skin_station.clone(),
+            cape: state.cape.clone(),
+            data_sources: state.data_sources.clone(),
+            default_data_sources: state.default_data_sources.clone(),
+            custom_data_sources: state.custom_data_sources.clone(),
+            data_source_mode: state.data_source_mode.clone(),
+            auto_chinese: state.auto_chinese,
+        },
+    )
 }
 
 #[tauri::command]
@@ -85,10 +95,13 @@ pub fn list_accounts(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<Accoun
 #[tauri::command]
 pub fn list_instances(backend: State<'_, Backend>) -> ResourceSnapshot<InstanceCatalogInfo> {
     let data = backend.data.lock().unwrap();
-    data.resource_snapshot(data.revisions.instances, InstanceCatalogInfo {
-        items: data.state.instances.clone(),
-        version_groups: data.state.version_groups.clone(),
-    })
+    data.resource_snapshot(
+        data.revisions.instances,
+        InstanceCatalogInfo {
+            items: data.state.instances.clone(),
+            version_groups: data.state.version_groups.clone(),
+        },
+    )
 }
 
 #[tauri::command]
@@ -97,8 +110,17 @@ pub fn list_instance_mods(
     instance_id: String,
 ) -> Result<ResourceSnapshot<Vec<ModInfo>>, ApiError> {
     let data = backend.data.lock().unwrap();
-    if !data.state.instances.iter().any(|item| item.id == instance_id) {
-        return Err(ApiError { code: "NOT_FOUND", message: "实例不存在。".into(), retryable: false });
+    if !data
+        .state
+        .instances
+        .iter()
+        .any(|item| item.id == instance_id)
+    {
+        return Err(ApiError {
+            code: "NOT_FOUND",
+            message: "实例不存在。".into(),
+            retryable: false,
+        });
     }
     let items = if data.state.selected_instance_id.as_deref() == Some(&instance_id) {
         data.state.mods.clone()
@@ -129,7 +151,12 @@ pub fn select_instance(
 ) -> Result<SavedInfo, ApiError> {
     let state = {
         let mut data = backend.data.lock().unwrap();
-        if !data.state.instances.iter().any(|item| item.id == instance_id) {
+        if !data
+            .state
+            .instances
+            .iter()
+            .any(|item| item.id == instance_id)
+        {
             return Err(ApiError {
                 code: "NOT_FOUND",
                 message: "实例不存在。".into(),
@@ -155,7 +182,10 @@ pub fn launch_game(instance_id: String) -> Result<LaunchResultInfo, ApiError> {
 /// 使用指定实例直连服务器启动。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn launch_to_server(instance_id: String, server_address: String) -> Result<LaunchResultInfo, ApiError> {
+pub fn launch_to_server(
+    instance_id: String,
+    server_address: String,
+) -> Result<LaunchResultInfo, ApiError> {
     Err(ApiError::unsupported("launch_to_server"))
 }
 
@@ -176,18 +206,17 @@ pub fn save_server(
     let state = {
         let mut data = backend.data.lock().unwrap();
         if let Some(id) = id.filter(|value| !value.is_empty()) {
-            if let Some(server) = data
-                .state
-                .servers
-                .iter_mut()
-                .find(|item| item.id == id)
-            {
+            if let Some(server) = data.state.servers.iter_mut().find(|item| item.id == id) {
                 server.name = name.clone();
                 server.address = address.clone();
                 server.instance_id = instance_id.clone();
                 message = "服务器已更新。".to_string();
             } else {
-                return Err(ApiError { code: "NOT_FOUND", message: "服务器收藏不存在。".into(), retryable: false });
+                return Err(ApiError {
+                    code: "NOT_FOUND",
+                    message: "服务器收藏不存在。".into(),
+                    retryable: false,
+                });
             }
         } else if data
             .state
@@ -215,13 +244,21 @@ pub fn save_server(
 
 /// 删除服务器收藏。
 #[tauri::command]
-pub fn delete_server(app: AppHandle, backend: State<'_, Backend>, id: String) -> Result<SavedInfo, ApiError> {
+pub fn delete_server(
+    app: AppHandle,
+    backend: State<'_, Backend>,
+    id: String,
+) -> Result<SavedInfo, ApiError> {
     let state = {
         let mut data = backend.data.lock().unwrap();
         let before = data.state.servers.len();
         data.state.servers.retain(|item| item.id != id);
         if data.state.servers.len() == before {
-            return Err(ApiError { code: "NOT_FOUND", message: "服务器收藏不存在。".into(), retryable: false });
+            return Err(ApiError {
+                code: "NOT_FOUND",
+                message: "服务器收藏不存在。".into(),
+                retryable: false,
+            });
         }
         data.mutating_snapshot(&[StateResource::Servers])
     };
@@ -267,7 +304,10 @@ pub fn select_account(
         let account = data.select_account(&account_id)?;
         let avatar = avatar_for(&account.player, &account.kind);
         data.avatar = avatar.clone();
-        (data.mutating_snapshot(&[StateResource::Overview, StateResource::Accounts]), avatar)
+        (
+            data.mutating_snapshot(&[StateResource::Overview, StateResource::Accounts]),
+            avatar,
+        )
     };
     emit(&app, EVENT_STATE, state);
     emit(&app, EVENT_AVATAR, avatar);
@@ -286,7 +326,10 @@ pub fn forget_account(
         let fallback = data.forget_account(&account_id)?;
         let avatar = avatar_for(&fallback.player, &fallback.kind);
         data.avatar = avatar.clone();
-        (data.mutating_snapshot(&[StateResource::Overview, StateResource::Accounts]), avatar)
+        (
+            data.mutating_snapshot(&[StateResource::Overview, StateResource::Accounts]),
+            avatar,
+        )
     };
     emit(&app, EVENT_STATE, state);
     emit(&app, EVENT_AVATAR, avatar);
@@ -296,7 +339,11 @@ pub fn forget_account(
 /// 设置或清除离线皮肤；空 `path` 表示清除。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn set_offline_skin(app: AppHandle, backend: State<'_, Backend>, path: String) -> Result<AvatarInfo, ApiError> {
+pub fn set_offline_skin(
+    app: AppHandle,
+    backend: State<'_, Backend>,
+    path: String,
+) -> Result<AvatarInfo, ApiError> {
     Err(ApiError::unsupported("set_offline_skin"))
 }
 
@@ -370,7 +417,8 @@ pub fn save_settings(
         }
         if let Some(player) = patch.player.filter(|value| !value.is_empty()) {
             if let Some(account) = state.accounts.iter_mut().find(|account| {
-                state.active_account_id.as_deref() == Some(account.id.as_str()) && account.kind == "offline"
+                state.active_account_id.as_deref() == Some(account.id.as_str())
+                    && account.kind == "offline"
             }) {
                 account.player = player;
             }
@@ -497,10 +545,15 @@ pub fn restore_save(id: String, world: String) -> Result<SavedInfo, ApiError> {
 #[tauri::command]
 pub fn list_tasks(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<TaskInfo>> {
     let data = backend.data.lock().unwrap();
-    let tasks = data.tasks.iter().cloned().map(|mut task| {
-        task.allowed_actions = task.actions();
-        task
-    }).collect();
+    let tasks = data
+        .tasks
+        .iter()
+        .cloned()
+        .map(|mut task| {
+            task.allowed_actions = task.actions();
+            task
+        })
+        .collect();
     data.resource_snapshot(data.revisions.tasks, tasks)
 }
 
@@ -514,10 +567,19 @@ pub fn task_action(
 ) -> Result<SavedInfo, ApiError> {
     let tasks = {
         let mut data = backend.data.lock().unwrap();
-        let task = data.tasks.iter_mut().find(|task| task.id == id)
-            .ok_or_else(|| ApiError { code: "NOT_FOUND", message: "任务不存在。".into(), retryable: false })?;
+        let task = data
+            .tasks
+            .iter_mut()
+            .find(|task| task.id == id)
+            .ok_or_else(|| ApiError {
+                code: "NOT_FOUND",
+                message: "任务不存在。".into(),
+                retryable: false,
+            })?;
         task.apply_action(&action)?;
-        if action == "delete" { data.tasks.retain(|task| task.id != id); }
+        if action == "delete" {
+            data.tasks.retain(|task| task.id != id);
+        }
         data.touch(StateResource::Tasks);
         data.tasks.clone()
     };
@@ -535,7 +597,11 @@ pub fn list_game_sessions(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<G
 /// 请求关闭指定游戏进程。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn stop_game(app: AppHandle, backend: State<'_, Backend>, session_id: String) -> Result<SavedInfo, ApiError> {
+pub fn stop_game(
+    app: AppHandle,
+    backend: State<'_, Backend>,
+    session_id: String,
+) -> Result<SavedInfo, ApiError> {
     Err(ApiError::unsupported("stop_game"))
 }
 
@@ -702,21 +768,32 @@ pub fn list_loaders(version: String, loader: String) -> LoaderListResult {
 /// 安装指定加载器版本。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn install_loader(version: String, loader: String, loader_version: String) -> Result<SavedInfo, ApiError> {
+pub fn install_loader(
+    version: String,
+    loader: String,
+    loader_version: String,
+) -> Result<SavedInfo, ApiError> {
     Err(ApiError::unsupported("install_loader"))
 }
 
 /// 读取整合包预览信息。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn preview_pack(backend: State<'_, Backend>, path: String) -> Result<PackPreviewInfo, ApiError> {
+pub fn preview_pack(
+    backend: State<'_, Backend>,
+    path: String,
+) -> Result<PackPreviewInfo, ApiError> {
     Err(ApiError::unsupported("preview_pack"))
 }
 
 /// 确认导入整合包到指定目录。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn confirm_pack(plan_id: String, name: String, directory: String) -> Result<SavedInfo, ApiError> {
+pub fn confirm_pack(
+    plan_id: String,
+    name: String,
+    directory: String,
+) -> Result<SavedInfo, ApiError> {
     Err(ApiError::unsupported("confirm_pack"))
 }
 
@@ -728,12 +805,19 @@ pub fn preview_uninstall(
     backend: State<'_, Backend>,
     instance_id: String,
 ) -> Result<UninstallPreviewInfo, ApiError> {
-    backend.data.lock().unwrap().create_uninstall_plan(&instance_id, Duration::minutes(10))
+    backend
+        .data
+        .lock()
+        .unwrap()
+        .create_uninstall_plan(&instance_id, Duration::minutes(10))
 }
 
 /// 校验卸载计划；演示后端不执行文件删除。
 #[tauri::command]
-pub fn apply_uninstall(backend: State<'_, Backend>, plan_id: String) -> Result<SavedInfo, ApiError> {
+pub fn apply_uninstall(
+    backend: State<'_, Backend>,
+    plan_id: String,
+) -> Result<SavedInfo, ApiError> {
     let data = backend.data.lock().unwrap();
     data.validate_plan(&plan_id, "uninstall", data.revisions.instances)?;
     Err(ApiError::unsupported("apply_uninstall"))
@@ -766,7 +850,10 @@ pub fn export_instance(
 /// 检查实例中由启动器管理的内容更新。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn check_updates(backend: State<'_, Backend>, version: String) -> Result<ContentUpdatesInfo, ApiError> {
+pub fn check_updates(
+    backend: State<'_, Backend>,
+    version: String,
+) -> Result<ContentUpdatesInfo, ApiError> {
     Err(ApiError::unsupported("check_updates"))
 }
 
@@ -800,10 +887,22 @@ pub fn toggle_mod(
     let state = {
         let mut data = backend.data.lock().unwrap();
         if data.state.selected_instance_id.as_deref() != Some(&instance_id) {
-            return Err(ApiError { code: "CONFLICT", message: "请先切换到目标实例。".into(), retryable: true });
+            return Err(ApiError {
+                code: "CONFLICT",
+                message: "请先切换到目标实例。".into(),
+                retryable: true,
+            });
         }
-        let item = data.state.mods.iter_mut().find(|item| item.id == mod_id)
-            .ok_or_else(|| ApiError { code: "NOT_FOUND", message: "模组不存在。".into(), retryable: false })?;
+        let item = data
+            .state
+            .mods
+            .iter_mut()
+            .find(|item| item.id == mod_id)
+            .ok_or_else(|| ApiError {
+                code: "NOT_FOUND",
+                message: "模组不存在。".into(),
+                retryable: false,
+            })?;
         item.enabled = enabled;
         data.mutating_snapshot(&[StateResource::InstanceMods])
     };
@@ -826,12 +925,20 @@ pub fn delete_mod(
     let state = {
         let mut data = backend.data.lock().unwrap();
         if data.state.selected_instance_id.as_deref() != Some(&instance_id) {
-            return Err(ApiError { code: "CONFLICT", message: "请先切换到目标实例。".into(), retryable: true });
+            return Err(ApiError {
+                code: "CONFLICT",
+                message: "请先切换到目标实例。".into(),
+                retryable: true,
+            });
         }
         let before = data.state.mods.len();
         data.state.mods.retain(|item| item.id != mod_id);
         if data.state.mods.len() == before {
-            return Err(ApiError { code: "NOT_FOUND", message: "模组不存在。".into(), retryable: false });
+            return Err(ApiError {
+                code: "NOT_FOUND",
+                message: "模组不存在。".into(),
+                retryable: false,
+            });
         }
         data.mutating_snapshot(&[StateResource::InstanceMods])
     };

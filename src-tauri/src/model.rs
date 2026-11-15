@@ -289,14 +289,34 @@ pub struct MuaProfileInfo {
 
 /// 登录会话只暴露当前阶段所需的字段。
 #[derive(Clone, Serialize)]
-#[serde(tag = "state", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "state",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum LoginSessionInfo {
-    AwaitingAuthorization { auth_session_id: String, authorization_url: String },
-    AwaitingProfile { auth_session_id: String, profiles: Vec<MuaProfileInfo> },
-    Succeeded { auth_session_id: String, account_id: String },
-    Failed { auth_session_id: String, error: ApiError },
-    Cancelled { auth_session_id: String },
-    Expired { auth_session_id: String },
+    AwaitingAuthorization {
+        auth_session_id: String,
+        authorization_url: String,
+    },
+    AwaitingProfile {
+        auth_session_id: String,
+        profiles: Vec<MuaProfileInfo>,
+    },
+    Succeeded {
+        auth_session_id: String,
+        account_id: String,
+    },
+    Failed {
+        auth_session_id: String,
+        error: ApiError,
+    },
+    Cancelled {
+        auth_session_id: String,
+    },
+    Expired {
+        auth_session_id: String,
+    },
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -585,14 +605,19 @@ impl TaskInfo {
     /// 取消请求只进入清理阶段，不提前报告取消完成。
     pub fn apply_action(&mut self, action: &str) -> Result<(), ApiError> {
         if !self.actions().iter().any(|item| item == action) {
-            return Err(ApiError { code: "CONFLICT", message: "当前任务状态不允许此操作。".into(), retryable: false });
+            return Err(ApiError {
+                code: "CONFLICT",
+                message: "当前任务状态不允许此操作。".into(),
+                retryable: false,
+            });
         }
         self.state = match action {
             "pause" => "paused",
             "resume" => "running",
             "cancel" => "cancelling",
             _ => self.state.as_str(),
-        }.into();
+        }
+        .into();
         self.allowed_actions = self.actions();
         Ok(())
     }
@@ -604,7 +629,10 @@ mod tests {
 
     #[test]
     fn cancellation_waits_for_cleanup() {
-        let mut task = TaskInfo { state: "running".into(), ..Default::default() };
+        let mut task = TaskInfo {
+            state: "running".into(),
+            ..Default::default()
+        };
         task.apply_action("cancel").unwrap();
         assert_eq!(task.state, "cancelling");
         assert!(task.apply_action("delete").is_err());
@@ -612,7 +640,11 @@ mod tests {
 
     #[test]
     fn committing_cannot_be_interrupted() {
-        let mut task = TaskInfo { state: "running".into(), committing: true, ..Default::default() };
+        let mut task = TaskInfo {
+            state: "running".into(),
+            committing: true,
+            ..Default::default()
+        };
         assert!(task.apply_action("pause").is_err());
         assert!(task.apply_action("cancel").is_err());
         task.state = "failed".into();
