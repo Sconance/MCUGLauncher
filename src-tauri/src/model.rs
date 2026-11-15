@@ -252,7 +252,7 @@ pub struct MuaProfileInfo {
 
 /// 登录会话只暴露当前阶段所需的字段。
 #[derive(Clone, Serialize)]
-#[serde(tag = "state", rename_all = "camelCase")]
+#[serde(tag = "state", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum LoginSessionInfo {
     AwaitingAuthorization { auth_session_id: String, authorization_url: String },
     AwaitingProfile { auth_session_id: String, profiles: Vec<MuaProfileInfo> },

@@ -32,4 +32,3 @@ export const forgetAccount = (accountId: string) => call<SavedInfo>("forget_acco
 
 /** 设置离线皮肤；`path` 为空字符串表示清除。 */
 export const setOfflineSkin = (path: string) => call<AvatarInfo>("set_offline_skin", { path });
-
