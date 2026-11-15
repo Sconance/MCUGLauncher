@@ -296,8 +296,10 @@ export interface LaunchOptionsInfo {
 }
 
 export interface UninstallPreviewInfo {
-  token: string;
-  version: string;
+  planId: string;
+  targetId: string;
+  targetRevision: number;
+  expiresAt: string;
   name: string;
   notice: string;
   paths: string[];
@@ -314,7 +316,7 @@ export interface ContentUpdateInfo {
 }
 
 export interface ContentUpdatesInfo {
-  token: string;
+  checkId: string;
   version: string;
   items: ContentUpdateInfo[];
 }
@@ -328,14 +330,20 @@ export interface ContentChangeInfo {
 }
 
 export interface ContentUpdatePreviewInfo {
-  token: string;
+  planId: string;
+  targetId: string;
+  targetRevision: number;
+  expiresAt: string;
   version: string;
   bytes: number;
   changes: ContentChangeInfo[];
 }
 
 export interface PackPreviewInfo {
-  token: string;
+  planId: string;
+  targetId: string;
+  targetRevision: number;
+  expiresAt: string;
   name: string;
   root: string;
   game: string;

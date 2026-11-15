@@ -241,7 +241,7 @@ export default function DownloadPage() {
       return;
     }
     setPackHint("正在提交导入…");
-    await confirmPack(pack.token, packName.trim(), packRoot.trim());
+    await confirmPack(pack.planId, packName.trim(), packRoot.trim());
     setPackHint("整合包导入请求已提交，请查看任务列表。");
   };
 

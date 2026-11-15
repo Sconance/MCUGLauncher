@@ -226,10 +226,10 @@ export default function InstancesPage() {
 
   const applyUninstall = async () => {
     if (!uninstall) return;
-    const token = uninstall.token;
+    const planId = uninstall.planId;
     setUninstall(null);
     setConfirmed(false);
-    await applyUninstallCommand(token);
+    await applyUninstallCommand(planId);
     await refreshState();
     setStatus("卸载请求已提交，请在系统确认框核对。");
   };
@@ -251,15 +251,15 @@ export default function InstancesPage() {
     }
     setUpdatePreview(null);
     setStatus("正在解析更新及必需依赖…");
-    const preview = await previewUpdatesCommand(updates.token);
+    const preview = await previewUpdatesCommand(updates.checkId);
     setUpdatePreview(preview);
   };
 
   const applyUpdates = async () => {
     if (!updatePreview) return;
-    const token = updatePreview.token;
+    const planId = updatePreview.planId;
     setUpdatePreview(null);
-    await applyUpdatesCommand(token);
+    await applyUpdatesCommand(planId);
     await refreshState();
     setStatus("更新任务已加入队列。");
   };

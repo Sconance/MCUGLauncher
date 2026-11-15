@@ -407,8 +407,10 @@ pub struct LaunchOptionsInfo {
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct UninstallPreviewInfo {
-    pub token: String,
-    pub version: String,
+    pub plan_id: String,
+    pub target_id: String,
+    pub target_revision: u64,
+    pub expires_at: String,
     pub name: String,
     pub notice: String,
     pub paths: Vec<String>,
@@ -429,7 +431,7 @@ pub struct ContentUpdateInfo {
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentUpdatesInfo {
-    pub token: String,
+    pub check_id: String,
     pub version: String,
     pub items: Vec<ContentUpdateInfo>,
 }
@@ -447,7 +449,10 @@ pub struct ContentChangeInfo {
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentUpdatePreviewInfo {
-    pub token: String,
+    pub plan_id: String,
+    pub target_id: String,
+    pub target_revision: u64,
+    pub expires_at: String,
     pub version: String,
     pub bytes: i64,
     pub changes: Vec<ContentChangeInfo>,
@@ -456,7 +461,10 @@ pub struct ContentUpdatePreviewInfo {
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PackPreviewInfo {
-    pub token: String,
+    pub plan_id: String,
+    pub target_id: String,
+    pub target_revision: u64,
+    pub expires_at: String,
     pub name: String,
     pub root: String,
     pub game: String,

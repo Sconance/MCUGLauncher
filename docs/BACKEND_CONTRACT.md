@@ -114,20 +114,20 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `install_vanilla` | `version` | `SavedInfo` | 安装原版 |
 | `list_loaders` | `version`, `loader` | `LoaderListResult` | 加载器版本 |
 | `install_loader` | `version`, `loader`, `loaderVersion` | `SavedInfo` | 安装加载器 |
-| `preview_pack` | `path` | `PackPreviewInfo` | 读取整合包预览 |
-| `confirm_pack` | `token`, `name`, `directory` | `SavedInfo` | 确认导入整合包 |
+| `preview_pack` | `path` | `PackPreviewInfo` | 读取整合包计划；演示后端返回 `UNSUPPORTED` |
+| `confirm_pack` | `planId`, `name`, `directory` | `SavedInfo` | 按计划确认导入；演示后端返回 `UNSUPPORTED` |
 
 ### 实例维护
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `preview_uninstall` | `version` | `UninstallPreviewInfo` | 生成卸载预览 |
-| `apply_uninstall` | `token` | `SavedInfo` | 执行卸载 |
+| `preview_uninstall` | `instanceId` | `UninstallPreviewInfo` | 生成绑定实例修订号、十分钟有效的计划 |
+| `apply_uninstall` | `planId` | `SavedInfo` | 校验计划后返回 `UNSUPPORTED`，不删除文件 |
 | `clone_instance` | `version`, `name`, `saves?`, `servers?` | `SavedInfo` | 克隆实例 |
 | `export_instance` | `version`, `path`, `servers?`, `saves?` | `SavedInfo` | 导出整合包 |
 | `check_updates` | `version` | `ContentUpdatesInfo` | 检查内容更新 |
-| `preview_updates` | `token`, `projects?` | `ContentUpdatePreviewInfo` | 生成更新预览 |
-| `apply_updates` | `token` | `SavedInfo` | 执行更新 |
+| `preview_updates` | `checkId`, `projects?` | `ContentUpdatePreviewInfo` | 生成更新计划；演示后端返回 `UNSUPPORTED` |
+| `apply_updates` | `planId` | `SavedInfo` | 按计划执行更新；演示后端返回 `UNSUPPORTED` |
 | `toggle_mod` | `instanceId`, `modId`, `enabled` | `SavedInfo` | 按实例和模组 ID 启用/禁用，推送 `state` |
 | `delete_mod` | `instanceId`, `modId` | `SavedInfo` | 按实例和模组 ID 删除，推送 `state` |
 | `read_launch_options` | `version`, `requestId?` | `LaunchOptionsInfo` | 读取实例启动设置 |

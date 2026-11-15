@@ -9,11 +9,11 @@ import type {
 } from "../../types/launcher";
 
 /** 生成卸载预览与确认令牌；不会删除文件。 */
-export const previewUninstall = (version: string) =>
-  call<UninstallPreviewInfo>("preview_uninstall", { version });
+export const previewUninstall = (instanceId: string) =>
+  call<UninstallPreviewInfo>("preview_uninstall", { instanceId });
 
 /** 按预览令牌执行卸载。 */
-export const applyUninstall = (token: string) => call<SavedInfo>("apply_uninstall", { token });
+export const applyUninstall = (planId: string) => call<SavedInfo>("apply_uninstall", { planId });
 
 /** 克隆实例，可选择包含存档与服务器列表。 */
 export const cloneInstance = (version: string, name: string, saves = false, servers = false) =>
@@ -27,11 +27,11 @@ export const exportInstance = (version: string, path: string, servers = false, s
 export const checkUpdates = (version: string) => call<ContentUpdatesInfo>("check_updates", { version });
 
 /** 为所选项目生成更新预览。 */
-export const previewUpdates = (token: string, projects: string[] = []) =>
-  call<ContentUpdatePreviewInfo>("preview_updates", { token, projects });
+export const previewUpdates = (checkId: string, projects: string[] = []) =>
+  call<ContentUpdatePreviewInfo>("preview_updates", { checkId, projects });
 
 /** 按预览结果把更新加入队列。 */
-export const applyUpdates = (token: string) => call<SavedInfo>("apply_updates", { token });
+export const applyUpdates = (planId: string) => call<SavedInfo>("apply_updates", { planId });
 
 /** 启用或禁用模组。 */
 export const toggleMod = (instanceId: string, modId: string, enabled: boolean) =>

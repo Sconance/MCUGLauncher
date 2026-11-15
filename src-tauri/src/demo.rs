@@ -4,6 +4,16 @@
 
 use crate::model::*;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::collections::HashMap;
+use time::{format_description::well_known::Rfc3339, Duration, OffsetDateTime};
+
+#[derive(Debug)]
+pub struct PlanRecord {
+    pub kind: String,
+    pub target_id: String,
+    pub target_revision: u64,
+    pub expires_at: OffsetDateTime,
+}
 
 #[derive(Clone, Copy)]
 pub enum StateResource {
@@ -63,6 +73,8 @@ pub struct Data {
     pub content: Vec<ContentItem>,
     pub vanilla: Vec<VanillaVersionInfo>,
     pub updates: Vec<ContentUpdateInfo>,
+    pub plans: HashMap<String, PlanRecord>,
+    next_plan_id: u64,
 }
 
 impl Data {
@@ -110,6 +122,8 @@ impl Data {
             content: demo_content(),
             vanilla: demo_vanilla(),
             updates: demo_updates(),
+            plans: HashMap::new(),
+            next_plan_id: 1,
         }
     }
 
@@ -179,6 +193,47 @@ impl Data {
         Ok(fallback)
     }
 
+    pub fn create_uninstall_plan(
+        &mut self,
+        instance_id: &str,
+        ttl: Duration,
+    ) -> Result<UninstallPreviewInfo, ApiError> {
+        let instance = self.state.instances.iter().find(|item| item.id == instance_id)
+            .cloned()
+            .ok_or_else(|| ApiError { code: "NOT_FOUND", message: "实例不存在。".into(), retryable: false })?;
+        let plan_id = format!("plan-uninstall-{}", self.next_plan_id);
+        self.next_plan_id = self.next_plan_id.saturating_add(1);
+        let expires_at = OffsetDateTime::now_utc() + ttl;
+        self.plans.insert(plan_id.clone(), PlanRecord {
+            kind: "uninstall".into(),
+            target_id: instance_id.into(),
+            target_revision: self.revisions.instances,
+            expires_at,
+        });
+        Ok(UninstallPreviewInfo {
+            plan_id,
+            target_id: instance_id.into(),
+            target_revision: self.revisions.instances,
+            expires_at: expires_at.format(&Rfc3339).unwrap_or_default(),
+            name: instance.display_name,
+            notice: "执行前会再次检查目标实例及修订号。".into(),
+            paths: vec![format!("{}/versions/{}", self.state.root, instance.name)],
+            shared: false,
+        })
+    }
+
+    pub fn validate_plan(&self, plan_id: &str, kind: &str, current_revision: u64) -> Result<&PlanRecord, ApiError> {
+        let plan = self.plans.get(plan_id)
+            .ok_or_else(|| ApiError { code: "PLAN_EXPIRED", message: "操作计划不存在或已经失效。".into(), retryable: false })?;
+        if plan.expires_at <= OffsetDateTime::now_utc() {
+            return Err(ApiError { code: "PLAN_EXPIRED", message: "操作计划已经过期，请重新预览。".into(), retryable: false });
+        }
+        if plan.kind != kind || plan.target_revision != current_revision {
+            return Err(ApiError { code: "CONFLICT", message: "目标已发生变化，请重新预览。".into(), retryable: true });
+        }
+        Ok(plan)
+    }
+
     pub fn avatar_for_current(&self) -> AvatarInfo {
         let account = self
             .state
@@ -222,6 +277,19 @@ mod tests {
         assert_eq!(fallback.id, "account-demo-offline");
         assert_eq!(data.state.active_account_id.as_deref(), Some("account-demo-offline"));
         assert!(data.forget_account("account-demo-offline").is_err());
+    }
+
+    #[test]
+    fn operation_plans_expire_and_detect_target_changes() {
+        let mut data = Data::demo();
+        let valid = data.create_uninstall_plan("instance-mcug-1211", Duration::minutes(10)).unwrap();
+        assert_eq!(data.validate_plan(&valid.plan_id, "uninstall", data.revisions.instances).unwrap().target_id, valid.target_id);
+
+        data.touch(StateResource::Instances);
+        assert_eq!(data.validate_plan(&valid.plan_id, "uninstall", data.revisions.instances).unwrap_err().code, "CONFLICT");
+
+        let expired = data.create_uninstall_plan("instance-mcug-1211", Duration::seconds(-1)).unwrap();
+        assert_eq!(data.validate_plan(&expired.plan_id, "uninstall", data.revisions.instances).unwrap_err().code, "PLAN_EXPIRED");
     }
 }
 

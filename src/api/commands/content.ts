@@ -42,5 +42,5 @@ export const installLoader = (version: string, loader: string, loaderVersion: st
 export const previewPack = (path: string) => call<PackPreviewInfo>("preview_pack", { path });
 
 /** 确认导入整合包到指定目录。 */
-export const confirmPack = (token: string, name: string, directory: string) =>
-  call<SavedInfo>("confirm_pack", { token, name, directory });
+export const confirmPack = (planId: string, name: string, directory: string) =>
+  call<SavedInfo>("confirm_pack", { planId, name, directory });

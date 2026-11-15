@@ -8,6 +8,7 @@
 use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
+use time::Duration;
 
 use crate::{demo::{avatar_for, StateResource}, model::*, state::Backend};
 
@@ -715,23 +716,26 @@ pub fn preview_pack(backend: State<'_, Backend>, path: String) -> Result<PackPre
 /// 确认导入整合包到指定目录。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn confirm_pack(token: String, name: String, directory: String) -> Result<SavedInfo, ApiError> {
+pub fn confirm_pack(plan_id: String, name: String, directory: String) -> Result<SavedInfo, ApiError> {
     Err(ApiError::unsupported("confirm_pack"))
 }
 
 // ---------------------------------------------------------------- 实例维护
 
-/// 生成卸载预览与确认令牌。
+/// 生成绑定实例修订号且十分钟有效的卸载计划。
 #[tauri::command]
-#[allow(unused_variables)]
-pub fn preview_uninstall(version: String) -> Result<UninstallPreviewInfo, ApiError> {
-    Err(ApiError::unsupported("preview_uninstall"))
+pub fn preview_uninstall(
+    backend: State<'_, Backend>,
+    instance_id: String,
+) -> Result<UninstallPreviewInfo, ApiError> {
+    backend.data.lock().unwrap().create_uninstall_plan(&instance_id, Duration::minutes(10))
 }
 
-/// 按预览令牌执行卸载。
+/// 校验卸载计划；演示后端不执行文件删除。
 #[tauri::command]
-#[allow(unused_variables)]
-pub fn apply_uninstall(token: String) -> Result<SavedInfo, ApiError> {
+pub fn apply_uninstall(backend: State<'_, Backend>, plan_id: String) -> Result<SavedInfo, ApiError> {
+    let data = backend.data.lock().unwrap();
+    data.validate_plan(&plan_id, "uninstall", data.revisions.instances)?;
     Err(ApiError::unsupported("apply_uninstall"))
 }
 
@@ -771,7 +775,7 @@ pub fn check_updates(backend: State<'_, Backend>, version: String) -> Result<Con
 #[allow(unused_variables)]
 pub fn preview_updates(
     backend: State<'_, Backend>,
-    token: String,
+    check_id: String,
     #[allow(unused_variables)] projects: Option<Vec<String>>,
 ) -> Result<ContentUpdatePreviewInfo, ApiError> {
     Err(ApiError::unsupported("preview_updates"))
@@ -780,7 +784,7 @@ pub fn preview_updates(
 /// 按预览结果把更新加入队列。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn apply_updates(token: String) -> Result<SavedInfo, ApiError> {
+pub fn apply_updates(plan_id: String) -> Result<SavedInfo, ApiError> {
     Err(ApiError::unsupported("apply_updates"))
 }
 
