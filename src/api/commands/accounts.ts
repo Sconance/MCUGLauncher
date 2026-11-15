@@ -1,23 +1,28 @@
 import { call } from "../invoke";
 import type {
-  AuthResultInfo,
   AvatarInfo,
-  MuaProfileInfo,
+  LoginSessionInfo,
   SavedInfo,
 } from "../../types/launcher";
 
 /** 读取当前账号头像（data URL）与展示标签。 */
 export const readAvatar = () => call<AvatarInfo>("read_avatar");
 
-/** 执行微软账号登录；成功后需刷新状态与头像。 */
-export const loginMicrosoft = () => call<AuthResultInfo>("login_microsoft");
+/** 创建登录会话；凭据仅传给后端认证适配器。 */
+export const startLogin = (provider: "microsoft" | "mua", account?: string, password?: string) =>
+  call<LoginSessionInfo>("start_login", { provider, account, password });
 
-/** 使用 MUA 账号密码登录；成功后需刷新状态与头像。 */
-export const loginMua = (account: string, password: string) =>
-  call<AuthResultInfo>("login_mua", { account, password });
+/** 查询登录会话的当前阶段。 */
+export const getLoginSession = (authSessionId: string) =>
+  call<LoginSessionInfo>("get_login_session", { authSessionId });
 
-/** 读取 MUA 登录后的可选角色列表。 */
-export const listMuaProfiles = () => call<MuaProfileInfo[]>("list_mua_profiles");
+/** 为等待角色选择的登录会话选择角色。 */
+export const selectLoginProfile = (authSessionId: string, profileId: string) =>
+  call<LoginSessionInfo>("select_login_profile", { authSessionId, profileId });
+
+/** 取消登录会话。 */
+export const cancelLogin = (authSessionId: string) =>
+  call<LoginSessionInfo>("cancel_login", { authSessionId });
 
 /** 按稳定 ID 切换当前账号。 */
 export const selectAccount = (accountId: string) => call<SavedInfo>("select_account", { accountId });
@@ -28,6 +33,3 @@ export const forgetAccount = (accountId: string) => call<SavedInfo>("forget_acco
 /** 设置离线皮肤；`path` 为空字符串表示清除。 */
 export const setOfflineSkin = (path: string) => call<AvatarInfo>("set_offline_skin", { path });
 
-/** 选择 MUA 角色并完成登录。 */
-export const selectMuaProfile = (token: string, profileId: string) =>
-  call<SavedInfo>("select_mua_profile", { token, profileId });

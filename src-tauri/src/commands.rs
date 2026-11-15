@@ -168,38 +168,15 @@ pub fn read_avatar(backend: State<'_, Backend>) -> AvatarInfo {
     backend.data.lock().unwrap().avatar_for_current()
 }
 
-/// 执行微软账号登录。
+/// 创建登录会话；演示后端未连接认证服务。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn login_microsoft(app: AppHandle, backend: State<'_, Backend>) -> Result<AuthResultInfo, ApiError> {
-    Err(ApiError::unsupported("login_microsoft"))
-}
-
-/// 使用账号密码登录 MUA。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn login_mua(
-    app: AppHandle,
-    backend: State<'_, Backend>,
-    account: String,
-    _password: String,
-) -> Result<AuthResultInfo, ApiError> {
-    Err(ApiError::unsupported("login_mua"))
-}
-
-/// 返回 MUA 登录后的可选角色。
-#[tauri::command]
-pub fn list_mua_profiles() -> Vec<MuaProfileInfo> {
-    vec![
-        MuaProfileInfo {
-            id: "p1".into(),
-            name: "MuaTester".into(),
-        },
-        MuaProfileInfo {
-            id: "p2".into(),
-            name: "OtherTester".into(),
-        },
-    ]
+pub fn start_login(
+    provider: String,
+    account: Option<String>,
+    password: Option<String>,
+) -> Result<LoginSessionInfo, ApiError> {
+    Err(ApiError::unsupported("start_login"))
 }
 
 /// 按稳定 ID 切换当前账号。
@@ -247,11 +224,28 @@ pub fn set_offline_skin(app: AppHandle, backend: State<'_, Backend>, path: Strin
     Err(ApiError::unsupported("set_offline_skin"))
 }
 
-/// 选择 MUA 角色完成登录。
+/// 查询登录会话。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn select_mua_profile(_token: String, profile_id: String) -> Result<SavedInfo, ApiError> {
-    Err(ApiError::unsupported("select_mua_profile"))
+pub fn get_login_session(auth_session_id: String) -> Result<LoginSessionInfo, ApiError> {
+    Err(ApiError::unsupported("get_login_session"))
+}
+
+/// 为登录会话选择角色。
+#[tauri::command]
+#[allow(unused_variables)]
+pub fn select_login_profile(
+    auth_session_id: String,
+    profile_id: String,
+) -> Result<LoginSessionInfo, ApiError> {
+    Err(ApiError::unsupported("select_login_profile"))
+}
+
+/// 取消登录会话。
+#[tauri::command]
+#[allow(unused_variables)]
+pub fn cancel_login(auth_session_id: String) -> Result<LoginSessionInfo, ApiError> {
+    Err(ApiError::unsupported("cancel_login"))
 }
 
 // ---------------------------------------------------------------- 设置

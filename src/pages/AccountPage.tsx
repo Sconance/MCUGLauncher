@@ -2,7 +2,6 @@ import { useState } from "react";
 import * as accounts from "../api/commands/accounts";
 import PathPrompt from "../components/PathPrompt";
 import { useLauncher } from "../state/launcher";
-import type { MuaProfileInfo } from "../types/launcher";
 import "./AccountPage.css";
 
 function modeLabel(mode: string): string {
@@ -17,7 +16,6 @@ export default function AccountPage() {
   const [status, setStatus] = useState("");
   const [muaAccount, setMuaAccount] = useState("");
   const [muaPassword, setMuaPassword] = useState("");
-  const [profiles, setProfiles] = useState<MuaProfileInfo[]>([]);
   const [skinPrompt, setSkinPrompt] = useState(false);
 
   if (!state) {
@@ -38,9 +36,12 @@ export default function AccountPage() {
 
   const loginMicrosoft = async () => {
     setStatus("正在打开微软登录页…");
-    const result = await accounts.loginMicrosoft();
-    await Promise.all([refreshState(), refreshAvatar()]);
-    setStatus(result.message);
+    try {
+      await accounts.startLogin("microsoft");
+      setStatus("登录会话已创建。");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error));
+    }
   };
 
   const loginMua = async () => {
@@ -49,10 +50,12 @@ export default function AccountPage() {
       return;
     }
     setStatus("正在登录 MUA…");
-    const result = await accounts.loginMua(muaAccount.trim(), muaPassword);
-    await Promise.all([refreshState(), refreshAvatar()]);
-    setStatus(result.message);
-    if (result.ok) setProfiles(await accounts.listMuaProfiles());
+    try {
+      await accounts.startLogin("mua", muaAccount.trim(), muaPassword);
+      setStatus("登录会话已创建。");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : String(error));
+    }
   };
 
   const switchOffline = async () => {
@@ -157,32 +160,6 @@ export default function AccountPage() {
           登录 MUA
         </button>
       </section>
-
-      {profiles.length > 0 ? (
-        <section className="card stack" style={{ gap: 8 }}>
-          <h2 className="h2">选择 MUA 角色</h2>
-          <div className="stack" style={{ gap: 6 }}>
-            {profiles.map((profile) => (
-              <button
-                key={profile.id}
-                type="button"
-                className="btn ghost"
-                style={{ alignSelf: "flex-start" }}
-                onClick={() => {
-                  setProfiles([]);
-                  setStatus(`已选择角色 ${profile.name}，正在完成登录…`);
-                  void accounts.selectMuaProfile("token", profile.id).then(async (result) => {
-                    await refreshState();
-                    setStatus(result.message);
-                  });
-                }}
-              >
-                {profile.name}
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       {skinPrompt ? (
         <PathPrompt

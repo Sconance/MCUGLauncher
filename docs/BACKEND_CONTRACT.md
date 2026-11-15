@@ -56,13 +56,13 @@ const state = await call<LauncherState>("get_launcher_state");
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
 | `read_avatar` | — | `AvatarInfo` | 当前头像 |
-| `login_microsoft` | — | `AuthResultInfo` | 微软登录，推送 `state`、`avatar` |
-| `login_mua` | `account`, `password` | `AuthResultInfo` | MUA 登录，推送 `state`、`avatar` |
-| `list_mua_profiles` | — | `MuaProfileInfo[]` | 待选角色 |
+| `start_login` | `provider`, `account?`, `password?` | `LoginSessionInfo` | 创建登录会话；演示后端返回 `UNSUPPORTED` |
+| `get_login_session` | `authSessionId` | `LoginSessionInfo` | 查询登录会话阶段 |
+| `select_login_profile` | `authSessionId`, `profileId` | `LoginSessionInfo` | 为会话选择 MUA 角色 |
+| `cancel_login` | `authSessionId` | `LoginSessionInfo` | 取消登录会话 |
 | `select_account` | `accountId` | `SavedInfo` | 按稳定 ID 切换当前账号，推送 `state`、`avatar` |
 | `forget_account` | `accountId` | `SavedInfo` | 按稳定 ID 移除在线账号；离线账号不可删除 |
 | `set_offline_skin` | `path` | `AvatarInfo` | 设置/清除本地皮肤，推送 `avatar` |
-| `select_mua_profile` | `token`, `profileId` | `SavedInfo` | 选择 MUA 角色 |
 
 ### 设置与系统
 

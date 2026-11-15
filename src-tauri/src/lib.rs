@@ -23,13 +23,13 @@ pub fn run() {
             commands::ping_server,
             // 账号
             commands::read_avatar,
-            commands::login_microsoft,
-            commands::login_mua,
-            commands::list_mua_profiles,
+            commands::start_login,
+            commands::get_login_session,
+            commands::select_login_profile,
+            commands::cancel_login,
             commands::select_account,
             commands::forget_account,
             commands::set_offline_skin,
-            commands::select_mua_profile,
             // 设置与系统
             commands::save_settings,
             commands::scan_java,

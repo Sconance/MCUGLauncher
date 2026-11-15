@@ -324,6 +324,14 @@ export interface MuaProfileInfo {
   name: string;
 }
 
+export type LoginSessionInfo =
+  | { state: "awaitingAuthorization"; authSessionId: string; authorizationUrl: string }
+  | { state: "awaitingProfile"; authSessionId: string; profiles: MuaProfileInfo[] }
+  | { state: "succeeded"; authSessionId: string; accountId: string }
+  | { state: "failed"; authSessionId: string; error: { code: string; message: string; retryable: boolean } }
+  | { state: "cancelled"; authSessionId: string }
+  | { state: "expired"; authSessionId: string };
+
 export interface SystemInfo {
   app: string;
   dotnet: string;
@@ -348,12 +356,6 @@ export interface TestResultInfo {
 }
 
 export interface SavedInfo {
-  message: string;
-}
-
-export interface AuthResultInfo {
-  ok: boolean | null;
-  pending: boolean;
   message: string;
 }
 

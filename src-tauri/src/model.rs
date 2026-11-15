@@ -250,6 +250,18 @@ pub struct MuaProfileInfo {
     pub name: String,
 }
 
+/// 登录会话只暴露当前阶段所需的字段。
+#[derive(Clone, Serialize)]
+#[serde(tag = "state", rename_all = "camelCase")]
+pub enum LoginSessionInfo {
+    AwaitingAuthorization { auth_session_id: String, authorization_url: String },
+    AwaitingProfile { auth_session_id: String, profiles: Vec<MuaProfileInfo> },
+    Succeeded { auth_session_id: String, account_id: String },
+    Failed { auth_session_id: String, error: ApiError },
+    Cancelled { auth_session_id: String },
+    Expired { auth_session_id: String },
+}
+
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentItem {
@@ -455,14 +467,6 @@ pub struct ServerResultInfo {
 
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct AuthResultInfo {
-    pub ok: Option<bool>,
-    pub pending: bool,
-    pub message: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct KeyResultInfo {
     pub role: String,
     pub ok: bool,
@@ -568,5 +572,17 @@ mod tests {
         assert!(task.apply_action("cancel").is_err());
         task.state = "failed".into();
         assert_eq!(task.actions(), vec!["delete"]);
+    }
+
+    #[test]
+    fn login_session_serializes_as_discriminated_union() {
+        let session = LoginSessionInfo::AwaitingAuthorization {
+            auth_session_id: "auth-1".into(),
+            authorization_url: "https://example.invalid/login".into(),
+        };
+        let value = serde_json::to_value(session).unwrap();
+        assert_eq!(value["state"], "awaitingAuthorization");
+        assert_eq!(value["authSessionId"], "auth-1");
+        assert!(value.get("profiles").is_none());
     }
 }
