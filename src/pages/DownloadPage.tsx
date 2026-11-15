@@ -86,12 +86,8 @@ export default function DownloadPage() {
     let alive = true;
     void listVanillaVersions().then((vanillaResult) => {
       if (!alive) return;
-      if (vanillaResult.ok) {
-        setVanilla(vanillaResult.items);
-        setVanillaHint(`已读取 ${vanillaResult.items.length} 个正式版、快照和远古版本。`);
-      } else {
-        setVanillaHint(vanillaResult.error);
-      }
+      setVanilla(vanillaResult);
+      setVanillaHint(`已读取 ${vanillaResult.length} 个正式版、快照和远古版本。`);
     });
     return () => {
       alive = false;
@@ -133,10 +129,6 @@ export default function DownloadPage() {
     setStatus("正在搜索 Modrinth…");
     const result = await searchContent(category, query.trim());
     setSearching(false);
-    if (result.error.length > 0) {
-      setStatus(`搜索失败：${result.error}`);
-      return;
-    }
     setResults(result.items);
     setStatus(`搜索完成，共 ${result.items.length} 项。`);
   };
@@ -152,13 +144,9 @@ export default function DownloadPage() {
   const loadVersions = async (item: ContentItem) => {
     setVersionsHint("正在读取兼容版本…");
     const result = await listContentVersions(item.id);
-    if (result.ok && result.result) {
-      setVersions(result.result);
-      setVersionId(result.result.items[0]?.id ?? "");
-      setVersionsHint(`${result.result.game} · ${result.result.loader} · ${result.result.items.length} 个兼容版本`);
-    } else {
-      setVersionsHint(`读取版本失败：${result.error}`);
-    }
+    setVersions(result);
+    setVersionId(result.items[0]?.id ?? "");
+    setVersionsHint(`${result.game} · ${result.loader} · ${result.items.length} 个兼容版本`);
   };
 
   const queueDownload = async () => {
@@ -199,19 +187,15 @@ export default function DownloadPage() {
     setLoaderVersions([]);
     setLoaderHint(`正在读取 ${LOADERS.find(([value]) => value === loaderType)?.[1] ?? ""} 版本…`);
     const result = await listLoaders(loaderGame, loaderType);
-    if (result.ok && result.result) {
-      setLoaderVersions(result.result.versions);
-      setLoaderVersion(result.result.versions[0] ?? "");
-      setLoaderHint(
-        result.result.versions.length === 0
-          ? "没有读取到加载器版本。"
-          : `已读取 ${result.result.versions.length} 个 ${
-              LOADERS.find(([value]) => value === loaderType)?.[1] ?? ""
-            } 版本。`,
-      );
-    } else {
-      setLoaderHint(`读取加载器版本失败：${result.error}`);
-    }
+    setLoaderVersions(result.versions);
+    setLoaderVersion(result.versions[0] ?? "");
+    setLoaderHint(
+      result.versions.length === 0
+        ? "没有读取到加载器版本。"
+        : `已读取 ${result.versions.length} 个 ${
+            LOADERS.find(([value]) => value === loaderType)?.[1] ?? ""
+          } 版本。`,
+    );
   };
 
   const installConfiguredLoader = async () => {
@@ -452,13 +436,9 @@ export default function DownloadPage() {
                 className="btn ghost"
                 onClick={() =>
                   void listVanillaVersions().then((result) => {
-                    if (!result.ok) {
-                      setVanillaHint(result.error);
-                      return;
-                    }
-                    setVanilla(result.items);
+                    setVanilla(result);
                     setVanillaPage(0);
-                    setVanillaHint(`已读取 ${result.items.length} 个正式版、快照和远古版本。`);
+                    setVanillaHint(`已读取 ${result.length} 个正式版、快照和远古版本。`);
                   })
                 }
               >

@@ -1,9 +1,9 @@
 import { call } from "../invoke";
-import type { SavedInfo, ServerPingInfo, ServerResultInfo } from "../../types/launcher";
+import type { SavedInfo, ServerPingInfo } from "../../types/launcher";
 
 /** 按稳定 ID 新增或更新服务器收藏；`id` 为空表示新增。 */
 export const saveServer = (name: string, address: string, id = "", instanceId: string | null = null) =>
-  call<ServerResultInfo>("save_server", { name, address, id, instanceId });
+  call<SavedInfo>("save_server", { name, address, id, instanceId });
 
 /** 删除服务器收藏。 */
 export const deleteServer = (id: string) => call<SavedInfo>("delete_server", { id });

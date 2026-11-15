@@ -100,7 +100,7 @@ export default function HomePage() {
     setStatus("正在准备启动…");
     const result = await launchGame(current.id);
     await refreshState();
-    setStatus(result.message);
+    setStatus(`启动请求已接受：${result.sessionId}`);
   };
 
   /** 角色切换目前由「账号」页完成，这里只做跳转。 */

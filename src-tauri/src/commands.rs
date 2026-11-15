@@ -2,7 +2,7 @@
 //!
 //! 约定：
 //! - 命令名使用 snake_case，前端通过 `invoke("命令名", { camelCase 参数 })` 调用；
-//! - 命令返回语义化结果（SavedInfo / LaunchResultInfo 等），失败通过 `Err(ApiError)` 抛出；
+//! - 命令返回语义化结果，失败通过 `Err(ApiError)` 抛出；
 //! - 状态变更由前端在命令返回后重新调用查询命令获取，事件仅作为可选的推送优化。
 
 use serde::Serialize;
@@ -175,7 +175,7 @@ pub fn select_instance(
 /// 启动指定版本；内核重写后接入真实启动流程。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn launch_game(instance_id: String) -> Result<LaunchResultInfo, ApiError> {
+pub fn launch_game(instance_id: String) -> Result<LaunchAcceptedInfo, ApiError> {
     Err(ApiError::unsupported("launch_game"))
 }
 
@@ -185,7 +185,7 @@ pub fn launch_game(instance_id: String) -> Result<LaunchResultInfo, ApiError> {
 pub fn launch_to_server(
     instance_id: String,
     server_address: String,
-) -> Result<LaunchResultInfo, ApiError> {
+) -> Result<LaunchAcceptedInfo, ApiError> {
     Err(ApiError::unsupported("launch_to_server"))
 }
 
@@ -200,9 +200,8 @@ pub fn save_server(
     address: String,
     id: Option<String>,
     instance_id: Option<String>,
-) -> Result<ServerResultInfo, ApiError> {
+) -> Result<SavedInfo, ApiError> {
     let mut message = "服务器已添加。".to_string();
-    let mut ok = true;
     let state = {
         let mut data = backend.data.lock().unwrap();
         if let Some(id) = id.filter(|value| !value.is_empty()) {
@@ -224,8 +223,11 @@ pub fn save_server(
             .iter()
             .any(|item| item.address == address)
         {
-            ok = false;
-            message = "这个地址已经在收藏里了。".to_string();
+            return Err(ApiError {
+                code: "CONFLICT",
+                message: "这个地址已经在收藏里了。".into(),
+                retryable: false,
+            });
         } else {
             data.state.servers.push(SavedServerInfo {
                 id: generated_id("server"),
@@ -236,10 +238,8 @@ pub fn save_server(
         }
         data.mutating_snapshot(&[StateResource::Servers])
     };
-    if ok {
-        emit(&app, EVENT_STATE, state);
-    }
-    Ok(ServerResultInfo { ok, message })
+    emit(&app, EVENT_STATE, state);
+    Ok(SavedInfo::new(message))
 }
 
 /// 删除服务器收藏。
@@ -639,7 +639,6 @@ pub fn search_content(
         category,
         request_id: "req-1".into(),
         items,
-        error: String::new(),
     }
 }
 
@@ -653,7 +652,7 @@ pub fn list_content_versions(
     loader: Option<String>,
     #[allow(unused_variables)] category: Option<String>,
     #[allow(unused_variables)] instance: Option<String>,
-) -> ResourceVersionsResult {
+) -> ResourceVersionsInfo {
     let name = backend
         .data
         .lock()
@@ -672,16 +671,12 @@ pub fn list_content_versions(
             files: vec![format!("{id}-{version}.jar")],
         })
         .collect();
-    ResourceVersionsResult {
-        ok: true,
-        result: Some(ResourceVersionsInfo {
-            request_id: request_id.unwrap_or_else(|| id.clone()),
-            token: format!("token-{id}"),
-            game: game.unwrap_or_else(|| "1.21.1".into()),
-            loader: loader.unwrap_or_else(|| "Fabric".into()),
-            items: versions,
-        }),
-        error: String::new(),
+    ResourceVersionsInfo {
+        request_id: request_id.unwrap_or_else(|| id.clone()),
+        token: format!("token-{id}"),
+        game: game.unwrap_or_else(|| "1.21.1".into()),
+        loader: loader.unwrap_or_else(|| "Fabric".into()),
+        items: versions,
     }
 }
 
@@ -733,12 +728,8 @@ pub fn toggle_bookmark(
 
 /// 读取原版版本清单。
 #[tauri::command]
-pub fn list_vanilla_versions(backend: State<'_, Backend>) -> VanillaVersionsResult {
-    VanillaVersionsResult {
-        ok: true,
-        items: backend.data.lock().unwrap().vanilla.clone(),
-        error: String::new(),
-    }
+pub fn list_vanilla_versions(backend: State<'_, Backend>) -> Vec<VanillaVersionInfo> {
+    backend.data.lock().unwrap().vanilla.clone()
 }
 
 /// 安装指定原版版本。
@@ -750,21 +741,17 @@ pub fn install_vanilla(version: String) -> Result<SavedInfo, ApiError> {
 
 /// 读取指定游戏版本可用的加载器版本。
 #[tauri::command]
-pub fn list_loaders(version: String, loader: String) -> LoaderListResult {
+pub fn list_loaders(version: String, loader: String) -> LoaderListInfo {
     let versions = match loader.to_lowercase().as_str() {
         "quilt" => vec!["0.24.0", "0.23.2", "0.23.1"],
         "forge" => vec!["47.2.0", "47.1.3", "47.0.19"],
         "neoforge" => vec!["21.1.72", "21.1.66", "21.1.59"],
         _ => vec!["0.16.9", "0.16.8", "0.16.5", "0.15.11"],
     };
-    LoaderListResult {
-        ok: true,
-        result: Some(LoaderListInfo {
-            version,
-            loader,
-            versions: versions.into_iter().map(String::from).collect(),
-        }),
-        error: String::new(),
+    LoaderListInfo {
+        version,
+        loader,
+        versions: versions.into_iter().map(String::from).collect(),
     }
 }
 

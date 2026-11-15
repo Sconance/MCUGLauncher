@@ -224,11 +224,9 @@ export default function SettingsPage() {
     const result = await saveServerCommand(serverName.trim(), serverAddress.trim(), editingServer);
     await refreshState();
     say(result.message);
-    if (result.ok) {
-      setEditingServer("");
-      setServerName("");
-      setServerAddress("");
-    }
+    setEditingServer("");
+    setServerName("");
+    setServerAddress("");
   };
 
   const beginEdit = (server: SavedServerInfo) => {

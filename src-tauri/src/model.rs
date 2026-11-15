@@ -364,7 +364,6 @@ pub struct ContentSearchResult {
     pub category: String,
     pub request_id: String,
     pub items: Vec<ContentItem>,
-    pub error: String,
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -387,14 +386,6 @@ pub struct ResourceVersionsInfo {
 
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct ResourceVersionsResult {
-    pub ok: bool,
-    pub result: Option<ResourceVersionsInfo>,
-    pub error: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct VanillaVersionInfo {
     pub id: String,
     pub r#type: String,
@@ -403,26 +394,10 @@ pub struct VanillaVersionInfo {
 
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct VanillaVersionsResult {
-    pub ok: bool,
-    pub items: Vec<VanillaVersionInfo>,
-    pub error: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct LoaderListInfo {
     pub version: String,
     pub loader: String,
     pub versions: Vec<String>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct LoaderListResult {
-    pub ok: bool,
-    pub result: Option<LoaderListInfo>,
-    pub error: String,
 }
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -545,16 +520,9 @@ impl SavedInfo {
 
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct LaunchResultInfo {
-    pub ok: bool,
-    pub message: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ServerResultInfo {
-    pub ok: bool,
-    pub message: String,
+pub struct LaunchAcceptedInfo {
+    pub session_id: String,
+    pub task_id: String,
 }
 
 #[derive(Clone, Serialize, Default)]

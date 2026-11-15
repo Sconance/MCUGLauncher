@@ -48,14 +48,14 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `launch_game` | `version` | `LaunchResultInfo` | 启动指定版本 |
-| `launch_to_server` | `instance`, `serverAddress` | `LaunchResultInfo` | 用实例直连服务器启动 |
+| `launch_game` | `instanceId` | `LaunchAcceptedInfo` | 接受后返回会话与准备任务 ID；演示后端返回 `UNSUPPORTED` |
+| `launch_to_server` | `instanceId`, `serverAddress` | `LaunchAcceptedInfo` | 接受直连启动；演示后端返回 `UNSUPPORTED` |
 
 ### 服务器
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `save_server` | `name`, `address`, `id?`, `instanceId?` | `ServerResultInfo` | 按稳定 ID 新增或更新收藏，推送 `state` |
+| `save_server` | `name`, `address`, `id?`, `instanceId?` | `SavedInfo` | 按稳定 ID 新增或更新，重复地址返回 `CONFLICT` |
 | `delete_server` | `id` | `SavedInfo` | 按稳定 ID 删除收藏；不存在时返回 `NOT_FOUND` |
 | `ping_server` | `address` | `ServerPingInfo` | 查询在线状态 |
 
@@ -109,12 +109,12 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
 | `search_content` | `category`, `query` | `ContentSearchResult` | 搜索资源 |
-| `list_content_versions` | `id`, `requestId?` | `ResourceVersionsResult` | 兼容版本 |
+| `list_content_versions` | `id`, `requestId?` | `ResourceVersionsInfo` | 兼容版本 |
 | `queue_content_version` | `token`, `versionId`, `mode?`, `path?` | `SavedInfo` | 加入下载队列 |
 | `toggle_bookmark` | `id`, `name`, `description`, `kind` | `SavedInfo` | 收藏/取消收藏，推送 `state` |
-| `list_vanilla_versions` | — | `VanillaVersionsResult` | 原版版本清单 |
+| `list_vanilla_versions` | — | `VanillaVersionInfo[]` | 原版版本清单 |
 | `install_vanilla` | `version` | `SavedInfo` | 安装原版 |
-| `list_loaders` | `version`, `loader` | `LoaderListResult` | 加载器版本 |
+| `list_loaders` | `version`, `loader` | `LoaderListInfo` | 加载器版本 |
 | `install_loader` | `version`, `loader`, `loaderVersion` | `SavedInfo` | 安装加载器 |
 | `preview_pack` | `path` | `PackPreviewInfo` | 读取整合包计划；演示后端返回 `UNSUPPORTED` |
 | `confirm_pack` | `planId`, `name`, `directory` | `SavedInfo` | 按计划确认导入；演示后端返回 `UNSUPPORTED` |

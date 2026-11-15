@@ -1,11 +1,11 @@
 import { call } from "../invoke";
 import type {
   ContentSearchResult,
-  LoaderListResult,
+  LoaderListInfo,
   PackPreviewInfo,
-  ResourceVersionsResult,
+  ResourceVersionsInfo,
   SavedInfo,
-  VanillaVersionsResult,
+  VanillaVersionInfo,
 } from "../../types/launcher";
 
 /** 按分类与关键词搜索资源项目。 */
@@ -14,7 +14,7 @@ export const searchContent = (category: string, query: string) =>
 
 /** 读取项目的兼容版本与安装令牌；`requestId` 用于丢弃过期响应。 */
 export const listContentVersions = (id: string, requestId = "") =>
-  call<ResourceVersionsResult>("list_content_versions", { id, requestId });
+  call<ResourceVersionsInfo>("list_content_versions", { id, requestId });
 
 /** 将资源版本加入下载队列；`mode` 为 instance（安装到实例）或 local（下载到目录）。 */
 export const queueContentVersion = (token: string, versionId: string, mode = "instance", path = "") =>
@@ -25,14 +25,14 @@ export const toggleBookmark = (id: string, name: string, description: string, ki
   call<SavedInfo>("toggle_bookmark", { id, name, description, kind });
 
 /** 读取 Mojang 原版版本清单。 */
-export const listVanillaVersions = () => call<VanillaVersionsResult>("list_vanilla_versions");
+export const listVanillaVersions = () => call<VanillaVersionInfo[]>("list_vanilla_versions");
 
 /** 安装指定原版版本。 */
 export const installVanilla = (version: string) => call<SavedInfo>("install_vanilla", { version });
 
 /** 读取指定游戏版本可用的加载器版本。 */
 export const listLoaders = (version: string, loader: string) =>
-  call<LoaderListResult>("list_loaders", { version, loader });
+  call<LoaderListInfo>("list_loaders", { version, loader });
 
 /** 安装指定加载器版本。 */
 export const installLoader = (version: string, loader: string, loaderVersion: string) =>

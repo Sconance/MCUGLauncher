@@ -104,10 +104,6 @@ export default function DiscoverPage() {
       dialog.editing?.id ?? "",
       dialog.draft.instanceId,
     );
-    if (!result.ok) {
-      setDialog({ ...dialog, status: result.message });
-      return;
-    }
     setDialog(null);
     await refreshState();
     setStatus(result.message);
@@ -139,7 +135,7 @@ export default function DiscoverPage() {
       state.instances.find((item) => item.id === server.instanceId)?.displayName ?? server.instanceId;
     setStatus(`正在用 ${instanceName} 打开 ${server.address}…`);
     const result = await launchToServer(server.instanceId, server.address);
-    setStatus(result.message);
+    setStatus(`启动请求已接受：${result.sessionId}`);
   };
 
   const favorite = async (item: RecommendationInfo) => {

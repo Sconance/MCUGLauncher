@@ -48,16 +48,12 @@ export default function BookmarksPage() {
     setMode("instance");
     setHint("正在读取兼容版本…");
     const result = await listContentVersions(favorite.id);
-    if (!result.ok || !result.result) {
-      setHint(`读取版本失败：${result.error}`);
-      return;
-    }
-    setVersions(result.result);
-    setVersionId(result.result.items[0]?.id ?? "");
+    setVersions(result);
+    setVersionId(result.items[0]?.id ?? "");
     setHint(
-      result.result.items.length === 0
-        ? `${result.result.game} · ${result.result.loader} · 当前实例没有兼容版本，请先在启动页切换实例。`
-        : `${result.result.game} · ${result.result.loader} · ${result.result.items.length} 个兼容版本`,
+      result.items.length === 0
+        ? `${result.game} · ${result.loader} · 当前实例没有兼容版本，请先在启动页切换实例。`
+        : `${result.game} · ${result.loader} · ${result.items.length} 个兼容版本`,
     );
   };
 

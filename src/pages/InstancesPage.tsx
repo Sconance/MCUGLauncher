@@ -145,7 +145,7 @@ export default function InstancesPage() {
     if (selected.length === 0) return;
     setStatus("正在准备启动…");
     const result = await launchGame(selected);
-    setStatus(result.message);
+    setStatus(`启动请求已接受：${result.sessionId}`);
   };
 
   const toggleMod = async (modId: string, enabled: boolean) => {

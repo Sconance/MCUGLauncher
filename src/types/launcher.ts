@@ -241,7 +241,6 @@ export interface ContentSearchResult {
   category: string;
   requestId: string;
   items: ContentItem[];
-  error: string;
 }
 
 export interface ResourceVersionInfo {
@@ -258,34 +257,16 @@ export interface ResourceVersionsInfo {
   items: ResourceVersionInfo[];
 }
 
-export interface ResourceVersionsResult {
-  ok: boolean;
-  result: ResourceVersionsInfo | null;
-  error: string;
-}
-
 export interface VanillaVersionInfo {
   id: string;
   type: string;
   released: string;
 }
 
-export interface VanillaVersionsResult {
-  ok: boolean;
-  items: VanillaVersionInfo[];
-  error: string;
-}
-
 export interface LoaderListInfo {
   version: string;
   loader: string;
   versions: string[];
-}
-
-export interface LoaderListResult {
-  ok: boolean;
-  result: LoaderListInfo | null;
-  error: string;
 }
 
 export interface LaunchSettings {
@@ -430,12 +411,7 @@ export interface AppSettingsPatch {
   player?: string;
 }
 
-export interface LaunchResultInfo {
-  ok: boolean;
-  message: string;
-}
-
-export interface ServerResultInfo {
-  ok: boolean;
-  message: string;
+export interface LaunchAcceptedInfo {
+  sessionId: string;
+  taskId: string;
 }
