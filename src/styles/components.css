@@ -33,11 +33,14 @@
 }
 
 .card {
-  background: var(--app-card);
-  border: 1px solid var(--app-line);
+  border: 0;
   border-radius: var(--radius-card);
   padding: 16px;
   box-shadow: var(--shadow-card);
+  background-color: var(--app-glass);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: var(--app-glass-blur);
 }
 
 .stack {
@@ -185,16 +188,20 @@
 .btn.launch {
   height: 72px;
   width: 100%;
-  justify-content: flex-start;
-  border: 0;
+  justify-content: center;
+  border: 1px solid var(--launch-glass-edge);
   border-radius: var(--radius-launch);
-  background: var(--launch-gradient);
+  background: var(--launch-glass);
   color: #fff;
   padding: 0 20px;
+  backdrop-filter: blur(16px) saturate(130%);
+  box-shadow: 0 12px 28px rgb(10 16 22 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
+  transition: background-color 140ms linear, box-shadow 140ms linear;
 }
 
 .btn.launch:hover {
-  background: #2c6294;
+  background: var(--launch-glass-hover);
+  box-shadow: 0 14px 32px rgb(10 16 22 / 26%), inset 0 1px 0 rgb(255 255 255 / 14%);
 }
 
 .btn.avatar {
@@ -207,6 +214,67 @@
 
 .btn.avatar:hover {
   background: var(--app-accent-wash);
+}
+
+/* ---------- 悬停提示 ---------- */
+
+/*
+ * 用法：把 title 换成 data-tip，悬停即刻在按钮正上方显示黑底白字提示；
+ * 加 data-tip-side="right" 改为显示在右侧。
+ */
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 7px);
+  z-index: 60;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--tip-bg);
+  color: var(--tip-ink);
+  font-size: 10.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 2px);
+  transition: opacity 80ms linear, transform 80ms linear;
+}
+
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+[data-tip][data-tip-side="right"]::after {
+  left: calc(100% + 7px);
+  top: 50%;
+  bottom: auto;
+  transform: translate(-2px, -50%);
+}
+
+[data-tip][data-tip-side="right"]:hover::after,
+[data-tip][data-tip-side="right"]:focus-visible::after {
+  transform: translate(0, -50%);
+}
+
+[data-tip][data-tip-side="left"]::after {
+  right: calc(100% + 7px);
+  left: auto;
+  top: 50%;
+  bottom: auto;
+  transform: translate(2px, -50%);
+}
+
+[data-tip][data-tip-side="left"]:hover::after,
+[data-tip][data-tip-side="left"]:focus-visible::after {
+  transform: translate(0, -50%);
 }
 
 /* ---------- 表单 ---------- */
@@ -424,10 +492,13 @@ textarea.input {
   max-height: calc(100vh - 64px);
   overflow-y: auto;
   padding: 22px;
-  border: 1px solid var(--app-line);
+  border: 0;
   border-radius: 14px;
-  background: #fff;
   box-shadow: var(--shadow-dialog);
+  background-color: var(--app-glass-strong);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: blur(32px) saturate(135%);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -455,10 +526,13 @@ textarea.input {
   z-index: 30;
   min-width: 120px;
   padding: 3px;
-  border: 1px solid var(--app-line);
+  border: 0;
   border-radius: var(--radius-btn);
-  background: var(--app-card);
   box-shadow: var(--shadow-card);
+  background-color: var(--app-glass-strong);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: var(--app-glass-blur);
 }
 
 .context-menu button {
@@ -522,8 +596,12 @@ textarea.input {
   flex-direction: column;
   gap: 4px;
   padding: 8px;
+  border: 0;
   border-radius: 12px;
-  background: var(--app-side);
+  background-color: var(--app-glass);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: var(--app-glass-blur);
   overflow-y: auto;
 }
 

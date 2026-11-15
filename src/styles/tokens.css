@@ -15,6 +15,16 @@
   --app-line: #dde4eb;
   --app-line-2: #d3dae0;
 
+  /* 磨砂亚克力面板：半透明白 + 重模糊 + 低饱和 + 细噪点，无描边 */
+  --app-glass: rgb(255 255 255 / 58%);
+  --app-glass-strong: rgb(255 255 255 / 76%);
+  --app-glass-blur: blur(28px) saturate(135%);
+  --app-glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.16'/%3E%3C/svg%3E");
+
+  /* 悬停提示：黑底白字 */
+  --tip-bg: rgb(17 20 23 / 94%);
+  --tip-ink: #fff;
+
   /* 主色阶 */
   --app-accent: #326ea7;
   --app-accent-dark: #25517a;
@@ -29,10 +39,12 @@
   --app-red: #bf443b;
   --app-red-bg: #fbedeb;
 
-  /* 深色块与启动按钮 */
+  /* 深色块与启动按钮（灰色毛玻璃） */
   --app-sidebar: #1a2c3c;
   --app-sidebar-text: #e6eef5;
-  --launch-gradient: linear-gradient(180deg, #3472ad 0%, #2c6294 100%);
+  --launch-glass: rgb(58 64 72 / 76%);
+  --launch-glass-hover: rgb(70 77 86 / 84%);
+  --launch-glass-edge: rgb(255 255 255 / 14%);
 
   /* 字体 */
   --font-ui: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;

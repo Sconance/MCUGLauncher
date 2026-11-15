@@ -1,0 +1,145 @@
+/* 「发现」页：原主页右栏的服务器、公告、推荐与语录 */
+
+.discover-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* 让开顶部悬浮胶囊，滚动时内容从胶囊下方穿过 */
+  padding-top: 36px;
+}
+
+.discover.blurred .discover-feed {
+  filter: blur(2px);
+}
+
+/* ---------- 服务器卡片 ---------- */
+
+.server-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.server-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 200px;
+  min-height: 154px;
+  padding: 11px;
+  border: 0;
+  border-radius: 9px;
+  background-color: rgb(255 255 255 / 52%);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: blur(20px) saturate(135%);
+}
+
+.server-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+}
+
+.server-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #8a96a0;
+  color: #fff;
+  font-size: 16px;
+}
+
+.server-icon.online {
+  background: #3370aa;
+}
+
+.server-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.server-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+/* ---------- 公告 ---------- */
+
+.announcement-title {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.announcement-image {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* ---------- 推荐 ---------- */
+
+.rec-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  padding: 6px 0;
+  border-bottom: 1px solid #e7eef4;
+}
+
+.rec-row:last-child {
+  border-bottom: 0;
+}
+
+.rec-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: #3370aa;
+  color: #fff;
+  font-size: 13px;
+}
+
+.rec-icon.material {
+  background: #c9822b;
+}
+
+.rec-icon.shader {
+  background: #7b5ac8;
+}
+
+.rec-name {
+  font-weight: 600;
+}
+
+/* ---------- 语录 ---------- */
+
+.quote-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.quote-mark {
+  font-family: var(--font-quote);
+  font-size: 34px;
+  line-height: 1;
+  color: #7fa4c7;
+}
+
+.quote-text {
+  font-size: 15px;
+  line-height: 1.6;
+}

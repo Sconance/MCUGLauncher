@@ -54,10 +54,23 @@ export interface VersionGroupInfo {
   versions: VersionChoice[];
 }
 
+export interface PlayerInfo {
+  id: string;
+  name: string;
+  /** microsoft = 正版 / mua = 外置登录 / offline = 离线 */
+  playerType: string;
+  /** 外置登录的验证服务器名称，正版与离线为空 */
+  authServer: string;
+  avatar: string;
+}
+
 export interface LauncherState {
   appVersion: string;
   player: string;
   accountType: string;
+  /** 全部已登录的角色；主页的「切换角色」从这里选 */
+  players: PlayerInfo[];
+  selectedPlayer: string;
   root: string;
   gameRoots: string[];
   java: string;

@@ -6,7 +6,7 @@
 
 - **只做前端**：页面布局、样式、交互状态；`src-tauri` 仅提供命令契约与内存演示数据，不包含真实业务实现。
 - **视觉对齐 `origin`**：颜色、字号、圆角、间距来自 `origin/src/MCUGLauncher.Avalonia/Styles/Theme.axaml`，统一收敛到 `src/styles/tokens.css`。
-- **页面与外壳分离**：外壳负责标题栏、导航和全局提示；页面只负责自己的内容。
+- **页面与外壳分离**：外壳负责顶部悬浮胶囊导航与全局提示；页面只负责自己的内容。
 - **数据边界固定**：页面不直接拼接 `invoke`，统一调用 `src/api/commands/*`；全局状态统一从 `useLauncher()` 读取。
 - **每完成一页提交一次**，提交信息为 `feat: 移植<页面>页面 UI`。
 
@@ -36,7 +36,8 @@ src/
 │   └── PathPrompt.tsx   # 路径输入弹层，替代原生文件对话框
 ├── config.ts            # 应用版本等常量
 ├── pages/
-│   ├── HomePage.tsx         # 启动主页
+│   ├── HomePage.tsx         # 启动主页（角色卡 + 右下角启动按钮）
+│   ├── DiscoverPage.tsx     # 发现：服务器收藏、公告、推荐、语录
 │   ├── DownloadPage.tsx     # 下载：搜索/原版/加载器/整合包
 │   ├── SettingsPage.tsx     # 设置：11 个分区
 │   ├── ExtrasPage.tsx       # 「更多」容器：左侧分区导航
@@ -68,14 +69,16 @@ src/
 - 排版类：`.page-title`（22 Bold）、`.h2`（15 Bold）、`.muted`（10.5）、`.small`（10）、`.status`（10.5）。
 - 页面骨架：`.page`（20/3/20/20 内边距 + 纵向 flex）、`.page-scroll`（滚动区）、`.subpage`（「更多」内的子页，无额外内边距）。
 - 滚动条为 6px 细线，滑块 4px，悬停/按下颜色与 `App.axaml` 的 `ScrollBar` 模板一致。
+- 背景：`.shell` 用 `src/assets/TmpBackground.png` 铺满（`center / cover`）；卡片式构件（`.card`/`.modal-card`/浮层/胶囊/`.server-card`/`.player-card`）统一用 `--app-glass` 或 `--app-glass-strong` + `--app-glass-grain` 噪点做磨砂亚克力，无描边。
 
 ## 4. 页面移植对照
 
 | 目标文件 | 原实现 | 状态 |
 | --- | --- | --- |
-| `shell/Shell.tsx` | `ShellWindow.axaml` + `.cs` | 已完成（标题栏、导航、窗口控制；Toast 由 `toast.tsx` 提供） |
+| `shell/Shell.tsx` | `ShellWindow.axaml` + `.cs` | 已完成（悬浮胶囊导航；窗口按钮交由系统标题栏，Toast 由 `toast.tsx` 提供） |
 | `pages/ExtrasPage.tsx` | `Views/ExtrasView.axaml` | 已完成（左侧分区导航） |
-| `pages/HomePage.tsx` | `Views/HomeView.axaml` + `.cs` | 已完成（账号卡、实例选择、服务器、公告、推荐、语录） |
+| `pages/HomePage.tsx` | `Views/HomeView.axaml` + `.cs` | 已完成（角色卡、实例选择；启动按钮在右下角） |
+| `pages/DiscoverPage.tsx` | `Views/HomeView.axaml` 右栏 | 已拆分（服务器收藏、公告、推荐、语录） |
 | `pages/DownloadPage.tsx` | `Views/DownloadView.axaml` + `.cs` | 已完成（搜索/详情/版本、原版分页、加载器、整合包） |
 | `pages/SettingsPage.tsx` | `Views/SettingsView.axaml` + `.cs` | 已完成（11 个分区：启动/Java/数据源/外观/服务器/存档/恢复/日志/诊断/社区/关于） |
 | `pages/InstancesPage.tsx` | `Views/InstancesView.axaml` + `.cs` | 已完成（模组、启动设置、克隆/导出/卸载/更新） |

@@ -17,6 +17,9 @@ body {
   background: var(--app-bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* 桌面应用观感：默认不允许框选文字，输入类控件单独放开 */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 h1,
@@ -37,9 +40,23 @@ textarea {
   font: inherit;
 }
 
+/* 输入类控件与显式标记的区域仍可框选/复制 */
+input,
+textarea,
+[contenteditable="true"],
+.selectable {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 img,
 svg {
   display: block;
+}
+
+/* 图片不允许被拖拽出来 */
+img {
+  -webkit-user-drag: none;
 }
 
 /* 细线滚动条：对应 Theme/App.axaml 的自定义 ScrollBar 模板 */

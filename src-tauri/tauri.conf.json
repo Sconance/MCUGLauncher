@@ -13,12 +13,12 @@
     "windows": [
       {
         "title": "MCUG Launcher",
-        "width": 1200,
-        "height": 780,
-        "minWidth": 1130,
-        "minHeight": 640,
+        "width": 1000,
+        "height": 600,
+        "minWidth": 1000,
+        "minHeight": 600,
         "center": true,
-        "decorations": false,
+        "decorations": true,
         "resizable": true
       }
     ],
