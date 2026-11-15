@@ -44,6 +44,13 @@ export interface FavoriteInfo {
   description: string;
 }
 
+export interface AccountInfo {
+  id: string;
+  kind: "microsoft" | "mua" | "offline";
+  player: string;
+  status: "ready" | "expired" | "invalid";
+}
+
 export interface DataSourceSet {
   announcements: string;
   servers: string;
@@ -64,8 +71,8 @@ export interface VersionGroupInfo {
 
 export interface LauncherState {
   appVersion: string;
-  player: string;
-  accountType: string;
+  activeAccountId: string | null;
+  accounts: AccountInfo[];
   root: string;
   gameRoots: string[];
   java: string;
@@ -347,12 +354,6 @@ export interface SavedInfo {
 export interface AuthResultInfo {
   ok: boolean | null;
   pending: boolean;
-  message: string;
-}
-
-export interface AccountSwitchResultInfo {
-  account: string;
-  needsLogin: boolean;
   message: string;
 }
 

@@ -202,46 +202,42 @@ pub fn list_mua_profiles() -> Vec<MuaProfileInfo> {
     ]
 }
 
-/// 切换账号模式（microsoft / mua / offline）。
+/// 按稳定 ID 切换当前账号。
 #[tauri::command]
-pub fn switch_account_mode(
+pub fn select_account(
     app: AppHandle,
     backend: State<'_, Backend>,
-    mode: String,
-) -> AccountSwitchResultInfo {
+    account_id: String,
+) -> Result<SavedInfo, ApiError> {
     let (state, avatar) = {
         let mut data = backend.data.lock().unwrap();
-        data.state.account_type = mode.clone();
-        let avatar = avatar_for(&data.state.player, &mode);
+        let account = data.select_account(&account_id)?;
+        let avatar = avatar_for(&account.player, &account.kind);
         data.avatar = avatar.clone();
         (data.mutating_snapshot(), avatar)
     };
     emit(&app, EVENT_STATE, state);
     emit(&app, EVENT_AVATAR, avatar);
-    AccountSwitchResultInfo {
-        account: mode.clone(),
-        needs_login: false,
-        message: format!("已切换到 {mode} 账号。"),
-    }
+    Ok(SavedInfo::new("当前账号已切换。"))
 }
 
-/// 移除本机保存的指定账号。
+/// 按稳定 ID 移除本机保存的账号。
 #[tauri::command]
-pub fn forget_account(app: AppHandle, backend: State<'_, Backend>, mode: String) -> AuthResultInfo {
+pub fn forget_account(
+    app: AppHandle,
+    backend: State<'_, Backend>,
+    account_id: String,
+) -> Result<SavedInfo, ApiError> {
     let (state, avatar) = {
         let mut data = backend.data.lock().unwrap();
-        data.state.account_type = "offline".into();
-        let avatar = avatar_for(&data.state.player, "offline");
+        let fallback = data.forget_account(&account_id)?;
+        let avatar = avatar_for(&fallback.player, &fallback.kind);
         data.avatar = avatar.clone();
         (data.mutating_snapshot(), avatar)
     };
     emit(&app, EVENT_STATE, state);
     emit(&app, EVENT_AVATAR, avatar);
-    AuthResultInfo {
-        ok: Some(true),
-        pending: false,
-        message: format!("已移除 {mode} 账号。"),
-    }
+    Ok(SavedInfo::new("账号已从本机移除。"))
 }
 
 /// 设置或清除离线皮肤；空 `path` 表示清除。
@@ -303,8 +299,10 @@ pub fn save_settings(
             state.anonymous = value;
         }
         if let Some(player) = patch.player.filter(|value| !value.is_empty()) {
-            if state.account_type == "offline" {
-                state.player = player;
+            if let Some(account) = state.accounts.iter_mut().find(|account| {
+                state.active_account_id.as_deref() == Some(account.id.as_str()) && account.kind == "offline"
+            }) {
+                account.player = player;
             }
         }
         data.mutating_snapshot()

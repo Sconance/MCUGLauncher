@@ -28,7 +28,8 @@ export default function AccountPage() {
     );
   }
 
-  const offline = state.accountType === "offline";
+  const activeAccount = state.accounts.find((account) => account.id === state.activeAccountId) ?? null;
+  const offline = activeAccount?.kind === "offline";
   const skinHint = !offline
     ? "在线账号的皮肤来自认证站，不能在此选择本地皮肤。"
     : avatar?.fallback
@@ -56,14 +57,24 @@ export default function AccountPage() {
 
   const switchOffline = async () => {
     setStatus("正在切换到离线账号…");
-    const result = await accounts.switchAccountMode("offline");
+    const offlineAccount = state.accounts.find((account) => account.kind === "offline");
+    if (!offlineAccount) {
+      setStatus("离线账号不可用。");
+      return;
+    }
+    const result = await accounts.selectAccount(offlineAccount.id);
     await Promise.all([refreshState(), refreshAvatar()]);
     setStatus(result.message);
   };
 
-  const forget = async (mode: string) => {
+  const forget = async (kind: "microsoft" | "mua") => {
+    const account = state.accounts.find((item) => item.kind === kind);
+    if (!account) {
+      setStatus("本机没有此类账号。");
+      return;
+    }
     setStatus("正在移除本机保存的账号…");
-    const result = await accounts.forgetAccount(mode);
+    const result = await accounts.forgetAccount(account.id);
     await Promise.all([refreshState(), refreshAvatar()]);
     setStatus(result.message);
   };
@@ -81,8 +92,8 @@ export default function AccountPage() {
         <div className="account-grid">
           <div className="stack" style={{ gap: 8 }}>
             <h2 className="h2">当前账号</h2>
-            <span className="account-player">{state.player.length > 0 ? state.player : "未登录"}</span>
-            <span className="muted">{modeLabel(state.accountType)}</span>
+            <span className="account-player">{activeAccount?.player || "未登录"}</span>
+            <span className="muted">{modeLabel(activeAccount?.kind ?? "offline")}</span>
             <span className="status">{status}</span>
             <span className="muted">{avatar?.label ?? ""}</span>
             <span className="muted">{skinHint}</span>
@@ -97,7 +108,7 @@ export default function AccountPage() {
           </div>
           <div className="account-avatar">
             <span className="account-avatar-shadow" />
-            <img src={avatar?.image} alt={state.player} />
+            <img src={avatar?.image} alt={activeAccount?.player ?? "未登录"} />
           </div>
         </div>
       </section>

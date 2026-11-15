@@ -98,8 +98,38 @@ impl Data {
         }
     }
 
+    pub fn select_account(&mut self, account_id: &str) -> Result<AccountInfo, ApiError> {
+        let account = self.state.accounts.iter().find(|account| account.id == account_id)
+            .cloned()
+            .ok_or_else(|| ApiError { code: "NOT_FOUND", message: "账号不存在。".into(), retryable: false })?;
+        self.state.active_account_id = Some(account.id.clone());
+        Ok(account)
+    }
+
+    pub fn forget_account(&mut self, account_id: &str) -> Result<AccountInfo, ApiError> {
+        let removable = self.state.accounts.iter().any(|account| account.id == account_id && account.kind != "offline");
+        if !removable {
+            return Err(ApiError { code: "NOT_FOUND", message: "可移除的账号不存在。".into(), retryable: false });
+        }
+        self.state.accounts.retain(|account| account.id != account_id);
+        let fallback = self.state.accounts.iter().find(|account| account.kind == "offline")
+            .cloned()
+            .ok_or_else(|| ApiError { code: "INTERNAL_ERROR", message: "离线账号缺失。".into(), retryable: false })?;
+        if self.state.active_account_id.as_deref() == Some(account_id) {
+            self.state.active_account_id = Some(fallback.id.clone());
+        }
+        Ok(fallback)
+    }
+
     pub fn avatar_for_current(&self) -> AvatarInfo {
-        avatar_for(&self.state.player, &self.state.account_type)
+        let account = self
+            .state
+            .active_account_id
+            .as_deref()
+            .and_then(|id| self.state.accounts.iter().find(|account| account.id == id));
+        account
+            .map(|account| avatar_for(&account.player, &account.kind))
+            .unwrap_or_else(|| avatar_for("", "offline"))
     }
 }
 
@@ -117,6 +147,20 @@ mod tests {
         data.mutating_snapshot();
         assert_eq!(data.state_revision, first.revision + 1);
         assert_eq!(data.ensure_state_revision(first.revision).unwrap_err().code, "CONFLICT");
+    }
+
+    #[test]
+    fn accounts_are_selected_and_removed_by_stable_id() {
+        let mut data = Data::demo();
+        assert_eq!(data.select_account("account-demo-offline").unwrap().kind, "offline");
+        assert_eq!(data.state.active_account_id.as_deref(), Some("account-demo-offline"));
+        assert_eq!(data.select_account("missing").unwrap_err().code, "NOT_FOUND");
+
+        data.select_account("account-demo-microsoft").unwrap();
+        let fallback = data.forget_account("account-demo-microsoft").unwrap();
+        assert_eq!(fallback.id, "account-demo-offline");
+        assert_eq!(data.state.active_account_id.as_deref(), Some("account-demo-offline"));
+        assert!(data.forget_account("account-demo-offline").is_err());
     }
 }
 
@@ -138,8 +182,21 @@ pub fn avatar_for(player: &str, account: &str) -> AvatarInfo {
 fn demo_state() -> LauncherState {
     LauncherState {
         app_version: "0.22.3".into(),
-        player: "XiaoMu".into(),
-        account_type: "microsoft".into(),
+        active_account_id: Some("account-demo-microsoft".into()),
+        accounts: vec![
+            AccountInfo {
+                id: "account-demo-microsoft".into(),
+                kind: "microsoft".into(),
+                player: "XiaoMu".into(),
+                status: "ready".into(),
+            },
+            AccountInfo {
+                id: "account-demo-offline".into(),
+                kind: "offline".into(),
+                player: "LocalPlayer".into(),
+                status: "ready".into(),
+            },
+        ],
         root: "D:/Games/Minecraft/MCUG".into(),
         game_roots: vec![
             "D:/Games/Minecraft/MCUG".into(),

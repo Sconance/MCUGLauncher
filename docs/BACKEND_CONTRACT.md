@@ -59,8 +59,8 @@ const state = await call<LauncherState>("get_launcher_state");
 | `login_microsoft` | — | `AuthResultInfo` | 微软登录，推送 `state`、`avatar` |
 | `login_mua` | `account`, `password` | `AuthResultInfo` | MUA 登录，推送 `state`、`avatar` |
 | `list_mua_profiles` | — | `MuaProfileInfo[]` | 待选角色 |
-| `switch_account_mode` | `mode` | `AccountSwitchResultInfo` | 切换账号模式，推送 `state`、`avatar` |
-| `forget_account` | `mode` | `AuthResultInfo` | 移除本机账号，推送 `state`、`avatar` |
+| `select_account` | `accountId` | `SavedInfo` | 按稳定 ID 切换当前账号，推送 `state`、`avatar` |
+| `forget_account` | `accountId` | `SavedInfo` | 按稳定 ID 移除在线账号；离线账号不可删除 |
 | `set_offline_skin` | `path` | `AvatarInfo` | 设置/清除本地皮肤，推送 `avatar` |
 | `select_mua_profile` | `token`, `profileId` | `SavedInfo` | 选择 MUA 角色 |
 

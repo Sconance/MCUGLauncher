@@ -88,7 +88,7 @@ export default function SettingsPage() {
     setRam(String(state.ram));
     setWidth(String(state.width));
     setHeight(String(state.height));
-    setPlayer(state.player);
+    setPlayer(state.accounts.find((account) => account.id === state.activeAccountId)?.player ?? "");
     setAutoMemory(state.autoMemory);
     setAutoChinese(state.autoChinese);
     setAnonymous(state.anonymous);
@@ -131,7 +131,7 @@ export default function SettingsPage() {
   }
 
   const roots = Array.from(new Set([...state.gameRoots, state.root, root])).filter((value) => value.length > 0);
-  const offline = state.accountType === "offline";
+  const offline = state.accounts.find((account) => account.id === state.activeAccountId)?.kind === "offline";
 
   const saveLaunch = async () => {
     if (ram.length === 0 || root.trim().length === 0) {

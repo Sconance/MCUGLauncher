@@ -85,6 +85,7 @@ export default function HomePage() {
   }
 
   const instances = state.instances.filter((item) => item.name.length > 0 && !item.isPlaceholder);
+  const activeAccount = state.accounts.find((account) => account.id === state.activeAccountId) ?? null;
   const current = instances.find((item) => item.id === state.selectedInstanceId);
   const launchTarget = current ? `${current.displayName} · ${current.minecraft} · ${current.loader}` : "请选择实例";
   const launchSubtitle = current
@@ -206,10 +207,10 @@ export default function HomePage() {
                 aria-label="查看或更换头像"
                 onClick={openAccount}
               >
-                <img className="avatar-image" src={avatar?.image} alt={state.player} />
+                <img className="avatar-image" src={avatar?.image} alt={activeAccount?.player ?? "未登录"} />
               </button>
             </div>
-            <p className="account-name">{state.player.length > 0 ? state.player : "未登录"}</p>
+            <p className="account-name">{activeAccount?.player || "未登录"}</p>
             <p className="muted" style={{ textAlign: "center" }}>
               {avatar?.label ?? ""}
             </p>

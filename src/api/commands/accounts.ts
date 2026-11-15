@@ -1,6 +1,5 @@
 import { call } from "../invoke";
 import type {
-  AccountSwitchResultInfo,
   AuthResultInfo,
   AvatarInfo,
   MuaProfileInfo,
@@ -20,12 +19,11 @@ export const loginMua = (account: string, password: string) =>
 /** 读取 MUA 登录后的可选角色列表。 */
 export const listMuaProfiles = () => call<MuaProfileInfo[]>("list_mua_profiles");
 
-/** 切换账号模式（microsoft / mua / offline）。 */
-export const switchAccountMode = (mode: string) =>
-  call<AccountSwitchResultInfo>("switch_account_mode", { mode });
+/** 按稳定 ID 切换当前账号。 */
+export const selectAccount = (accountId: string) => call<SavedInfo>("select_account", { accountId });
 
-/** 移除本机保存的指定账号（microsoft / mua）。 */
-export const forgetAccount = (mode: string) => call<AuthResultInfo>("forget_account", { mode });
+/** 按稳定 ID 移除本机保存的账号。 */
+export const forgetAccount = (accountId: string) => call<SavedInfo>("forget_account", { accountId });
 
 /** 设置离线皮肤；`path` 为空字符串表示清除。 */
 export const setOfflineSkin = (path: string) => call<AvatarInfo>("set_offline_skin", { path });

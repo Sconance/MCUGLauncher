@@ -26,7 +26,7 @@ pub fn run() {
             commands::login_microsoft,
             commands::login_mua,
             commands::list_mua_profiles,
-            commands::switch_account_mode,
+            commands::select_account,
             commands::forget_account,
             commands::set_offline_skin,
             commands::select_mua_profile,

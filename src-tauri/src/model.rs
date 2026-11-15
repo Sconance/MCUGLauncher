@@ -57,6 +57,15 @@ pub struct FavoriteInfo {
     pub description: String,
 }
 
+#[derive(Clone, Debug, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct AccountInfo {
+    pub id: String,
+    pub kind: String,
+    pub player: String,
+    pub status: String,
+}
+
 #[derive(Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DataSourceSet {
@@ -96,8 +105,8 @@ pub struct VersionGroupInfo {
 #[serde(rename_all = "camelCase")]
 pub struct LauncherState {
     pub app_version: String,
-    pub player: String,
-    pub account_type: String,
+    pub active_account_id: Option<String>,
+    pub accounts: Vec<AccountInfo>,
     pub root: String,
     pub game_roots: Vec<String>,
     pub java: String,
@@ -449,14 +458,6 @@ pub struct ServerResultInfo {
 pub struct AuthResultInfo {
     pub ok: Option<bool>,
     pub pending: bool,
-    pub message: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct AccountSwitchResultInfo {
-    pub account: String,
-    pub needs_login: bool,
     pub message: String,
 }
 
