@@ -57,10 +57,10 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
       const next = await stateCommands.getState();
       const current = stateVersion.current;
       const isCurrent = next.epoch === current.epoch;
-      if (mounted.current && requests.current.State === sequence && (!isCurrent || next.revision >= current.revision)) {
-        stateVersion.current = { epoch: next.epoch, revision: next.revision };
+      if (mounted.current && requests.current.State === sequence && (!isCurrent || next.settingsRevision >= current.revision)) {
+        stateVersion.current = { epoch: next.epoch, revision: next.settingsRevision };
         setStateEpoch(next.epoch);
-        setStateRevision(next.revision);
+        setStateRevision(next.settingsRevision);
         setState(next.data);
       }
     } catch (failure) {

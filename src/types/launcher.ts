@@ -98,6 +98,43 @@ export interface LauncherState {
   autoChinese: boolean;
 }
 
+export interface LauncherOverview {
+  appVersion: string;
+  selectedInstanceId: string | null;
+  activeAccountId: string | null;
+}
+
+export interface SettingsInfo {
+  root: string;
+  gameRoots: string[];
+  java: string;
+  width: number;
+  height: number;
+  ram: number;
+  autoMemory: boolean;
+  anonymous: boolean;
+  hasCommunityKey: boolean;
+  hasAdminKey: boolean;
+  skinStation: string;
+  cape: string;
+  dataSources: DataSourceSet;
+  defaultDataSources: DataSourceSet;
+  customDataSources: DataSourceSet;
+  dataSourceMode: string;
+  autoChinese: boolean;
+}
+
+export interface InstanceCatalogInfo {
+  items: InstanceInfo[];
+  versionGroups: VersionGroupInfo[];
+}
+
+export interface LauncherStateBundle {
+  epoch: string;
+  settingsRevision: number;
+  data: LauncherState;
+}
+
 export interface TaskInfo {
   id: string;
   name: string;

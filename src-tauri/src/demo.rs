@@ -5,9 +5,36 @@
 use crate::model::*;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[derive(Clone, Copy)]
+pub enum StateResource {
+    Overview,
+    Settings,
+    Accounts,
+    Instances,
+    InstanceMods,
+    Servers,
+    Bookmarks,
+}
+
+pub struct ResourceRevisions {
+    pub overview: u64,
+    pub settings: u64,
+    pub accounts: u64,
+    pub instances: u64,
+    pub instance_mods: u64,
+    pub servers: u64,
+    pub bookmarks: u64,
+}
+
+impl Default for ResourceRevisions {
+    fn default() -> Self {
+        Self { overview: 1, settings: 1, accounts: 1, instances: 1, instance_mods: 1, servers: 1, bookmarks: 1 }
+    }
+}
+
 pub struct Data {
     pub epoch: String,
-    pub state_revision: u64,
+    pub revisions: ResourceRevisions,
     pub state: LauncherState,
     pub tasks: Vec<TaskInfo>,
     pub games: Vec<GameSessionInfo>,
@@ -28,7 +55,7 @@ impl Data {
                 .duration_since(UNIX_EPOCH)
                 .map(|duration| format!("epoch-{}", duration.as_nanos()))
                 .unwrap_or_else(|_| "epoch-demo".into()),
-            state_revision: 1,
+            revisions: ResourceRevisions::default(),
             state: demo_state(),
             tasks: demo_tasks(),
             games: vec![GameSessionInfo {
@@ -73,21 +100,28 @@ impl Data {
         self.state.clone()
     }
 
-    pub fn versioned_snapshot(&self) -> ResourceSnapshot<LauncherState> {
-        ResourceSnapshot {
-            epoch: self.epoch.clone(),
-            revision: self.state_revision,
-            data: self.snapshot(),
+    pub fn mutating_snapshot(&mut self, resources: &[StateResource]) -> LauncherState {
+        for resource in resources {
+            let revision = match resource {
+                StateResource::Overview => &mut self.revisions.overview,
+                StateResource::Settings => &mut self.revisions.settings,
+                StateResource::Accounts => &mut self.revisions.accounts,
+                StateResource::Instances => &mut self.revisions.instances,
+                StateResource::InstanceMods => &mut self.revisions.instance_mods,
+                StateResource::Servers => &mut self.revisions.servers,
+                StateResource::Bookmarks => &mut self.revisions.bookmarks,
+            };
+            *revision = revision.saturating_add(1);
         }
-    }
-
-    pub fn mutating_snapshot(&mut self) -> LauncherState {
-        self.state_revision = self.state_revision.saturating_add(1);
         self.snapshot()
     }
 
-    pub fn ensure_state_revision(&self, expected: u64) -> Result<(), ApiError> {
-        if self.state_revision == expected {
+    pub fn resource_snapshot<T>(&self, revision: u64, data: T) -> ResourceSnapshot<T> {
+        ResourceSnapshot { epoch: self.epoch.clone(), revision, data }
+    }
+
+    pub fn ensure_settings_revision(&self, expected: u64) -> Result<(), ApiError> {
+        if self.revisions.settings == expected {
             Ok(())
         } else {
             Err(ApiError {
@@ -140,13 +174,11 @@ mod tests {
     #[test]
     fn state_revision_changes_only_after_mutation() {
         let mut data = Data::demo();
-        let first = data.versioned_snapshot();
-        let second = data.versioned_snapshot();
-        assert_eq!(first.revision, second.revision);
-
-        data.mutating_snapshot();
-        assert_eq!(data.state_revision, first.revision + 1);
-        assert_eq!(data.ensure_state_revision(first.revision).unwrap_err().code, "CONFLICT");
+        let first = data.revisions.settings;
+        data.mutating_snapshot(&[StateResource::Settings]);
+        assert_eq!(data.revisions.settings, first + 1);
+        assert_eq!(data.revisions.overview, 1);
+        assert_eq!(data.ensure_settings_revision(first).unwrap_err().code, "CONFLICT");
     }
 
     #[test]

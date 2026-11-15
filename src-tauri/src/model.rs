@@ -134,6 +134,43 @@ pub struct LauncherState {
 
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct LauncherOverview {
+    pub app_version: String,
+    pub selected_instance_id: Option<String>,
+    pub active_account_id: Option<String>,
+}
+
+#[derive(Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SettingsInfo {
+    pub root: String,
+    pub game_roots: Vec<String>,
+    pub java: String,
+    pub width: i32,
+    pub height: i32,
+    pub ram: i32,
+    pub auto_memory: bool,
+    pub anonymous: bool,
+    pub has_community_key: bool,
+    pub has_admin_key: bool,
+    pub skin_station: String,
+    pub cape: String,
+    pub data_sources: DataSourceSet,
+    pub default_data_sources: DataSourceSet,
+    pub custom_data_sources: DataSourceSet,
+    pub data_source_mode: String,
+    pub auto_chinese: bool,
+}
+
+#[derive(Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct InstanceCatalogInfo {
+    pub items: Vec<InstanceInfo>,
+    pub version_groups: Vec<VersionGroupInfo>,
+}
+
+#[derive(Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct TaskInfo {
     pub id: String,
     pub name: String,

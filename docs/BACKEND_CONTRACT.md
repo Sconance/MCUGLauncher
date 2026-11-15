@@ -14,17 +14,17 @@
 
 ## 1. 约定
 
-- **命令名**：`snake_case`，动词在前，例如 `get_launcher_state`、`save_server`。
+- **命令名**：`snake_case`，动词在前，例如 `get_overview`、`save_server`。
 - **参数**：前端传 `camelCase` 键（Tauri 默认映射到 Rust 的 `snake_case` 参数），可省略的参数在 Rust 侧声明为 `Option<T>`。
 - **返回值**：`camelCase` 的强类型 DTO，与 `src/types/launcher.ts` 一致；失败通过 `Err(String)` 抛出，前端包装为 `BackendError`。
-- **状态刷新**：写命令只返回操作结果；前端随后调用 `get_launcher_state` / `list_tasks` / `list_game_sessions` / `get_community` 等查询命令重新取数。
+- **状态刷新**：写命令只返回操作结果；前端随后读取受影响的独立资源，例如 `get_overview`、`list_tasks`、`list_game_sessions`。
 - **事件（可选）**：后端可以继续 `emit`，但前端当前不订阅；内核重写时不需要实现事件。
 
 前端统一入口：
 
 ```ts
 import { call } from "../api/invoke";
-const state = await call<LauncherState>("get_launcher_state");
+const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 ```
 
 ## 2. 命令
@@ -33,7 +33,13 @@ const state = await call<LauncherState>("get_launcher_state");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `get_launcher_state` | — | `ResourceSnapshot<LauncherState>` | 获取带 `epoch` 和 `revision` 的状态快照 |
+| `get_overview` | — | `ResourceSnapshot<LauncherOverview>` | 应用版本与当前实例、账号 ID |
+| `get_settings` | — | `ResourceSnapshot<SettingsInfo>` | 全局设置 |
+| `list_accounts` | — | `ResourceSnapshot<AccountInfo[]>` | 本机账号 |
+| `list_instances` | — | `ResourceSnapshot<InstanceCatalogInfo>` | 实例与版本分组 |
+| `list_instance_mods` | `instanceId` | `ResourceSnapshot<ModInfo[]>` | 指定实例模组 |
+| `list_servers` | — | `ResourceSnapshot<SavedServerInfo[]>` | 服务器收藏 |
+| `list_bookmarks` | — | `ResourceSnapshot<FavoriteInfo[]>` | 内容收藏 |
 | `select_instance` | `instanceId` | `SavedInfo` | 按稳定 ID 切换当前实例；不存在时返回 `NOT_FOUND` |
 
 ### 启动
@@ -125,7 +131,7 @@ const state = await call<LauncherState>("get_launcher_state");
 | `toggle_mod` | `instanceId`, `modId`, `enabled` | `SavedInfo` | 按实例和模组 ID 启用/禁用，推送 `state` |
 | `delete_mod` | `instanceId`, `modId` | `SavedInfo` | 按实例和模组 ID 删除，推送 `state` |
 | `read_launch_options` | `version`, `requestId?` | `LaunchOptionsInfo` | 读取实例启动设置 |
-| `save_launch_options` | `token`, `version`, `name`, `settings`, `inherit?` | `SavedInfo` | 保存启动设置，推送 `state` |
+| `save_launch_options` | `token`, `version`, `name`, `settings`, `inherit?` | `SavedInfo` | 演示后端返回 `UNSUPPORTED`，不会改写全局设置 |
 
 ### 社区
 

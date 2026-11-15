@@ -9,7 +9,7 @@ use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
 
-use crate::{demo::avatar_for, model::*, state::Backend};
+use crate::{demo::{avatar_for, StateResource}, model::*, state::Backend};
 
 pub const EVENT_STATE: &str = "launcher://state";
 pub const EVENT_TASKS: &str = "launcher://tasks";
@@ -38,10 +38,85 @@ fn generated_id(prefix: &str) -> String {
 
 // ---------------------------------------------------------------- 状态
 
-/// 返回启动器完整状态快照。
+/// 返回只包含全局选择的概览资源。
 #[tauri::command]
-pub fn get_launcher_state(backend: State<'_, Backend>) -> ResourceSnapshot<LauncherState> {
-    backend.data.lock().unwrap().versioned_snapshot()
+pub fn get_overview(backend: State<'_, Backend>) -> ResourceSnapshot<LauncherOverview> {
+    let data = backend.data.lock().unwrap();
+    data.resource_snapshot(data.revisions.overview, LauncherOverview {
+        app_version: data.state.app_version.clone(),
+        selected_instance_id: data.state.selected_instance_id.clone(),
+        active_account_id: data.state.active_account_id.clone(),
+    })
+}
+
+/// 返回全局设置资源。
+#[tauri::command]
+pub fn get_settings(backend: State<'_, Backend>) -> ResourceSnapshot<SettingsInfo> {
+    let data = backend.data.lock().unwrap();
+    let state = &data.state;
+    data.resource_snapshot(data.revisions.settings, SettingsInfo {
+        root: state.root.clone(),
+        game_roots: state.game_roots.clone(),
+        java: state.java.clone(),
+        width: state.width,
+        height: state.height,
+        ram: state.ram,
+        auto_memory: state.auto_memory,
+        anonymous: state.anonymous,
+        has_community_key: state.has_community_key,
+        has_admin_key: state.has_admin_key,
+        skin_station: state.skin_station.clone(),
+        cape: state.cape.clone(),
+        data_sources: state.data_sources.clone(),
+        default_data_sources: state.default_data_sources.clone(),
+        custom_data_sources: state.custom_data_sources.clone(),
+        data_source_mode: state.data_source_mode.clone(),
+        auto_chinese: state.auto_chinese,
+    })
+}
+
+#[tauri::command]
+pub fn list_accounts(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<AccountInfo>> {
+    let data = backend.data.lock().unwrap();
+    data.resource_snapshot(data.revisions.accounts, data.state.accounts.clone())
+}
+
+#[tauri::command]
+pub fn list_instances(backend: State<'_, Backend>) -> ResourceSnapshot<InstanceCatalogInfo> {
+    let data = backend.data.lock().unwrap();
+    data.resource_snapshot(data.revisions.instances, InstanceCatalogInfo {
+        items: data.state.instances.clone(),
+        version_groups: data.state.version_groups.clone(),
+    })
+}
+
+#[tauri::command]
+pub fn list_instance_mods(
+    backend: State<'_, Backend>,
+    instance_id: String,
+) -> Result<ResourceSnapshot<Vec<ModInfo>>, ApiError> {
+    let data = backend.data.lock().unwrap();
+    if !data.state.instances.iter().any(|item| item.id == instance_id) {
+        return Err(ApiError { code: "NOT_FOUND", message: "实例不存在。".into(), retryable: false });
+    }
+    let items = if data.state.selected_instance_id.as_deref() == Some(&instance_id) {
+        data.state.mods.clone()
+    } else {
+        Vec::new()
+    };
+    Ok(data.resource_snapshot(data.revisions.instance_mods, items))
+}
+
+#[tauri::command]
+pub fn list_servers(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<SavedServerInfo>> {
+    let data = backend.data.lock().unwrap();
+    data.resource_snapshot(data.revisions.servers, data.state.servers.clone())
+}
+
+#[tauri::command]
+pub fn list_bookmarks(backend: State<'_, Backend>) -> ResourceSnapshot<Vec<FavoriteInfo>> {
+    let data = backend.data.lock().unwrap();
+    data.resource_snapshot(data.revisions.bookmarks, data.state.favorites.clone())
 }
 
 /// 切换当前实例并持久化选择。
@@ -61,7 +136,7 @@ pub fn select_instance(
             });
         }
         data.state.selected_instance_id = Some(instance_id.clone());
-        data.mutating_snapshot()
+        data.mutating_snapshot(&[StateResource::Overview])
     };
     emit(&app, EVENT_STATE, state);
     Ok(SavedInfo::new("当前实例已切换。"))
@@ -129,7 +204,7 @@ pub fn save_server(
                 instance_id,
             });
         }
-        data.mutating_snapshot()
+        data.mutating_snapshot(&[StateResource::Servers])
     };
     if ok {
         emit(&app, EVENT_STATE, state);
@@ -147,7 +222,7 @@ pub fn delete_server(app: AppHandle, backend: State<'_, Backend>, id: String) ->
         if data.state.servers.len() == before {
             return Err(ApiError { code: "NOT_FOUND", message: "服务器收藏不存在。".into(), retryable: false });
         }
-        data.mutating_snapshot()
+        data.mutating_snapshot(&[StateResource::Servers])
     };
     emit(&app, EVENT_STATE, state);
     Ok(SavedInfo::new("服务器已删除。"))
@@ -191,7 +266,7 @@ pub fn select_account(
         let account = data.select_account(&account_id)?;
         let avatar = avatar_for(&account.player, &account.kind);
         data.avatar = avatar.clone();
-        (data.mutating_snapshot(), avatar)
+        (data.mutating_snapshot(&[StateResource::Overview, StateResource::Accounts]), avatar)
     };
     emit(&app, EVENT_STATE, state);
     emit(&app, EVENT_AVATAR, avatar);
@@ -210,7 +285,7 @@ pub fn forget_account(
         let fallback = data.forget_account(&account_id)?;
         let avatar = avatar_for(&fallback.player, &fallback.kind);
         data.avatar = avatar.clone();
-        (data.mutating_snapshot(), avatar)
+        (data.mutating_snapshot(&[StateResource::Overview, StateResource::Accounts]), avatar)
     };
     emit(&app, EVENT_STATE, state);
     emit(&app, EVENT_AVATAR, avatar);
@@ -260,7 +335,7 @@ pub fn save_settings(
 ) -> Result<SavedInfo, ApiError> {
     let state = {
         let mut data = backend.data.lock().unwrap();
-        data.ensure_state_revision(expected_revision)?;
+        data.ensure_settings_revision(expected_revision)?;
         let state = &mut data.state;
         if let Some(root) = patch.root.filter(|value| !value.is_empty()) {
             if root != state.root {
@@ -299,7 +374,7 @@ pub fn save_settings(
                 account.player = player;
             }
         }
-        data.mutating_snapshot()
+        data.mutating_snapshot(&[StateResource::Settings, StateResource::Accounts])
     };
     emit(&app, EVENT_STATE, state);
     Ok(SavedInfo::new("设置已保存。"))
@@ -322,7 +397,7 @@ pub fn save_custom_sources(
     let state = {
         let mut data = backend.data.lock().unwrap();
         data.state.custom_data_sources = sources;
-        data.mutating_snapshot()
+        data.mutating_snapshot(&[StateResource::Settings])
     };
     emit(&app, EVENT_STATE, state);
     SavedInfo::new("已保存自定义数据源，可点击「使用自定义」切换。")
@@ -334,7 +409,7 @@ pub fn use_data_sources(app: AppHandle, backend: State<'_, Backend>, mode: Strin
     let state = {
         let mut data = backend.data.lock().unwrap();
         data.state.data_source_mode = mode.clone();
-        data.mutating_snapshot()
+        data.mutating_snapshot(&[StateResource::Settings])
     };
     emit(&app, EVENT_STATE, state);
     let message = if mode == "custom" {
@@ -569,7 +644,7 @@ pub fn toggle_bookmark(
                 description,
             });
         }
-        data.mutating_snapshot()
+        data.mutating_snapshot(&[StateResource::Bookmarks])
     };
     emit(&app, EVENT_STATE, &state);
     if state.favorites.iter().any(|item| item.name == name) {
@@ -719,7 +794,7 @@ pub fn toggle_mod(
         let item = data.state.mods.iter_mut().find(|item| item.id == mod_id)
             .ok_or_else(|| ApiError { code: "NOT_FOUND", message: "模组不存在。".into(), retryable: false })?;
         item.enabled = enabled;
-        data.mutating_snapshot()
+        data.mutating_snapshot(&[StateResource::InstanceMods])
     };
     emit(&app, EVENT_STATE, state);
     Ok(SavedInfo::new(if enabled {
@@ -747,7 +822,7 @@ pub fn delete_mod(
         if data.state.mods.len() == before {
             return Err(ApiError { code: "NOT_FOUND", message: "模组不存在。".into(), retryable: false });
         }
-        data.mutating_snapshot()
+        data.mutating_snapshot(&[StateResource::InstanceMods])
     };
     emit(&app, EVENT_STATE, state);
     Ok(SavedInfo::new("模组已删除。"))
@@ -784,6 +859,7 @@ pub fn read_launch_options(
 
 /// 保存实例启动设置。
 #[tauri::command]
+#[allow(unused_variables)]
 pub fn save_launch_options(
     app: AppHandle,
     backend: State<'_, Backend>,
@@ -792,18 +868,8 @@ pub fn save_launch_options(
     #[allow(unused_variables)] name: String,
     settings: LaunchSettings,
     #[allow(unused_variables)] inherit: Option<bool>,
-) -> SavedInfo {
-    let _ = token;
-    let state = {
-        let mut data = backend.data.lock().unwrap();
-        data.state.ram = settings.ram_mb;
-        data.state.width = settings.width;
-        data.state.height = settings.height;
-        data.state.java = settings.java;
-        data.mutating_snapshot()
-    };
-    emit(&app, EVENT_STATE, state);
-    SavedInfo::new("启动选项已保存。")
+) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("save_launch_options"))
 }
 
 // ---------------------------------------------------------------- 社区

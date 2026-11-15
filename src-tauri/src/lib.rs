@@ -12,7 +12,13 @@ pub fn run() {
         .manage(Backend::new())
         .invoke_handler(tauri::generate_handler![
             // 状态
-            commands::get_launcher_state,
+            commands::get_overview,
+            commands::get_settings,
+            commands::list_accounts,
+            commands::list_instances,
+            commands::list_instance_mods,
+            commands::list_servers,
+            commands::list_bookmarks,
             commands::select_instance,
             // 启动
             commands::launch_game,
