@@ -2,7 +2,7 @@
 //!
 //! 约定：
 //! - 命令名使用 snake_case，前端通过 `invoke("命令名", { camelCase 参数 })` 调用；
-//! - 命令返回语义化结果（SavedInfo / LaunchResultInfo 等），失败通过 `Err(String)` 抛出；
+//! - 命令返回语义化结果（SavedInfo / LaunchResultInfo 等），失败通过 `Err(ApiError)` 抛出；
 //! - 状态变更由前端在命令返回后重新调用查询命令获取，事件仅作为可选的推送优化。
 
 use serde::Serialize;
@@ -65,20 +65,16 @@ pub fn select_version(app: AppHandle, backend: State<'_, Backend>, version: Stri
 
 /// 启动指定版本；内核重写后接入真实启动流程。
 #[tauri::command]
-pub fn launch_game(version: String) -> LaunchResultInfo {
-    LaunchResultInfo {
-        ok: true,
-        message: format!("已启动 {version}"),
-    }
+#[allow(unused_variables)]
+pub fn launch_game(version: String) -> Result<LaunchResultInfo, ApiError> {
+    Err(ApiError::unsupported("launch_game"))
 }
 
 /// 使用指定实例直连服务器启动。
 #[tauri::command]
-pub fn launch_to_server(instance: String, server_address: String) -> LaunchResultInfo {
-    LaunchResultInfo {
-        ok: true,
-        message: format!("正在用 {instance} 打开 {server_address}"),
-    }
+#[allow(unused_variables)]
+pub fn launch_to_server(instance: String, server_address: String) -> Result<LaunchResultInfo, ApiError> {
+    Err(ApiError::unsupported("launch_to_server"))
 }
 
 // ---------------------------------------------------------------- 服务器
@@ -147,30 +143,9 @@ pub fn delete_server(app: AppHandle, backend: State<'_, Backend>, address: Strin
 
 /// 查询服务器在线状态与延迟。
 #[tauri::command]
-pub fn ping_server(address: String) -> ServerPingInfo {
-    let offline = address.starts_with("creative");
-    ServerPingInfo {
-        id: address,
-        online: !offline,
-        players: if offline { 0 } else { 23 },
-        max: if offline { 0 } else { 60 },
-        ping: if offline { 0 } else { 38 },
-        motd: if offline {
-            String::new()
-        } else {
-            "MCUG 生存服 · 1.21.1 · 正版验证".into()
-        },
-        version: if offline {
-            String::new()
-        } else {
-            "1.21.1".into()
-        },
-        error: if offline {
-            "连接超时".into()
-        } else {
-            String::new()
-        },
-    }
+#[allow(unused_variables)]
+pub fn ping_server(address: String) -> Result<ServerPingInfo, ApiError> {
+    Err(ApiError::unsupported("ping_server"))
 }
 
 // ---------------------------------------------------------------- 账号
@@ -183,52 +158,21 @@ pub fn read_avatar(backend: State<'_, Backend>) -> AvatarInfo {
 
 /// 执行微软账号登录。
 #[tauri::command]
-pub fn login_microsoft(app: AppHandle, backend: State<'_, Backend>) -> AuthResultInfo {
-    let (state, avatar) = {
-        let mut data = backend.data.lock().unwrap();
-        data.state.player = "XiaoMu".into();
-        data.state.account_type = "microsoft".into();
-        let avatar = avatar_for(&data.state.player, "microsoft");
-        data.avatar = avatar.clone();
-        (data.snapshot(), avatar)
-    };
-    emit(&app, EVENT_STATE, state);
-    emit(&app, EVENT_AVATAR, avatar);
-    AuthResultInfo {
-        ok: Some(true),
-        pending: false,
-        message: "微软账号登录成功。".into(),
-    }
+#[allow(unused_variables)]
+pub fn login_microsoft(app: AppHandle, backend: State<'_, Backend>) -> Result<AuthResultInfo, ApiError> {
+    Err(ApiError::unsupported("login_microsoft"))
 }
 
 /// 使用账号密码登录 MUA。
 #[tauri::command]
+#[allow(unused_variables)]
 pub fn login_mua(
     app: AppHandle,
     backend: State<'_, Backend>,
     account: String,
     _password: String,
-) -> AuthResultInfo {
-    let (state, avatar) = {
-        let mut data = backend.data.lock().unwrap();
-        let player = if account.is_empty() {
-            "MuaPlayer".to_string()
-        } else {
-            account
-        };
-        data.state.player = player;
-        data.state.account_type = "mua".into();
-        let avatar = avatar_for(&data.state.player, "mua");
-        data.avatar = avatar.clone();
-        (data.snapshot(), avatar)
-    };
-    emit(&app, EVENT_STATE, state);
-    emit(&app, EVENT_AVATAR, avatar);
-    AuthResultInfo {
-        ok: Some(true),
-        pending: false,
-        message: "MUA 账号登录成功。".into(),
-    }
+) -> Result<AuthResultInfo, ApiError> {
+    Err(ApiError::unsupported("login_mua"))
 }
 
 /// 返回 MUA 登录后的可选角色。
@@ -290,27 +234,16 @@ pub fn forget_account(app: AppHandle, backend: State<'_, Backend>, mode: String)
 
 /// 设置或清除离线皮肤；空 `path` 表示清除。
 #[tauri::command]
-pub fn set_offline_skin(app: AppHandle, backend: State<'_, Backend>, path: String) -> AvatarInfo {
-    let avatar = {
-        let mut data = backend.data.lock().unwrap();
-        let mut avatar = avatar_for(&data.state.player, "offline");
-        avatar.fallback = path.is_empty();
-        avatar.label = if path.is_empty() {
-            "离线账号 · 默认头像".into()
-        } else {
-            "离线账号 · 本地皮肤".into()
-        };
-        data.avatar = avatar.clone();
-        avatar
-    };
-    emit(&app, EVENT_AVATAR, avatar.clone());
-    avatar
+#[allow(unused_variables)]
+pub fn set_offline_skin(app: AppHandle, backend: State<'_, Backend>, path: String) -> Result<AvatarInfo, ApiError> {
+    Err(ApiError::unsupported("set_offline_skin"))
 }
 
 /// 选择 MUA 角色完成登录。
 #[tauri::command]
-pub fn select_mua_profile(_token: String, profile_id: String) -> SavedInfo {
-    SavedInfo::new(format!("已选择角色 {profile_id}。"))
+#[allow(unused_variables)]
+pub fn select_mua_profile(_token: String, profile_id: String) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("select_mua_profile"))
 }
 
 // ---------------------------------------------------------------- 设置
@@ -368,8 +301,9 @@ pub fn save_settings(
 
 /// 扫描本机可用的 Java 运行时。
 #[tauri::command]
-pub fn scan_java(backend: State<'_, Backend>) -> Vec<JavaInfo> {
-    backend.data.lock().unwrap().java.clone()
+#[allow(unused_variables)]
+pub fn scan_java(backend: State<'_, Backend>) -> Result<Vec<JavaInfo>, ApiError> {
+    Err(ApiError::unsupported("scan_java"))
 }
 
 /// 保存自定义数据源地址。
@@ -407,37 +341,23 @@ pub fn use_data_sources(app: AppHandle, backend: State<'_, Backend>, mode: Strin
 
 /// 测试数据源地址是否可访问。
 #[tauri::command]
-pub fn test_data_source(name: String, url: String) -> TestResultInfo {
-    let valid = url.starts_with("http");
-    TestResultInfo {
-        name,
-        url,
-        ok: valid,
-        message: if valid {
-            "地址可访问（模拟）。".into()
-        } else {
-            "地址必须以 http(s) 开头。".into()
-        },
-        ms: 128,
-    }
+#[allow(unused_variables)]
+pub fn test_data_source(name: String, url: String) -> Result<TestResultInfo, ApiError> {
+    Err(ApiError::unsupported("test_data_source"))
 }
 
 /// 恢复默认窗口尺寸。
 #[tauri::command]
-pub fn reset_window() -> SavedInfo {
-    SavedInfo::new("已恢复默认窗口尺寸。")
+#[allow(unused_variables)]
+pub fn reset_window() -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("reset_window"))
 }
 
 /// 打开指定目录（root / config / saves / version）。
 #[tauri::command]
-pub fn open_folder(kind: String) -> SavedInfo {
-    let label = match kind.as_str() {
-        "version" => "版本文件夹",
-        "saves" => "存档文件夹",
-        "config" => "配置目录",
-        _ => "游戏目录",
-    };
-    SavedInfo::new(format!("已打开{label}。"))
+#[allow(unused_variables)]
+pub fn open_folder(kind: String) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("open_folder"))
 }
 
 /// 读取启动器运行日志。
@@ -462,17 +382,9 @@ pub fn get_system_info(backend: State<'_, Backend>) -> SystemInfoInfo {
 
 /// 校验社区身份或管理员密钥。
 #[tauri::command]
-pub fn verify_key(role: String, key: String) -> KeyResultInfo {
-    let ok = key.trim().len() >= 6;
-    KeyResultInfo {
-        role,
-        ok,
-        message: if ok {
-            "校验通过（模拟）。".into()
-        } else {
-            "密钥至少 6 位。".into()
-        },
-    }
+#[allow(unused_variables)]
+pub fn verify_key(role: String, key: String) -> Result<KeyResultInfo, ApiError> {
+    Err(ApiError::unsupported("verify_key"))
 }
 
 // ---------------------------------------------------------------- 存档
@@ -485,33 +397,16 @@ pub fn list_save_backups(backend: State<'_, Backend>) -> Vec<SaveBackupInfo> {
 
 /// 立即备份当前实例存档。
 #[tauri::command]
-pub fn backup_saves(app: AppHandle, backend: State<'_, Backend>) -> SavedInfo {
-    {
-        let mut data = backend.data.lock().unwrap();
-        let id = format!("b{}", data.backups.len() + 1);
-        data.backups.insert(
-            0,
-            SaveBackupInfo {
-                id,
-                created: "刚刚".into(),
-                worlds: vec!["新世界".into()],
-            },
-        );
-    }
-    emit(
-        &app,
-        EVENT_TOAST,
-        ToastInfo {
-            message: "存档已备份。".into(),
-        },
-    );
-    SavedInfo::new("存档已备份。")
+#[allow(unused_variables)]
+pub fn backup_saves(app: AppHandle, backend: State<'_, Backend>) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("backup_saves"))
 }
 
 /// 从指定备份恢复某个世界。
 #[tauri::command]
-pub fn restore_save(id: String, world: String) -> SavedInfo {
-    SavedInfo::new(format!("已恢复 {world}（备份 {id}）。"))
+#[allow(unused_variables)]
+pub fn restore_save(id: String, world: String) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("restore_save"))
 }
 
 // ---------------------------------------------------------------- 任务与游戏
@@ -565,14 +460,9 @@ pub fn list_games(backend: State<'_, Backend>) -> Vec<GameInfo> {
 
 /// 请求关闭指定游戏进程。
 #[tauri::command]
-pub fn stop_game(app: AppHandle, backend: State<'_, Backend>, id: String) -> SavedInfo {
-    let games = {
-        let mut data = backend.data.lock().unwrap();
-        data.games.retain(|game| game.id != id);
-        data.games.clone()
-    };
-    emit(&app, EVENT_GAMES, games);
-    SavedInfo::new("正在请求关闭游戏…")
+#[allow(unused_variables)]
+pub fn stop_game(app: AppHandle, backend: State<'_, Backend>, id: String) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("stop_game"))
 }
 
 // ---------------------------------------------------------------- 内容
@@ -654,14 +544,14 @@ pub fn list_content_versions(
 
 /// 将资源版本加入下载队列。
 #[tauri::command]
+#[allow(unused_variables)]
 pub fn queue_content_version(
     token: String,
     version_id: String,
     #[allow(unused_variables)] mode: Option<String>,
     #[allow(unused_variables)] path: Option<String>,
-) -> SavedInfo {
-    let _ = token;
-    SavedInfo::new(format!("已加入下载队列：{version_id}"))
+) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("queue_content_version"))
 }
 
 /// 收藏或取消收藏资源项目。
@@ -710,8 +600,9 @@ pub fn list_vanilla_versions(backend: State<'_, Backend>) -> VanillaVersionsResu
 
 /// 安装指定原版版本。
 #[tauri::command]
-pub fn install_vanilla(version: String) -> SavedInfo {
-    SavedInfo::new(format!("已加入安装队列：{version}"))
+#[allow(unused_variables)]
+pub fn install_vanilla(version: String) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("install_vanilla"))
 }
 
 /// 读取指定游戏版本可用的加载器版本。
@@ -736,127 +627,88 @@ pub fn list_loaders(version: String, loader: String) -> LoaderListResult {
 
 /// 安装指定加载器版本。
 #[tauri::command]
-pub fn install_loader(version: String, loader: String, loader_version: String) -> SavedInfo {
-    SavedInfo::new(format!(
-        "已加入安装队列：{loader} {loader_version} · {version}"
-    ))
+#[allow(unused_variables)]
+pub fn install_loader(version: String, loader: String, loader_version: String) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("install_loader"))
 }
 
 /// 读取整合包预览信息。
 #[tauri::command]
-pub fn preview_pack(backend: State<'_, Backend>, path: String) -> PackPreviewInfo {
-    let file = path
-        .rsplit(|c| c == '/' || c == '\\')
-        .next()
-        .unwrap_or("整合包")
-        .trim_end_matches(".mrpack")
-        .trim_end_matches(".zip")
-        .to_string();
-    let root = backend.data.lock().unwrap().state.root.clone();
-    PackPreviewInfo {
-        token: "pack-1".into(),
-        name: file,
-        root,
-        game: "1.21.1".into(),
-        loader: "Fabric".into(),
-    }
+#[allow(unused_variables)]
+pub fn preview_pack(backend: State<'_, Backend>, path: String) -> Result<PackPreviewInfo, ApiError> {
+    Err(ApiError::unsupported("preview_pack"))
 }
 
 /// 确认导入整合包到指定目录。
 #[tauri::command]
-pub fn confirm_pack(token: String, name: String, directory: String) -> SavedInfo {
-    let _ = token;
-    SavedInfo::new(format!("整合包「{name}」已导入到 {directory}。"))
+#[allow(unused_variables)]
+pub fn confirm_pack(token: String, name: String, directory: String) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("confirm_pack"))
 }
 
 // ---------------------------------------------------------------- 实例维护
 
 /// 生成卸载预览与确认令牌。
 #[tauri::command]
-pub fn preview_uninstall(version: String) -> UninstallPreviewInfo {
-    UninstallPreviewInfo {
-        token: format!("uninstall-{version}"),
-        version: version.clone(),
-        name: version.clone(),
-        notice: "只删除列出的路径；默认保留共享游戏根目录数据。".into(),
-        paths: vec![
-            format!("versions/{version}"),
-            format!("instances/{version}.json"),
-        ],
-        shared: false,
-    }
+#[allow(unused_variables)]
+pub fn preview_uninstall(version: String) -> Result<UninstallPreviewInfo, ApiError> {
+    Err(ApiError::unsupported("preview_uninstall"))
 }
 
 /// 按预览令牌执行卸载。
 #[tauri::command]
-pub fn apply_uninstall(token: String) -> SavedInfo {
-    SavedInfo::new(format!("已加入卸载队列：{token}"))
+#[allow(unused_variables)]
+pub fn apply_uninstall(token: String) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("apply_uninstall"))
 }
 
 /// 克隆实例，可选择包含存档与服务器列表。
 #[tauri::command]
+#[allow(unused_variables)]
 pub fn clone_instance(
     version: String,
     name: String,
     #[allow(unused_variables)] saves: Option<bool>,
     #[allow(unused_variables)] servers: Option<bool>,
-) -> SavedInfo {
-    SavedInfo::new(format!("已克隆 {version} 为 {name}。"))
+) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("clone_instance"))
 }
 
 /// 将实例导出为整合包 ZIP。
 #[tauri::command]
+#[allow(unused_variables)]
 pub fn export_instance(
     version: String,
     path: String,
     #[allow(unused_variables)] servers: Option<bool>,
     #[allow(unused_variables)] saves: Option<bool>,
-) -> SavedInfo {
-    SavedInfo::new(format!("已导出 {version} 到 {path}。"))
+) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("export_instance"))
 }
 
 /// 检查实例中由启动器管理的内容更新。
 #[tauri::command]
-pub fn check_updates(backend: State<'_, Backend>, version: String) -> ContentUpdatesInfo {
-    ContentUpdatesInfo {
-        token: format!("updates-{version}"),
-        version,
-        items: backend.data.lock().unwrap().updates.clone(),
-    }
+#[allow(unused_variables)]
+pub fn check_updates(backend: State<'_, Backend>, version: String) -> Result<ContentUpdatesInfo, ApiError> {
+    Err(ApiError::unsupported("check_updates"))
 }
 
 /// 为所选项目生成更新预览。
 #[tauri::command]
+#[allow(unused_variables)]
 pub fn preview_updates(
     backend: State<'_, Backend>,
     token: String,
     #[allow(unused_variables)] projects: Option<Vec<String>>,
-) -> ContentUpdatePreviewInfo {
-    let data = backend.data.lock().unwrap();
-    let changes = data
-        .updates
-        .iter()
-        .map(|item| ContentChangeInfo {
-            project: item.name.clone(),
-            before: item.before.clone(),
-            after: item.after.clone(),
-            path: format!("mods/{}.jar", item.id),
-            old_path: String::new(),
-        })
-        .collect();
-    ContentUpdatePreviewInfo {
-        token,
-        version: data.state.selected_version.clone(),
-        bytes: 8_412_160,
-        changes,
-    }
+) -> Result<ContentUpdatePreviewInfo, ApiError> {
+    Err(ApiError::unsupported("preview_updates"))
 }
 
 /// 按预览结果把更新加入队列。
 #[tauri::command]
-pub fn apply_updates(token: String) -> SavedInfo {
-    let _ = token;
-    SavedInfo::new("更新任务已加入队列。")
+#[allow(unused_variables)]
+pub fn apply_updates(token: String) -> Result<SavedInfo, ApiError> {
+    Err(ApiError::unsupported("apply_updates"))
 }
 
 /// 启用或禁用模组。

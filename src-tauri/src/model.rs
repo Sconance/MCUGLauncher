@@ -484,3 +484,22 @@ pub struct AppSettingsPatch {
     pub anonymous: Option<bool>,
     pub player: Option<String>,
 }
+
+/// 命令失败的结构化结果；前端依据 code 判断，不解析提示文本。
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiError {
+    pub code: &'static str,
+    pub message: String,
+    pub retryable: bool,
+}
+
+impl ApiError {
+    pub fn unsupported(command: &str) -> Self {
+        Self {
+            code: "UNSUPPORTED",
+            message: format!("演示后端尚未实现 {command}，操作未执行。"),
+            retryable: false,
+        }
+    }
+}
