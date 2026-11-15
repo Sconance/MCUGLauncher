@@ -10,7 +10,8 @@ pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
 pub use crate::schema_dto::generated::content::{
     LoaderListInfo, ResourceVersionInfo, ResourceVersionsInfo, VanillaVersionInfo,
 };
-pub use crate::schema_dto::generated::accounts::{AvatarInfo, MuaProfileInfo};
+pub use crate::schema_dto::generated::accounts::AvatarInfo;
+pub use crate::schema_dto::generated::accounts::LoginSessionInfo;
 pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
 pub use crate::schema_dto::generated::content::{AnnouncementInfo, CommunityData, QuoteInfo, RecommendationInfo};
 pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
@@ -155,39 +156,6 @@ pub struct GameSessionInfo {
     pub pid: Option<u32>,
     pub exit_code: Option<i32>,
     pub error: Option<ApiError>,
-}
-
-/// 登录会话只暴露当前阶段所需的字段。
-#[derive(Clone, Serialize)]
-#[allow(dead_code)]
-#[serde(
-    tag = "state",
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase"
-)]
-pub enum LoginSessionInfo {
-    AwaitingAuthorization {
-        auth_session_id: String,
-        authorization_url: String,
-    },
-    AwaitingProfile {
-        auth_session_id: String,
-        profiles: Vec<MuaProfileInfo>,
-    },
-    Succeeded {
-        auth_session_id: String,
-        account_id: String,
-    },
-    Failed {
-        auth_session_id: String,
-        error: ApiError,
-    },
-    Cancelled {
-        auth_session_id: String,
-    },
-    Expired {
-        auth_session_id: String,
-    },
 }
 
 #[derive(Clone, Serialize, Deserialize, Default)]
