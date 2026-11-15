@@ -124,6 +124,60 @@
       "additionalProperties": false,
       "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
     },
+    "TaskProgressInfo": {
+      "type": "object",
+      "required": [
+        "completed",
+        "total",
+        "unit"
+      ],
+      "properties": {
+        "completed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "completed 字段。"
+        },
+        "total": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "total 字段。"
+        },
+        "unit": {
+          "type": "string",
+          "description": "unit 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "TaskProgressInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "TaskResultInfo": {
+      "type": "object",
+      "required": [
+        "changed",
+        "entityIds"
+      ],
+      "properties": {
+        "changed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResourceKeyInfo"
+          },
+          "description": "changed 字段。"
+        },
+        "entityIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "entityIds 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "TaskResultInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
     "TaskInfo": {
       "type": "object",
       "required": [

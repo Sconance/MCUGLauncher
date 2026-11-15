@@ -15,6 +15,7 @@ pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult
 pub use crate::schema_dto::generated::content::{AnnouncementInfo, CommunityData, QuoteInfo, RecommendationInfo};
 pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
 pub use crate::schema_dto::generated::operations::{JavaInfo, ServerPingInfo};
+pub use crate::schema_dto::generated::tasks::{TaskProgressInfo, TaskResultInfo};
 pub use crate::schema_dto::generated::instances::{
     DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
     SavedServerInfo,
@@ -108,21 +109,6 @@ pub struct SettingsInfo {
     pub custom_data_sources: DataSourceSet,
     pub data_source_mode: String,
     pub auto_chinese: bool,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct TaskProgressInfo {
-    pub completed: u64,
-    pub total: Option<u64>,
-    pub unit: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct TaskResultInfo {
-    pub changed: Vec<ResourceKeyInfo>,
-    pub entity_ids: Vec<String>,
 }
 
 #[derive(Clone, Serialize, Default)]

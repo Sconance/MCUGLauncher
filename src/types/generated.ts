@@ -72,6 +72,8 @@ export interface LauncherDTO {
   KeyResultInfo?: KeyResultInfo;
   TestResultInfo?: TestResultInfo;
   UninstallPreviewInfo?: UninstallPreviewInfo;
+  TaskProgressInfo?: TaskProgressInfo;
+  TaskResultInfo?: TaskResultInfo;
   TaskInfo?: TaskInfo;
   GameSessionInfo?: GameSessionInfo;
   LaunchAcceptedInfo?: LaunchAcceptedInfo;
@@ -1047,6 +1049,36 @@ export interface UninstallPreviewInfo {
    * shared 字段。
    */
   shared: boolean;
+}
+/**
+ * TaskProgressInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface TaskProgressInfo {
+  /**
+   * completed 字段。
+   */
+  completed: number;
+  /**
+   * total 字段。
+   */
+  total: number | null;
+  /**
+   * unit 字段。
+   */
+  unit: string;
+}
+/**
+ * TaskResultInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface TaskResultInfo {
+  /**
+   * changed 字段。
+   */
+  changed: ResourceKeyInfo[];
+  /**
+   * entityIds 字段。
+   */
+  entityIds: string[];
 }
 /**
  * TaskInfo：通过 Tauri 命令在前后端之间传输的数据对象。
