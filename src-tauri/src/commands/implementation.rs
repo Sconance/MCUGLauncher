@@ -5,6 +5,8 @@
 //! - 命令返回语义化结果，失败通过 `Err(ApiError)` 抛出；
 //! - 状态变更由前端在命令返回后重新调用查询命令获取，事件仅作为可选的推送优化。
 
+#![allow(unused_variables)]
+
 use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
@@ -16,7 +18,6 @@ use crate::{
     state::Backend,
 };
 
-pub const EVENT_STATE: &str = "launcher://state";
 pub const EVENT_TASKS: &str = "launcher://tasks";
 pub const EVENT_COMMUNITY: &str = "launcher://community";
 pub const EVENT_AVATAR: &str = "launcher://avatar";
@@ -116,6 +117,7 @@ pub fn list_instance_mods(
             code: "NOT_FOUND",
             message: "实例不存在。".into(),
             retryable: false,
+            field_errors: None,
         });
     }
     let items = if data.state.selected_instance_id.as_deref() == Some(&instance_id) {
@@ -157,12 +159,13 @@ pub fn select_instance(
                 code: "NOT_FOUND",
                 message: "实例不存在。".into(),
                 retryable: false,
+                field_errors: None,
             });
         }
         data.state.selected_instance_id = Some(instance_id.clone());
         data.mutating_snapshot(&[StateResource::Overview])
     };
-    emit(&app, EVENT_STATE, state);
+    drop(state);
     Ok(SavedInfo::changed(
         "当前实例已切换。",
         vec![
@@ -228,6 +231,7 @@ pub fn save_server(
                     code: "NOT_FOUND",
                     message: "服务器收藏不存在。".into(),
                     retryable: false,
+                    field_errors: None,
                 });
             }
         } else if data
@@ -240,6 +244,7 @@ pub fn save_server(
                 code: "CONFLICT",
                 message: "这个地址已经在收藏里了。".into(),
                 retryable: false,
+                field_errors: None,
             });
         } else {
             data.state.servers.push(SavedServerInfo {
@@ -251,7 +256,7 @@ pub fn save_server(
         }
         data.mutating_snapshot(&[StateResource::Servers])
     };
-    emit(&app, EVENT_STATE, state);
+    drop(state);
     Ok(SavedInfo::changed(
         message,
         vec![ResourceKeyInfo {
@@ -278,11 +283,12 @@ pub fn delete_server(
                 code: "NOT_FOUND",
                 message: "服务器收藏不存在。".into(),
                 retryable: false,
+                field_errors: None,
             });
         }
         data.mutating_snapshot(&[StateResource::Servers])
     };
-    emit(&app, EVENT_STATE, state);
+    drop(state);
     Ok(SavedInfo::changed(
         "服务器已删除。",
         vec![ResourceKeyInfo {
@@ -336,7 +342,7 @@ pub fn select_account(
             avatar,
         )
     };
-    emit(&app, EVENT_STATE, state);
+    drop(state);
     emit(&app, EVENT_AVATAR, avatar);
     Ok(SavedInfo::changed(
         "当前账号已切换。",
@@ -371,7 +377,7 @@ pub fn forget_account(
             avatar,
         )
     };
-    emit(&app, EVENT_STATE, state);
+    drop(state);
     emit(&app, EVENT_AVATAR, avatar);
     Ok(SavedInfo::changed(
         "账号已从本机移除。",
@@ -434,6 +440,33 @@ pub fn save_settings(
     patch: AppSettingsPatch,
     expected_revision: u64,
 ) -> Result<SavedInfo, ApiError> {
+    if let Some(ram) = patch.ram {
+        if !(512..=65536).contains(&ram) {
+            return Err(ApiError::validation(
+                "设置校验失败。",
+                "ram",
+                "内存必须在 512–65536 MB 之间。",
+            ));
+        }
+    }
+    if let Some(width) = patch.width {
+        if !(640..=7680).contains(&width) {
+            return Err(ApiError::validation(
+                "设置校验失败。",
+                "width",
+                "窗口宽度必须在 640–7680 之间。",
+            ));
+        }
+    }
+    if let Some(height) = patch.height {
+        if !(480..=4320).contains(&height) {
+            return Err(ApiError::validation(
+                "设置校验失败。",
+                "height",
+                "窗口高度必须在 480–4320 之间。",
+            ));
+        }
+    }
     let state = {
         let mut data = backend.data.lock().unwrap();
         data.ensure_settings_revision(expected_revision)?;
@@ -478,7 +511,7 @@ pub fn save_settings(
         }
         data.mutating_snapshot(&[StateResource::Settings, StateResource::Accounts])
     };
-    emit(&app, EVENT_STATE, state);
+    drop(state);
     Ok(SavedInfo::changed(
         "设置已保存。",
         vec![ResourceKeyInfo {
@@ -508,7 +541,7 @@ pub fn save_custom_sources(
         data.state.custom_data_sources = sources;
         data.mutating_snapshot(&[StateResource::Settings])
     };
-    emit(&app, EVENT_STATE, state);
+    drop(state);
     SavedInfo::changed(
         "已保存自定义数据源，可点击「使用自定义」切换。",
         vec![ResourceKeyInfo {
@@ -527,7 +560,7 @@ pub fn use_data_sources(app: AppHandle, backend: State<'_, Backend>, mode: Strin
         data.state.data_source_mode = mode.clone();
         data.mutating_snapshot(&[StateResource::Settings])
     };
-    emit(&app, EVENT_STATE, state);
+    drop(state);
     let message = if mode == "custom" {
         "已切换为自定义数据源。"
     } else {
@@ -649,6 +682,7 @@ pub fn task_action(
                 code: "NOT_FOUND",
                 message: "任务不存在。".into(),
                 retryable: false,
+                field_errors: None,
             })?;
         task.apply_action(&action)?;
         task.updated_at = OffsetDateTime::now_utc()
@@ -799,7 +833,7 @@ pub fn toggle_bookmark(
         }
         data.mutating_snapshot(&[StateResource::Bookmarks])
     };
-    emit(&app, EVENT_STATE, &state);
+    let _ = &state;
     if state.favorites.iter().any(|item| item.name == name) {
         SavedInfo::changed(
             format!("已收藏 {name}。"),
@@ -976,6 +1010,7 @@ pub fn toggle_mod(
                 code: "CONFLICT",
                 message: "请先切换到目标实例。".into(),
                 retryable: true,
+                field_errors: None,
             });
         }
         let item = data
@@ -987,11 +1022,12 @@ pub fn toggle_mod(
                 code: "NOT_FOUND",
                 message: "模组不存在。".into(),
                 retryable: false,
+                field_errors: None,
             })?;
         item.enabled = enabled;
         data.mutating_snapshot(&[StateResource::InstanceMods])
     };
-    emit(&app, EVENT_STATE, state);
+    drop(state);
     Ok(SavedInfo::changed(
         if enabled {
             "模组已启用。"
@@ -1021,6 +1057,7 @@ pub fn delete_mod(
                 code: "CONFLICT",
                 message: "请先切换到目标实例。".into(),
                 retryable: true,
+                field_errors: None,
             });
         }
         let before = data.state.mods.len();
@@ -1030,11 +1067,12 @@ pub fn delete_mod(
                 code: "NOT_FOUND",
                 message: "模组不存在。".into(),
                 retryable: false,
+                field_errors: None,
             });
         }
         data.mutating_snapshot(&[StateResource::InstanceMods])
     };
-    emit(&app, EVENT_STATE, state);
+    drop(state);
     Ok(SavedInfo::changed(
         "模组已删除。",
         vec![ResourceKeyInfo {

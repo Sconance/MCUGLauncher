@@ -108,13 +108,13 @@ npm run tauri dev    # 桌面窗口（Windows 需 Rust 工具链）
 1. 页面动作调用 `src/api/commands/*` 中的函数，每个函数对应一次 `invoke`；
 2. `src/state/launcher.tsx` 是命令驱动的状态容器：启动时用命令取数，写操作后由页面调用 `refresh*` 重新取数；
 3. 不订阅事件；全局同步器每 3 秒调用 `list_tasks` / `list_game_sessions`，页面不重复轮询；
-4. `src-tauri` 中已有可运行的命令骨架（`commands.rs`）与内存演示数据（`demo.rs`）；
+4. `src-tauri` 中已有按领域拆分的命令骨架（`commands/*.rs`）与内存演示数据（`demo.rs`）；
 5. 重写内核时替换 `demo.rs` 与命令实现，保持命令名、参数与返回类型不变，前端无需改动。
 
 新增一个功能的标准步骤：
 
 ```
-src-tauri/src/commands.rs   新增 #[tauri::command] 并注册到 lib.rs
+src-tauri/src/commands/<domain>.rs 新增/替换 #[tauri::command] 并注册到 lib.rs
 src-tauri/src/model.rs      新增/复用 DTO（camelCase）
 src/api/commands/<domain>.ts 增加 invoke 封装
 src/types/launcher.ts       同步类型

@@ -59,7 +59,7 @@ impl Default for ResourceRevisions {
 pub struct Data {
     pub epoch: String,
     pub revisions: ResourceRevisions,
-    pub state: LauncherState,
+    pub state: BackendState,
     pub tasks: Vec<TaskInfo>,
     pub games: Vec<GameSessionInfo>,
     pub community: CommunityData,
@@ -120,11 +120,11 @@ impl Data {
         }
     }
 
-    pub fn snapshot(&self) -> LauncherState {
+    pub fn snapshot(&self) -> BackendState {
         self.state.clone()
     }
 
-    pub fn mutating_snapshot(&mut self, resources: &[StateResource]) -> LauncherState {
+    pub fn mutating_snapshot(&mut self, resources: &[StateResource]) -> BackendState {
         for resource in resources {
             self.touch(*resource);
         }
@@ -161,6 +161,7 @@ impl Data {
                 code: "CONFLICT",
                 message: "设置已在其他位置发生变化，请刷新后重试。".into(),
                 retryable: true,
+                field_errors: None,
             })
         }
     }
@@ -176,6 +177,7 @@ impl Data {
                 code: "NOT_FOUND",
                 message: "账号不存在。".into(),
                 retryable: false,
+                field_errors: None,
             })?;
         self.state.active_account_id = Some(account.id.clone());
         Ok(account)
@@ -192,6 +194,7 @@ impl Data {
                 code: "NOT_FOUND",
                 message: "可移除的账号不存在。".into(),
                 retryable: false,
+                field_errors: None,
             });
         }
         self.state
@@ -207,6 +210,7 @@ impl Data {
                 code: "INTERNAL_ERROR",
                 message: "离线账号缺失。".into(),
                 retryable: false,
+                field_errors: None,
             })?;
         if self.state.active_account_id.as_deref() == Some(account_id) {
             self.state.active_account_id = Some(fallback.id.clone());
@@ -229,6 +233,7 @@ impl Data {
                 code: "NOT_FOUND",
                 message: "实例不存在。".into(),
                 retryable: false,
+                field_errors: None,
             })?;
         let plan_id = format!("plan-uninstall-{}", self.next_plan_id);
         self.next_plan_id = self.next_plan_id.saturating_add(1);
@@ -264,12 +269,14 @@ impl Data {
             code: "PLAN_EXPIRED",
             message: "操作计划不存在或已经失效。".into(),
             retryable: false,
+            field_errors: None,
         })?;
         if plan.expires_at <= OffsetDateTime::now_utc() {
             return Err(ApiError {
                 code: "PLAN_EXPIRED",
                 message: "操作计划已经过期，请重新预览。".into(),
                 retryable: false,
+                field_errors: None,
             });
         }
         let target_exists = plan.kind != "uninstall"
@@ -283,6 +290,7 @@ impl Data {
                 code: "CONFLICT",
                 message: "目标已发生变化，请重新预览。".into(),
                 retryable: true,
+                field_errors: None,
             });
         }
         Ok(plan)
@@ -396,8 +404,8 @@ pub fn avatar_for(player: &str, account: &str) -> AvatarInfo {
     }
 }
 
-fn demo_state() -> LauncherState {
-    LauncherState {
+fn demo_state() -> BackendState {
+    BackendState {
         app_version: "0.22.3".into(),
         active_account_id: Some("account-demo-microsoft".into()),
         accounts: vec![

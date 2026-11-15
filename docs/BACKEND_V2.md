@@ -1,6 +1,6 @@
 # V2 后端契约与状态方案
 
-本文记录 V2 契约的设计原则、迁移结果与验收边界。当前可调用接口以 [BACKEND_CONTRACT.md](BACKEND_CONTRACT.md) 为准。传输使用 Tauri invoke，字段使用 camelCase，命令使用 snake_case。
+本文记录 V2 契约的设计原则、迁移结果与验收边界。当前可调用接口以 [BACKEND_CONTRACT.md](BACKEND_CONTRACT.md) 和 [launcher.schema.json](../schemas/launcher.schema.json) 为准。传输使用 Tauri invoke，字段使用 camelCase，命令使用 snake_case。
 
 ## 实施状态
 
@@ -14,7 +14,7 @@
 
 后端持久状态包括设置、实例配置、账号记录、收藏。后端运行状态包括任务、游戏会话、登录会话、探测结果。前端仅拥有页面、搜索条件、表单草稿和缓存状态。
 
-资源拆分为 overview、settings、accounts、instances、instanceMods(instanceId)、instanceLaunchSettings(instanceId)、tasks、gameSessions、servers、bookmarks、community。前端状态容器直接保存这些独立资源，不再重新聚合 LauncherState。overview 仅包含 appVersion、selectedInstanceId、activeAccountId。未选择使用 null，不使用空字符串。
+资源拆分为 overview、settings、accounts、instances、instanceMods(instanceId)、instanceLaunchSettings(instanceId)、tasks、gameSessions、servers、bookmarks、community。前端状态容器直接保存这些独立资源，不再重新聚合旧的聚合状态。overview 仅包含 appVersion、selectedInstanceId、activeAccountId。未选择使用 null，不使用空字符串。
 
 实例使用持久稳定 ID；名称和目录不是主键。当前选择只保存 `selectedInstanceId`，版本清单属于安装目录。模组、存档、安装、启动、备份等请求必须显式携带 `instanceId`；服务器和账号也使用稳定 ID。重命名不能改变 ID。
 

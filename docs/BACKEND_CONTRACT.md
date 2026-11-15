@@ -6,6 +6,8 @@
 
 本文档是唯一的契约清单：改动命令名、参数或事件时必须同步修改本文档、`src/api/commands/*.ts` 与 `src/types/launcher.ts`。
 
+DTO 的结构以 [schemas/launcher.schema.json](../schemas/launcher.schema.json) 为单一机器可读来源；Rust 模型、TypeScript 类型和本文档必须与 Schema 同步。
+
 ## 当前演示能力限制
 
 安装、启动、在线登录、系统交互、网络探测、备份恢复和部分计划执行尚未接入真实内核，相应命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。表中的成功类型定义真实适配器接入后必须遵守的返回契约，不表示演示后端已具备该能力。
@@ -19,7 +21,7 @@
 - **命令名**：`snake_case`，动词在前，例如 `get_overview`、`save_server`。
 - **参数**：前端传 `camelCase` 键（Tauri 默认映射到 Rust 的 `snake_case` 参数），可省略的参数在 Rust 侧声明为 `Option<T>`。
 - **返回值**：`camelCase` 的强类型 DTO，与 `src/types/launcher.ts` 一致；失败通过 `Err(ApiError)` 抛出，前端包装为 `BackendError`。
-- **错误**：统一为 `{ code, message, retryable, fieldErrors? }`。当前错误码包括 `VALIDATION_ERROR`、`NOT_FOUND`、`CONFLICT`、`BUSY`、`AUTH_REQUIRED`、`NETWORK_ERROR`、`IO_ERROR`、`PLAN_EXPIRED`、`INTERNAL_ERROR` 与 `UNSUPPORTED`。
+- **错误**：统一为 `{ code, message, retryable, fieldErrors? }`。表单校验失败时 `fieldErrors` 返回字段到错误消息的映射。当前错误码包括 `VALIDATION_ERROR`、`NOT_FOUND`、`CONFLICT`、`BUSY`、`AUTH_REQUIRED`、`NETWORK_ERROR`、`IO_ERROR`、`PLAN_EXPIRED`、`INTERNAL_ERROR` 与 `UNSUPPORTED`。
 - **写入结果**：写命令返回 `{ message, changed, entityIds }`；`changed` 列出受影响的资源键，前端随后按资源键读取对应独立资源。
 - **事件（可选）**：后端可以继续 `emit`，但前端当前不订阅；内核重写时不需要实现事件。
 
@@ -150,17 +152,16 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 | 事件 | 载荷 | 触发时机 |
 | --- | --- | --- |
-| `launcher://state` | `LauncherState` | 任何全局状态变化（实例、账号、设置、收藏、模组等） |
 | `launcher://tasks` | `TaskInfo[]` | 任务队列变化 |
 | `launcher://community` | `CommunityData` | 社区内容刷新或推荐被修改 |
 | `launcher://avatar` | `AvatarInfo` | 账号切换或皮肤变更 |
 
 ## 4. 内核重写指引
 
-当前 `src-tauri/src/demo.rs` 是内存演示数据，`commands.rs` 里的实现只保证契约可运行。替换内核时：
+当前 `src-tauri/src/demo.rs` 是内存演示数据，`src-tauri/src/commands/implementation.rs` 里的实现只保证契约可运行；领域入口位于同目录下的分类模块。替换内核时：
 
 1. 用真实配置、账号与队列替换 `demo::Data`，或改写 `state::Backend` 的持有方式；
-2. 逐个实现 `commands.rs` 中的命令体，保持命令名、参数名与返回类型不变；
+2. 按领域逐个替换 `src-tauri/src/commands/*.rs` 中的命令实现，保持命令名、参数名与返回类型不变；
 3. 不需要实现任何事件；前端在写命令返回后会重新调用查询命令；
 4. 长任务使用队列执行，`list_tasks` 返回最新进度；前端全局每 3 秒同步任务、游戏和启动器状态，窗口重新获得焦点时同步；
 5. 若确需修改契约，同时更新本文件、`src/api/commands/*`、`src/types/launcher.ts` 与 `src-tauri/src/model.rs`。

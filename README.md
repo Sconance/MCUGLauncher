@@ -29,3 +29,4 @@ cargo check --manifest-path src-tauri/Cargo.toml
 - [当前后端契约](docs/BACKEND_CONTRACT.md)
 - [V2 状态与迁移方案](docs/BACKEND_V2.md)
 - [UI 迁移说明](docs/UI_PORTING.md)
+- [DTO JSON Schema](schemas/launcher.schema.json)
