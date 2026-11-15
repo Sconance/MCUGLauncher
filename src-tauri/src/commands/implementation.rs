@@ -1166,6 +1166,3 @@ pub fn save_recommendations(
         Vec::new(),
     )
 }
-
-
-

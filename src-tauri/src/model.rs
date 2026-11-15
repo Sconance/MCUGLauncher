@@ -3,25 +3,29 @@
 //! 字段与 `src/types/launcher.ts` 一一对应；序列化为 camelCase，前端可直接使用。
 //! 内核重写时保留这些结构体即可维持 UI 契约不变。
 
-use serde::Serialize;
-use std::collections::HashMap;
-pub use crate::schema_dto::generated::common::{ApiError, ResourceKeyInfo, SavedInfo};
+pub use crate::schema_dto::generated::accounts::AccountInfo;
+pub use crate::schema_dto::generated::accounts::AvatarInfo;
+pub use crate::schema_dto::generated::accounts::LoginSessionInfo;
 pub use crate::schema_dto::generated::common::ResourceSnapshot;
-pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
+pub use crate::schema_dto::generated::common::{ApiError, ResourceKeyInfo, SavedInfo};
+pub use crate::schema_dto::generated::content::{
+    AnnouncementInfo, CommunityData, QuoteInfo, RecommendationInfo,
+};
+pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
 pub use crate::schema_dto::generated::content::{
     LaunchOptionsInfo, LaunchSettings, LoaderListInfo, ResourceVersionInfo, ResourceVersionsInfo,
     VanillaVersionInfo,
 };
-pub use crate::schema_dto::generated::accounts::AvatarInfo;
-pub use crate::schema_dto::generated::accounts::LoginSessionInfo;
-pub use crate::schema_dto::generated::accounts::AccountInfo;
-pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
-pub use crate::schema_dto::generated::content::{AnnouncementInfo, CommunityData, QuoteInfo, RecommendationInfo};
-pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
-pub use crate::schema_dto::generated::operations::{JavaInfo, ServerPingInfo};
 pub use crate::schema_dto::generated::operations::AppSettingsPatch;
+pub use crate::schema_dto::generated::operations::{JavaInfo, ServerPingInfo};
+pub use crate::schema_dto::generated::operations::{
+    KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo,
+};
+pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
 pub use crate::schema_dto::generated::tasks::TaskProgressInfo;
 pub use crate::schema_dto::generated::tasks::{GameSessionInfo, TaskInfo};
+use serde::Serialize;
+use std::collections::HashMap;
 
 impl Default for TaskInfo {
     fn default() -> Self {
@@ -41,14 +45,12 @@ impl Default for TaskInfo {
         }
     }
 }
-pub use crate::schema_dto::generated::operations::{
-    ContentUpdatePreviewInfo, ContentUpdatesInfo,
-    PackPreviewInfo, UninstallPreviewInfo,
-};
 pub use crate::schema_dto::generated::instances::{
     DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
-    SavedServerInfo, SettingsInfo,
-    VersionChoice, VersionGroupInfo,
+    SavedServerInfo, SettingsInfo, VersionChoice, VersionGroupInfo,
+};
+pub use crate::schema_dto::generated::operations::{
+    ContentUpdatePreviewInfo, ContentUpdatesInfo, PackPreviewInfo, UninstallPreviewInfo,
 };
 
 impl DataSourceSet {
@@ -221,5 +223,3 @@ mod tests {
         assert_eq!(value["fieldErrors"]["ram"], "内存超出范围。");
     }
 }
-
-

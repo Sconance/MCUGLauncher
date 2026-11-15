@@ -131,7 +131,11 @@ impl Data {
         self.snapshot()
     }
 
-    pub fn resource_snapshot<T: serde::Serialize>(&self, revision: u64, data: T) -> ResourceSnapshot {
+    pub fn resource_snapshot<T: serde::Serialize>(
+        &self,
+        revision: u64,
+        data: T,
+    ) -> ResourceSnapshot {
         ResourceSnapshot {
             epoch: self.epoch.clone(),
             revision,
@@ -812,5 +816,3 @@ fn demo_vanilla() -> Vec<VanillaVersionInfo> {
     })
     .collect()
 }
-
-
