@@ -26,6 +26,19 @@ pub use crate::schema_dto::generated::instances::{
     VersionChoice, VersionGroupInfo,
 };
 
+#[derive(Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct UninstallPreviewInfo {
+    pub plan_id: String,
+    pub target_id: String,
+    pub target_revision: u64,
+    pub expires_at: String,
+    pub name: String,
+    pub notice: String,
+    pub paths: Vec<String>,
+    pub shared: bool,
+}
+
 /// 可缓存资源的版本化快照。
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -201,19 +214,6 @@ pub struct LaunchOptionsInfo {
     pub display_name: String,
     pub inherited: bool,
     pub settings: LaunchSettings,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct UninstallPreviewInfo {
-    pub plan_id: String,
-    pub target_id: String,
-    pub target_revision: u64,
-    pub expires_at: String,
-    pub name: String,
-    pub notice: String,
-    pub paths: Vec<String>,
-    pub shared: bool,
 }
 
 impl SavedInfo {
