@@ -1,11 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-
-export interface ApiError {
-  code: string;
-  message: string;
-  retryable: boolean;
-  fieldErrors?: Record<string, string>;
-}
+import type { ApiError } from "../types/generated";
 
 /** 后端命令失败。`command` 保留原始命令名，便于定位。 */
 export class BackendError extends Error {

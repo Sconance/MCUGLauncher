@@ -17,6 +17,13 @@ npm run tauri dev
 npm run build
 ```
 
+重新生成并检查 DTO：
+
+```bash
+npm run dto:generate
+npm run dto:check
+```
+
 检查 Rust 后端：
 
 ```bash

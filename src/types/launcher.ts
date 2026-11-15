@@ -361,16 +361,8 @@ export interface TestResultInfo {
   ms: number;
 }
 
-export interface SavedInfo {
-  message: string;
-  changed: ResourceKeyInfo[];
-  entityIds: string[];
-}
-
-export interface ResourceKeyInfo {
-  kind: string;
-  instanceId: string | null;
-}
+export type SavedInfo = import("./generated").SavedInfo;
+export type ResourceKeyInfo = import("./generated").ResourceKeyInfo;
 
 /** `save_settings` 的补丁：只提交需要修改的字段。 */
 export interface AppSettingsPatch {
