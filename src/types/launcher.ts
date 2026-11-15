@@ -264,7 +264,7 @@ export interface VanillaVersionInfo {
 }
 
 export interface LoaderListInfo {
-  version: string;
+  minecraftVersion: string;
   loader: string;
   versions: string[];
 }
@@ -285,8 +285,8 @@ export interface LaunchSettings {
 export interface LaunchOptionsInfo {
   requestId: string;
   token: string;
-  version: string;
-  name: string;
+  instanceId: string;
+  displayName: string;
   inherited: boolean;
   settings: LaunchSettings;
 }
@@ -313,7 +313,7 @@ export interface ContentUpdateInfo {
 
 export interface ContentUpdatesInfo {
   checkId: string;
-  version: string;
+  minecraftVersion: string;
   items: ContentUpdateInfo[];
 }
 
@@ -330,7 +330,7 @@ export interface ContentUpdatePreviewInfo {
   targetId: string;
   targetRevision: number;
   expiresAt: string;
-  version: string;
+  minecraftVersion: string;
   bytes: number;
   changes: ContentChangeInfo[];
 }

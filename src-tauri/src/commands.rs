@@ -163,7 +163,20 @@ pub fn select_instance(
         data.mutating_snapshot(&[StateResource::Overview])
     };
     emit(&app, EVENT_STATE, state);
-    Ok(SavedInfo::new("当前实例已切换。"))
+    Ok(SavedInfo::changed(
+        "当前实例已切换。",
+        vec![
+            ResourceKeyInfo {
+                kind: "overview".into(),
+                instance_id: None,
+            },
+            ResourceKeyInfo {
+                kind: "instanceMods".into(),
+                instance_id: Some(instance_id),
+            },
+        ],
+        Vec::new(),
+    ))
 }
 
 // ---------------------------------------------------------------- 启动
@@ -239,7 +252,14 @@ pub fn save_server(
         data.mutating_snapshot(&[StateResource::Servers])
     };
     emit(&app, EVENT_STATE, state);
-    Ok(SavedInfo::new(message))
+    Ok(SavedInfo::changed(
+        message,
+        vec![ResourceKeyInfo {
+            kind: "servers".into(),
+            instance_id: None,
+        }],
+        Vec::new(),
+    ))
 }
 
 /// 删除服务器收藏。
@@ -263,7 +283,14 @@ pub fn delete_server(
         data.mutating_snapshot(&[StateResource::Servers])
     };
     emit(&app, EVENT_STATE, state);
-    Ok(SavedInfo::new("服务器已删除。"))
+    Ok(SavedInfo::changed(
+        "服务器已删除。",
+        vec![ResourceKeyInfo {
+            kind: "servers".into(),
+            instance_id: None,
+        }],
+        vec![id],
+    ))
 }
 
 /// 查询服务器在线状态与延迟。
@@ -311,7 +338,20 @@ pub fn select_account(
     };
     emit(&app, EVENT_STATE, state);
     emit(&app, EVENT_AVATAR, avatar);
-    Ok(SavedInfo::new("当前账号已切换。"))
+    Ok(SavedInfo::changed(
+        "当前账号已切换。",
+        vec![
+            ResourceKeyInfo {
+                kind: "overview".into(),
+                instance_id: None,
+            },
+            ResourceKeyInfo {
+                kind: "accounts".into(),
+                instance_id: None,
+            },
+        ],
+        vec![account_id],
+    ))
 }
 
 /// 按稳定 ID 移除本机保存的账号。
@@ -333,7 +373,20 @@ pub fn forget_account(
     };
     emit(&app, EVENT_STATE, state);
     emit(&app, EVENT_AVATAR, avatar);
-    Ok(SavedInfo::new("账号已从本机移除。"))
+    Ok(SavedInfo::changed(
+        "账号已从本机移除。",
+        vec![
+            ResourceKeyInfo {
+                kind: "overview".into(),
+                instance_id: None,
+            },
+            ResourceKeyInfo {
+                kind: "accounts".into(),
+                instance_id: None,
+            },
+        ],
+        vec![account_id],
+    ))
 }
 
 /// 设置或清除离线皮肤；空 `path` 表示清除。
@@ -426,7 +479,14 @@ pub fn save_settings(
         data.mutating_snapshot(&[StateResource::Settings, StateResource::Accounts])
     };
     emit(&app, EVENT_STATE, state);
-    Ok(SavedInfo::new("设置已保存。"))
+    Ok(SavedInfo::changed(
+        "设置已保存。",
+        vec![ResourceKeyInfo {
+            kind: "settings".into(),
+            instance_id: None,
+        }],
+        Vec::new(),
+    ))
 }
 
 /// 扫描本机可用的 Java 运行时。
@@ -587,7 +647,14 @@ pub fn task_action(
         data.tasks.clone()
     };
     emit(&app, EVENT_TASKS, tasks);
-    Ok(SavedInfo::new("任务操作已接受。"))
+    Ok(SavedInfo::changed(
+        "任务操作已接受。",
+        vec![ResourceKeyInfo {
+            kind: "tasks".into(),
+            instance_id: None,
+        }],
+        vec![id],
+    ))
 }
 
 /// 列出由本次启动器启动、仍在运行的游戏。
@@ -710,7 +777,7 @@ pub fn toggle_bookmark(
             data.state.favorites.retain(|item| item.id != id);
         } else {
             data.state.favorites.push(FavoriteInfo {
-                id,
+                id: id.clone(),
                 kind,
                 name: name.clone(),
                 description,
@@ -720,9 +787,23 @@ pub fn toggle_bookmark(
     };
     emit(&app, EVENT_STATE, &state);
     if state.favorites.iter().any(|item| item.name == name) {
-        SavedInfo::new(format!("已收藏 {name}。"))
+        SavedInfo::changed(
+            format!("已收藏 {name}。"),
+            vec![ResourceKeyInfo {
+                kind: "bookmarks".into(),
+                instance_id: None,
+            }],
+            vec![id],
+        )
     } else {
-        SavedInfo::new(format!("已取消收藏 {name}。"))
+        SavedInfo::changed(
+            format!("已取消收藏 {name}。"),
+            vec![ResourceKeyInfo {
+                kind: "bookmarks".into(),
+                instance_id: None,
+            }],
+            vec![id],
+        )
     }
 }
 
@@ -735,13 +816,13 @@ pub fn list_vanilla_versions(backend: State<'_, Backend>) -> Vec<VanillaVersionI
 /// 安装指定原版版本。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn install_vanilla(version: String) -> Result<SavedInfo, ApiError> {
+pub fn install_vanilla(minecraft_version: String) -> Result<SavedInfo, ApiError> {
     Err(ApiError::unsupported("install_vanilla"))
 }
 
 /// 读取指定游戏版本可用的加载器版本。
 #[tauri::command]
-pub fn list_loaders(version: String, loader: String) -> LoaderListInfo {
+pub fn list_loaders(minecraft_version: String, loader: String) -> LoaderListInfo {
     let versions = match loader.to_lowercase().as_str() {
         "quilt" => vec!["0.24.0", "0.23.2", "0.23.1"],
         "forge" => vec!["47.2.0", "47.1.3", "47.0.19"],
@@ -749,7 +830,7 @@ pub fn list_loaders(version: String, loader: String) -> LoaderListInfo {
         _ => vec!["0.16.9", "0.16.8", "0.16.5", "0.15.11"],
     };
     LoaderListInfo {
-        version,
+        minecraft_version,
         loader,
         versions: versions.into_iter().map(String::from).collect(),
     }
@@ -759,7 +840,7 @@ pub fn list_loaders(version: String, loader: String) -> LoaderListInfo {
 #[tauri::command]
 #[allow(unused_variables)]
 pub fn install_loader(
-    version: String,
+    minecraft_version: String,
     loader: String,
     loader_version: String,
 ) -> Result<SavedInfo, ApiError> {
@@ -897,11 +978,18 @@ pub fn toggle_mod(
         data.mutating_snapshot(&[StateResource::InstanceMods])
     };
     emit(&app, EVENT_STATE, state);
-    Ok(SavedInfo::new(if enabled {
-        "模组已启用。"
-    } else {
-        "模组已禁用。"
-    }))
+    Ok(SavedInfo::changed(
+        if enabled {
+            "模组已启用。"
+        } else {
+            "模组已禁用。"
+        },
+        vec![ResourceKeyInfo {
+            kind: "instanceMods".into(),
+            instance_id: Some(instance_id),
+        }],
+        vec![mod_id],
+    ))
 }
 
 /// 删除模组文件。
@@ -933,7 +1021,14 @@ pub fn delete_mod(
         data.mutating_snapshot(&[StateResource::InstanceMods])
     };
     emit(&app, EVENT_STATE, state);
-    Ok(SavedInfo::new("模组已删除。"))
+    Ok(SavedInfo::changed(
+        "模组已删除。",
+        vec![ResourceKeyInfo {
+            kind: "instanceMods".into(),
+            instance_id: Some(instance_id),
+        }],
+        vec![mod_id],
+    ))
 }
 
 /// 读取实例启动设置与继承状态。
@@ -947,8 +1042,8 @@ pub fn read_launch_options(
     LaunchOptionsInfo {
         request_id: request_id.unwrap_or_else(|| instance_id.clone()),
         token: format!("launch-{instance_id}"),
-        version: instance_id.clone(),
-        name: instance_id,
+        instance_id: instance_id.clone(),
+        display_name: instance_id,
         inherited: false,
         settings: LaunchSettings {
             auto_memory: data.state.auto_memory,

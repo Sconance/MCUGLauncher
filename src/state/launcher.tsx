@@ -95,6 +95,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     if (epochRef.current === epoch) return;
     epochRef.current = epoch;
     resourceVersions.current = {};
+    setResourceStatus({});
     setOverview(null);
     setSettings(null);
     setAccounts(null);

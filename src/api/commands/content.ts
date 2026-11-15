@@ -28,15 +28,16 @@ export const toggleBookmark = (id: string, name: string, description: string, ki
 export const listVanillaVersions = () => call<VanillaVersionInfo[]>("list_vanilla_versions");
 
 /** 安装指定原版版本。 */
-export const installVanilla = (version: string) => call<SavedInfo>("install_vanilla", { version });
+export const installVanilla = (minecraftVersion: string) =>
+  call<SavedInfo>("install_vanilla", { minecraftVersion });
 
 /** 读取指定游戏版本可用的加载器版本。 */
-export const listLoaders = (version: string, loader: string) =>
-  call<LoaderListInfo>("list_loaders", { version, loader });
+export const listLoaders = (minecraftVersion: string, loader: string) =>
+  call<LoaderListInfo>("list_loaders", { minecraftVersion, loader });
 
 /** 安装指定加载器版本。 */
-export const installLoader = (version: string, loader: string, loaderVersion: string) =>
-  call<SavedInfo>("install_loader", { version, loader, loaderVersion });
+export const installLoader = (minecraftVersion: string, loader: string, loaderVersion: string) =>
+  call<SavedInfo>("install_loader", { minecraftVersion, loader, loaderVersion });
 
 /** 读取整合包预览信息（名称、游戏版本、加载器）。 */
 export const previewPack = (path: string) => call<PackPreviewInfo>("preview_pack", { path });

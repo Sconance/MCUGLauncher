@@ -103,7 +103,7 @@ export default function InstancesPage() {
     setOptions(info);
     setInherit(info.inherited);
     setForm({
-      displayName: info.name.length > 0 ? info.name : version,
+      displayName: info.displayName.length > 0 ? info.displayName : version,
       java: info.settings.java,
       autoMemory: info.settings.autoMemory,
       ram: String(info.settings.ramMb),
