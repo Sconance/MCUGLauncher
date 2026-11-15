@@ -62,6 +62,10 @@ export interface LauncherDTO {
   FavoriteInfo?: FavoriteInfo;
   DataSourceSet?: DataSourceSet;
   SettingsInfo?: SettingsInfo;
+  SaveBackupInfo?: SaveBackupInfo;
+  SystemInfoInfo?: SystemInfoInfo;
+  KeyResultInfo?: KeyResultInfo;
+  TestResultInfo?: TestResultInfo;
   UninstallPreviewInfo?: UninstallPreviewInfo;
   TaskInfo?: TaskInfo;
   GameSessionInfo?: GameSessionInfo;
@@ -744,6 +748,94 @@ export interface DataSourceSet3 {
    * quotes 字段。
    */
   quotes: string;
+}
+/**
+ * SaveBackupInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface SaveBackupInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * created 字段。
+   */
+  created: string;
+  /**
+   * worlds 字段。
+   */
+  worlds: string[];
+}
+/**
+ * SystemInfoInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface SystemInfoInfo {
+  /**
+   * app 字段。
+   */
+  app: string;
+  /**
+   * dotnet 字段。
+   */
+  dotnet: string;
+  /**
+   * webview 字段。
+   */
+  webview: string;
+  /**
+   * os 字段。
+   */
+  os: string;
+  /**
+   * root 字段。
+   */
+  root: string;
+  /**
+   * data 字段。
+   */
+  data: string;
+}
+/**
+ * KeyResultInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface KeyResultInfo {
+  /**
+   * role 字段。
+   */
+  role: string;
+  /**
+   * ok 字段。
+   */
+  ok: boolean;
+  /**
+   * message 字段。
+   */
+  message: string;
+}
+/**
+ * TestResultInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface TestResultInfo {
+  /**
+   * name 字段。
+   */
+  name: string;
+  /**
+   * url 字段。
+   */
+  url: string;
+  /**
+   * ok 字段。
+   */
+  ok: boolean;
+  /**
+   * message 字段。
+   */
+  message: string;
+  /**
+   * ms 字段。
+   */
+  ms: number;
 }
 /**
  * UninstallPreviewInfo：通过 Tauri 命令在前后端之间传输的数据对象。

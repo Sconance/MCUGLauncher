@@ -124,6 +124,130 @@
       "additionalProperties": false,
       "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
     },
+    "SaveBackupInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "created",
+        "worlds"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "created": {
+          "type": "string",
+          "description": "created 字段。"
+        },
+        "worlds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "worlds 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "SaveBackupInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "SystemInfoInfo": {
+      "type": "object",
+      "required": [
+        "app",
+        "dotnet",
+        "webview",
+        "os",
+        "root",
+        "data"
+      ],
+      "properties": {
+        "app": {
+          "type": "string",
+          "description": "app 字段。"
+        },
+        "dotnet": {
+          "type": "string",
+          "description": "dotnet 字段。"
+        },
+        "webview": {
+          "type": "string",
+          "description": "webview 字段。"
+        },
+        "os": {
+          "type": "string",
+          "description": "os 字段。"
+        },
+        "root": {
+          "type": "string",
+          "description": "root 字段。"
+        },
+        "data": {
+          "type": "string",
+          "description": "data 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "SystemInfoInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "KeyResultInfo": {
+      "type": "object",
+      "required": [
+        "role",
+        "ok",
+        "message"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "role 字段。"
+        },
+        "ok": {
+          "type": "boolean",
+          "description": "ok 字段。"
+        },
+        "message": {
+          "type": "string",
+          "description": "message 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "KeyResultInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "TestResultInfo": {
+      "type": "object",
+      "required": [
+        "name",
+        "url",
+        "ok",
+        "message",
+        "ms"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "name 字段。"
+        },
+        "url": {
+          "type": "string",
+          "description": "url 字段。"
+        },
+        "ok": {
+          "type": "boolean",
+          "description": "ok 字段。"
+        },
+        "message": {
+          "type": "string",
+          "description": "message 字段。"
+        },
+        "ms": {
+          "type": "integer",
+          "description": "ms 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "TestResultInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
     "UninstallPreviewInfo": {
       "type": "object",
       "required": [

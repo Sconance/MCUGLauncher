@@ -12,6 +12,7 @@ pub use crate::schema_dto::generated::content::{
 };
 pub use crate::schema_dto::generated::accounts::{AvatarInfo, MuaProfileInfo};
 pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
+pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
 pub use crate::schema_dto::generated::instances::{
     DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
     SavedServerInfo,
@@ -220,14 +221,6 @@ pub struct JavaInfo {
     pub error: String,
 }
 
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct SaveBackupInfo {
-    pub id: String,
-    pub created: String,
-    pub worlds: Vec<String>,
-}
-
 /// 登录会话只暴露当前阶段所需的字段。
 #[derive(Clone, Serialize)]
 #[allow(dead_code)]
@@ -354,17 +347,6 @@ pub struct PackPreviewInfo {
     pub loader: String,
 }
 
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct SystemInfoInfo {
-    pub app: String,
-    pub dotnet: String,
-    pub webview: String,
-    pub os: String,
-    pub root: String,
-    pub data: String,
-}
-
 impl SavedInfo {
     pub fn changed(
         message: impl Into<String>,
@@ -377,24 +359,6 @@ impl SavedInfo {
             entity_ids,
         }
     }
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct KeyResultInfo {
-    pub role: String,
-    pub ok: bool,
-    pub message: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct TestResultInfo {
-    pub name: String,
-    pub url: String,
-    pub ok: bool,
-    pub message: String,
-    pub ms: i64,
 }
 
 /// `save_settings` 的补丁参数：只覆盖调用方明确给出的字段。
