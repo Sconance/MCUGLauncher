@@ -1321,7 +1321,7 @@ export interface TaskInfo {
   /**
    * name 字段。
    */
-  name?: string;
+  name: string;
   /**
    * kind 字段。
    */
@@ -1333,7 +1333,7 @@ export interface TaskInfo {
   /**
    * status 字段。
    */
-  status: "queued" | "running" | "paused" | "cancelling" | "succeeded" | "failed" | "cancelled";
+  status: string;
   /**
    * phase 字段。
    */
@@ -1341,7 +1341,7 @@ export interface TaskInfo {
   /**
    * progress 字段。
    */
-  progress?: {} | null;
+  progress?: TaskProgressInfo | null;
   /**
    * allowedActions 字段。
    */
@@ -1349,11 +1349,11 @@ export interface TaskInfo {
   /**
    * error 字段。
    */
-  error?: ApiError | null;
+  error?: {} | null;
   /**
    * result 字段。
    */
-  result?: {} | null;
+  result?: TaskResultInfo | null;
   /**
    * createdAt 字段。
    */
@@ -1382,7 +1382,7 @@ export interface GameSessionInfo {
   /**
    * status 字段。
    */
-  status: "preparing" | "starting" | "running" | "stopping" | "exited" | "failed";
+  status: string;
   /**
    * pid 字段。
    */
@@ -1394,7 +1394,7 @@ export interface GameSessionInfo {
   /**
    * error 字段。
    */
-  error: ApiError | null;
+  error: {} | null;
 }
 /**
  * LaunchAcceptedInfo：通过 Tauri 命令在前后端之间传输的数据对象。

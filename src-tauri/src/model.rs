@@ -18,7 +18,27 @@ pub use crate::schema_dto::generated::content::{AnnouncementInfo, CommunityData,
 pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
 pub use crate::schema_dto::generated::operations::{JavaInfo, ServerPingInfo};
 pub use crate::schema_dto::generated::operations::AppSettingsPatch;
-pub use crate::schema_dto::generated::tasks::{TaskProgressInfo, TaskResultInfo};
+pub use crate::schema_dto::generated::tasks::TaskProgressInfo;
+pub use crate::schema_dto::generated::tasks::{GameSessionInfo, TaskInfo};
+
+impl Default for TaskInfo {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            name: String::new(),
+            kind: String::new(),
+            instance_id: None,
+            status: String::new(),
+            phase: String::new(),
+            progress: None,
+            allowed_actions: Vec::new(),
+            error: None,
+            result: None,
+            created_at: String::new(),
+            updated_at: String::new(),
+        }
+    }
+}
 pub use crate::schema_dto::generated::operations::{
     ContentUpdatePreviewInfo, ContentUpdatesInfo,
     PackPreviewInfo, UninstallPreviewInfo,
@@ -85,35 +105,6 @@ pub struct BackendState {
     pub custom_data_sources: DataSourceSet,
     pub data_source_mode: String,
     pub auto_chinese: bool,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct TaskInfo {
-    pub id: String,
-    pub name: String,
-    pub kind: String,
-    pub instance_id: Option<String>,
-    pub status: String,
-    pub phase: String,
-    pub progress: Option<TaskProgressInfo>,
-    pub allowed_actions: Vec<String>,
-    pub error: Option<ApiError>,
-    pub result: Option<TaskResultInfo>,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct GameSessionInfo {
-    pub session_id: String,
-    pub instance_id: String,
-    pub account_id: String,
-    pub status: String,
-    pub pid: Option<u32>,
-    pub exit_code: Option<i32>,
-    pub error: Option<ApiError>,
 }
 
 /// 登录会话只暴露当前阶段所需的字段。

@@ -182,6 +182,7 @@
       "type": "object",
       "required": [
         "id",
+        "name",
         "kind",
         "instanceId",
         "status",
@@ -212,15 +213,6 @@
         },
         "status": {
           "type": "string",
-          "enum": [
-            "queued",
-            "running",
-            "paused",
-            "cancelling",
-            "succeeded",
-            "failed",
-            "cancelled"
-          ],
           "description": "status 字段。"
         },
         "phase": {
@@ -228,9 +220,13 @@
           "description": "phase 字段。"
         },
         "progress": {
-          "type": [
-            "object",
-            "null"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TaskProgressInfo"
+            },
+            {
+              "type": "null"
+            }
           ],
           "description": "progress 字段。"
         },
@@ -242,31 +238,29 @@
           "description": "allowedActions 字段。"
         },
         "error": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "error 字段。"
+        },
+        "result": {
           "anyOf": [
             {
-              "$ref": "#/$defs/ApiError"
+              "$ref": "#/$defs/TaskResultInfo"
             },
             {
               "type": "null"
             }
           ],
-          "description": "error 字段。"
-        },
-        "result": {
-          "type": [
-            "object",
-            "null"
-          ],
           "description": "result 字段。"
         },
         "createdAt": {
           "type": "string",
-          "format": "date-time",
           "description": "createdAt 字段。"
         },
         "updatedAt": {
           "type": "string",
-          "format": "date-time",
           "description": "updatedAt 字段。"
         }
       },
@@ -299,14 +293,6 @@
         },
         "status": {
           "type": "string",
-          "enum": [
-            "preparing",
-            "starting",
-            "running",
-            "stopping",
-            "exited",
-            "failed"
-          ],
           "description": "status 字段。"
         },
         "pid": {
@@ -324,13 +310,9 @@
           "description": "exitCode 字段。"
         },
         "error": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/ApiError"
-            },
-            {
-              "type": "null"
-            }
+          "type": [
+            "object",
+            "null"
           ],
           "description": "error 字段。"
         }
