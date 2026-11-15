@@ -316,6 +316,7 @@ pub struct MuaProfileInfo {
 
 /// 登录会话只暴露当前阶段所需的字段。
 #[derive(Clone, Serialize)]
+#[allow(dead_code)]
 #[serde(
     tag = "state",
     rename_all = "camelCase",
@@ -541,12 +542,6 @@ pub struct TestResultInfo {
     pub ok: bool,
     pub message: String,
     pub ms: i64,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ToastInfo {
-    pub message: String,
 }
 
 /// `save_settings` 的补丁参数：只覆盖调用方明确给出的字段。

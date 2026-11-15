@@ -18,12 +18,8 @@ use crate::{
 
 pub const EVENT_STATE: &str = "launcher://state";
 pub const EVENT_TASKS: &str = "launcher://tasks";
-pub const EVENT_GAMES: &str = "launcher://games";
 pub const EVENT_COMMUNITY: &str = "launcher://community";
 pub const EVENT_AVATAR: &str = "launcher://avatar";
-pub const EVENT_TOAST: &str = "launcher://toast";
-#[allow(dead_code)]
-pub const EVENT_ERROR: &str = "launcher://error";
 
 fn emit<T: Serialize + Clone>(app: &AppHandle, event: &str, payload: T) {
     let _ = app.emit(event, payload);

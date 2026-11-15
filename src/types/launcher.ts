@@ -394,10 +394,6 @@ export interface SavedInfo {
   message: string;
 }
 
-export interface ToastInfo {
-  message: string;
-}
-
 /** `save_settings` 的补丁：只提交需要修改的字段。 */
 export interface AppSettingsPatch {
   root?: string;

@@ -14,7 +14,6 @@ pub struct PlanRecord {
     pub target_revision: u64,
     pub expires_at: OffsetDateTime,
 }
-
 #[derive(Clone, Copy)]
 pub enum StateResource {
     Overview,
@@ -25,7 +24,6 @@ pub enum StateResource {
     Servers,
     Bookmarks,
     Tasks,
-    GameSessions,
     Community,
 }
 
@@ -67,12 +65,10 @@ pub struct Data {
     pub games: Vec<GameSessionInfo>,
     pub community: CommunityData,
     pub avatar: AvatarInfo,
-    pub java: Vec<JavaInfo>,
     pub backups: Vec<SaveBackupInfo>,
     pub log: String,
     pub content: Vec<ContentItem>,
     pub vanilla: Vec<VanillaVersionInfo>,
-    pub updates: Vec<ContentUpdateInfo>,
     pub plans: HashMap<String, PlanRecord>,
     next_plan_id: u64,
 }
@@ -98,7 +94,6 @@ impl Data {
             }],
             community: demo_community(),
             avatar: avatar_for("XiaoMu", "microsoft"),
-            java: demo_java(),
             backups: vec![
                 SaveBackupInfo {
                     id: "b1".into(),
@@ -121,7 +116,6 @@ impl Data {
             .join("\n"),
             content: demo_content(),
             vanilla: demo_vanilla(),
-            updates: demo_updates(),
             plans: HashMap::new(),
             next_plan_id: 1,
         }
@@ -156,7 +150,6 @@ impl Data {
             StateResource::Servers => &mut self.revisions.servers,
             StateResource::Bookmarks => &mut self.revisions.bookmarks,
             StateResource::Tasks => &mut self.revisions.tasks,
-            StateResource::GameSessions => &mut self.revisions.game_sessions,
             StateResource::Community => &mut self.revisions.community,
         };
         *revision = revision.saturating_add(1);
@@ -727,32 +720,6 @@ fn recommendation(
     }
 }
 
-fn demo_java() -> Vec<JavaInfo> {
-    vec![
-        JavaInfo {
-            path: "C:/Program Files/Eclipse Adoptium/jdk-21.0.4.7-hotspot/bin/javaw.exe".into(),
-            major: 21,
-            arch: "x64".into(),
-            vendor: "Eclipse Adoptium".into(),
-            error: String::new(),
-        },
-        JavaInfo {
-            path: "C:/Program Files/Java/jdk-17/bin/javaw.exe".into(),
-            major: 17,
-            arch: "x64".into(),
-            vendor: "Oracle".into(),
-            error: String::new(),
-        },
-        JavaInfo {
-            path: "C:/Program Files (x86)/Java/jre1.8/bin/javaw.exe".into(),
-            major: 8,
-            arch: "x86".into(),
-            vendor: "Oracle".into(),
-            error: String::new(),
-        },
-    ]
-}
-
 fn demo_content() -> Vec<ContentItem> {
     vec![
         content(
@@ -830,24 +797,6 @@ fn demo_vanilla() -> Vec<VanillaVersionInfo> {
         id: id.into(),
         r#type: kind.into(),
         released: released.into(),
-    })
-    .collect()
-}
-
-fn demo_updates() -> Vec<ContentUpdateInfo> {
-    [
-        ("sodium", "Sodium", "0.6.11", "0.6.13"),
-        ("iris", "Iris Shaders", "1.8.5", "1.8.8"),
-        ("fabric-api", "Fabric API", "0.114.0", "0.115.0"),
-    ]
-    .into_iter()
-    .map(|(id, name, before, after)| ContentUpdateInfo {
-        id: id.into(),
-        name: name.into(),
-        before: before.into(),
-        after: after.into(),
-        available: true,
-        error: String::new(),
     })
     .collect()
 }
