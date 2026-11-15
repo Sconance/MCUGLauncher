@@ -1,82 +1,56 @@
 import { useEffect, useState } from "react";
-import { launchGame, launchToServer } from "../api/commands/launch";
-import {
-  deleteServer as deleteServerCommand,
-  pingServer,
-  saveServer as saveServerCommand,
-} from "../api/commands/servers";
+import InstanceSettingsIcon from "../assets/InstanceSettingsIcon.svg";
+import SwitchInstanceIcon from "../assets/SwitchInstanceIcon.svg";
+import SwitchPlayerIcon from "../assets/SwitchPlayerIcon.svg";
+import { launchGame } from "../api/commands/launch";
 import { selectInstance as selectInstanceCommand } from "../api/commands/state";
-import type {
-  AnnouncementInfo,
-  RecommendationInfo,
-  SavedServerInfo,
-  ServerPingInfo,
-} from "../types/launcher";
-import Field from "../components/Field";
-import Markdown from "../components/Markdown";
-import Modal from "../components/Modal";
+import type { PlayerInfo } from "../types/launcher";
 import { useNavigation } from "../shell/navigation";
+import { useToast } from "../shell/toast";
 import { useLauncher } from "../state/launcher";
 import "./HomePage.css";
 
-interface ServerDraft {
-  name: string;
-  address: string;
-  instanceId: string | null;
+/** 角色类型的中文说明；外置登录附带验证服务器名。 */
+function playerTypeText(player: PlayerInfo): string {
+  if (player.playerType === "microsoft") return "微软账号";
+  if (player.playerType === "offline") return "离线账号";
+  if (player.playerType === "mua") {
+    return player.authServer.length > 0 ? `MUA 账号 · ${player.authServer}` : "MUA 账号";
+  }
+  return player.playerType;
 }
 
-interface DialogState {
-  editing: SavedServerInfo | null;
-  draft: ServerDraft;
-  status: string;
-}
-
-interface MenuState {
-  item: RecommendationInfo;
-  x: number;
-  y: number;
-}
-
-const EMPTY_DRAFT: ServerDraft = { name: "", address: "", instanceId: null };
-
-function pingText(ping: ServerPingInfo | undefined): string {
-  if (!ping) return "尚未查询";
-  if (!ping.online) return "离线";
-  return `${ping.players}/${ping.max} 人 · ${ping.ping} ms`;
-}
-
-/** 主页：账号卡、实例启动、服务器收藏、公告、推荐与语录。 */
+/** 主页：右下角是角色卡与启动按钮；服务器、公告、推荐与语录在「发现」。 */
 export default function HomePage() {
-  const { openAccount } = useNavigation();
-  const { state, avatar, community, refreshState, refreshCommunity } = useLauncher();
-  const [pings, setPings] = useState<Record<string, ServerPingInfo>>({});
-  const [quoteIndex, setQuoteIndex] = useState(0);
+  const { openAccount, openInstances } = useNavigation();
+  const { notify } = useToast();
+  const { state, avatar, refreshState } = useLauncher();
   const [status, setStatus] = useState("");
-  const [dialog, setDialog] = useState<DialogState | null>(null);
-  const [announcement, setAnnouncement] = useState<AnnouncementInfo | null>(null);
-  const [menu, setMenu] = useState<MenuState | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [playerPickerOpen, setPlayerPickerOpen] = useState(false);
 
+  // 实例/角色浮层：点空白处或按 Esc 一起收起
   useEffect(() => {
-    if (!state) return;
-    let alive = true;
-    for (const server of state.servers) {
-      void pingServer(server.address).then((info) => {
-        if (alive) setPings((previous) => ({ ...previous, [info.id]: info }));
-      });
-    }
-    return () => {
-      alive = false;
+    if (!pickerOpen && !playerPickerOpen) return;
+    const close = (event: MouseEvent) => {
+      if ((event.target as HTMLElement).closest(".launch-tools, .instance-picker, .player-card, .player-picker")) return;
+      setPickerOpen(false);
+      setPlayerPickerOpen(false);
     };
-  }, [state?.servers]);
-
-  useEffect(() => {
-    if (!menu) return;
-    const close = () => setMenu(null);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setPickerOpen(false);
+      setPlayerPickerOpen(false);
+    };
     window.addEventListener("click", close);
-    return () => window.removeEventListener("click", close);
-  }, [menu]);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [pickerOpen, playerPickerOpen]);
 
-  if (!state || !community) {
+  if (!state) {
     return (
       <div className="page">
         <div className="empty">正在加载启动器状态…</div>
@@ -85,21 +59,34 @@ export default function HomePage() {
   }
 
   const instances = state.instances.filter((item) => item.name.length > 0 && !item.isPlaceholder);
-  const activeAccount = state.accounts.find((account) => account.id === state.activeAccountId) ?? null;
   const current = instances.find((item) => item.id === state.selectedInstanceId);
-  const launchTarget = current ? `${current.displayName} · ${current.minecraft} · ${current.loader}` : "请选择实例";
-  const launchSubtitle = current
-    ? `${current.name} · ${state.autoMemory ? "自动内存" : `${state.ram} MB`}`
-    : "未选择实例";
-  const firstAnnouncement = community.announcements[0];
-  const quote = community.quotes[quoteIndex];
+  const launchSubtitle = current ? current.name : "未选择实例";
 
-  const refresh = async () => {
-    await refreshState();
-    setStatus("状态已刷新。");
-  };
+  // 账号列表来自 list_accounts；头像只对当前账号可用
+  const players: PlayerInfo[] =
+    state.accounts.length > 0
+      ? state.accounts.map((account) => ({
+          id: account.id,
+          name: account.player.length > 0 ? account.player : "未登录",
+          playerType: account.kind,
+          authServer: "",
+          avatar: account.id === state.activeAccountId ? avatar?.image ?? "" : "",
+        }))
+      : [
+          {
+            id: "current",
+            name: "未登录",
+            playerType: "offline",
+            authServer: "",
+            avatar: avatar?.image ?? "",
+          },
+        ];
+  const selectedPlayer = players.find((item) => item.id === state.activeAccountId) ?? players[0];
 
-  const selectInstance = async (instanceId: string) => {
+  /** 选中一个实例后收起浮层。 */
+  const chooseInstance = async (instanceId: string) => {
+    setPickerOpen(false);
+    if (instanceId === current?.id) return;
     const result = await selectInstanceCommand(instanceId);
     await refreshState();
     setStatus(result.message);
@@ -111,392 +98,143 @@ export default function HomePage() {
       return;
     }
     setStatus("正在准备启动…");
-    const result = await launchGame(current.name);
+    const result = await launchGame(current.id);
     await refreshState();
     setStatus(result.message);
   };
 
-  const openServerDialog = (server?: SavedServerInfo, message?: string) => {
-    setDialog({
-      editing: server ?? null,
-      draft: server
-        ? { name: server.name, address: server.address, instanceId: server.instanceId }
-        : { ...EMPTY_DRAFT },
-      status: message ?? "",
-    });
-  };
-
-  const saveServer = async () => {
-    if (!dialog) return;
-    const address = dialog.draft.address.trim();
-    if (address.length === 0) {
-      setDialog({ ...dialog, status: "请填写服务器网页。" });
-      return;
-    }
-    setDialog({ ...dialog, status: "正在保存…" });
-    const result = await saveServerCommand(
-      dialog.draft.name.trim(),
-      address,
-      dialog.editing?.id ?? "",
-      dialog.draft.instanceId,
-    );
-    if (!result.ok) {
-      setDialog({ ...dialog, status: result.message });
-      return;
-    }
-    setDialog(null);
-    await refreshState();
-    setStatus(result.message);
-  };
-
-  const deleteServer = async (server: SavedServerInfo) => {
-    const result = await deleteServerCommand(server.id);
-    setPings((previous) => {
-      const next = { ...previous };
-      delete next[server.address];
-      return next;
-    });
-    await refreshState();
-    setStatus(result.message);
-  };
-
-  const queryServer = async (server: SavedServerInfo) => {
-    const info = await pingServer(server.address);
-    setPings((previous) => ({ ...previous, [info.id]: info }));
-    setStatus("服务器状态已刷新。");
-  };
-
-  const openServer = async (server: SavedServerInfo) => {
-    if (!server.instanceId) {
-      openServerDialog(server, "先给这台服务器绑定实例，保存后就能一键进服。");
-      return;
-    }
-    setStatus(`正在用所选实例打开 ${server.address}…`);
-    const result = await launchToServer(server.instanceId, server.address);
-    setStatus(result.message);
-  };
-
-  const favorite = async (item: RecommendationInfo) => {
-    setMenu(null);
-    const address = item.url.trim();
-    if (address.length === 0) {
-      setStatus("这条推荐没有附带服务器地址，无法收藏。");
-      return;
-    }
-    if (state.servers.some((server) => server.address.toLowerCase() === address.toLowerCase())) {
-      setStatus(`「${item.name.length > 0 ? item.name : address}」已经在收藏里了。`);
-      return;
-    }
-    const result = await saveServerCommand(item.name.trim(), address, "");
-    await refreshState();
-    setStatus(result.message);
+  /** 角色切换目前由「账号」页完成，这里只做跳转。 */
+  const choosePlayer = (id: string) => {
+    setPlayerPickerOpen(false);
+    if (id === selectedPlayer.id) return;
+    notify("在「账号」页切换登录的角色。");
+    openAccount();
   };
 
   return (
-    <>
-      <div className={`home ${dialog ? "blurred" : ""}`}>
-        <aside className="card home-account">
-          <div className="stack" style={{ gap: 8 }}>
-            <h2 className="h2">账号</h2>
-            <div className="avatar-wrap">
-              <span className="avatar-shadow" />
-              <button
-                type="button"
-                className="btn avatar"
-                title="查看或更换头像"
-                aria-label="查看或更换头像"
-                onClick={openAccount}
-              >
-                <img className="avatar-image" src={avatar?.image} alt={activeAccount?.player ?? "未登录"} />
-              </button>
-            </div>
-            <p className="account-name">{activeAccount?.player || "未登录"}</p>
-            <p className="muted" style={{ textAlign: "center" }}>
-              {avatar?.label ?? ""}
-            </p>
-            <button type="button" className="btn soft" onClick={openAccount}>
-              账号与皮肤
-            </button>
+    <div className="home">
+      {/* 右下角的启动区 */}
+      <div className="home-launch">
+        {status.length > 0 ? <p className="status home-status">{status}</p> : null}
 
-            <span className="field-label" style={{ marginTop: 6 }}>
-              当前实例
-            </span>
-            <select
-              className="select"
-              value={current?.id ?? ""}
-              onChange={(event) => void selectInstance(event.target.value)}
-            >
-              {instances.length === 0 ? <option value="">暂无实例</option> : null}
-              {instances.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.displayName} · {item.loader} · {item.minecraft}
-                </option>
-              ))}
-            </select>
-            <p className="muted">{launchTarget}</p>
-            <button type="button" className="btn link" style={{ alignSelf: "center" }} onClick={() => void refresh()}>
-              刷新状态
-            </button>
-          </div>
-
-          <button type="button" className="btn launch" onClick={() => void launch()} disabled={!current}>
-            <span className="stack" style={{ gap: 2, alignItems: "flex-start" }}>
-              <span className="launch-title">▶ 启动游戏</span>
-              <span className="launch-subtitle">{launchSubtitle}</span>
-            </span>
-          </button>
-        </aside>
-
-        <div className="home-feed">
-          <section className="card stack" style={{ gap: 8 }}>
-            <div className="row" style={{ gap: 8 }}>
-              <h2 className="h2">正在开设的服务器</h2>
-              <span className="spacer" />
-              <span className="muted">
-                {state.servers.length > 0
-                  ? `${state.servers.filter((server) => pings[server.address]?.online).length} 在线 · ${
-                      state.servers.filter((server) => !pings[server.address]?.online).length
-                    } 离线`
-                  : ""}
-              </span>
-              <button type="button" className="btn link" onClick={() => openServerDialog()}>
-                添加服务器
-              </button>
-            </div>
-
-            {state.servers.length === 0 ? (
-              <div className="empty">
-                {"还没有收藏服务器。\n点右上角「添加服务器」，填好网页与实例后就能在这里一键进服。"}
+        <div className="launch-row">
+          {/* 角色卡：头像 + 名称 + 账号类型，右上角切换角色 */}
+          <div className="player-card">
+            <div className="player-card-main">
+              {selectedPlayer.avatar.length > 0 ? (
+                <img className="player-card-avatar" src={selectedPlayer.avatar} alt="" />
+              ) : null}
+              <div className="player-card-text">
+                <span className="player-card-name">{selectedPlayer.name}</span>
+                <span className="muted player-card-type">{playerTypeText(selectedPlayer)}</span>
               </div>
-            ) : (
-              <div className="server-grid">
-                {state.servers.map((server) => {
-                  const ping = pings[server.address];
-                  return (
-                    <article className="server-card" key={server.address}>
-                      <div className="server-head">
-                        <span className={`server-icon ${ping?.online ? "online" : ""}`}>▣</span>
-                        <div className="stack" style={{ gap: 2 }}>
-                          <span className="server-name">{server.name.length > 0 ? server.name : server.address}</span>
-                          <span className="muted">{pingText(ping)}</span>
-                        </div>
-                      </div>
-                      <span className="muted">{server.address}</span>
-                      <span className="muted">
-                        {server.instanceId
-                          ? `实例 · ${instances.find((item) => item.id === server.instanceId)?.displayName ?? "已移除"}`
-                          : "未绑定实例"}
-                      </span>
-                      <span className="muted">{ping ? (ping.online ? ping.motd : "无法连接") : "等待查询"}</span>
-                      <div className="server-actions">
-                        <button type="button" className="btn link" onClick={() => void openServer(server)}>
-                          打开
-                        </button>
-                        <button type="button" className="btn link" onClick={() => void queryServer(server)}>
-                          查询
-                        </button>
-                        <button type="button" className="btn link" onClick={() => openServerDialog(server)}>
-                          编辑
-                        </button>
-                        <button type="button" className="btn link" onClick={() => void deleteServer(server)}>
-                          删除
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          <section className="card stack" style={{ gap: 8 }}>
-            <h2 className="h2">群公告</h2>
-            {firstAnnouncement ? (
-              <>
-                <p className="announcement-title">
-                  {firstAnnouncement.tag.length > 0
-                    ? `[${firstAnnouncement.tag}] ${firstAnnouncement.title}`
-                    : firstAnnouncement.title}
-                </p>
-                <p>{firstAnnouncement.body}</p>
-                {firstAnnouncement.imageUrl.length > 0 ? (
-                  <img className="announcement-image" src={firstAnnouncement.imageUrl} alt="" />
-                ) : null}
-                <p className="muted">
-                  {[firstAnnouncement.author, firstAnnouncement.publishedAt?.slice(0, 10) ?? "", firstAnnouncement.imageUrl ? "含配图" : ""]
-                    .filter((value) => value.length > 0)
-                    .join(" · ")}
-                </p>
-                {firstAnnouncement.markdown.length > 0 ? (
-                  <button
-                    type="button"
-                    className="btn link"
-                    style={{ alignSelf: "flex-start" }}
-                    onClick={() => setAnnouncement(firstAnnouncement)}
-                  >
-                    查看完整公告
-                  </button>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <p className="announcement-title">暂无公告</p>
-                <p>新的群公告会出现在这里。</p>
-              </>
-            )}
-          </section>
-
-          <section className="card stack" style={{ gap: 8 }}>
-            <div className="row" style={{ gap: 8 }}>
-              <h2 className="h2">群友推荐</h2>
-              <span className="spacer" />
-              <button
-                type="button"
-                className="btn link"
-                onClick={() => void refreshCommunity()}
-              >
-                刷新社区内容
-              </button>
-            </div>
-            {community.recommendations.length === 0 ? (
-              <p className="muted">暂无群友推荐。</p>
-            ) : (
-              community.recommendations.slice(0, 5).map((item) => (
-                <div
-                  className="rec-row"
-                  key={item.id}
-                  onContextMenu={(event) => {
-                    if (item.type !== "server") return;
-                    event.preventDefault();
-                    setMenu({ item, x: event.clientX, y: event.clientY });
-                  }}
-                >
-                  <span className={`rec-icon ${item.type}`}>
-                    {item.type === "material" ? "◆" : item.type === "shader" ? "✦" : "▣"}
-                  </span>
-                  <div className="stack" style={{ gap: 2 }}>
-                    <span className="rec-name">{item.name}</span>
-                    <span className="muted">
-                      {item.type === "material" ? "材质包" : item.type === "shader" ? "光影" : "服务器"} · 由 {item.author} 推荐
-                      {item.tags.length > 0 ? ` · ${item.tags.join(" / ")}` : ""}
-                    </span>
-                    {item.description.length > 0 ? <span className="muted">{item.description}</span> : null}
-                  </div>
-                </div>
-              ))
-            )}
-          </section>
-
-          <section className="card quote-card">
-            <span className="quote-mark">“</span>
-            <div className="stack" style={{ gap: 4 }}>
-              <p className="quote-text">{quote ? (quote.type === "image" ? `[图片语录] ${quote.text}` : quote.text) : "暂无语录。"}</p>
-              <p className="muted">{[quote?.author ?? "", quote?.source ?? ""].filter((value) => value.length > 0).join(" · ")}</p>
             </div>
             <button
               type="button"
-              className="btn link"
-              disabled={community.quotes.length === 0}
-              onClick={() => setQuoteIndex((previous) => (previous + 1) % Math.max(1, community.quotes.length))}
+              className="btn player-switch"
+              data-tip="切换角色"
+              aria-label="切换角色"
+              aria-expanded={playerPickerOpen}
+              onClick={() => {
+                setPickerOpen(false);
+                setPlayerPickerOpen((open) => !open);
+              }}
             >
-              换一条
+              <img src={SwitchPlayerIcon} alt="" />
             </button>
-          </section>
 
-          <p className="status">{status}</p>
+            {playerPickerOpen ? (
+              <div className="player-picker" role="listbox" aria-label="选择角色">
+                {players.length === 0 ? (
+                  <p className="muted player-picker-empty">还没有登录的角色。</p>
+                ) : (
+                  players.map((player) => (
+                    <button
+                      key={player.id}
+                      type="button"
+                      role="option"
+                      aria-selected={player.id === selectedPlayer.id}
+                      className={`player-picker-item ${player.id === selectedPlayer.id ? "selected" : ""}`}
+                      onClick={() => choosePlayer(player.id)}
+                    >
+                      <span className="player-picker-radio" />
+                      {player.avatar.length > 0 ? (
+                        <img className="player-picker-avatar" src={player.avatar} alt="" />
+                      ) : null}
+                      <span className="player-picker-text">
+                        <span className="player-picker-name">{player.name}</span>
+                        <span className="muted">{playerTypeText(player)}</span>
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="launch-block">
+            <button type="button" className="btn launch" onClick={() => void launch()} disabled={!current}>
+              <span className="stack" style={{ gap: 2, alignItems: "center" }}>
+                <span className="launch-title">启动游戏</span>
+                <span className="launch-subtitle">{launchSubtitle}</span>
+              </span>
+            </button>
+
+            {/* 叠在启动按钮右上角的快捷键：外观是一整块，点击区域各自独立 */}
+            <div className="launch-tools">
+              <button
+                type="button"
+                className="btn launch-tool"
+                data-tip="切换实例"
+                data-tip-side="left"
+                aria-label="切换实例"
+                aria-expanded={pickerOpen}
+                onClick={() => {
+                  setPlayerPickerOpen(false);
+                  setPickerOpen((open) => !open);
+                }}
+              >
+                <img src={SwitchInstanceIcon} alt="" />
+              </button>
+              <button
+                type="button"
+                className="btn launch-tool"
+                data-tip="实例设置"
+                data-tip-side="left"
+                aria-label="实例设置"
+                onClick={openInstances}
+              >
+                <img src={InstanceSettingsIcon} alt="" />
+              </button>
+            </div>
+
+            {/* 实例选择浮层：从启动按钮上方展开，实例多时内部滚动 */}
+            {pickerOpen ? (
+              <div className="instance-picker" role="listbox" aria-label="选择实例">
+                {instances.length === 0 ? (
+                  <p className="muted instance-picker-empty">还没有可用的实例。</p>
+                ) : (
+                  instances.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="option"
+                      aria-selected={item.id === current?.id}
+                      className={`instance-picker-item ${item.id === current?.id ? "selected" : ""}`}
+                      onClick={() => void chooseInstance(item.id)}
+                    >
+                      <span className="instance-picker-name">{item.displayName}</span>
+                      <span className="muted">
+                        {item.loader} · {item.minecraft}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
-
-      {dialog ? (
-        <Modal
-          title={dialog.editing ? "编辑服务器" : "添加服务器"}
-          onClose={() => setDialog(null)}
-          footer={
-            <>
-              <button type="button" className="btn ghost" onClick={() => setDialog(null)}>
-                取消
-              </button>
-              <button type="button" className="btn primary" onClick={() => void saveServer()}>
-                保存
-              </button>
-            </>
-          }
-        >
-          <p className="muted">保存后会作为一张卡片出现在「正在开设的服务器」里。</p>
-          <Field label="服务器名称" hint="可留空，默认显示地址">
-            <input
-              className="input"
-              maxLength={60}
-              placeholder="例如：MCUG 生存服"
-              value={dialog.draft.name}
-              onChange={(event) => setDialog({ ...dialog, draft: { ...dialog.draft, name: event.target.value } })}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") void saveServer();
-              }}
-            />
-          </Field>
-          <Field label="网页" hint="填域名或 host:port 才能查询人数并直接进服；带 / 的网页链接只能作记录。">
-            <input
-              className="input"
-              placeholder="play.example.com:25565"
-              value={dialog.draft.address}
-              onChange={(event) => setDialog({ ...dialog, draft: { ...dialog.draft, address: event.target.value } })}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") void saveServer();
-              }}
-            />
-          </Field>
-          <Field label="打开所用的实例" hint="绑定后用卡片上的「打开」直连服务器；不绑定只能手动进入。">
-            <select
-              className="select"
-              value={dialog.draft.instanceId ?? ""}
-              onChange={(event) =>
-                setDialog({
-                  ...dialog,
-                  draft: { ...dialog.draft, instanceId: event.target.value.length > 0 ? event.target.value : null },
-                })
-              }
-            >
-              <option value="">不绑定实例</option>
-              {instances.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.displayName} · {item.loader} · {item.minecraft}
-                </option>
-              ))}
-            </select>
-          </Field>
-          {dialog.status.length > 0 ? <p className="status">{dialog.status}</p> : null}
-        </Modal>
-      ) : null}
-
-      {announcement ? (
-        <Modal
-          title={announcement.title}
-          width={640}
-          onClose={() => setAnnouncement(null)}
-          footer={
-            <button type="button" className="btn primary" onClick={() => setAnnouncement(null)}>
-              关闭
-            </button>
-          }
-        >
-          <p className="muted">
-            {[announcement.tag, announcement.author, announcement.publishedAt?.slice(0, 10) ?? ""]
-              .filter((value) => value.length > 0)
-              .join(" · ")}
-          </p>
-          {announcement.imageUrl.length > 0 ? <img className="announcement-image" src={announcement.imageUrl} alt="" /> : null}
-          <Markdown text={announcement.markdown.length > 0 ? announcement.markdown : announcement.body} />
-        </Modal>
-      ) : null}
-
-      {menu ? (
-        <div className="context-menu" style={{ left: menu.x, top: menu.y }}>
-          <button type="button" onClick={() => void favorite(menu.item)}>
-            收藏
-          </button>
-        </div>
-      ) : null}
-    </>
+    </div>
   );
 }

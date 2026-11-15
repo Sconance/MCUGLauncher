@@ -1,13 +1,10 @@
 import { useCallback, useState } from "react";
-import closeIcon from "../assets/CloseIcon.svg";
+import DiscoverIcon from "../assets/DiscoverIcon.svg";
 import downloadIcon from "../assets/DownloadIcon.svg";
 import extraIcon from "../assets/ExtraIcon.svg";
 import launchIcon from "../assets/LaunchIcon.svg";
-import maximizeIcon from "../assets/MaximizeIcon.svg";
-import minimizeIcon from "../assets/MinimizeIcon.svg";
 import settingsIcon from "../assets/SettingsIcon.svg";
-import { appWindow } from "../api/window";
-import { APP_VERSION } from "../config";
+import DiscoverPage from "../pages/DiscoverPage";
 import DownloadPage from "../pages/DownloadPage";
 import ExtrasPage from "../pages/ExtrasPage";
 import HomePage from "../pages/HomePage";
@@ -15,16 +12,17 @@ import SettingsPage from "../pages/SettingsPage";
 import { useLauncher } from "../state/launcher";
 import { NavigationContext } from "./navigation";
 
-type PageKey = "home" | "download" | "settings" | "extras";
+type PageKey = "home" | "discover" | "download" | "settings" | "extras";
 
 const NAV: { key: PageKey; label: string; icon: string }[] = [
   { key: "home", label: "启动", icon: launchIcon },
+  { key: "discover", label: "发现", icon: DiscoverIcon },
   { key: "download", label: "下载", icon: downloadIcon },
   { key: "settings", label: "设置", icon: settingsIcon },
   { key: "extras", label: "更多", icon: extraIcon },
 ];
 
-/** 应用外壳：标题栏、顶部导航、页面宿主与后端错误提示。 */
+/** 应用外壳：悬浮胶囊导航 + 页面宿主 + 后端错误提示（Toast 由 App 统一提供）。 */
 export default function Shell() {
   const { error } = useLauncher();
   const [page, setPage] = useState<PageKey>("home");
@@ -34,11 +32,18 @@ export default function Shell() {
     setExtrasSection("account");
     setPage("extras");
   }, []);
+  const openInstances = useCallback(() => {
+    setExtrasSection("instances");
+    setPage("extras");
+  }, []);
 
   let content;
   switch (page) {
     case "home":
       content = <HomePage />;
+      break;
+    case "discover":
+      content = <DiscoverPage />;
       break;
     case "download":
       content = <DownloadPage />;
@@ -52,22 +57,16 @@ export default function Shell() {
   }
 
   return (
-    <NavigationContext.Provider value={{ openAccount }}>
+    <NavigationContext.Provider value={{ openAccount, openInstances }}>
       <div className="shell">
-        <header
-          className="titlebar"
-          data-tauri-drag-region
-          onDoubleClick={(event) => {
-            if ((event.target as HTMLElement).closest("button")) return;
-            void appWindow.toggleMaximize();
-          }}
-        >
-          <div className="brand" data-tauri-drag-region>
-            <span className="brand-title">MCUG Launcher</span>
-            <span className="brand-version">{APP_VERSION}</span>
-          </div>
+        <main className="page-host">
+          {error.length > 0 ? <div className="backend-error">{error}</div> : null}
+          {content}
+        </main>
 
-          <nav className="topnav" aria-label="主导航">
+        {/* 悬浮胶囊导航：不占布局高度，页面内容从窗口顶边开始、从胶囊下方穿过 */}
+        <div className="nav-dock">
+          <nav className="nav-pill" aria-label="主导航">
             {NAV.map((item) => (
               <button
                 key={item.key}
@@ -80,29 +79,7 @@ export default function Shell() {
               </button>
             ))}
           </nav>
-
-          <div className="window-controls">
-            <button type="button" className="btn icon" aria-label="最小化" onClick={() => void appWindow.minimize()}>
-              <img src={minimizeIcon} alt="" />
-            </button>
-            <button
-              type="button"
-              className="btn icon"
-              aria-label="最大化"
-              onClick={() => void appWindow.toggleMaximize()}
-            >
-              <img src={maximizeIcon} alt="" />
-            </button>
-            <button type="button" className="btn icon close" aria-label="关闭" onClick={() => void appWindow.close()}>
-              <img src={closeIcon} alt="" />
-            </button>
-          </div>
-        </header>
-
-        <main className="page-host">
-          {error.length > 0 ? <div className="backend-error">{error}</div> : null}
-          {content}
-        </main>
+        </div>
       </div>
     </NavigationContext.Provider>
   );

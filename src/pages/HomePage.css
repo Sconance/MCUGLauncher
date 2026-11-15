@@ -1,241 +1,355 @@
 .home {
-  display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: 18px;
-  height: 100%;
-  min-height: 0;
-  padding: 20px 3px 20px 20px;
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    padding: 20px 3px 20px 20px;
 }
 
-.home.blurred .home-account,
-.home.blurred .home-feed {
-  filter: blur(2px);
-}
+/* ---------- 右下角启动区 ---------- */
 
-.home-account {
+.home-launch {
+  position: absolute;
+  right: 3px;
+  bottom: 20px;
+  margin-right: 10px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 472px;
+}
+
+.home-status {
+  margin: 0;
+  text-align: right;
+}
+
+/* 角色卡与启动按钮同高并排，底边对齐 */
+.launch-row {
+  display: flex;
+  align-items: flex-end;
   gap: 12px;
-  min-height: 0;
-  overflow-y: auto;
 }
 
-.avatar-wrap {
+/* ---------- 角色卡（参照 SJMCL 主页的角色选择） ---------- */
+
+.player-card {
   position: relative;
-  align-self: center;
-  display: grid;
-  place-items: center;
-  width: 100px;
-  height: 100px;
+  display: flex;
+  align-items: center;
+  width: 200px;
+  height: 72px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-launch);
+  box-shadow: var(--shadow-card);
+  background-color: var(--app-glass);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: var(--app-glass-blur);
 }
 
-.avatar-shadow {
-  position: absolute;
-  width: 82px;
-  height: 82px;
-  box-shadow: var(--shadow-avatar);
+.player-card-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
-.avatar-image {
-  width: 94px;
-  height: 94px;
+.player-card-avatar {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  background: var(--app-side);
   image-rendering: pixelated;
 }
 
-.account-name {
-  font-size: 18px;
-  font-weight: 700;
-  text-align: center;
-  word-break: break-word;
-}
-
-.launch-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.launch-subtitle {
-  font-size: 9.5px;
-  color: #c9ddf0;
-}
-
-.home-feed {
+.player-card-text {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 11px;
+  gap: 2px;
+  min-width: 0;
 }
 
-/* ---------- 服务器卡片 ---------- */
-
-.server-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.server-card {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  width: 200px;
-  min-height: 154px;
-  padding: 11px;
-  border: 1px solid var(--app-line);
-  border-radius: 9px;
-  background: #fdfefd;
-}
-
-.server-head {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 9px;
-  align-items: center;
-}
-
-.server-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: #8a96a0;
-  color: #fff;
-  font-size: 16px;
-}
-
-.server-icon.online {
-  background: #3370aa;
-}
-
-.server-name {
-  font-size: 12.5px;
-  font-weight: 600;
+.player-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.server-actions {
-  display: flex;
-  gap: 4px;
-  margin-top: auto;
-  flex-wrap: wrap;
+.player-card-type {
+  font-size: 10px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ---------- 公告 ---------- */
-
-.announcement-title {
-  font-weight: 600;
-  word-break: break-word;
-}
-
-.announcement-image {
-  max-width: 100%;
-  max-height: 180px;
-  object-fit: contain;
-  border-radius: 8px;
-}
-
-/* ---------- 推荐 ---------- */
-
-.rec-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 9px;
-  padding: 6px 0;
-  border-bottom: 1px solid #e7eef4;
-}
-
-.rec-row:last-child {
-  border-bottom: 0;
-}
-
-.rec-icon {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
+.btn.player-switch {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
   border-radius: 7px;
-  background: #3370aa;
+  background: #fff;
+  color: var(--app-ink-2);
+}
+
+.btn.player-switch:hover {
+  background: rgb(0 0 0 / 10%);
+  color: var(--app-ink);
+}
+
+.btn.player-switch img {
+  width: 13px;
+  height: 13px;
+  opacity: 0.7;
+}
+
+/* 角色选择浮层：从角色卡上方展开，角色多时内部滚动 */
+.player-picker {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 240px;
+  max-height: 216px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: var(--shadow-dialog);
+  background-color: var(--app-glass-strong);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: blur(32px) saturate(135%);
+}
+
+.player-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.player-picker-item:hover {
+  background: var(--app-accent-wash);
+}
+
+.player-picker-item.selected {
+  background: var(--app-accent-tint);
+}
+
+.player-picker-radio {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--app-line-2);
+  border-radius: 50%;
+}
+
+.player-picker-item.selected .player-picker-radio {
+  border-color: var(--app-accent);
+  background: var(--app-accent);
+  box-shadow: inset 0 0 0 2.5px var(--app-glass-strong);
+}
+
+.player-picker-avatar {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  background: var(--app-side);
+  image-rendering: pixelated;
+}
+
+.player-picker-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.player-picker-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.player-picker-empty {
+  margin: 0;
+  padding: 8px;
+}
+
+/* 启动按钮与其右上角的快捷键共用一层定位盒 */
+.launch-block {
+  position: relative;
+  width: 250px;
+}
+
+/* 快捷键外观合并成一整块矩形圆角，上下两半各自独立响应点击 */
+.launch-tools {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 14%);
+  backdrop-filter: blur(10px) saturate(140%);
+}
+
+/* 容器不再 overflow:hidden（否则悬停提示会被裁掉），外缘圆角交给首尾按钮 */
+.btn.launch-tool:first-child {
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+}
+
+.btn.launch-tool:last-child {
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+.btn.launch-tool {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: #fff;
-  font-size: 13px;
+  transition: background-color 120ms linear;
 }
 
-.rec-icon.material {
-  background: #c9822b;
+.btn.launch-tool:hover {
+  background: rgb(255 255 255 / 18%);
+  color: #fff;
 }
 
-.rec-icon.shader {
-  background: #7b5ac8;
+.btn.launch-tool img {
+  width: 13px;
+  height: 13px;
 }
 
-.rec-name {
+/* 实例选择浮层：从启动按钮上方展开，实例多时在内部滚动 */
+.instance-picker {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 240px;
+  max-height: 216px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: var(--shadow-dialog);
+  background-color: var(--app-glass-strong);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: blur(32px) saturate(135%);
+}
+
+.instance-picker-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--app-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.instance-picker-item:hover {
+  background: var(--app-accent-wash);
+}
+
+.instance-picker-item.selected {
+  background: var(--app-accent-tint);
+}
+
+.instance-picker-name {
+  font-size: 12.5px;
   font-weight: 600;
 }
 
-/* ---------- 语录 ---------- */
-
-.quote-card {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: start;
+.instance-picker-empty {
+  margin: 0;
+  padding: 8px;
 }
 
-.quote-mark {
-  font-family: var(--font-quote);
-  font-size: 34px;
-  line-height: 1;
-  color: #7fa4c7;
+.launch-title {
+    font-size: 17px;
+    font-weight: 700;
+    text-align: center;
+    color: #fff;
 }
 
-.quote-text {
-  font-size: 15px;
-  line-height: 1.6;
+.launch-subtitle {
+  font-size: 9.5px;
+  color: rgb(255 255 255 / 72%);
 }
 
 /* ---------- Markdown 公告 ---------- */
 
 .markdown {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
-  line-height: 1.7;
-  color: var(--app-ink);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--app-ink);
 }
 
 .markdown h2 {
-  font-size: 18px;
-  font-weight: 700;
+    font-size: 18px;
+    font-weight: 700;
 }
 
 .markdown h3 {
-  font-size: 15px;
-  font-weight: 700;
+    font-size: 15px;
+    font-weight: 700;
 }
 
 .markdown h4 {
-  font-size: 13px;
-  font-weight: 700;
+    font-size: 13px;
+    font-weight: 700;
 }
 
 .markdown li {
-  margin-left: 18px;
+    margin-left: 18px;
 }
 
 .markdown blockquote {
-  margin: 0;
-  padding: 4px 10px;
-  border-left: 3px solid var(--app-accent-soft);
-  color: var(--app-ink-2);
+    margin: 0;
+    padding: 4px 10px;
+    border-left: 3px solid var(--app-accent-soft);
+    color: var(--app-ink-2);
 }
 
 .md-gap {
-  height: 4px;
+    height: 4px;
 }

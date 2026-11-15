@@ -1,59 +1,60 @@
+/*
+ * 外壳：页面铺满整个窗口，顶部导航以悬浮胶囊覆盖在内容之上。
+ * 胶囊不占布局高度，页面内容从窗口顶边开始、滚动时从胶囊下方穿过。
+ */
+
 .shell {
-  display: grid;
-  grid-template-rows: var(--titlebar-height) minmax(0, 1fr);
+  position: relative;
   height: 100%;
-  background: var(--app-bg);
+  overflow: hidden;
+  /* 底色 → 壁纸 → 半透明白色蒙版（压低对比度，保证文字可读） */
+  background:
+    url("../assets/TmpBackground.png") center / cover no-repeat,
+    var(--app-bg);
 }
 
-.titlebar {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) auto;
+/* 定位与居中用外层，避免胶囊自身的毛玻璃背景被拉伸到整行 */
+.nav-dock {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10; /* 低于弹层（20）与 Toast（40） */
+  display: flex;
+  justify-content: center;
+  padding-top: 10px; /* 胶囊与窗口顶边的留白 */
+  pointer-events: none; /* 让内容在胶囊两侧仍可交互 */
+}
+
+.nav-pill {
+  display: flex;
   align-items: center;
-  background: #fff;
-  border-bottom: 1px solid var(--app-line);
+  gap: 2px;
+  padding: 4px;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgb(18 42 64 / 12%);
+  background-color: var(--app-glass-strong);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: var(--app-glass-blur);
+  pointer-events: auto;
   user-select: none;
 }
 
-.brand {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding-left: 18px;
-  white-space: nowrap;
+/* 胶囊内的四个按钮：去掉方角，改成与胶囊同心的圆角 */
+.nav-pill .btn.topnav {
+  height: 34px;
+  border-radius: 999px;
 }
 
-.brand-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1b3044;
-}
-
-.brand-version {
-  font-size: 9.5px;
-  color: #646d75;
-}
-
-.topnav {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding-left: 10px;
-  min-width: 0;
-}
-
-.topnav .btn img {
+.nav-pill .btn.topnav img {
   width: 16px;
   height: 16px;
 }
 
-.window-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-right: 8px;
-}
-
 .page-host {
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
