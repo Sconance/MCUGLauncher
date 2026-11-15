@@ -250,7 +250,7 @@ impl Data {
         Ok(UninstallPreviewInfo {
             plan_id,
             target_id: instance_id.into(),
-            target_revision: self.revisions.instances,
+            target_revision: self.revisions.instances as i64,
             expires_at: expires_at.format(&Rfc3339).unwrap_or_default(),
             name: instance.display_name,
             notice: "执行前会再次检查目标实例及修订号。".into(),

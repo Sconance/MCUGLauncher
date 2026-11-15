@@ -293,7 +293,6 @@
         },
         "expiresAt": {
           "type": "string",
-          "format": "date-time",
           "description": "expiresAt 字段。"
         },
         "minecraftVersion": {
@@ -342,7 +341,6 @@
         },
         "expiresAt": {
           "type": "string",
-          "format": "date-time",
           "description": "expiresAt 字段。"
         },
         "name": {
@@ -599,7 +597,6 @@
         },
         "expiresAt": {
           "type": "string",
-          "format": "date-time",
           "description": "expiresAt 字段。"
         },
         "name": {

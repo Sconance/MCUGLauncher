@@ -21,26 +21,13 @@ pub use crate::schema_dto::generated::operations::AppSettingsPatch;
 pub use crate::schema_dto::generated::tasks::{TaskProgressInfo, TaskResultInfo};
 pub use crate::schema_dto::generated::operations::{
     ContentUpdatePreviewInfo, ContentUpdatesInfo,
-    PackPreviewInfo,
+    PackPreviewInfo, UninstallPreviewInfo,
 };
 pub use crate::schema_dto::generated::instances::{
     DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
     SavedServerInfo, SettingsInfo,
     VersionChoice, VersionGroupInfo,
 };
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct UninstallPreviewInfo {
-    pub plan_id: String,
-    pub target_id: String,
-    pub target_revision: u64,
-    pub expires_at: String,
-    pub name: String,
-    pub notice: String,
-    pub paths: Vec<String>,
-    pub shared: bool,
-}
 
 impl DataSourceSet {
     pub fn demo() -> Self {
