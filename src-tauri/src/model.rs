@@ -24,7 +24,7 @@ pub use crate::schema_dto::generated::operations::{
 };
 pub use crate::schema_dto::generated::instances::{
     DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
-    SavedServerInfo,
+    SavedServerInfo, SettingsInfo,
     VersionChoice, VersionGroupInfo,
 };
 
@@ -101,28 +101,6 @@ pub struct BackendState {
     pub servers: Vec<SavedServerInfo>,
     pub favorites: Vec<FavoriteInfo>,
     pub version_groups: Vec<VersionGroupInfo>,
-    pub data_sources: DataSourceSet,
-    pub default_data_sources: DataSourceSet,
-    pub custom_data_sources: DataSourceSet,
-    pub data_source_mode: String,
-    pub auto_chinese: bool,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct SettingsInfo {
-    pub root: String,
-    pub game_roots: Vec<String>,
-    pub java: String,
-    pub width: i32,
-    pub height: i32,
-    pub ram: i32,
-    pub auto_memory: bool,
-    pub anonymous: bool,
-    pub has_community_key: bool,
-    pub has_admin_key: bool,
-    pub skin_station: String,
-    pub cape: String,
     pub data_sources: DataSourceSet,
     pub default_data_sources: DataSourceSet,
     pub custom_data_sources: DataSourceSet,

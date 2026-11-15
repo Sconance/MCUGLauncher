@@ -823,22 +823,22 @@ export interface SettingsInfo {
   /**
    * hasCommunityKey 字段。
    */
-  hasCommunityKey?: boolean;
+  hasCommunityKey: boolean;
   /**
    * hasAdminKey 字段。
    */
-  hasAdminKey?: boolean;
+  hasAdminKey: boolean;
   /**
    * skinStation 字段。
    */
-  skinStation?: string;
+  skinStation: string;
   /**
    * cape 字段。
    */
-  cape?: string;
+  cape: string;
   dataSources: DataSourceSet1;
-  defaultDataSources?: DataSourceSet2;
-  customDataSources?: DataSourceSet3;
+  defaultDataSources: DataSourceSet2;
+  customDataSources: DataSourceSet3;
   /**
    * dataSourceMode 字段。
    */

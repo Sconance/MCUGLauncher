@@ -422,7 +422,13 @@
         "ram",
         "autoMemory",
         "anonymous",
+        "hasCommunityKey",
+        "hasAdminKey",
+        "skinStation",
+        "cape",
         "dataSources",
+        "defaultDataSources",
+        "customDataSources",
         "dataSourceMode",
         "autoChinese"
       ],
