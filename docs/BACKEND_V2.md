@@ -32,7 +32,7 @@
 
 安装、导入、导出、备份、恢复、卸载、更新返回 { taskId }，表示接受而非完成。重复提交通过 requestId 去重；相同 requestId 和相同参数返回原任务，不同参数返回 CONFLICT。去重记录至少保留至任务终态后的保留期内，并明确配置保留期。
 
-Task 包含 id、kind、instanceId、status、phase、progress、allowedActions、error、result、createdAt、updatedAt。progress 为 null 或 { completed, total: number | null, unit: "bytes" | "items" }。时间统一为 UTC RFC3339。
+Task 包含 id、kind、instanceId、status、phase、progress、allowedActions、error、result、createdAt、updatedAt。该结构已经落实到前后端；progress 为 null 或 { completed, total: number | null, unit: "bytes" | "items" }，未知总量不显示伪造百分比。时间统一为 UTC RFC3339。
 
 状态流：queued → running → succeeded/failed；支持暂停时 running → paused → running；接受取消后进入 cancelling，清理完成后进入 cancelled。提交阶段禁止暂停或取消。后端计算 allowedActions 并再次校验操作，不信任 UI 按钮状态。只有终态允许删除记录。
 

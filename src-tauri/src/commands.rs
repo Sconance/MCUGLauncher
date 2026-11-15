@@ -8,7 +8,7 @@
 use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
-use time::Duration;
+use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
 
 use crate::{
     demo::{StateResource, avatar_for},
@@ -577,6 +577,9 @@ pub fn task_action(
                 retryable: false,
             })?;
         task.apply_action(&action)?;
+        task.updated_at = OffsetDateTime::now_utc()
+            .format(&Rfc3339)
+            .unwrap_or_default();
         if action == "delete" {
             data.tasks.retain(|task| task.id != id);
         }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { taskAction } from "../api/commands/tasks";
 import { useLauncher } from "../state/launcher";
+import type { TaskInfo } from "../types/launcher";
 import "./TasksPage.css";
 
 const ACTIONS = [
@@ -9,6 +10,12 @@ const ACTIONS = [
   ["cancel", "取消"],
   ["delete", "删除"],
 ] as const;
+
+function progressPercent(task: { progress: TaskInfo["progress"] }): number | null {
+  const progress = task.progress;
+  if (!progress || progress.total === null || progress.total <= 0) return null;
+  return Math.min(100, Math.max(0, (progress.completed / progress.total) * 100));
+}
 
 /** 下载任务页：任务来自全局命令同步，操作通过命令提交。 */
 export default function TasksPage() {
@@ -43,12 +50,15 @@ export default function TasksPage() {
                 <article className="card task-card" key={task.id}>
                   <span className="task-name">{task.name}</span>
                   <span className="muted">
-                    {task.state} · {Math.round(task.percent)}%
-                    {task.message.length > 0 ? ` · ${task.message}` : ""}
+                    {task.status} · {task.phase}
+                    {progressPercent(task) === null ? "" : ` · ${Math.round(progressPercent(task) ?? 0)}%`}
                   </span>
-                  <div className="progress">
-                    <span style={{ width: `${Math.min(100, Math.max(0, task.percent))}%` }} />
-                  </div>
+                  {progressPercent(task) === null ? null : (
+                    <div className="progress">
+                      <span style={{ width: `${progressPercent(task)}%` }} />
+                    </div>
+                  )}
+                  {task.error ? <span className="status">{task.error.message}</span> : null}
                   <div className="row" style={{ gap: 6 }}>
                     {ACTIONS.map(([action, label]) => (
                       <button

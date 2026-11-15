@@ -142,11 +142,16 @@ export interface InstanceCatalogInfo {
 export interface TaskInfo {
   id: string;
   name: string;
-  state: string;
-  percent: number;
-  message: string;
-  committing: boolean;
+  kind: string;
+  instanceId: string | null;
+  status: "queued" | "running" | "paused" | "cancelling" | "succeeded" | "failed" | "cancelled";
+  phase: string;
+  progress: { completed: number; total: number | null; unit: "bytes" | "items" } | null;
   allowedActions: ("pause" | "resume" | "cancel" | "delete")[];
+  error: { code: string; message: string; retryable: boolean } | null;
+  result: { changed: { kind: string; instanceId: string | null }[]; entityIds: string[] } | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface GameSessionInfo {

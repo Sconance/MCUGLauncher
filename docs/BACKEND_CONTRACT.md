@@ -12,6 +12,8 @@
 
 任务状态使用小写 `queued`、`running`、`paused`、`cancelling`、`succeeded`、`failed`、`cancelled`；`allowedActions` 是后端计算的可执行动作。提交阶段禁止中断，取消请求不等于清理完成，终态才可删除。未知任务返回 `NOT_FOUND`，非法转换返回 `CONFLICT`。演示队列仅在内存中保存，重启重置。
 
+`TaskInfo` 包含 `kind`、可空 `instanceId`、`status`、`phase`、可空结构化 `progress`、`allowedActions`、可空 `error/result` 以及 UTC RFC3339 的 `createdAt/updatedAt`。未知总量使用 `progress.total = null`，前端显示不确定进度，不伪造百分比。
+
 ## 1. 约定
 
 - **命令名**：`snake_case`，动词在前，例如 `get_overview`、`save_server`。

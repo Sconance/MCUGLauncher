@@ -171,14 +171,41 @@ pub struct InstanceCatalogInfo {
 
 #[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
+pub struct TaskProgressInfo {
+    pub completed: u64,
+    pub total: Option<u64>,
+    pub unit: String,
+}
+
+#[derive(Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceKeyInfo {
+    pub kind: String,
+    pub instance_id: Option<String>,
+}
+
+#[derive(Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskResultInfo {
+    pub changed: Vec<ResourceKeyInfo>,
+    pub entity_ids: Vec<String>,
+}
+
+#[derive(Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct TaskInfo {
     pub id: String,
     pub name: String,
-    pub state: String,
-    pub percent: f64,
-    pub message: String,
-    pub committing: bool,
+    pub kind: String,
+    pub instance_id: Option<String>,
+    pub status: String,
+    pub phase: String,
+    pub progress: Option<TaskProgressInfo>,
     pub allowed_actions: Vec<String>,
+    pub error: Option<ApiError>,
+    pub result: Option<TaskResultInfo>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -591,9 +618,9 @@ impl ApiError {
 impl TaskInfo {
     /// 可执行动作由后端统一计算；提交阶段禁止中断。
     pub fn actions(&self) -> Vec<String> {
-        let actions: &[&str] = match self.state.as_str() {
+        let actions: &[&str] = match self.status.as_str() {
             "succeeded" | "failed" | "cancelled" => &["delete"],
-            _ if self.committing => &[],
+            _ if self.phase == "committing" => &[],
             "running" => &["pause", "cancel"],
             "paused" => &["resume", "cancel"],
             "queued" => &["cancel"],
@@ -611,11 +638,11 @@ impl TaskInfo {
                 retryable: false,
             });
         }
-        self.state = match action {
+        self.status = match action {
             "pause" => "paused",
             "resume" => "running",
             "cancel" => "cancelling",
-            _ => self.state.as_str(),
+            _ => self.status.as_str(),
         }
         .into();
         self.allowed_actions = self.actions();
@@ -630,24 +657,24 @@ mod tests {
     #[test]
     fn cancellation_waits_for_cleanup() {
         let mut task = TaskInfo {
-            state: "running".into(),
+            status: "running".into(),
             ..Default::default()
         };
         task.apply_action("cancel").unwrap();
-        assert_eq!(task.state, "cancelling");
+        assert_eq!(task.status, "cancelling");
         assert!(task.apply_action("delete").is_err());
     }
 
     #[test]
     fn committing_cannot_be_interrupted() {
         let mut task = TaskInfo {
-            state: "running".into(),
-            committing: true,
+            status: "running".into(),
+            phase: "committing".into(),
             ..Default::default()
         };
         assert!(task.apply_action("pause").is_err());
         assert!(task.apply_action("cancel").is_err());
-        task.state = "failed".into();
+        task.status = "failed".into();
         assert_eq!(task.actions(), vec!["delete"]);
     }
 
