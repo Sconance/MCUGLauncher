@@ -124,6 +124,187 @@
       "additionalProperties": false,
       "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
     },
+    "AnnouncementInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "body",
+        "tag",
+        "author",
+        "publishedAt",
+        "imageUrl",
+        "markdown"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "title": {
+          "type": "string",
+          "description": "title 字段。"
+        },
+        "body": {
+          "type": "string",
+          "description": "body 字段。"
+        },
+        "tag": {
+          "type": "string",
+          "description": "tag 字段。"
+        },
+        "author": {
+          "type": "string",
+          "description": "author 字段。"
+        },
+        "publishedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "publishedAt 字段。"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "imageUrl 字段。"
+        },
+        "markdown": {
+          "type": "string",
+          "description": "markdown 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "AnnouncementInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "RecommendationInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "name",
+        "author",
+        "description",
+        "tags",
+        "version",
+        "size",
+        "url"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "type": {
+          "type": "string",
+          "description": "type 字段。"
+        },
+        "name": {
+          "type": "string",
+          "description": "name 字段。"
+        },
+        "author": {
+          "type": "string",
+          "description": "author 字段。"
+        },
+        "description": {
+          "type": "string",
+          "description": "description 字段。"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "tags 字段。"
+        },
+        "version": {
+          "type": "string",
+          "description": "version 字段。"
+        },
+        "size": {
+          "type": "string",
+          "description": "size 字段。"
+        },
+        "url": {
+          "type": "string",
+          "description": "url 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "RecommendationInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "QuoteInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "text",
+        "author",
+        "source",
+        "imageUrl"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "type": {
+          "type": "string",
+          "description": "type 字段。"
+        },
+        "text": {
+          "type": "string",
+          "description": "text 字段。"
+        },
+        "author": {
+          "type": "string",
+          "description": "author 字段。"
+        },
+        "source": {
+          "type": "string",
+          "description": "source 字段。"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "imageUrl 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "QuoteInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "CommunityData": {
+      "type": "object",
+      "required": [
+        "announcements",
+        "recommendations",
+        "quotes"
+      ],
+      "properties": {
+        "announcements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AnnouncementInfo"
+          },
+          "description": "announcements 字段。"
+        },
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecommendationInfo"
+          },
+          "description": "recommendations 字段。"
+        },
+        "quotes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/QuoteInfo"
+          },
+          "description": "quotes 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "CommunityData：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
     "ResourceVersionInfo": {
       "type": "object",
       "required": [
@@ -211,30 +392,6 @@
       },
       "additionalProperties": false,
       "description": "VanillaVersionInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
-    },
-    "CommunityData": {
-      "type": "object",
-      "required": [
-        "announcements",
-        "recommendations",
-        "quotes"
-      ],
-      "properties": {
-        "announcements": {
-          "type": "array",
-          "description": "announcements 字段。"
-        },
-        "recommendations": {
-          "type": "array",
-          "description": "recommendations 字段。"
-        },
-        "quotes": {
-          "type": "array",
-          "description": "quotes 字段。"
-        }
-      },
-      "additionalProperties": false,
-      "description": "CommunityData：通过 Tauri 命令在前后端之间传输的数据对象。"
     },
     "ContentItem": {
       "type": "object",

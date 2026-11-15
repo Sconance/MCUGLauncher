@@ -12,6 +12,7 @@ pub use crate::schema_dto::generated::content::{
 };
 pub use crate::schema_dto::generated::accounts::{AvatarInfo, MuaProfileInfo};
 pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult};
+pub use crate::schema_dto::generated::content::{AnnouncementInfo, CommunityData, QuoteInfo, RecommendationInfo};
 pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
 pub use crate::schema_dto::generated::operations::{JavaInfo, ServerPingInfo};
 pub use crate::schema_dto::generated::instances::{
@@ -151,52 +152,6 @@ pub struct GameSessionInfo {
     pub pid: Option<u32>,
     pub exit_code: Option<i32>,
     pub error: Option<ApiError>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct AnnouncementInfo {
-    pub id: String,
-    pub title: String,
-    pub body: String,
-    pub tag: String,
-    pub author: String,
-    pub published_at: Option<String>,
-    pub image_url: String,
-    pub markdown: String,
-}
-
-#[derive(Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct RecommendationInfo {
-    pub id: String,
-    pub r#type: String,
-    pub name: String,
-    pub author: String,
-    pub description: String,
-    pub tags: Vec<String>,
-    pub version: String,
-    pub size: String,
-    pub url: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct QuoteInfo {
-    pub id: String,
-    pub r#type: String,
-    pub text: String,
-    pub author: String,
-    pub source: String,
-    pub image_url: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct CommunityData {
-    pub announcements: Vec<AnnouncementInfo>,
-    pub recommendations: Vec<RecommendationInfo>,
-    pub quotes: Vec<QuoteInfo>,
 }
 
 /// 登录会话只暴露当前阶段所需的字段。

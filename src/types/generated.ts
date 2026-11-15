@@ -43,10 +43,13 @@ export interface LauncherDTO {
   MuaProfileInfo?: MuaProfileInfo;
   LoginSessionInfo?: LoginSessionInfo;
   AvatarInfo?: AvatarInfo;
+  AnnouncementInfo?: AnnouncementInfo;
+  RecommendationInfo?: RecommendationInfo;
+  QuoteInfo?: QuoteInfo;
+  CommunityData?: CommunityData;
   ResourceVersionInfo?: ResourceVersionInfo;
   ResourceVersionsInfo?: ResourceVersionsInfo;
   VanillaVersionInfo?: VanillaVersionInfo;
-  CommunityData?: CommunityData;
   ContentItem?: ContentItem;
   ContentSearchResult?: ContentSearchResult;
   LoaderListInfo?: LoaderListInfo;
@@ -215,6 +218,130 @@ export interface AvatarInfo {
   player: string;
 }
 /**
+ * AnnouncementInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface AnnouncementInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * title 字段。
+   */
+  title: string;
+  /**
+   * body 字段。
+   */
+  body: string;
+  /**
+   * tag 字段。
+   */
+  tag: string;
+  /**
+   * author 字段。
+   */
+  author: string;
+  /**
+   * publishedAt 字段。
+   */
+  publishedAt: string | null;
+  /**
+   * imageUrl 字段。
+   */
+  imageUrl: string;
+  /**
+   * markdown 字段。
+   */
+  markdown: string;
+}
+/**
+ * RecommendationInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface RecommendationInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * type 字段。
+   */
+  type: string;
+  /**
+   * name 字段。
+   */
+  name: string;
+  /**
+   * author 字段。
+   */
+  author: string;
+  /**
+   * description 字段。
+   */
+  description: string;
+  /**
+   * tags 字段。
+   */
+  tags: string[];
+  /**
+   * version 字段。
+   */
+  version: string;
+  /**
+   * size 字段。
+   */
+  size: string;
+  /**
+   * url 字段。
+   */
+  url: string;
+}
+/**
+ * QuoteInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface QuoteInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * type 字段。
+   */
+  type: string;
+  /**
+   * text 字段。
+   */
+  text: string;
+  /**
+   * author 字段。
+   */
+  author: string;
+  /**
+   * source 字段。
+   */
+  source: string;
+  /**
+   * imageUrl 字段。
+   */
+  imageUrl: string;
+}
+/**
+ * CommunityData：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface CommunityData {
+  /**
+   * announcements 字段。
+   */
+  announcements: AnnouncementInfo[];
+  /**
+   * recommendations 字段。
+   */
+  recommendations: RecommendationInfo[];
+  /**
+   * quotes 字段。
+   */
+  quotes: QuoteInfo[];
+}
+/**
  * ResourceVersionInfo：通过 Tauri 命令在前后端之间传输的数据对象。
  */
 export interface ResourceVersionInfo {
@@ -272,23 +399,6 @@ export interface VanillaVersionInfo {
    * released 字段。
    */
   released: string;
-}
-/**
- * CommunityData：通过 Tauri 命令在前后端之间传输的数据对象。
- */
-export interface CommunityData {
-  /**
-   * announcements 字段。
-   */
-  announcements: unknown[];
-  /**
-   * recommendations 字段。
-   */
-  recommendations: unknown[];
-  /**
-   * quotes 字段。
-   */
-  quotes: unknown[];
 }
 /**
  * ContentItem：通过 Tauri 命令在前后端之间传输的数据对象。

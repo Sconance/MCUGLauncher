@@ -685,7 +685,7 @@ fn demo_community() -> CommunityData {
         quotes: vec![
             QuoteInfo {
                 id: "q1".into(),
-                r#type: "text".into(),
+                type_: "text".into(),
                 text: "来都来了，先挖三格。".into(),
                 author: "群友".into(),
                 source: "群聊".into(),
@@ -693,7 +693,7 @@ fn demo_community() -> CommunityData {
             },
             QuoteInfo {
                 id: "q2".into(),
-                r#type: "text".into(),
+                type_: "text".into(),
                 text: "这箱子里的东西不是你的，是我的。".into(),
                 author: "服主".into(),
                 source: "服务器公告".into(),
@@ -701,7 +701,7 @@ fn demo_community() -> CommunityData {
             },
             QuoteInfo {
                 id: "q3".into(),
-                r#type: "text".into(),
+                type_: "text".into(),
                 text: "今晚八点，主城集合。".into(),
                 author: "管理组".into(),
                 source: "活动通知".into(),
@@ -721,7 +721,7 @@ fn recommendation(
 ) -> RecommendationInfo {
     RecommendationInfo {
         id: id.into(),
-        r#type: kind.into(),
+        type_: kind.into(),
         name: name.into(),
         author: author.into(),
         description: description.into(),
