@@ -509,7 +509,14 @@ pub fn save_custom_sources(
         data.mutating_snapshot(&[StateResource::Settings])
     };
     emit(&app, EVENT_STATE, state);
-    SavedInfo::new("已保存自定义数据源，可点击「使用自定义」切换。")
+    SavedInfo::changed(
+        "已保存自定义数据源，可点击「使用自定义」切换。",
+        vec![ResourceKeyInfo {
+            kind: "settings".into(),
+            instance_id: None,
+        }],
+        Vec::new(),
+    )
 }
 
 /// 切换默认或自定义数据源。
@@ -526,7 +533,14 @@ pub fn use_data_sources(app: AppHandle, backend: State<'_, Backend>, mode: Strin
     } else {
         "已恢复默认数据源。"
     };
-    SavedInfo::new(message)
+    SavedInfo::changed(
+        message,
+        vec![ResourceKeyInfo {
+            kind: "settings".into(),
+            instance_id: None,
+        }],
+        Vec::new(),
+    )
 }
 
 /// 测试数据源地址是否可访问。
@@ -1104,5 +1118,12 @@ pub fn save_recommendations(
         data.community.clone()
     };
     emit(&app, EVENT_COMMUNITY, community);
-    SavedInfo::new("本地内容已更新。")
+    SavedInfo::changed(
+        "本地内容已更新。",
+        vec![ResourceKeyInfo {
+            kind: "community".into(),
+            instance_id: None,
+        }],
+        Vec::new(),
+    )
 }

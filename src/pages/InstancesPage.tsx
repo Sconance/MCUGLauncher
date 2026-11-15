@@ -96,14 +96,14 @@ export default function InstancesPage() {
     }
   }, [instanceCatalog, overview, selected]);
 
-  const loadOptions = useCallback(async (version: string) => {
-    if (version.length === 0) return;
+  const loadOptions = useCallback(async (instanceId: string) => {
+    if (instanceId.length === 0) return;
     setOptionsStatus("正在读取启动设置…");
-    const info = await readLaunchOptionsCommand(version);
+    const info = await readLaunchOptionsCommand(instanceId);
     setOptions(info);
     setInherit(info.inherited);
     setForm({
-      displayName: info.displayName.length > 0 ? info.displayName : version,
+      displayName: info.displayName.length > 0 ? info.displayName : instanceId,
       java: info.settings.java,
       autoMemory: info.settings.autoMemory,
       ram: String(info.settings.ramMb),

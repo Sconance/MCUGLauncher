@@ -514,14 +514,6 @@ pub struct SavedInfo {
 }
 
 impl SavedInfo {
-    pub fn new(message: impl Into<String>) -> Self {
-        Self {
-            message: message.into(),
-            changed: Vec::new(),
-            entity_ids: Vec::new(),
-        }
-    }
-
     pub fn changed(
         message: impl Into<String>,
         changed: Vec<ResourceKeyInfo>,

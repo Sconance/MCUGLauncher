@@ -79,35 +79,6 @@ export interface PlayerInfo {
   avatar: string;
 }
 
-export interface LauncherState {
-  appVersion: string;
-  activeAccountId: string | null;
-  accounts: AccountInfo[];
-  root: string;
-  gameRoots: string[];
-  java: string;
-  width: number;
-  height: number;
-  ram: number;
-  autoMemory: boolean;
-  anonymous: boolean;
-  hasCommunityKey: boolean;
-  hasAdminKey: boolean;
-  skinStation: string;
-  cape: string;
-  selectedInstanceId: string | null;
-  instances: InstanceInfo[];
-  mods: ModInfo[];
-  servers: SavedServerInfo[];
-  favorites: FavoriteInfo[];
-  versionGroups: VersionGroupInfo[];
-  dataSources: DataSourceSet;
-  defaultDataSources: DataSourceSet;
-  customDataSources: DataSourceSet;
-  dataSourceMode: string;
-  autoChinese: boolean;
-}
-
 export interface LauncherOverview {
   appVersion: string;
   selectedInstanceId: string | null;
