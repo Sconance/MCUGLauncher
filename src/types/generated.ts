@@ -65,6 +65,7 @@ export interface LauncherDTO {
   FavoriteInfo?: FavoriteInfo;
   DataSourceSet?: DataSourceSet;
   SettingsInfo?: SettingsInfo;
+  AppSettingsPatch?: AppSettingsPatch;
   ContentUpdateInfo?: ContentUpdateInfo;
   ContentUpdatesInfo?: ContentUpdatesInfo;
   ContentChangeInfo?: ContentChangeInfo;
@@ -867,6 +868,47 @@ export interface DataSourceSet3 {
    * quotes 字段。
    */
   quotes: string;
+}
+/**
+ * AppSettingsPatch：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface AppSettingsPatch {
+  /**
+   * root 字段。
+   */
+  root?: string;
+  /**
+   * java 字段。
+   */
+  java?: string;
+  /**
+   * ram 字段。
+   */
+  ram?: number;
+  /**
+   * width 字段。
+   */
+  width?: number;
+  /**
+   * height 字段。
+   */
+  height?: number;
+  /**
+   * autoMemory 字段。
+   */
+  autoMemory?: boolean;
+  /**
+   * autoChinese 字段。
+   */
+  autoChinese?: boolean;
+  /**
+   * anonymous 字段。
+   */
+  anonymous?: boolean;
+  /**
+   * player 字段。
+   */
+  player?: string;
 }
 /**
  * ContentUpdateInfo：通过 Tauri 命令在前后端之间传输的数据对象。

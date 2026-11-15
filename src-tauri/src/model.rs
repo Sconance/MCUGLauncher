@@ -15,6 +15,7 @@ pub use crate::schema_dto::generated::content::{ContentItem, ContentSearchResult
 pub use crate::schema_dto::generated::content::{AnnouncementInfo, CommunityData, QuoteInfo, RecommendationInfo};
 pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
 pub use crate::schema_dto::generated::operations::{JavaInfo, ServerPingInfo};
+pub use crate::schema_dto::generated::operations::AppSettingsPatch;
 pub use crate::schema_dto::generated::tasks::{TaskProgressInfo, TaskResultInfo};
 pub use crate::schema_dto::generated::operations::{
     ContentUpdatePreviewInfo, ContentUpdatesInfo,
@@ -208,21 +209,6 @@ impl SavedInfo {
             entity_ids,
         }
     }
-}
-
-/// `save_settings` 的补丁参数：只覆盖调用方明确给出的字段。
-#[derive(Clone, Deserialize, Default)]
-#[serde(rename_all = "camelCase", default)]
-pub struct AppSettingsPatch {
-    pub root: Option<String>,
-    pub java: Option<String>,
-    pub ram: Option<i32>,
-    pub width: Option<i32>,
-    pub height: Option<i32>,
-    pub auto_memory: Option<bool>,
-    pub auto_chinese: Option<bool>,
-    pub anonymous: Option<bool>,
-    pub player: Option<String>,
 }
 
 /// 命令失败的结构化结果；前端依据 code 判断，不解析提示文本。

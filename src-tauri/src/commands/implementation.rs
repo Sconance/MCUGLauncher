@@ -484,13 +484,13 @@ pub fn save_settings(
             state.java = java;
         }
         if let Some(ram) = patch.ram {
-            state.ram = clamp(ram, 512, 65536);
+            state.ram = clamp(ram as i32, 512, 65536);
         }
         if let Some(width) = patch.width {
-            state.width = clamp(width, 640, 7680);
+            state.width = clamp(width as i32, 640, 7680);
         }
         if let Some(height) = patch.height {
-            state.height = clamp(height, 480, 4320);
+            state.height = clamp(height as i32, 480, 4320);
         }
         if let Some(value) = patch.auto_memory {
             state.auto_memory = value;

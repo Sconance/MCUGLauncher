@@ -124,6 +124,49 @@
       "additionalProperties": false,
       "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
     },
+    "AppSettingsPatch": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "type": "string",
+          "description": "root 字段。"
+        },
+        "java": {
+          "type": "string",
+          "description": "java 字段。"
+        },
+        "ram": {
+          "type": "integer",
+          "description": "ram 字段。"
+        },
+        "width": {
+          "type": "integer",
+          "description": "width 字段。"
+        },
+        "height": {
+          "type": "integer",
+          "description": "height 字段。"
+        },
+        "autoMemory": {
+          "type": "boolean",
+          "description": "autoMemory 字段。"
+        },
+        "autoChinese": {
+          "type": "boolean",
+          "description": "autoChinese 字段。"
+        },
+        "anonymous": {
+          "type": "boolean",
+          "description": "anonymous 字段。"
+        },
+        "player": {
+          "type": "string",
+          "description": "player 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "AppSettingsPatch：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
     "ContentUpdateInfo": {
       "type": "object",
       "required": [
