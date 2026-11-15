@@ -16,6 +16,10 @@ pub use crate::schema_dto::generated::content::{AnnouncementInfo, CommunityData,
 pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo, SystemInfoInfo, TestResultInfo};
 pub use crate::schema_dto::generated::operations::{JavaInfo, ServerPingInfo};
 pub use crate::schema_dto::generated::tasks::{TaskProgressInfo, TaskResultInfo};
+pub use crate::schema_dto::generated::operations::{
+    ContentChangeInfo, ContentUpdateInfo, ContentUpdatePreviewInfo, ContentUpdatesInfo,
+    PackPreviewInfo,
+};
 pub use crate::schema_dto::generated::instances::{
     DataSourceSet, FavoriteInfo, InstanceCatalogInfo, InstanceInfo, LauncherOverview, ModInfo,
     SavedServerInfo,
@@ -210,60 +214,6 @@ pub struct UninstallPreviewInfo {
     pub notice: String,
     pub paths: Vec<String>,
     pub shared: bool,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ContentUpdateInfo {
-    pub id: String,
-    pub name: String,
-    pub before: String,
-    pub after: String,
-    pub available: bool,
-    pub error: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ContentUpdatesInfo {
-    pub check_id: String,
-    pub minecraft_version: String,
-    pub items: Vec<ContentUpdateInfo>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ContentChangeInfo {
-    pub project: String,
-    pub before: String,
-    pub after: String,
-    pub path: String,
-    pub old_path: String,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ContentUpdatePreviewInfo {
-    pub plan_id: String,
-    pub target_id: String,
-    pub target_revision: u64,
-    pub expires_at: String,
-    pub minecraft_version: String,
-    pub bytes: i64,
-    pub changes: Vec<ContentChangeInfo>,
-}
-
-#[derive(Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct PackPreviewInfo {
-    pub plan_id: String,
-    pub target_id: String,
-    pub target_revision: u64,
-    pub expires_at: String,
-    pub name: String,
-    pub root: String,
-    pub game: String,
-    pub loader: String,
 }
 
 impl SavedInfo {

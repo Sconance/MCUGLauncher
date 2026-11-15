@@ -65,6 +65,11 @@ export interface LauncherDTO {
   FavoriteInfo?: FavoriteInfo;
   DataSourceSet?: DataSourceSet;
   SettingsInfo?: SettingsInfo;
+  ContentUpdateInfo?: ContentUpdateInfo;
+  ContentUpdatesInfo?: ContentUpdatesInfo;
+  ContentChangeInfo?: ContentChangeInfo;
+  ContentUpdatePreviewInfo?: ContentUpdatePreviewInfo;
+  PackPreviewInfo?: PackPreviewInfo;
   JavaInfo?: JavaInfo;
   ServerPingInfo?: ServerPingInfo;
   SaveBackupInfo?: SaveBackupInfo;
@@ -862,6 +867,147 @@ export interface DataSourceSet3 {
    * quotes 字段。
    */
   quotes: string;
+}
+/**
+ * ContentUpdateInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface ContentUpdateInfo {
+  /**
+   * id 字段。
+   */
+  id: string;
+  /**
+   * name 字段。
+   */
+  name: string;
+  /**
+   * before 字段。
+   */
+  before: string;
+  /**
+   * after 字段。
+   */
+  after: string;
+  /**
+   * available 字段。
+   */
+  available: boolean;
+  /**
+   * error 字段。
+   */
+  error: string;
+}
+/**
+ * ContentUpdatesInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface ContentUpdatesInfo {
+  /**
+   * checkId 字段。
+   */
+  checkId: string;
+  /**
+   * minecraftVersion 字段。
+   */
+  minecraftVersion: string;
+  /**
+   * items 字段。
+   */
+  items: ContentUpdateInfo[];
+}
+/**
+ * ContentChangeInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface ContentChangeInfo {
+  /**
+   * project 字段。
+   */
+  project: string;
+  /**
+   * before 字段。
+   */
+  before: string;
+  /**
+   * after 字段。
+   */
+  after: string;
+  /**
+   * path 字段。
+   */
+  path: string;
+  /**
+   * oldPath 字段。
+   */
+  oldPath: string;
+}
+/**
+ * ContentUpdatePreviewInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface ContentUpdatePreviewInfo {
+  /**
+   * planId 字段。
+   */
+  planId: string;
+  /**
+   * targetId 字段。
+   */
+  targetId: string;
+  /**
+   * targetRevision 字段。
+   */
+  targetRevision: number;
+  /**
+   * expiresAt 字段。
+   */
+  expiresAt: string;
+  /**
+   * minecraftVersion 字段。
+   */
+  minecraftVersion: string;
+  /**
+   * bytes 字段。
+   */
+  bytes: number;
+  /**
+   * changes 字段。
+   */
+  changes: ContentChangeInfo[];
+}
+/**
+ * PackPreviewInfo：通过 Tauri 命令在前后端之间传输的数据对象。
+ */
+export interface PackPreviewInfo {
+  /**
+   * planId 字段。
+   */
+  planId: string;
+  /**
+   * targetId 字段。
+   */
+  targetId: string;
+  /**
+   * targetRevision 字段。
+   */
+  targetRevision: number;
+  /**
+   * expiresAt 字段。
+   */
+  expiresAt: string;
+  /**
+   * name 字段。
+   */
+  name: string;
+  /**
+   * root 字段。
+   */
+  root: string;
+  /**
+   * game 字段。
+   */
+  game: string;
+  /**
+   * loader 字段。
+   */
+  loader: string;
 }
 /**
  * JavaInfo：通过 Tauri 命令在前后端之间传输的数据对象。

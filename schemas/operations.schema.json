@@ -124,6 +124,204 @@
       "additionalProperties": false,
       "description": "ResourceSnapshot：通过 Tauri 命令在前后端之间传输的数据对象。"
     },
+    "ContentUpdateInfo": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "before",
+        "after",
+        "available",
+        "error"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id 字段。"
+        },
+        "name": {
+          "type": "string",
+          "description": "name 字段。"
+        },
+        "before": {
+          "type": "string",
+          "description": "before 字段。"
+        },
+        "after": {
+          "type": "string",
+          "description": "after 字段。"
+        },
+        "available": {
+          "type": "boolean",
+          "description": "available 字段。"
+        },
+        "error": {
+          "type": "string",
+          "description": "error 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ContentUpdateInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ContentUpdatesInfo": {
+      "type": "object",
+      "required": [
+        "checkId",
+        "minecraftVersion",
+        "items"
+      ],
+      "properties": {
+        "checkId": {
+          "type": "string",
+          "description": "checkId 字段。"
+        },
+        "minecraftVersion": {
+          "type": "string",
+          "description": "minecraftVersion 字段。"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentUpdateInfo"
+          },
+          "description": "items 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ContentUpdatesInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ContentChangeInfo": {
+      "type": "object",
+      "required": [
+        "project",
+        "before",
+        "after",
+        "path",
+        "oldPath"
+      ],
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "project 字段。"
+        },
+        "before": {
+          "type": "string",
+          "description": "before 字段。"
+        },
+        "after": {
+          "type": "string",
+          "description": "after 字段。"
+        },
+        "path": {
+          "type": "string",
+          "description": "path 字段。"
+        },
+        "oldPath": {
+          "type": "string",
+          "description": "oldPath 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ContentChangeInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "ContentUpdatePreviewInfo": {
+      "type": "object",
+      "required": [
+        "planId",
+        "targetId",
+        "targetRevision",
+        "expiresAt",
+        "minecraftVersion",
+        "bytes",
+        "changes"
+      ],
+      "properties": {
+        "planId": {
+          "type": "string",
+          "description": "planId 字段。"
+        },
+        "targetId": {
+          "type": "string",
+          "description": "targetId 字段。"
+        },
+        "targetRevision": {
+          "type": "integer",
+          "description": "targetRevision 字段。"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "expiresAt 字段。"
+        },
+        "minecraftVersion": {
+          "type": "string",
+          "description": "minecraftVersion 字段。"
+        },
+        "bytes": {
+          "type": "integer",
+          "description": "bytes 字段。"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContentChangeInfo"
+          },
+          "description": "changes 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "ContentUpdatePreviewInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
+    "PackPreviewInfo": {
+      "type": "object",
+      "required": [
+        "planId",
+        "targetId",
+        "targetRevision",
+        "expiresAt",
+        "name",
+        "root",
+        "game",
+        "loader"
+      ],
+      "properties": {
+        "planId": {
+          "type": "string",
+          "description": "planId 字段。"
+        },
+        "targetId": {
+          "type": "string",
+          "description": "targetId 字段。"
+        },
+        "targetRevision": {
+          "type": "integer",
+          "description": "targetRevision 字段。"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "expiresAt 字段。"
+        },
+        "name": {
+          "type": "string",
+          "description": "name 字段。"
+        },
+        "root": {
+          "type": "string",
+          "description": "root 字段。"
+        },
+        "game": {
+          "type": "string",
+          "description": "game 字段。"
+        },
+        "loader": {
+          "type": "string",
+          "description": "loader 字段。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "PackPreviewInfo：通过 Tauri 命令在前后端之间传输的数据对象。"
+    },
     "JavaInfo": {
       "type": "object",
       "required": [
