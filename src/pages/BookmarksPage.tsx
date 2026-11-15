@@ -24,7 +24,7 @@ function kindLabel(kind: string): string {
 
 /** 我的收藏：收藏列表来自后端状态，安装与取消均通过命令提交。 */
 export default function BookmarksPage() {
-  const { state, refreshState } = useLauncher();
+  const { bookmarks, refreshState } = useLauncher();
   const [status, setStatus] = useState("");
   const [selected, setSelected] = useState<FavoriteInfo | null>(null);
   const [versions, setVersions] = useState<ResourceVersionsInfo | null>(null);
@@ -33,7 +33,7 @@ export default function BookmarksPage() {
   const [hint, setHint] = useState("");
   const [folderPrompt, setFolderPrompt] = useState(false);
 
-  if (!state) {
+  if (!bookmarks) {
     return (
       <div className="subpage">
         <div className="empty">正在读取收藏…</div>
@@ -94,10 +94,10 @@ export default function BookmarksPage() {
 
       <div className="page-scroll" style={{ marginTop: 10 }}>
         <div className="stack" style={{ gap: 8 }}>
-          {state.favorites.length === 0 ? (
+          {bookmarks.length === 0 ? (
             <p className="muted">没有收藏的资源。在下载页搜索并收藏后会出现在这里。</p>
           ) : (
-            state.favorites.map((favorite) => (
+            bookmarks.map((favorite) => (
               <article className="card favorite-card" key={favorite.id}>
                 <div className="stack" style={{ gap: 2 }}>
                   <span className="favorite-name">{favorite.name}</span>

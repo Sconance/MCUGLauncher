@@ -48,7 +48,7 @@ const EMPTY_SOURCES: DataSourceSet = { announcements: "", servers: "", recommend
 
 /** 设置页：左侧十一个分区，右侧表单与列表。 */
 export default function SettingsPage() {
-  const { state, stateRevision, refreshState } = useLauncher();
+  const { overview, settings, accounts, servers, stateRevision, refreshState } = useLauncher();
   const [section, setSection] = useState<SectionKey>("launch");
   const [statuses, setStatuses] = useState<Record<string, string>>({});
   const [hydrated, setHydrated] = useState(false);
@@ -81,22 +81,22 @@ export default function SettingsPage() {
   const status = statuses[section] ?? "";
 
   useEffect(() => {
-    if (!state || hydrated) return;
-    setRoot(state.root);
-    setJava(state.java);
-    setJavaPath(state.java);
-    setRam(String(state.ram));
-    setWidth(String(state.width));
-    setHeight(String(state.height));
-    setPlayer(state.accounts.find((account) => account.id === state.activeAccountId)?.player ?? "");
-    setAutoMemory(state.autoMemory);
-    setAutoChinese(state.autoChinese);
-    setAnonymous(state.anonymous);
-    const custom = state.customDataSources;
+    if (!settings || !accounts || hydrated) return;
+    setRoot(settings.root);
+    setJava(settings.java);
+    setJavaPath(settings.java);
+    setRam(String(settings.ram));
+    setWidth(String(settings.width));
+    setHeight(String(settings.height));
+    setPlayer(accounts.find((account) => account.id === overview?.activeAccountId)?.player ?? "");
+    setAutoMemory(settings.autoMemory);
+    setAutoChinese(settings.autoChinese);
+    setAnonymous(settings.anonymous);
+    const custom = settings.customDataSources;
     const active = Object.values(custom).some((value) => value.length > 0);
-    setSources(active ? custom : state.dataSources);
+    setSources(active ? custom : settings.dataSources);
     setHydrated(true);
-  }, [state, hydrated]);
+  }, [settings, accounts, overview, hydrated]);
 
   const loadBackups = async () => setBackups(await listSaveBackupsCommand());
   const readLog = async () => setLog(await readLogCommand());
@@ -122,7 +122,7 @@ export default function SettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section]);
 
-  if (!state) {
+  if (!settings || !accounts || !servers || !overview) {
     return (
       <div className="page">
         <div className="empty">正在加载设置…</div>
@@ -130,8 +130,8 @@ export default function SettingsPage() {
     );
   }
 
-  const roots = Array.from(new Set([...state.gameRoots, state.root, root])).filter((value) => value.length > 0);
-  const offline = state.accounts.find((account) => account.id === state.activeAccountId)?.kind === "offline";
+  const roots = Array.from(new Set([...settings.gameRoots, settings.root, root])).filter((value) => value.length > 0);
+  const offline = accounts.find((account) => account.id === overview.activeAccountId)?.kind === "offline";
 
   const saveLaunch = async () => {
     if (ram.length === 0 || root.trim().length === 0) {
@@ -492,7 +492,7 @@ export default function SettingsPage() {
                   使用默认
                 </button>
               </div>
-              <p className="status">{status || `当前使用${state.dataSourceMode === "custom" ? "自定义" : "默认"}数据源。`}</p>
+              <p className="status">{status || `当前使用${settings.dataSourceMode === "custom" ? "自定义" : "默认"}数据源。`}</p>
             </section>
           ) : null}
 
@@ -554,10 +554,10 @@ export default function SettingsPage() {
                 <span className="status">{status}</span>
               </div>
               <div className="stack" style={{ gap: 8 }}>
-                {state.servers.length === 0 ? (
+                {servers.length === 0 ? (
                   <p className="muted">还没有收藏服务器。</p>
                 ) : (
-                  state.servers.map((server) => (
+                  servers.map((server) => (
                     <div className="row" style={{ gap: 12, padding: "6px 0", borderBottom: "1px solid #e3eaf0" }} key={server.address}>
                       <div className="stack" style={{ gap: 2 }}>
                         <span>{server.name.length > 0 ? server.name : server.address}</span>
@@ -747,8 +747,8 @@ export default function SettingsPage() {
               </Field>
               <p className="status">
                 {status ||
-                  `身份密钥：${state.hasCommunityKey ? "已设置" : "未设置"} · 管理员密钥：${
-                    state.hasAdminKey ? "已设置" : "未设置"
+                  `身份密钥：${settings.hasCommunityKey ? "已设置" : "未设置"} · 管理员密钥：${
+                    settings.hasAdminKey ? "已设置" : "未设置"
                   }`}
               </p>
             </section>
@@ -757,7 +757,7 @@ export default function SettingsPage() {
           {section === "about" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">关于与许可</h2>
-              <span className="about-version">MCUG Launcher {state.appVersion}</span>
+              <span className="about-version">MCUG Launcher {overview.appVersion}</span>
               <p className="muted">面向 Windows 的 Minecraft Java 版启动器。</p>
               <p className="muted">社区数据仓库：https://github.com/waibibabu1239/MCUGL-storage</p>
               <p className="muted">界面：Avalonia 原生控件；微软登录仍使用 WebView2 完成 OAuth。</p>

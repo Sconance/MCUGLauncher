@@ -40,7 +40,7 @@ function pingText(ping: ServerPingInfo | undefined): string {
 
 /** 发现：服务器收藏、群公告、群友推荐与语录（原主页右栏内容）。 */
 export default function DiscoverPage() {
-  const { state, community, refreshState, refreshCommunity } = useLauncher();
+  const { overview, instances: instanceCatalog, servers, community, refreshState, refreshCommunity } = useLauncher();
   const [pings, setPings] = useState<Record<string, ServerPingInfo>>({});
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [status, setStatus] = useState("");
@@ -49,9 +49,9 @@ export default function DiscoverPage() {
   const [menu, setMenu] = useState<MenuState | null>(null);
 
   useEffect(() => {
-    if (!state) return;
+    if (!servers) return;
     let alive = true;
-    for (const server of state.servers) {
+    for (const server of servers) {
       void pingServer(server.address).then((info) => {
         if (alive) setPings((previous) => ({ ...previous, [info.id]: info }));
       });
@@ -59,7 +59,7 @@ export default function DiscoverPage() {
     return () => {
       alive = false;
     };
-  }, [state?.servers]);
+  }, [servers]);
 
   useEffect(() => {
     if (!menu) return;
@@ -68,7 +68,7 @@ export default function DiscoverPage() {
     return () => window.removeEventListener("click", close);
   }, [menu]);
 
-  if (!state || !community) {
+  if (!overview || !instanceCatalog || !servers || !community) {
     return (
       <div className="page">
         <div className="empty">正在读取社区内容…</div>
@@ -76,7 +76,7 @@ export default function DiscoverPage() {
     );
   }
 
-  const instances = state.instances.filter((item) => item.name.length > 0 && !item.isPlaceholder);
+  const instances = instanceCatalog.items.filter((item) => item.name.length > 0 && !item.isPlaceholder);
   const firstAnnouncement = community.announcements[0];
   const quote = community.quotes[quoteIndex];
 
@@ -132,9 +132,9 @@ export default function DiscoverPage() {
       return;
     }
     const instanceName =
-      state.instances.find((item) => item.id === server.instanceId)?.displayName ?? server.instanceId;
+      instanceCatalog.items.find((item) => item.id === server.instanceId)?.displayName ?? server.instanceId;
     setStatus(`正在用 ${instanceName} 打开 ${server.address}…`);
-    const result = await launchToServer(server.instanceId, state.activeAccountId ?? "", server.address);
+    const result = await launchToServer(server.instanceId, overview.activeAccountId ?? "", server.address);
     setStatus(`启动请求已接受：${result.sessionId}`);
   };
 
@@ -145,7 +145,7 @@ export default function DiscoverPage() {
       setStatus("这条推荐没有附带服务器地址，无法收藏。");
       return;
     }
-    if (state.servers.some((server) => server.address.toLowerCase() === address.toLowerCase())) {
+    if (servers.some((server) => server.address.toLowerCase() === address.toLowerCase())) {
       setStatus(`「${item.name.length > 0 ? item.name : address}」已经在收藏里了。`);
       return;
     }
@@ -163,9 +163,9 @@ export default function DiscoverPage() {
               <h2 className="h2">正在开设的服务器</h2>
               <span className="spacer" />
               <span className="muted">
-                {state.servers.length > 0
-                  ? `${state.servers.filter((server) => pings[server.address]?.online).length} 在线 · ${
-                      state.servers.filter((server) => !pings[server.address]?.online).length
+                {servers.length > 0
+                  ? `${servers.filter((server) => pings[server.address]?.online).length} 在线 · ${
+                      servers.filter((server) => !pings[server.address]?.online).length
                     } 离线`
                   : ""}
               </span>
@@ -174,13 +174,13 @@ export default function DiscoverPage() {
               </button>
             </div>
 
-            {state.servers.length === 0 ? (
+            {servers.length === 0 ? (
               <div className="empty">
                 {"还没有收藏服务器。\n点右上角「添加服务器」，填好网页与实例后就能在这里一键进服。"}
               </div>
             ) : (
               <div className="server-grid">
-                {state.servers.map((server) => {
+                {servers.map((server) => {
                   const ping = pings[server.address];
                   return (
                     <article className="server-card" key={server.address}>
@@ -195,7 +195,7 @@ export default function DiscoverPage() {
                       <span className="muted">
                         {server.instanceId
                           ? `实例 · ${
-                              state.instances.find((item) => item.id === server.instanceId)?.displayName ??
+                              instanceCatalog.items.find((item) => item.id === server.instanceId)?.displayName ??
                               server.instanceId
                             }`
                           : "未绑定实例"}

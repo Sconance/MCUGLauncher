@@ -24,7 +24,7 @@ function playerTypeText(player: PlayerInfo): string {
 export default function HomePage() {
   const { openAccount, openInstances } = useNavigation();
   const { notify } = useToast();
-  const { state, avatar, refreshState } = useLauncher();
+  const { overview, accounts, instances: instanceCatalog, avatar, refreshState } = useLauncher();
   const [status, setStatus] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [playerPickerOpen, setPlayerPickerOpen] = useState(false);
@@ -50,7 +50,7 @@ export default function HomePage() {
     };
   }, [pickerOpen, playerPickerOpen]);
 
-  if (!state) {
+  if (!overview || !accounts || !instanceCatalog) {
     return (
       <div className="page">
         <div className="empty">正在加载启动器状态…</div>
@@ -58,19 +58,19 @@ export default function HomePage() {
     );
   }
 
-  const instances = state.instances.filter((item) => item.name.length > 0 && !item.isPlaceholder);
-  const current = instances.find((item) => item.id === state.selectedInstanceId);
+  const instances = instanceCatalog.items.filter((item) => item.name.length > 0 && !item.isPlaceholder);
+  const current = instances.find((item) => item.id === overview.selectedInstanceId);
   const launchSubtitle = current ? current.name : "未选择实例";
 
   // 账号列表来自 list_accounts；头像只对当前账号可用
   const players: PlayerInfo[] =
-    state.accounts.length > 0
-      ? state.accounts.map((account) => ({
+    accounts.length > 0
+      ? accounts.map((account) => ({
           id: account.id,
           name: account.player.length > 0 ? account.player : "未登录",
           playerType: account.kind,
           authServer: "",
-          avatar: account.id === state.activeAccountId ? avatar?.image ?? "" : "",
+          avatar: account.id === overview.activeAccountId ? avatar?.image ?? "" : "",
         }))
       : [
           {
@@ -81,7 +81,7 @@ export default function HomePage() {
             avatar: avatar?.image ?? "",
           },
         ];
-  const selectedPlayer = players.find((item) => item.id === state.activeAccountId) ?? players[0];
+  const selectedPlayer = players.find((item) => item.id === overview.activeAccountId) ?? players[0];
 
   /** 选中一个实例后收起浮层。 */
   const chooseInstance = async (instanceId: string) => {
@@ -98,7 +98,7 @@ export default function HomePage() {
       return;
     }
     setStatus("正在准备启动…");
-    const result = await launchGame(current.id, state.activeAccountId ?? "");
+    const result = await launchGame(current.id, overview.activeAccountId ?? "");
     await refreshState();
     setStatus(`启动请求已接受：${result.sessionId}`);
   };

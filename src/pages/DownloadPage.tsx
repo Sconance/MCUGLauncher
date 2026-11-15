@@ -48,7 +48,7 @@ const PAGE_SIZE = 50;
 
 /** 下载页：搜索安装、原版版本、加载器与整合包导入。 */
 export default function DownloadPage() {
-  const { state, refreshState } = useLauncher();
+  const { overview, settings, instances: instanceCatalog, bookmarks, refreshState } = useLauncher();
   const [tab, setTab] = useState<"search" | "vanilla" | "loader" | "pack">("search");
   const [status, setStatus] = useState("");
 
@@ -95,10 +95,10 @@ export default function DownloadPage() {
   }, []);
 
   useEffect(() => {
-    if (!state) return;
-    const instanceGame = state.instances.find((item) => item.id === state.selectedInstanceId)?.minecraft ?? "";
+    if (!overview || !instanceCatalog) return;
+    const instanceGame = instanceCatalog.items.find((item) => item.id === overview.selectedInstanceId)?.minecraft ?? "";
     setLoaderGame((current) => current || instanceGame || vanilla[0]?.id || "");
-  }, [state, vanilla]);
+  }, [overview, instanceCatalog, vanilla]);
 
   const filteredVanilla = vanilla.filter((item) => {
     const matchesType =
@@ -116,7 +116,7 @@ export default function DownloadPage() {
     }
   }, [visibleVanilla, vanillaSelected]);
 
-  const currentInstance = state?.instances.find((item) => item.id === state.selectedInstanceId);
+  const currentInstance = instanceCatalog?.items.find((item) => item.id === overview?.selectedInstanceId);
   const instanceHint = currentInstance
     ? `当前实例：${currentInstance.displayName} · ${currentInstance.loader} · ${currentInstance.minecraft}`
     : "尚未选择实例";
@@ -367,7 +367,7 @@ export default function DownloadPage() {
                   <p className="muted">没有搜索结果。输入关键词后搜索 Modrinth。</p>
                 ) : null}
                 {results.map((item) => {
-                  const bookmarked = state?.favorites.some((favorite) => favorite.id === item.id) ?? false;
+                  const bookmarked = bookmarks?.some((favorite) => favorite.id === item.id) ?? false;
                   return (
                     <article className="card download-card" key={item.id}>
                       <span className="download-name">{item.name}</span>
@@ -618,7 +618,7 @@ export default function DownloadPage() {
         <PathPrompt
           title="选择安装目录"
           label="游戏目录"
-          initial={packRoot.length > 0 ? packRoot : (state?.root ?? "")}
+          initial={packRoot.length > 0 ? packRoot : (settings?.root ?? "")}
           hint="必须是已存在的游戏目录。"
           onCancel={() => setPrompt(null)}
           onConfirm={(path) => {

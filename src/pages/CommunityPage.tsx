@@ -9,14 +9,14 @@ import "./CommunityPage.css";
 
 /** 社区管理：公告来自后端事件，推荐维护通过命令提交。 */
 export default function CommunityPage() {
-  const { state, community, refreshCommunity } = useLauncher();
+  const { settings, community, refreshCommunity } = useLauncher();
   const [adminKey, setAdminKey] = useState("");
   const [adminStatus, setAdminStatus] = useState("");
   const [manageStatus, setManageStatus] = useState("");
   const [verified, setVerified] = useState(false);
   const [announcement, setAnnouncement] = useState<AnnouncementInfo | null>(null);
 
-  if (!state || !community) {
+  if (!settings || !community) {
     return (
       <div className="subpage">
         <div className="empty">正在读取社区内容…</div>
@@ -24,7 +24,7 @@ export default function CommunityPage() {
     );
   }
 
-  const canManage = verified || state.hasAdminKey;
+  const canManage = verified || settings.hasAdminKey;
 
   const verifyAdmin = async () => {
     if (adminKey.trim().length === 0) {

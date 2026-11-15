@@ -24,7 +24,6 @@ import type {
   ContentUpdatesInfo,
   InstanceInfo,
   LaunchOptionsInfo,
-  LauncherState,
   UninstallPreviewInfo,
 } from "../types/launcher";
 import "./InstancesPage.css";
@@ -57,8 +56,8 @@ const EMPTY_FORM: LaunchForm = {
   jvmArguments: "",
 };
 
-function validInstances(state: LauncherState): InstanceInfo[] {
-  return state.instances.filter((item) => item.name.length > 0 && !item.isPlaceholder);
+function validInstances(items: InstanceInfo[]): InstanceInfo[] {
+  return items.filter((item) => item.name.length > 0 && !item.isPlaceholder);
 }
 
 function formatSize(bytes: number): string {
@@ -68,7 +67,7 @@ function formatSize(bytes: number): string {
 
 /** 实例页：内容（模组）、启动设置与维护（克隆/导出/卸载/更新）。 */
 export default function InstancesPage() {
-  const { state, refreshState } = useLauncher();
+  const { overview, accounts, instances: instanceCatalog, mods, refreshState } = useLauncher();
   const [selected, setSelected] = useState("");
   const [tab, setTab] = useState<"content" | "launch" | "maintenance">("content");
   const [status, setStatus] = useState("");
@@ -90,12 +89,12 @@ export default function InstancesPage() {
   const [javaPrompt, setJavaPrompt] = useState(false);
 
   useEffect(() => {
-    if (!state) return;
-    const instances = validInstances(state);
-    if (selected.length === 0 || !instances.some((item) => item.id === selected)) {
-      setSelected(state.selectedInstanceId ?? instances[0]?.id ?? "");
+    if (!instanceCatalog || !overview) return;
+    const items = validInstances(instanceCatalog.items);
+    if (selected.length === 0 || !items.some((item) => item.id === selected)) {
+      setSelected(overview.selectedInstanceId ?? items[0]?.id ?? "");
     }
-  }, [state, selected]);
+  }, [instanceCatalog, overview, selected]);
 
   const loadOptions = useCallback(async (version: string) => {
     if (version.length === 0) return;
@@ -144,7 +143,7 @@ export default function InstancesPage() {
   const launch = async () => {
     if (selected.length === 0) return;
     setStatus("正在准备启动…");
-    const result = await launchGame(selected, state?.activeAccountId ?? "");
+    const result = await launchGame(selected, overview?.activeAccountId ?? accounts?.[0]?.id ?? "");
     setStatus(`启动请求已接受：${result.sessionId}`);
   };
 
@@ -264,7 +263,7 @@ export default function InstancesPage() {
     setStatus("更新任务已加入队列。");
   };
 
-  const instances = state ? validInstances(state) : [];
+  const instances = instanceCatalog ? validInstances(instanceCatalog.items) : [];
   const current = instances.find((item) => item.name === selected);
   const inheritHint = inherit
     ? "当前继承全局启动设置；取消勾选后可保存独立设置。"
@@ -341,8 +340,8 @@ export default function InstancesPage() {
                   : "请选择实例。"}
               </p>
               <div className="mod-list">
-                {state?.mods.length ? (
-                  state.mods.map((mod) => (
+                {mods?.length ? (
+                  mods.map((mod) => (
                     <div className="mod-row" key={mod.id}>
                       <div className="stack" style={{ gap: 2 }}>
                         <label className="checkbox">

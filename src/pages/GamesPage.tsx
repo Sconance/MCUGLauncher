@@ -5,11 +5,11 @@ import "./GamesPage.css";
 
 /** 运行中的游戏：列表来自全局命令同步，关闭通过命令提交。 */
 export default function GamesPage() {
-  const { state, games, refreshGames } = useLauncher();
+  const { instances: instanceCatalog, games, refreshGames } = useLauncher();
   const [status, setStatus] = useState("");
 
   const stop = async (sessionId: string, instanceId: string) => {
-    const name = state?.instances.find((item) => item.id === instanceId)?.displayName ?? instanceId;
+    const name = instanceCatalog?.items.find((item) => item.id === instanceId)?.displayName ?? instanceId;
     setStatus("正在请求关闭 " + name + "…");
     const result = await stopGame(sessionId);
     await refreshGames();
@@ -37,7 +37,7 @@ export default function GamesPage() {
               <article className="card game-card" key={game.sessionId}>
                 <div className="stack" style={{ gap: 2 }}>
                   <span className="game-version">
-                    {state?.instances.find((item) => item.id === game.instanceId)?.displayName ?? game.instanceId}
+                    {instanceCatalog?.items.find((item) => item.id === game.instanceId)?.displayName ?? game.instanceId}
                   </span>
                   <span className="muted">
                     {game.status} · {game.pid === null ? "PID 待分配" : `PID ${game.pid}`}

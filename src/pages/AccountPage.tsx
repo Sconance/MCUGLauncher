@@ -12,13 +12,13 @@ function modeLabel(mode: string): string {
 
 /** 账号页：账号状态由后端事件同步，操作通过命令提交。 */
 export default function AccountPage() {
-  const { state, avatar, refreshState, refreshAvatar } = useLauncher();
+  const { overview, accounts: accountList, avatar, refreshState, refreshAvatar } = useLauncher();
   const [status, setStatus] = useState("");
   const [muaAccount, setMuaAccount] = useState("");
   const [muaPassword, setMuaPassword] = useState("");
   const [skinPrompt, setSkinPrompt] = useState(false);
 
-  if (!state) {
+  if (!overview || !accountList) {
     return (
       <div className="subpage">
         <div className="empty">正在读取账号…</div>
@@ -26,7 +26,7 @@ export default function AccountPage() {
     );
   }
 
-  const activeAccount = state.accounts.find((account) => account.id === state.activeAccountId) ?? null;
+  const activeAccount = accountList.find((account) => account.id === overview.activeAccountId) ?? null;
   const offline = activeAccount?.kind === "offline";
   const skinHint = !offline
     ? "在线账号的皮肤来自认证站，不能在此选择本地皮肤。"
@@ -60,7 +60,7 @@ export default function AccountPage() {
 
   const switchOffline = async () => {
     setStatus("正在切换到离线账号…");
-    const offlineAccount = state.accounts.find((account) => account.kind === "offline");
+    const offlineAccount = accountList.find((account) => account.kind === "offline");
     if (!offlineAccount) {
       setStatus("离线账号不可用。");
       return;
@@ -71,7 +71,7 @@ export default function AccountPage() {
   };
 
   const forget = async (kind: "microsoft" | "mua") => {
-    const account = state.accounts.find((item) => item.kind === kind);
+    const account = accountList.find((item) => item.kind === kind);
     if (!account) {
       setStatus("本机没有此类账号。");
       return;
