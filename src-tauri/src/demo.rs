@@ -19,7 +19,6 @@ pub enum StateResource {
     Overview,
     Settings,
     Accounts,
-    Instances,
     InstanceMods,
     Servers,
     Bookmarks,
@@ -145,7 +144,6 @@ impl Data {
             StateResource::Overview => &mut self.revisions.overview,
             StateResource::Settings => &mut self.revisions.settings,
             StateResource::Accounts => &mut self.revisions.accounts,
-            StateResource::Instances => &mut self.revisions.instances,
             StateResource::InstanceMods => &mut self.revisions.instance_mods,
             StateResource::Servers => &mut self.revisions.servers,
             StateResource::Bookmarks => &mut self.revisions.bookmarks,
@@ -274,7 +272,13 @@ impl Data {
                 retryable: false,
             });
         }
-        if plan.kind != kind || plan.target_revision != current_revision {
+        let target_exists = plan.kind != "uninstall"
+            || self
+                .state
+                .instances
+                .iter()
+                .any(|instance| instance.id == plan.target_id);
+        if plan.kind != kind || plan.target_revision != current_revision || !target_exists {
             return Err(ApiError {
                 code: "CONFLICT",
                 message: "目标已发生变化，请重新预览。".into(),
@@ -357,7 +361,7 @@ mod tests {
             valid.target_id
         );
 
-        data.touch(StateResource::Instances);
+        data.revisions.instances = data.revisions.instances.saturating_add(1);
         assert_eq!(
             data.validate_plan(&valid.plan_id, "uninstall", data.revisions.instances)
                 .unwrap_err()
