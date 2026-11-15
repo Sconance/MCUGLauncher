@@ -125,6 +125,54 @@
       },
       "additionalProperties": false
     },
+    "DataSourceSet": {
+      "type": "object",
+      "required": ["announcements", "servers", "recommendations", "quotes"],
+      "properties": { "announcements": { "type": "string" }, "servers": { "type": "string" }, "recommendations": { "type": "string" }, "quotes": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "CommunityData": {
+      "type": "object",
+      "required": ["announcements", "recommendations", "quotes"],
+      "properties": { "announcements": { "type": "array" }, "recommendations": { "type": "array" }, "quotes": { "type": "array" } },
+      "additionalProperties": false
+    },
+    "ContentItem": {
+      "type": "object",
+      "required": ["id", "name", "description", "author", "icon", "downloads", "tags"],
+      "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "description": { "type": "string" }, "author": { "type": "string" }, "icon": { "type": "string" }, "downloads": { "type": "string" }, "tags": { "type": "array", "items": { "type": "string" } } },
+      "additionalProperties": false
+    },
+    "ContentSearchResult": {
+      "type": "object",
+      "required": ["category", "requestId", "items"],
+      "properties": { "category": { "type": "string" }, "requestId": { "type": "string" }, "items": { "type": "array", "items": { "$ref": "#/$defs/ContentItem" } } },
+      "additionalProperties": false
+    },
+    "LaunchSettings": {
+      "type": "object",
+      "required": ["autoMemory", "fullScreen", "ramMb", "width", "height", "java", "jvmArguments", "windowTitle", "server", "autoChinese"],
+      "properties": { "autoMemory": { "type": "boolean" }, "fullScreen": { "type": "boolean" }, "ramMb": { "type": "integer" }, "width": { "type": "integer" }, "height": { "type": "integer" }, "java": { "type": "string" }, "jvmArguments": { "type": "string" }, "windowTitle": { "type": "string" }, "server": { "type": "string" }, "autoChinese": { "type": "boolean" } },
+      "additionalProperties": false
+    },
+    "AvatarInfo": {
+      "type": "object",
+      "required": ["image", "label", "fallback", "account", "player"],
+      "properties": { "image": { "type": "string" }, "label": { "type": "string" }, "fallback": { "type": "boolean" }, "account": { "type": "string" }, "player": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "MuaProfileInfo": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": { "id": { "type": "string" }, "name": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "LaunchAcceptedInfo": {
+      "type": "object",
+      "required": ["sessionId", "taskId"],
+      "properties": { "sessionId": { "type": "string" }, "taskId": { "type": "string" } },
+      "additionalProperties": false
+    },
     "SettingsInfo": {
       "type": "object",
       "required": ["root", "gameRoots", "java", "width", "height", "ram", "autoMemory", "anonymous", "dataSources", "dataSourceMode", "autoChinese"],
@@ -190,12 +238,6 @@
         { "type": "object", "required": ["state", "authSessionId", "error"], "properties": { "state": { "const": "failed" }, "authSessionId": { "type": "string" }, "error": { "$ref": "#/$defs/ApiError" } }, "additionalProperties": false },
         { "type": "object", "required": ["state", "authSessionId"], "properties": { "state": { "enum": ["cancelled", "expired"] }, "authSessionId": { "type": "string" } }, "additionalProperties": false }
       ]
-    },
-    "LaunchAcceptedInfo": {
-      "type": "object",
-      "required": ["sessionId", "taskId"],
-      "properties": { "sessionId": { "type": "string" }, "taskId": { "type": "string" } },
-      "additionalProperties": false
     },
     "LaunchOptionsInfo": {
       "type": "object",
