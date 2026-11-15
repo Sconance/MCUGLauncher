@@ -17,7 +17,7 @@ pub use crate::schema_dto::generated::operations::{KeyResultInfo, SaveBackupInfo
 pub use crate::schema_dto::generated::operations::{JavaInfo, ServerPingInfo};
 pub use crate::schema_dto::generated::tasks::{TaskProgressInfo, TaskResultInfo};
 pub use crate::schema_dto::generated::operations::{
-    ContentChangeInfo, ContentUpdateInfo, ContentUpdatePreviewInfo, ContentUpdatesInfo,
+    ContentUpdatePreviewInfo, ContentUpdatesInfo,
     PackPreviewInfo,
 };
 pub use crate::schema_dto::generated::instances::{
