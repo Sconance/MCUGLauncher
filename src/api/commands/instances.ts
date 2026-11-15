@@ -16,15 +16,15 @@ export const previewUninstall = (instanceId: string) =>
 export const applyUninstall = (planId: string) => call<SavedInfo>("apply_uninstall", { planId });
 
 /** 克隆实例，可选择包含存档与服务器列表。 */
-export const cloneInstance = (version: string, name: string, saves = false, servers = false) =>
-  call<SavedInfo>("clone_instance", { version, name, saves, servers });
+export const cloneInstance = (instanceId: string, displayName: string, saves = false, servers = false) =>
+  call<SavedInfo>("clone_instance", { instanceId, displayName, saves, servers });
 
 /** 将实例导出为整合包 ZIP。 */
-export const exportInstance = (version: string, path: string, servers = false, saves = false) =>
-  call<SavedInfo>("export_instance", { version, path, servers, saves });
+export const exportInstance = (instanceId: string, path: string, servers = false, saves = false) =>
+  call<SavedInfo>("export_instance", { instanceId, path, servers, saves });
 
 /** 检查实例中由启动器管理的内容更新。 */
-export const checkUpdates = (version: string) => call<ContentUpdatesInfo>("check_updates", { version });
+export const checkUpdates = (instanceId: string) => call<ContentUpdatesInfo>("check_updates", { instanceId });
 
 /** 为所选项目生成更新预览。 */
 export const previewUpdates = (checkId: string, projects: string[] = []) =>
@@ -42,14 +42,14 @@ export const deleteMod = (instanceId: string, modId: string) =>
   call<SavedInfo>("delete_mod", { instanceId, modId });
 
 /** 读取实例启动设置与继承状态。 */
-export const readLaunchOptions = (version: string, requestId = "") =>
-  call<LaunchOptionsInfo>("read_launch_options", { version, requestId });
+export const readLaunchOptions = (instanceId: string, requestId = "") =>
+  call<LaunchOptionsInfo>("read_launch_options", { instanceId, requestId });
 
 /** 保存实例启动设置；`inherit` 表示恢复继承全局设置。 */
 export const saveLaunchOptions = (
   token: string,
-  version: string,
-  name: string,
+  instanceId: string,
+  displayName: string,
   settings: LaunchSettings,
   inherit: boolean,
-) => call<SavedInfo>("save_launch_options", { token, version, name, settings, inherit });
+) => call<SavedInfo>("save_launch_options", { token, instanceId, displayName, settings, inherit });

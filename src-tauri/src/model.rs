@@ -509,12 +509,28 @@ pub struct SystemInfoInfo {
 #[serde(rename_all = "camelCase")]
 pub struct SavedInfo {
     pub message: String,
+    pub changed: Vec<ResourceKeyInfo>,
+    pub entity_ids: Vec<String>,
 }
 
 impl SavedInfo {
     pub fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
+            changed: Vec::new(),
+            entity_ids: Vec::new(),
+        }
+    }
+
+    pub fn changed(
+        message: impl Into<String>,
+        changed: Vec<ResourceKeyInfo>,
+        entity_ids: Vec<String>,
+    ) -> Self {
+        Self {
+            message: message.into(),
+            changed,
+            entity_ids,
         }
     }
 }

@@ -134,7 +134,7 @@ export default function DiscoverPage() {
     const instanceName =
       state.instances.find((item) => item.id === server.instanceId)?.displayName ?? server.instanceId;
     setStatus(`正在用 ${instanceName} 打开 ${server.address}…`);
-    const result = await launchToServer(server.instanceId, server.address);
+    const result = await launchToServer(server.instanceId, state.activeAccountId ?? "", server.address);
     setStatus(`启动请求已接受：${result.sessionId}`);
   };
 

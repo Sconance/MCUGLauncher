@@ -171,7 +171,10 @@ pub fn select_instance(
 /// 启动指定版本；内核重写后接入真实启动流程。
 #[tauri::command]
 #[allow(unused_variables)]
-pub fn launch_game(instance_id: String) -> Result<LaunchAcceptedInfo, ApiError> {
+pub fn launch_game(
+    instance_id: String,
+    account_id: String,
+) -> Result<LaunchAcceptedInfo, ApiError> {
     Err(ApiError::unsupported("launch_game"))
 }
 
@@ -180,6 +183,7 @@ pub fn launch_game(instance_id: String) -> Result<LaunchAcceptedInfo, ApiError> 
 #[allow(unused_variables)]
 pub fn launch_to_server(
     instance_id: String,
+    account_id: String,
     server_address: String,
 ) -> Result<LaunchAcceptedInfo, ApiError> {
     Err(ApiError::unsupported("launch_to_server"))
@@ -813,8 +817,8 @@ pub fn apply_uninstall(
 #[tauri::command]
 #[allow(unused_variables)]
 pub fn clone_instance(
-    version: String,
-    name: String,
+    instance_id: String,
+    display_name: String,
     #[allow(unused_variables)] saves: Option<bool>,
     #[allow(unused_variables)] servers: Option<bool>,
 ) -> Result<SavedInfo, ApiError> {
@@ -825,7 +829,7 @@ pub fn clone_instance(
 #[tauri::command]
 #[allow(unused_variables)]
 pub fn export_instance(
-    version: String,
+    instance_id: String,
     path: String,
     #[allow(unused_variables)] servers: Option<bool>,
     #[allow(unused_variables)] saves: Option<bool>,
@@ -838,7 +842,7 @@ pub fn export_instance(
 #[allow(unused_variables)]
 pub fn check_updates(
     backend: State<'_, Backend>,
-    version: String,
+    instance_id: String,
 ) -> Result<ContentUpdatesInfo, ApiError> {
     Err(ApiError::unsupported("check_updates"))
 }
@@ -936,15 +940,15 @@ pub fn delete_mod(
 #[tauri::command]
 pub fn read_launch_options(
     backend: State<'_, Backend>,
-    version: String,
+    instance_id: String,
     request_id: Option<String>,
 ) -> LaunchOptionsInfo {
     let data = backend.data.lock().unwrap();
     LaunchOptionsInfo {
-        request_id: request_id.unwrap_or_else(|| version.clone()),
-        token: format!("launch-{version}"),
-        version: version.clone(),
-        name: version,
+        request_id: request_id.unwrap_or_else(|| instance_id.clone()),
+        token: format!("launch-{instance_id}"),
+        version: instance_id.clone(),
+        name: instance_id,
         inherited: false,
         settings: LaunchSettings {
             auto_memory: data.state.auto_memory,
@@ -968,8 +972,8 @@ pub fn save_launch_options(
     app: AppHandle,
     backend: State<'_, Backend>,
     token: String,
-    #[allow(unused_variables)] version: String,
-    #[allow(unused_variables)] name: String,
+    #[allow(unused_variables)] instance_id: String,
+    #[allow(unused_variables)] display_name: String,
     settings: LaunchSettings,
     #[allow(unused_variables)] inherit: Option<bool>,
 ) -> Result<SavedInfo, ApiError> {

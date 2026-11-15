@@ -144,7 +144,7 @@ export default function InstancesPage() {
   const launch = async () => {
     if (selected.length === 0) return;
     setStatus("正在准备启动…");
-    const result = await launchGame(selected);
+    const result = await launchGame(selected, state?.activeAccountId ?? "");
     setStatus(`启动请求已接受：${result.sessionId}`);
   };
 

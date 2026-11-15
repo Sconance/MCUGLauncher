@@ -392,6 +392,13 @@ export interface TestResultInfo {
 
 export interface SavedInfo {
   message: string;
+  changed: ResourceKeyInfo[];
+  entityIds: string[];
+}
+
+export interface ResourceKeyInfo {
+  kind: string;
+  instanceId: string | null;
 }
 
 /** `save_settings` 的补丁：只提交需要修改的字段。 */
