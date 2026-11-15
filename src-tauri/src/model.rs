@@ -5,7 +5,7 @@
 
 use serde::Serialize;
 use std::collections::HashMap;
-pub use crate::schema_dto::generated::common::{ResourceKeyInfo, SavedInfo};
+pub use crate::schema_dto::generated::common::{ApiError, ResourceKeyInfo, SavedInfo};
 pub use crate::schema_dto::generated::common::ResourceSnapshot;
 pub use crate::schema_dto::generated::tasks::LaunchAcceptedInfo;
 pub use crate::schema_dto::generated::content::{
@@ -156,24 +156,13 @@ impl SavedInfo {
     }
 }
 
-/// 命令失败的结构化结果；前端依据 code 判断，不解析提示文本。
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ApiError {
-    pub code: &'static str,
-    pub message: String,
-    pub retryable: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub field_errors: Option<HashMap<String, String>>,
-}
-
 impl ApiError {
     pub fn unsupported(command: &str) -> Self {
         Self {
-            code: "UNSUPPORTED",
+            code: "UNSUPPORTED".into(),
             message: format!("演示后端尚未实现 {command}，操作未执行。"),
             retryable: false,
-            field_errors: None,
+            field_errors: HashMap::new(),
         }
     }
 
@@ -181,10 +170,10 @@ impl ApiError {
         let mut field_errors = HashMap::new();
         field_errors.insert(field.into(), detail.into());
         Self {
-            code: "VALIDATION_ERROR",
+            code: "VALIDATION_ERROR".into(),
             message: message.into(),
             retryable: false,
-            field_errors: Some(field_errors),
+            field_errors,
         }
     }
 }
@@ -207,10 +196,10 @@ impl TaskInfo {
     pub fn apply_action(&mut self, action: &str) -> Result<(), ApiError> {
         if !self.actions().iter().any(|item| item == action) {
             return Err(ApiError {
-                code: "CONFLICT",
+                code: "CONFLICT".into(),
                 message: "当前任务状态不允许此操作。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             });
         }
         self.status = match action {
@@ -273,3 +262,5 @@ mod tests {
         assert_eq!(value["fieldErrors"]["ram"], "内存超出范围。");
     }
 }
+
+

@@ -8,6 +8,7 @@
 #![allow(unused_variables)]
 
 use serde::Serialize;
+use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
 use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
@@ -114,10 +115,10 @@ pub fn list_instance_mods(
         .any(|item| item.id == instance_id)
     {
         return Err(ApiError {
-            code: "NOT_FOUND",
+            code: "NOT_FOUND".into(),
             message: "实例不存在。".into(),
             retryable: false,
-            field_errors: None,
+            field_errors: HashMap::new(),
         });
     }
     let items = if data.state.selected_instance_id.as_deref() == Some(&instance_id) {
@@ -156,10 +157,10 @@ pub fn select_instance(
             .any(|item| item.id == instance_id)
         {
             return Err(ApiError {
-                code: "NOT_FOUND",
+                code: "NOT_FOUND".into(),
                 message: "实例不存在。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             });
         }
         data.state.selected_instance_id = Some(instance_id.clone());
@@ -228,10 +229,10 @@ pub fn save_server(
                 message = "服务器已更新。".to_string();
             } else {
                 return Err(ApiError {
-                    code: "NOT_FOUND",
+                    code: "NOT_FOUND".into(),
                     message: "服务器收藏不存在。".into(),
                     retryable: false,
-                    field_errors: None,
+                    field_errors: HashMap::new(),
                 });
             }
         } else if data
@@ -241,10 +242,10 @@ pub fn save_server(
             .any(|item| item.address == address)
         {
             return Err(ApiError {
-                code: "CONFLICT",
+                code: "CONFLICT".into(),
                 message: "这个地址已经在收藏里了。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             });
         } else {
             data.state.servers.push(SavedServerInfo {
@@ -280,10 +281,10 @@ pub fn delete_server(
         data.state.servers.retain(|item| item.id != id);
         if data.state.servers.len() == before {
             return Err(ApiError {
-                code: "NOT_FOUND",
+                code: "NOT_FOUND".into(),
                 message: "服务器收藏不存在。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             });
         }
         data.mutating_snapshot(&[StateResource::Servers])
@@ -679,10 +680,10 @@ pub fn task_action(
             .iter_mut()
             .find(|task| task.id == id)
             .ok_or_else(|| ApiError {
-                code: "NOT_FOUND",
+                code: "NOT_FOUND".into(),
                 message: "任务不存在。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             })?;
         task.apply_action(&action)?;
         task.updated_at = OffsetDateTime::now_utc()
@@ -1007,10 +1008,10 @@ pub fn toggle_mod(
         let mut data = backend.data.lock().unwrap();
         if data.state.selected_instance_id.as_deref() != Some(&instance_id) {
             return Err(ApiError {
-                code: "CONFLICT",
+                code: "CONFLICT".into(),
                 message: "请先切换到目标实例。".into(),
                 retryable: true,
-                field_errors: None,
+                field_errors: HashMap::new(),
             });
         }
         let item = data
@@ -1019,10 +1020,10 @@ pub fn toggle_mod(
             .iter_mut()
             .find(|item| item.id == mod_id)
             .ok_or_else(|| ApiError {
-                code: "NOT_FOUND",
+                code: "NOT_FOUND".into(),
                 message: "模组不存在。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             })?;
         item.enabled = enabled;
         data.mutating_snapshot(&[StateResource::InstanceMods])
@@ -1054,20 +1055,20 @@ pub fn delete_mod(
         let mut data = backend.data.lock().unwrap();
         if data.state.selected_instance_id.as_deref() != Some(&instance_id) {
             return Err(ApiError {
-                code: "CONFLICT",
+                code: "CONFLICT".into(),
                 message: "请先切换到目标实例。".into(),
                 retryable: true,
-                field_errors: None,
+                field_errors: HashMap::new(),
             });
         }
         let before = data.state.mods.len();
         data.state.mods.retain(|item| item.id != mod_id);
         if data.state.mods.len() == before {
             return Err(ApiError {
-                code: "NOT_FOUND",
+                code: "NOT_FOUND".into(),
                 message: "模组不存在。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             });
         }
         data.mutating_snapshot(&[StateResource::InstanceMods])
@@ -1165,4 +1166,6 @@ pub fn save_recommendations(
         Vec::new(),
     )
 }
+
+
 

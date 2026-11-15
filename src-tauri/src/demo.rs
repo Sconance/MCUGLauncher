@@ -158,10 +158,10 @@ impl Data {
             Ok(())
         } else {
             Err(ApiError {
-                code: "CONFLICT",
+                code: "CONFLICT".into(),
                 message: "设置已在其他位置发生变化，请刷新后重试。".into(),
                 retryable: true,
-                field_errors: None,
+                field_errors: HashMap::new(),
             })
         }
     }
@@ -174,10 +174,10 @@ impl Data {
             .find(|account| account.id == account_id)
             .cloned()
             .ok_or_else(|| ApiError {
-                code: "NOT_FOUND",
+                code: "NOT_FOUND".into(),
                 message: "账号不存在。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             })?;
         self.state.active_account_id = Some(account.id.clone());
         Ok(account)
@@ -191,10 +191,10 @@ impl Data {
             .any(|account| account.id == account_id && account.kind != "offline");
         if !removable {
             return Err(ApiError {
-                code: "NOT_FOUND",
+                code: "NOT_FOUND".into(),
                 message: "可移除的账号不存在。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             });
         }
         self.state
@@ -207,10 +207,10 @@ impl Data {
             .find(|account| account.kind == "offline")
             .cloned()
             .ok_or_else(|| ApiError {
-                code: "INTERNAL_ERROR",
+                code: "INTERNAL_ERROR".into(),
                 message: "离线账号缺失。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             })?;
         if self.state.active_account_id.as_deref() == Some(account_id) {
             self.state.active_account_id = Some(fallback.id.clone());
@@ -230,10 +230,10 @@ impl Data {
             .find(|item| item.id == instance_id)
             .cloned()
             .ok_or_else(|| ApiError {
-                code: "NOT_FOUND",
+                code: "NOT_FOUND".into(),
                 message: "实例不存在。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             })?;
         let plan_id = format!("plan-uninstall-{}", self.next_plan_id);
         self.next_plan_id = self.next_plan_id.saturating_add(1);
@@ -266,17 +266,17 @@ impl Data {
         current_revision: u64,
     ) -> Result<&PlanRecord, ApiError> {
         let plan = self.plans.get(plan_id).ok_or_else(|| ApiError {
-            code: "PLAN_EXPIRED",
+            code: "PLAN_EXPIRED".into(),
             message: "操作计划不存在或已经失效。".into(),
             retryable: false,
-            field_errors: None,
+            field_errors: HashMap::new(),
         })?;
         if plan.expires_at <= OffsetDateTime::now_utc() {
             return Err(ApiError {
-                code: "PLAN_EXPIRED",
+                code: "PLAN_EXPIRED".into(),
                 message: "操作计划已经过期，请重新预览。".into(),
                 retryable: false,
-                field_errors: None,
+                field_errors: HashMap::new(),
             });
         }
         let target_exists = plan.kind != "uninstall"
@@ -287,10 +287,10 @@ impl Data {
                 .any(|instance| instance.id == plan.target_id);
         if plan.kind != kind || plan.target_revision != current_revision || !target_exists {
             return Err(ApiError {
-                code: "CONFLICT",
+                code: "CONFLICT".into(),
                 message: "目标已发生变化，请重新预览。".into(),
                 retryable: true,
-                field_errors: None,
+                field_errors: HashMap::new(),
             });
         }
         Ok(plan)
@@ -812,3 +812,5 @@ fn demo_vanilla() -> Vec<VanillaVersionInfo> {
     })
     .collect()
 }
+
+

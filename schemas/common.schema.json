@@ -14,18 +14,6 @@
       "properties": {
         "code": {
           "type": "string",
-          "enum": [
-            "VALIDATION_ERROR",
-            "NOT_FOUND",
-            "CONFLICT",
-            "BUSY",
-            "AUTH_REQUIRED",
-            "NETWORK_ERROR",
-            "IO_ERROR",
-            "PLAN_EXPIRED",
-            "INTERNAL_ERROR",
-            "UNSUPPORTED"
-          ],
           "description": "code 字段。"
         },
         "message": {
