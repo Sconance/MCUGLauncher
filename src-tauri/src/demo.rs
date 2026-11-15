@@ -721,7 +721,7 @@ fn recommendation(
 ) -> RecommendationInfo {
     RecommendationInfo {
         id: id.into(),
-        type_: kind.into(),
+        r#type: kind.into(),
         name: name.into(),
         author: author.into(),
         description: description.into(),
@@ -807,7 +807,7 @@ fn demo_vanilla() -> Vec<VanillaVersionInfo> {
     .into_iter()
     .map(|(id, kind, released)| VanillaVersionInfo {
         id: id.into(),
-        r#type: kind.into(),
+        type_: kind.into(),
         released: released.into(),
     })
     .collect()
