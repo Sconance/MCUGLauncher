@@ -1341,7 +1341,7 @@ export interface TaskInfo {
   /**
    * progress 字段。
    */
-  progress?: TaskProgressInfo | null;
+  progress: TaskProgressInfo | null;
   /**
    * allowedActions 字段。
    */
@@ -1349,11 +1349,18 @@ export interface TaskInfo {
   /**
    * error 字段。
    */
-  error?: {} | null;
+  error: {
+    code: string;
+    message: string;
+    retryable: boolean;
+    fieldErrors?: {
+      [k: string]: string;
+    };
+  } | null;
   /**
    * result 字段。
    */
-  result?: TaskResultInfo | null;
+  result: TaskResultInfo | null;
   /**
    * createdAt 字段。
    */

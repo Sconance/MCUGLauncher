@@ -4,7 +4,7 @@ import settingsIcon from "../assets/SettingsIcon.svg";
 import SwitchPlayerIcon from "../assets/SwitchPlayerIcon.svg";
 import { launchGame } from "../api/commands/launch";
 import { selectInstance as selectInstanceCommand } from "../api/commands/state";
-import type { PlayerInfo } from "../types/launcher";
+import type { PlayerInfo } from "../types/view-models";
 import { useNavigation } from "../shell/navigation";
 import { useToast } from "../shell/toast";
 import { useLauncher } from "../state/launcher";
