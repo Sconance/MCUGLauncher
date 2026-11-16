@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import InstanceSettingsIcon from "../assets/InstanceSettingsIcon.svg";
-import SwitchInstanceIcon from "../assets/SwitchInstanceIcon.svg";
+import LaunchPlayIcon from "../assets/LaunchPlayIcon.svg";
+import settingsIcon from "../assets/SettingsIcon.svg";
 import SwitchPlayerIcon from "../assets/SwitchPlayerIcon.svg";
 import { launchGame } from "../api/commands/launch";
 import { selectInstance as selectInstanceCommand } from "../api/commands/state";
@@ -20,7 +20,7 @@ function playerTypeText(player: PlayerInfo): string {
   return player.playerType;
 }
 
-/** 主页：右下角是角色卡与启动按钮；服务器、公告、推荐与语录在「发现」。 */
+/** 主页：右下角依次是角色、实例、启动三个按钮。 */
 export default function HomePage() {
   const { openAccount, openInstances } = useNavigation();
   const { notify } = useToast();
@@ -33,7 +33,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!pickerOpen && !playerPickerOpen) return;
     const close = (event: MouseEvent) => {
-      if ((event.target as HTMLElement).closest(".launch-tools, .instance-picker, .player-card, .player-picker")) return;
+      if ((event.target as HTMLElement).closest(".instance-block, .instance-picker, .player-card, .player-picker")) return;
       setPickerOpen(false);
       setPlayerPickerOpen(false);
     };
@@ -60,7 +60,6 @@ export default function HomePage() {
 
   const instances = instanceCatalog.items.filter((item) => item.name.length > 0 && !item.isPlaceholder);
   const current = instances.find((item) => item.id === overview.selectedInstanceId);
-  const launchSubtitle = current ? current.name : "未选择实例";
 
   // 账号列表来自 list_accounts；头像只对当前账号可用
   const players: PlayerInfo[] =
@@ -113,7 +112,7 @@ export default function HomePage() {
 
   return (
     <div className="home">
-      {/* 右下角的启动区 */}
+      {/* 右下角：角色 | 实例 | 启动 */}
       <div className="home-launch">
         {status.length > 0 ? <p className="status home-status">{status}</p> : null}
 
@@ -131,7 +130,7 @@ export default function HomePage() {
             </div>
             <button
               type="button"
-              className="btn player-switch"
+              className="btn card-action"
               data-tip="切换角色"
               aria-label="切换角色"
               aria-expanded={playerPickerOpen}
@@ -172,43 +171,32 @@ export default function HomePage() {
             ) : null}
           </div>
 
-          <div className="launch-block">
-            <button type="button" className="btn launch" onClick={() => void launch()} disabled={!current}>
-              <span className="stack" style={{ gap: 2, alignItems: "center" }}>
-                <span className="launch-title">启动游戏</span>
-                <span className="launch-subtitle">{launchSubtitle}</span>
-              </span>
+          {/* 实例卡：点整块切换实例，右上角进实例设置 */}
+          <div className="instance-block">
+            <button
+              type="button"
+              className="btn instance-card"
+              aria-expanded={pickerOpen}
+              aria-label="切换实例"
+              onClick={() => {
+                setPlayerPickerOpen(false);
+                setPickerOpen((open) => !open);
+              }}
+            >
+              <span className="instance-card-title">当前实例</span>
+              <span className="instance-card-sub">{current ? current.name : "未选择实例"}</span>
+            </button>
+            <button
+              type="button"
+              className="btn card-action"
+              data-tip="实例设置"
+              aria-label="实例设置"
+              onClick={openInstances}
+            >
+              <img src={settingsIcon} alt="" />
             </button>
 
-            {/* 叠在启动按钮右上角的快捷键：外观是一整块，点击区域各自独立 */}
-            <div className="launch-tools">
-              <button
-                type="button"
-                className="btn launch-tool"
-                data-tip="切换实例"
-                data-tip-side="left"
-                aria-label="切换实例"
-                aria-expanded={pickerOpen}
-                onClick={() => {
-                  setPlayerPickerOpen(false);
-                  setPickerOpen((open) => !open);
-                }}
-              >
-                <img src={SwitchInstanceIcon} alt="" />
-              </button>
-              <button
-                type="button"
-                className="btn launch-tool"
-                data-tip="实例设置"
-                data-tip-side="left"
-                aria-label="实例设置"
-                onClick={openInstances}
-              >
-                <img src={InstanceSettingsIcon} alt="" />
-              </button>
-            </div>
-
-            {/* 实例选择浮层：从启动按钮上方展开，实例多时内部滚动 */}
+            {/* 实例选择浮层：从实例卡上方展开，实例多时内部滚动 */}
             {pickerOpen ? (
               <div className="instance-picker" role="listbox" aria-label="选择实例">
                 {instances.length === 0 ? (
@@ -233,6 +221,18 @@ export default function HomePage() {
               </div>
             ) : null}
           </div>
+
+          {/* 启动：圆角正方形、纯色亮蓝、扁平，仅图标 */}
+          <button
+            type="button"
+            className="btn launch-square"
+            data-tip="启动游戏"
+            aria-label="启动游戏"
+            onClick={() => void launch()}
+            disabled={!current}
+          >
+            <img src={LaunchPlayIcon} alt="" />
+          </button>
         </div>
       </div>
     </div>

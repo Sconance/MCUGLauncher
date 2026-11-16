@@ -24,8 +24,21 @@ import {
 import Field from "../components/Field";
 import PathPrompt from "../components/PathPrompt";
 import { LIMITS } from "../constants";
+import { useFadeSwap } from "../shell/fade";
 import { useLauncher } from "../state/launcher";
 import type { DataSourceSet, JavaInfo, SaveBackupInfo, SavedServerInfo } from "../types/launcher";
+import navAbout from "../assets/nav-about.svg";
+import navAppearance from "../assets/nav-appearance.svg";
+import navCommunity from "../assets/nav-community.svg";
+import navDatasources from "../assets/nav-datasources.svg";
+import navDiagnose from "../assets/nav-diagnose.svg";
+import navJava from "../assets/nav-java.svg";
+import navLaunch from "../assets/nav-launch.svg";
+import navLogs from "../assets/nav-logs.svg";
+import navRecovery from "../assets/nav-recovery.svg";
+import navSaves from "../assets/nav-saves.svg";
+import navServers from "../assets/nav-servers.svg";
+import SectionNav, { type NavItem } from "../components/SectionNav";
 import "./SettingsPage.css";
 
 const SECTIONS = [
@@ -44,12 +57,35 @@ const SECTIONS = [
 
 type SectionKey = (typeof SECTIONS)[number][0];
 
+const NAV_GROUPS: NavItem[][] = [
+  [
+    { key: "launch", label: "启动设置", icon: navLaunch },
+    { key: "java", label: "Java 管理", icon: navJava },
+    { key: "datasources", label: "数据源", icon: navDatasources },
+  ],
+  [
+    { key: "appearance", label: "界面与背景", icon: navAppearance },
+    { key: "servers", label: "服务器收藏", icon: navServers },
+  ],
+  [
+    { key: "saves", label: "存档保护", icon: navSaves },
+    { key: "recovery", label: "任务与恢复", icon: navRecovery },
+    { key: "logs", label: "运行日志", icon: navLogs },
+    { key: "diagnose", label: "诊断与反馈", icon: navDiagnose },
+  ],
+  [
+    { key: "community", label: "社区身份", icon: navCommunity },
+    { key: "about", label: "关于与许可", icon: navAbout },
+  ],
+];
+
 const EMPTY_SOURCES: DataSourceSet = { announcements: "", servers: "", recommendations: "", quotes: "" };
 
 /** 设置页：左侧十一个分区，右侧表单与列表。 */
 export default function SettingsPage() {
   const { overview, settings, accounts, servers, resourceVersions, refreshState } = useLauncher();
   const [section, setSection] = useState<SectionKey>("launch");
+  const { shown, out } = useFadeSwap(section);
   const [statuses, setStatuses] = useState<Record<string, string>>({});
   const [hydrated, setHydrated] = useState(false);
 
@@ -296,24 +332,18 @@ export default function SettingsPage() {
   return (
     <div className="extras settings">
       <aside className="extras-nav">
-        <h2 className="extras-title">设置</h2>
-        <nav className="list" aria-label="设置分区">
-          {SECTIONS.map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              className={`list-item ${section === key ? "selected" : ""}`}
-              onClick={() => setSection(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
+        <SectionNav
+          groups={NAV_GROUPS}
+          active={section}
+          onSelect={(key) => setSection(key as SectionKey)}
+          title="设置"
+          label="设置分区"
+        />
       </aside>
 
       <div className="settings-body">
-        <div className="settings-scroll">
-          {section === "launch" ? (
+        <div className={`settings-scroll fade-swap${out ? " is-out" : ""}`}>
+          {shown === "launch" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">启动设置</h2>
               <p className="muted">修改后写入本机配置，下次启动生效。</p>
@@ -392,7 +422,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {section === "java" ? (
+          {shown === "java" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">Java 管理</h2>
               <p className="muted">扫描本机常见位置中的 java.exe；指定后优先使用该路径。</p>
@@ -449,7 +479,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {section === "datasources" ? (
+          {shown === "datasources" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">数据源</h2>
               <p className="muted">公告、服务器、推荐、语录分别读取独立 JSON；保存自定义地址后可切换默认与自定义。</p>
@@ -496,7 +526,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {section === "appearance" ? (
+          {shown === "appearance" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">界面与背景</h2>
               <p className="muted">固定蓝白主题；可恢复默认窗口尺寸。</p>
@@ -515,7 +545,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {section === "servers" ? (
+          {shown === "servers" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">服务器收藏</h2>
               <p className="muted">收藏的服务器会出现在主页；状态由服务器列表协议实时查询。</p>
@@ -581,7 +611,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {section === "saves" ? (
+          {shown === "saves" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">存档保护</h2>
               <p className="muted">备份写到本地数据目录的 backups 文件夹，不修改原存档；恢复会创建新存档。</p>
@@ -623,7 +653,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {section === "recovery" ? (
+          {shown === "recovery" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">任务与恢复</h2>
               <p className="muted">窗口尺寸异常时可恢复；打开配置目录查看账号与队列数据。</p>
@@ -654,7 +684,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {section === "logs" ? (
+          {shown === "logs" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">运行日志</h2>
               <p className="muted">最近 400 行启动与启动游戏记录。</p>
@@ -675,7 +705,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {section === "diagnose" ? (
+          {shown === "diagnose" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">诊断与反馈</h2>
               <p className="muted">反馈问题时请附上运行环境信息。</p>
@@ -692,7 +722,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {section === "community" ? (
+          {shown === "community" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">社区身份</h2>
               <p className="muted">匿名模式影响主页身份展示；密钥只保存在本机。</p>
@@ -754,7 +784,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          {section === "about" ? (
+          {shown === "about" ? (
             <section className="card stack" style={{ gap: 10 }}>
               <h2 className="h2">关于与许可</h2>
               <span className="about-version">MCUG Launcher {overview.appVersion}</span>

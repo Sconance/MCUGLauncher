@@ -6,9 +6,14 @@ import {
   saveServer as saveServerCommand,
 } from "../api/commands/servers";
 import type { AnnouncementInfo, RecommendationInfo, SavedServerInfo, ServerPingInfo } from "../types/launcher";
+import navAnnouncement from "../assets/nav-announcement.svg";
+import navRecommend from "../assets/nav-recommend.svg";
+import navServers from "../assets/nav-servers.svg";
 import Field from "../components/Field";
+import SectionNav, { type NavItem } from "../components/SectionNav";
 import Markdown from "../components/Markdown";
 import Modal from "../components/Modal";
+import { useFadeSwap } from "../shell/fade";
 import { useLauncher } from "../state/launcher";
 import "./DiscoverPage.css";
 
@@ -32,6 +37,16 @@ interface MenuState {
 
 const EMPTY_DRAFT: ServerDraft = { name: "", address: "", instanceId: null };
 
+type SectionKey = "servers" | "announcements" | "recommendations";
+
+const NAV_GROUPS: NavItem[][] = [
+  [{ key: "servers", label: "服务器收藏", icon: navServers }],
+  [
+    { key: "announcements", label: "群公告", icon: navAnnouncement },
+    { key: "recommendations", label: "群友推荐", icon: navRecommend },
+  ],
+];
+
 function pingText(ping: ServerPingInfo | undefined): string {
   if (!ping) return "尚未查询";
   if (!ping.online) return "离线";
@@ -41,6 +56,8 @@ function pingText(ping: ServerPingInfo | undefined): string {
 /** 发现：服务器收藏、群公告、群友推荐与语录（原主页右栏内容）。 */
 export default function DiscoverPage() {
   const { overview, instances: instanceCatalog, servers, community, refreshState, refreshCommunity } = useLauncher();
+  const [section, setSection] = useState<SectionKey>("servers");
+  const { shown, out } = useFadeSwap(section);
   const [pings, setPings] = useState<Record<string, ServerPingInfo>>({});
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [status, setStatus] = useState("");
@@ -77,7 +94,6 @@ export default function DiscoverPage() {
   }
 
   const instances = instanceCatalog.items.filter((item) => item.name.length > 0 && !item.isPlaceholder);
-  const firstAnnouncement = community.announcements[0];
   const quote = community.quotes[quoteIndex];
 
   const openServerDialog = (server?: SavedServerInfo, message?: string) => {
@@ -157,170 +173,187 @@ export default function DiscoverPage() {
   return (
     <>
       <div className="page discover">
-        <div className="page-scroll discover-feed">
-          <section className="card stack" style={{ gap: 8 }}>
-            <div className="row" style={{ gap: 8 }}>
-              <h2 className="h2">正在开设的服务器</h2>
-              <span className="spacer" />
-              <span className="muted">
-                {servers.length > 0
-                  ? `${servers.filter((server) => pings[server.address]?.online).length} 在线 · ${
-                      servers.filter((server) => !pings[server.address]?.online).length
-                    } 离线`
-                  : ""}
-              </span>
-              <button type="button" className="btn link" onClick={() => openServerDialog()}>
-                添加服务器
-              </button>
-            </div>
+        {/* 大圆角内容栏：左选择栏 + 右内容栏（底部常驻群友名言） */}
+        <div className="discover-shell">
+          <aside className="discover-nav">
+            <SectionNav
+              groups={NAV_GROUPS}
+              active={section}
+              onSelect={(key) => setSection(key as SectionKey)}
+              title="发现"
+              label="发现分区"
+            />
+          </aside>
 
-            {servers.length === 0 ? (
-              <div className="empty">
-                {"还没有收藏服务器。\n点右上角「添加服务器」，填好网页与实例后就能在这里一键进服。"}
-              </div>
-            ) : (
-              <div className="server-grid">
-                {servers.map((server) => {
-                  const ping = pings[server.address];
-                  return (
-                    <article className="server-card" key={server.address}>
-                      <div className="server-head">
-                        <span className={`server-icon ${ping?.online ? "online" : ""}`}>▣</span>
+          <div className="discover-main">
+            {/* 内容容器：全透明背景的圆角区域，高度只占右栏一部分 */}
+            <div className={`discover-content fade-swap${out ? " is-out" : ""}`}>
+              {shown === "servers" ? (
+                <section className="stack" style={{ gap: 10 }}>
+                  <div className="row" style={{ gap: 8 }}>
+                    <h2 className="h2">服务器收藏</h2>
+                    <span className="spacer" />
+                    <span className="muted">
+                      {servers.length > 0
+                        ? `${servers.filter((server) => pings[server.address]?.online).length} 在线 · ${
+                            servers.filter((server) => !pings[server.address]?.online).length
+                          } 离线`
+                        : ""}
+                    </span>
+                    <button type="button" className="btn link" onClick={() => openServerDialog()}>
+                      添加服务器
+                    </button>
+                  </div>
+
+                  {servers.length === 0 ? (
+                    <div className="empty">
+                      {"还没有收藏服务器。\n点右上角「添加服务器」，填好网页与实例后就能在这里一键进服。"}
+                    </div>
+                  ) : (
+                    <div className="server-grid">
+                      {servers.map((server) => {
+                        const ping = pings[server.address];
+                        return (
+                          <article className="server-card" key={server.address}>
+                            <div className="server-head">
+                              <span className={`server-icon ${ping?.online ? "online" : ""}`}>▣</span>
+                              <div className="stack" style={{ gap: 2 }}>
+                                <span className="server-name">
+                                  {server.name.length > 0 ? server.name : server.address}
+                                </span>
+                                <span className="muted">{pingText(ping)}</span>
+                              </div>
+                            </div>
+                            <span className="muted">{server.address}</span>
+                            <span className="muted">
+                              {server.instanceId
+                                ? `实例 · ${
+                                    instanceCatalog.items.find((item) => item.id === server.instanceId)?.displayName ??
+                                    server.instanceId
+                                  }`
+                                : "未绑定实例"}
+                            </span>
+                            <span className="muted">{ping ? (ping.online ? ping.motd : "无法连接") : "等待查询"}</span>
+                            <div className="server-actions">
+                              <button type="button" className="btn link" onClick={() => void openServer(server)}>
+                                打开
+                              </button>
+                              <button type="button" className="btn link" onClick={() => void queryServer(server)}>
+                                查询
+                              </button>
+                              <button type="button" className="btn link" onClick={() => openServerDialog(server)}>
+                                编辑
+                              </button>
+                              <button type="button" className="btn link" onClick={() => void deleteServer(server)}>
+                                删除
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              ) : null}
+
+              {shown === "announcements" ? (
+                <section className="stack" style={{ gap: 10 }}>
+                  <div className="row" style={{ gap: 8 }}>
+                    <h2 className="h2">群公告</h2>
+                    <span className="spacer" />
+                    <span className="muted">{community.announcements.length} 条</span>
+                  </div>
+
+                  {community.announcements.length === 0 ? (
+                    <p className="muted">暂无公告，新的群公告会出现在这里。</p>
+                  ) : (
+                    community.announcements.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="ann-row"
+                        onClick={() => setAnnouncement(item)}
+                      >
+                        <span className="ann-title">
+                          {item.tag.length > 0 ? `[${item.tag}] ${item.title}` : item.title}
+                        </span>
+                        {item.body.length > 0 ? <span className="ann-body">{item.body}</span> : null}
+                        <span className="muted">
+                          {[item.author, item.publishedAt?.slice(0, 10) ?? "", item.imageUrl ? "含配图" : ""]
+                            .filter((value) => value.length > 0)
+                            .join(" · ")}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </section>
+              ) : null}
+
+              {shown === "recommendations" ? (
+                <section className="stack" style={{ gap: 10 }}>
+                  <div className="row" style={{ gap: 8 }}>
+                    <h2 className="h2">群友推荐</h2>
+                    <span className="spacer" />
+                    <button type="button" className="btn link" onClick={() => void refreshCommunity()}>
+                      刷新社区内容
+                    </button>
+                  </div>
+
+                  {community.recommendations.length === 0 ? (
+                    <p className="muted">暂无群友推荐。</p>
+                  ) : (
+                    community.recommendations.slice(0, 5).map((item) => (
+                      <div
+                        className="rec-row"
+                        key={item.id}
+                        onContextMenu={(event) => {
+                          if (item.type !== "server") return;
+                          event.preventDefault();
+                          setMenu({ item, x: event.clientX, y: event.clientY });
+                        }}
+                      >
+                        <span className={`rec-icon ${item.type}`}>
+                          {item.type === "material" ? "◆" : item.type === "shader" ? "✦" : "▣"}
+                        </span>
                         <div className="stack" style={{ gap: 2 }}>
-                          <span className="server-name">{server.name.length > 0 ? server.name : server.address}</span>
-                          <span className="muted">{pingText(ping)}</span>
+                          <span className="rec-name">{item.name}</span>
+                          <span className="muted">
+                            {item.type === "material" ? "材质包" : item.type === "shader" ? "光影" : "服务器"} · 由{" "}
+                            {item.author} 推荐
+                            {item.tags.length > 0 ? ` · ${item.tags.join(" / ")}` : ""}
+                          </span>
+                          {item.description.length > 0 ? <span className="muted">{item.description}</span> : null}
                         </div>
                       </div>
-                      <span className="muted">{server.address}</span>
-                      <span className="muted">
-                        {server.instanceId
-                          ? `实例 · ${
-                              instanceCatalog.items.find((item) => item.id === server.instanceId)?.displayName ??
-                              server.instanceId
-                            }`
-                          : "未绑定实例"}
-                      </span>
-                      <span className="muted">{ping ? (ping.online ? ping.motd : "无法连接") : "等待查询"}</span>
-                      <div className="server-actions">
-                        <button type="button" className="btn link" onClick={() => void openServer(server)}>
-                          打开
-                        </button>
-                        <button type="button" className="btn link" onClick={() => void queryServer(server)}>
-                          查询
-                        </button>
-                        <button type="button" className="btn link" onClick={() => openServerDialog(server)}>
-                          编辑
-                        </button>
-                        <button type="button" className="btn link" onClick={() => void deleteServer(server)}>
-                          删除
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </section>
+                    ))
+                  )}
+                </section>
+              ) : null}
 
-          <section className="card stack" style={{ gap: 8 }}>
-            <h2 className="h2">群公告</h2>
-            {firstAnnouncement ? (
-              <>
-                <p className="announcement-title">
-                  {firstAnnouncement.tag.length > 0
-                    ? `[${firstAnnouncement.tag}] ${firstAnnouncement.title}`
-                    : firstAnnouncement.title}
+              <p className="status">{status}</p>
+            </div>
+
+            {/* 群友名言：常驻右栏底部 */}
+            <section className="card quote-card discover-quote">
+              <span className="quote-mark">“</span>
+              <div className="stack" style={{ gap: 4 }}>
+                <p className="quote-text">
+                  {quote ? (quote.type === "image" ? `[图片语录] ${quote.text}` : quote.text) : "暂无语录。"}
                 </p>
-                <p>{firstAnnouncement.body}</p>
-                {firstAnnouncement.imageUrl.length > 0 ? (
-                  <img className="announcement-image" src={firstAnnouncement.imageUrl} alt="" />
-                ) : null}
                 <p className="muted">
-                  {[
-                    firstAnnouncement.author,
-                    firstAnnouncement.publishedAt?.slice(0, 10) ?? "",
-                    firstAnnouncement.imageUrl ? "含配图" : "",
-                  ]
-                    .filter((value) => value.length > 0)
-                    .join(" · ")}
+                  {[quote?.author ?? "", quote?.source ?? ""].filter((value) => value.length > 0).join(" · ")}
                 </p>
-                {firstAnnouncement.markdown.length > 0 ? (
-                  <button
-                    type="button"
-                    className="btn link"
-                    style={{ alignSelf: "flex-start" }}
-                    onClick={() => setAnnouncement(firstAnnouncement)}
-                  >
-                    查看完整公告
-                  </button>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <p className="announcement-title">暂无公告</p>
-                <p>新的群公告会出现在这里。</p>
-              </>
-            )}
-          </section>
-
-          <section className="card stack" style={{ gap: 8 }}>
-            <div className="row" style={{ gap: 8 }}>
-              <h2 className="h2">群友推荐</h2>
-              <span className="spacer" />
-              <button type="button" className="btn link" onClick={() => void refreshCommunity()}>
-                刷新社区内容
+              </div>
+              <button
+                type="button"
+                className="btn link"
+                disabled={community.quotes.length === 0}
+                onClick={() => setQuoteIndex((previous) => (previous + 1) % Math.max(1, community.quotes.length))}
+              >
+                换一条
               </button>
-            </div>
-            {community.recommendations.length === 0 ? (
-              <p className="muted">暂无群友推荐。</p>
-            ) : (
-              community.recommendations.slice(0, 5).map((item) => (
-                <div
-                  className="rec-row"
-                  key={item.id}
-                  onContextMenu={(event) => {
-                    if (item.type !== "server") return;
-                    event.preventDefault();
-                    setMenu({ item, x: event.clientX, y: event.clientY });
-                  }}
-                >
-                  <span className={`rec-icon ${item.type}`}>
-                    {item.type === "material" ? "◆" : item.type === "shader" ? "✦" : "▣"}
-                  </span>
-                  <div className="stack" style={{ gap: 2 }}>
-                    <span className="rec-name">{item.name}</span>
-                    <span className="muted">
-                      {item.type === "material" ? "材质包" : item.type === "shader" ? "光影" : "服务器"} · 由 {item.author} 推荐
-                      {item.tags.length > 0 ? ` · ${item.tags.join(" / ")}` : ""}
-                    </span>
-                    {item.description.length > 0 ? <span className="muted">{item.description}</span> : null}
-                  </div>
-                </div>
-              ))
-            )}
-          </section>
-
-          <section className="card quote-card">
-            <span className="quote-mark">“</span>
-            <div className="stack" style={{ gap: 4 }}>
-              <p className="quote-text">
-                {quote ? (quote.type === "image" ? `[图片语录] ${quote.text}` : quote.text) : "暂无语录。"}
-              </p>
-              <p className="muted">
-                {[quote?.author ?? "", quote?.source ?? ""].filter((value) => value.length > 0).join(" · ")}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="btn link"
-              disabled={community.quotes.length === 0}
-              onClick={() => setQuoteIndex((previous) => (previous + 1) % Math.max(1, community.quotes.length))}
-            >
-              换一条
-            </button>
-          </section>
-
-          <p className="status">{status}</p>
+            </section>
+          </div>
         </div>
       </div>
 

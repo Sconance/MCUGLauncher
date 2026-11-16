@@ -27,6 +27,7 @@
 }
 
 .nav-pill {
+  position: relative; /* 选中滑块以它为偏移基准 */
   display: flex;
   align-items: center;
   gap: 2px;
@@ -42,10 +43,45 @@
   user-select: none;
 }
 
-/* 胶囊内的四个按钮：去掉方角，改成与胶囊同心的圆角 */
-.nav-pill .btn.topnav {
+/* 选中的灰色小胶囊：位置与宽度由脚本按当前按钮计算，切换时滑过去 */
+.nav-indicator {
+  position: absolute;
+  top: 4px;
+  left: 0;
   height: 34px;
   border-radius: 999px;
+  background: rgb(20 30 42 / 10%);
+  pointer-events: none;
+}
+
+.nav-indicator.slide {
+  transition:
+    transform 260ms cubic-bezier(0.34, 0.9, 0.3, 1),
+    width 260ms cubic-bezier(0.34, 0.9, 0.3, 1);
+}
+
+/* 胶囊内的导航按钮：文字压在滑块之上，选中态自身不再上底色 */
+.nav-pill .btn.topnav {
+  position: relative;
+  z-index: 1;
+  height: 34px;
+  border-radius: 999px;
+}
+
+.nav-pill .btn.topnav.active {
+  background: transparent;
+  color: #4d9fe3;
+  font-weight: 600;
+}
+
+.nav-pill .btn.topnav:hover {
+  background: rgb(20 30 42 / 6%);
+  color: var(--app-ink-2);
+}
+
+.nav-pill .btn.topnav.active:hover {
+  background: transparent;
+  color: #4d9fe3;
 }
 
 .nav-pill .btn.topnav img {
@@ -54,19 +90,115 @@
 }
 
 .page-host {
+  position: relative;
   height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
+/* 后端错误条：浮在内容栏上方，不参与布局 */
 .backend-error {
-  margin: 12px 20px 0 20px;
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  z-index: 45;
+  margin: 0;
+  transform: translateX(-50%);
   padding: 8px 12px;
   border: 1px solid #e8c4c0;
   border-radius: 8px;
   background: var(--app-red-bg);
   color: var(--app-red);
   font-size: 11.5px;
+  pointer-events: none;
+}
+
+/* ---------- 大圆角内容栏（除「启动」外统一使用） ---------- */
+
+.page-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.page-stage.panel {
+  height: calc(100% - 84px);
+  margin: 64px 20px 20px;
+  padding: 14px;
+}
+
+/*
+ * 栏体是常驻的伪元素：切换页面时只改透明度，不创建/销毁 backdrop-filter 层，
+ * 避免首次出现时「先看到边框、后补上模糊」的跳帧。
+ */
+.page-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 18px;
+  background-color: var(--app-glass);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: var(--shadow-card);
+  pointer-events: none;
+  opacity: 0;
+}
+
+/*
+ * 只在「进入」时淡入：离开时目标状态没有 transition，栏体会立即消失，
+ * 避免栏体外框在缩回全幅的瞬间还残留一帧可见。
+ */
+.page-stage.panel::before {
+  opacity: 1;
+  transition: opacity 170ms linear;
+}
+
+/*
+ * 回「启动」时：栏体先随内容一起淡出，再换回无栏布局，
+ * 否则会在换页那一刻直接消失、并伴随一次布局跳变。
+ */
+.page-stage.is-out::before {
+  opacity: 0;
+  transition: opacity 130ms linear;
+}
+
+.page-stage > .page-fade {
+  position: relative;
+  z-index: 1;
+}
+
+.page-fade {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 栏内页面不再自加内边距，留白由大圆角栏统一提供 */
+.page-stage.panel > .page-fade > .page,
+.page-stage.panel > .page-fade > .extras {
+  padding: 0;
+}
+
+/* 页面内容淡出淡入（大圆角栏由上面的 ::before 单独过渡） */
+.page-fade.is-out {
+  opacity: 0;
+  transition: opacity 130ms linear;
+}
+
+.page-fade.is-in {
+  animation: stage-in 160ms ease-out both;
+}
+
+@keyframes stage-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .toast {

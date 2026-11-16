@@ -39,12 +39,9 @@
   --app-red: #bf443b;
   --app-red-bg: #fbedeb;
 
-  /* 深色块与启动按钮（灰色毛玻璃） */
+  /* 深色块 */
   --app-sidebar: #1a2c3c;
   --app-sidebar-text: #e6eef5;
-  --launch-glass: rgb(58 64 72 / 76%);
-  --launch-glass-hover: rgb(70 77 86 / 84%);
-  --launch-glass-edge: rgb(255 255 255 / 14%);
 
   /* 字体 */
   --font-ui: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;

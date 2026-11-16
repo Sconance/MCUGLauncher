@@ -1,0 +1,77 @@
+/* 左侧分区导航：分类圆角块 + 图标条目（手机设置页的那种分组列表） */
+
+.section-nav {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.section-title {
+  margin: 0 6px 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--app-ink);
+}
+
+/* 分类块：整体一块浅色圆角矩形，不透明度很低，但能看出边界 */
+.section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 22%);
+}
+
+.section-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--app-ink-2);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 110ms linear, color 110ms linear;
+}
+
+/* 悬停统一为灰，不随分类变化 */
+.section-item:hover {
+  background: rgb(20 30 42 / 6%);
+  color: var(--app-ink);
+}
+
+.section-item.selected {
+  background: rgb(20 30 42 / 12%);
+  color: var(--app-ink);
+  font-weight: 600;
+}
+
+.section-item.selected:hover {
+  background: rgb(20 30 42 / 14%);
+}
+
+.section-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  opacity: 0.72;
+}
+
+.section-item:hover .section-icon,
+.section-item.selected .section-icon {
+  opacity: 1;
+}
+
+.section-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

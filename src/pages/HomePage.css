@@ -16,7 +16,7 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-  max-width: 472px;
+  max-width: 500px;
 }
 
 .home-status {
@@ -24,7 +24,7 @@
   text-align: right;
 }
 
-/* 角色卡与启动按钮同高并排，底边对齐 */
+/* 角色、实例、启动三个按钮同高并排，底边对齐 */
 .launch-row {
   display: flex;
   align-items: flex-end;
@@ -88,10 +88,12 @@
   white-space: nowrap;
 }
 
-.btn.player-switch {
+/* 卡片右上角的白色小方钮：角色卡与实例卡共用 */
+.btn.card-action {
   position: absolute;
   top: 4px;
   right: 4px;
+  z-index: 2;
   width: 24px;
   height: 24px;
   padding: 0;
@@ -101,15 +103,14 @@
   color: var(--app-ink-2);
 }
 
-.btn.player-switch:hover {
+.btn.card-action:hover {
   background: rgb(0 0 0 / 10%);
   color: var(--app-ink);
 }
 
-.btn.player-switch img {
+.btn.card-action img {
   width: 13px;
   height: 13px;
-  opacity: 0.7;
 }
 
 /* 角色选择浮层：从角色卡上方展开，角色多时内部滚动 */
@@ -195,58 +196,85 @@
   padding: 8px;
 }
 
-/* 启动按钮与其右上角的快捷键共用一层定位盒 */
-.launch-block {
+/* 实例卡：与角色卡同尺寸，点整块切换实例 */
+.instance-block {
   position: relative;
-  width: 250px;
+  width: 200px;
+  height: 72px;
 }
 
-/* 快捷键外观合并成一整块矩形圆角，上下两半各自独立响应点击 */
-.launch-tools {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+.btn.instance-card {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+  padding: 0 12px;
   border: 0;
-  border-radius: 8px;
-  background: rgb(255 255 255 / 14%);
-  backdrop-filter: blur(10px) saturate(140%);
-}
-
-/* 容器不再 overflow:hidden（否则悬停提示会被裁掉），外缘圆角交给首尾按钮 */
-.btn.launch-tool:first-child {
-  border-top-left-radius: 7px;
-  border-top-right-radius: 7px;
-}
-
-.btn.launch-tool:last-child {
-  border-bottom-left-radius: 7px;
-  border-bottom-right-radius: 7px;
-}
-
-.btn.launch-tool {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #fff;
+  border-radius: var(--radius-launch);
+  box-shadow: var(--shadow-card);
+  background-color: var(--app-glass);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: var(--app-glass-blur);
   transition: background-color 120ms linear;
 }
 
-.btn.launch-tool:hover {
-  background: rgb(255 255 255 / 18%);
+.btn.instance-card:hover {
+  background-color: rgb(255 255 255 / 72%);
+  background-image: var(--app-glass-grain);
+  color: inherit;
+}
+
+.instance-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-ink);
+}
+
+.instance-card-sub {
+  max-width: 100%;
+  font-size: 10.5px;
+  color: var(--app-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 启动：圆角正方形、纯色亮蓝、仅图标（静止态淡泛光，悬停加强） */
+.btn.launch-square {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
   color: #fff;
+  background: #228cff;
+  /* 静止态也保留一圈很淡的泛光，悬停时再明显加强 */
+  box-shadow: 0 0 15px rgb(34 140 255 / 32%);
+  transition: background-color 140ms linear, box-shadow 160ms ease-out, transform 160ms ease-out;
 }
 
-.btn.launch-tool img {
-  width: 13px;
-  height: 13px;
+.btn.launch-square:not(:disabled):hover {
+  color: #fff;
+  background: #3d9bff;
+  box-shadow: 0 0 28px rgb(34 140 255 / 55%), 0 0 56px rgb(34 140 255 / 28%);
+  transform: scale(1.06);
 }
 
-/* 实例选择浮层：从启动按钮上方展开，实例多时在内部滚动 */
+.btn.launch-square:disabled {
+  box-shadow: none;
+}
+
+.btn.launch-square img {
+  width: 30px;
+  height: 30px;
+}
+
+/* 实例选择浮层：从实例卡上方展开，实例多时在内部滚动 */
 .instance-picker {
   position: absolute;
   right: 0;
@@ -299,18 +327,6 @@
 .instance-picker-empty {
   margin: 0;
   padding: 8px;
-}
-
-.launch-title {
-    font-size: 17px;
-    font-weight: 700;
-    text-align: center;
-    color: #fff;
-}
-
-.launch-subtitle {
-  font-size: 9.5px;
-  color: rgb(255 255 255 / 72%);
 }
 
 /* ---------- Markdown 公告 ---------- */

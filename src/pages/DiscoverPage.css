@@ -1,15 +1,75 @@
-/* 「发现」页：原主页右栏的服务器、公告、推荐与语录 */
+/* 「发现」页：一个大的圆角内容栏，内部左选择栏 + 右内容栏 */
 
-.discover-feed {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  /* 让开顶部悬浮胶囊，滚动时内容从胶囊下方穿过 */
-  padding-top: 36px;
+.page.discover {
+  padding: 0;
 }
 
-.discover.blurred .discover-feed {
-  filter: blur(2px);
+/* 内容栏由外壳统一提供，这里只负责左右两栏的排布 */
+.discover-shell {
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr);
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+}
+
+.discover-nav {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.discover-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+/* 右栏内容容器：全透明背景的圆角矩形，高度只占右栏一部分，底部留给群友名言 */
+.discover-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+  border-radius: 12px;
+  background: transparent;
+}
+
+/* 群友名言常驻右栏底部，不随内容滚动 */
+.discover-quote {
+  flex: none;
+}
+
+/* ---------- 群公告列表 ---------- */
+
+.ann-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: rgb(255 255 255 / 34%);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms linear;
+}
+
+.ann-row:hover {
+  background: rgb(255 255 255 / 60%);
+}
+
+.ann-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.ann-body {
+  font-size: 11px;
+  color: var(--app-ink-2);
 }
 
 /* ---------- 服务器卡片 ---------- */

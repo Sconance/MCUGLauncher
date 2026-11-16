@@ -69,6 +69,8 @@ src/
 - 排版类：`.page-title`（22 Bold）、`.h2`（15 Bold）、`.muted`（10.5）、`.small`（10）、`.status`（10.5）。
 - 页面骨架：`.page`（20/3/20/20 内边距 + 纵向 flex）、`.page-scroll`（滚动区）、`.subpage`（「更多」内的子页，无额外内边距）。
 - 滚动条为 6px 细线，滑块 4px，悬停/按下颜色与 `App.axaml` 的 `ScrollBar` 模板一致。
+- 外壳：`.page-stage` 承载页面，`plain`（启动页，无边框）与 `panel`（其余页面，统一的大圆角内容栏，`margin: 64px 20px 20px`、`padding: 14px`）两种形态；栏体画在 `::before` 上，避免面板自身成为 fixed 子元素的包含块。
+- 过渡：页间切换由 `Shell` 的 `phase`（out/in）控制——与启动页互切时整块淡出淡入，其余页互切只淡 `.page-fade`；栏内分区切换用 `src/shell/fade.ts` 的 `useFadeSwap` + `.fade-swap.is-out`。
 - 背景：`.shell` 用 `src/assets/TmpBackground.png` 铺满（`center / cover`）；卡片式构件（`.card`/`.modal-card`/浮层/胶囊/`.server-card`/`.player-card`）统一用 `--app-glass` 或 `--app-glass-strong` + `--app-glass-grain` 噪点做磨砂亚克力，无描边。
 
 ## 4. 页面移植对照
@@ -77,8 +79,8 @@ src/
 | --- | --- | --- |
 | `shell/Shell.tsx` | `ShellWindow.axaml` + `.cs` | 已完成（悬浮胶囊导航；窗口按钮交由系统标题栏，Toast 由 `toast.tsx` 提供） |
 | `pages/ExtrasPage.tsx` | `Views/ExtrasView.axaml` | 已完成（左侧分区导航） |
-| `pages/HomePage.tsx` | `Views/HomeView.axaml` + `.cs` | 已完成（角色卡、实例选择；启动按钮在右下角） |
-| `pages/DiscoverPage.tsx` | `Views/HomeView.axaml` 右栏 | 已拆分（服务器收藏、公告、推荐、语录） |
+| `pages/HomePage.tsx` | `Views/HomeView.axaml` + `.cs` | 已完成（右下角「角色 · 实例 · 启动」三钮；左栏账号卡已移除） |
+| `pages/DiscoverPage.tsx` | `Views/HomeView.axaml` 右栏 | 已重构（大圆角栏内左侧分区导航 + 右栏内容，群友名言常驻右栏底部） |
 | `pages/DownloadPage.tsx` | `Views/DownloadView.axaml` + `.cs` | 已完成（搜索/详情/版本、原版分页、加载器、整合包） |
 | `pages/SettingsPage.tsx` | `Views/SettingsView.axaml` + `.cs` | 已完成（11 个分区：启动/Java/数据源/外观/服务器/存档/恢复/日志/诊断/社区/关于） |
 | `pages/InstancesPage.tsx` | `Views/InstancesView.axaml` + `.cs` | 已完成（模组、启动设置、克隆/导出/卸载/更新） |

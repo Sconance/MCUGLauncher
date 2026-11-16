@@ -185,25 +185,6 @@
   opacity: 0.75;
 }
 
-.btn.launch {
-  height: 72px;
-  width: 100%;
-  justify-content: center;
-  border: 1px solid var(--launch-glass-edge);
-  border-radius: var(--radius-launch);
-  background: var(--launch-glass);
-  color: #fff;
-  padding: 0 20px;
-  backdrop-filter: blur(16px) saturate(130%);
-  box-shadow: 0 12px 28px rgb(10 16 22 / 20%), inset 0 1px 0 rgb(255 255 255 / 10%);
-  transition: background-color 140ms linear, box-shadow 140ms linear;
-}
-
-.btn.launch:hover {
-  background: var(--launch-glass-hover);
-  box-shadow: 0 14px 32px rgb(10 16 22 / 26%), inset 0 1px 0 rgb(255 255 255 / 14%);
-}
-
 .btn.avatar {
   width: 94px;
   height: 94px;
@@ -214,6 +195,16 @@
 
 .btn.avatar:hover {
   background: var(--app-accent-wash);
+}
+
+/* ---------- 分区切换的淡出淡入（配合 useFadeSwap） ---------- */
+
+.fade-swap {
+  transition: opacity 130ms linear;
+}
+
+.fade-swap.is-out {
+  opacity: 0;
 }
 
 /* ---------- 悬停提示 ---------- */
@@ -584,8 +575,8 @@ textarea.input {
 /* 更多页：左侧分区导航 + 右侧页面 */
 .extras {
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 184px minmax(0, 1fr);
+  gap: 14px;
   height: 100%;
   min-height: 0;
   padding: 20px 3px 20px 20px;
@@ -594,21 +585,7 @@ textarea.input {
 .extras-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px;
-  border: 0;
-  border-radius: 12px;
-  background-color: var(--app-glass);
-  background-image: var(--app-glass-grain);
-  background-size: 160px 160px;
-  backdrop-filter: var(--app-glass-blur);
-  overflow-y: auto;
-}
-
-.extras-title {
-  margin: 6px 8px 10px;
-  font-size: 18px;
-  font-weight: 700;
+  min-height: 0;
 }
 
 .extras-body {
