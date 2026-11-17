@@ -39,13 +39,14 @@ import navRecovery from "../assets/nav-recovery.svg";
 import navSaves from "../assets/nav-saves.svg";
 import navServers from "../assets/nav-servers.svg";
 import SectionNav, { type NavItem } from "../components/SectionNav";
+import { isLiquidGlass, setLiquidGlass } from "../shell/liquid";
 import "./SettingsPage.css";
 
 const SECTIONS = [
   ["launch", "启动设置"],
   ["java", "Java 管理"],
   ["datasources", "数据源"],
-  ["appearance", "界面与背景"],
+  ["appearance", "外观"],
   ["servers", "服务器收藏"],
   ["saves", "存档保护"],
   ["recovery", "任务与恢复"],
@@ -64,7 +65,7 @@ const NAV_GROUPS: NavItem[][] = [
     { key: "datasources", label: "数据源", icon: navDatasources },
   ],
   [
-    { key: "appearance", label: "界面与背景", icon: navAppearance },
+    { key: "appearance", label: "外观", icon: navAppearance },
     { key: "servers", label: "服务器收藏", icon: navServers },
   ],
   [
@@ -98,6 +99,13 @@ export default function SettingsPage() {
   const [player, setPlayer] = useState("");
   const [autoMemory, setAutoMemory] = useState(true);
   const [autoChinese, setAutoChinese] = useState(true);
+  const [liquidGlass, setLiquidGlassState] = useState(isLiquidGlass);
+
+  /** 液态玻璃：开关写入 localStorage，并同步到 body[data-liquid]，供后续样式接入 */
+  const toggleLiquidGlass = (next: boolean) => {
+    setLiquidGlassState(next);
+    setLiquidGlass(next);
+  };
   const [anonymous, setAnonymous] = useState(false);
   const [sources, setSources] = useState<DataSourceSet>(EMPTY_SOURCES);
 
@@ -528,8 +536,27 @@ export default function SettingsPage() {
 
           {shown === "appearance" ? (
             <section className="card stack" style={{ gap: 10 }}>
-              <h2 className="h2">界面与背景</h2>
+              <h2 className="h2">外观</h2>
               <p className="muted">固定蓝白主题；可恢复默认窗口尺寸。</p>
+
+              <div className="setting-row">
+                <div className="stack" style={{ gap: 2 }}>
+                  <span className="setting-title">液态玻璃效果</span>
+                  <span className="muted">胶囊栏与内容栏改用折射玻璃；关闭时保持当前的磨砂玻璃。</span>
+                  <span className="muted">手势与折射都走 GPU，低配设备按住导航按钮时可能出现掉帧。</span>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={liquidGlass}
+                  aria-label="液态玻璃效果"
+                  className={`switch${liquidGlass ? " on" : ""}`}
+                  onClick={() => toggleLiquidGlass(!liquidGlass)}
+                >
+                  <span className="switch-thumb" />
+                </button>
+              </div>
+
               <div className="theme-preview">
                 <span className="theme-name">蓝白 · 默认</span>
                 <span className="muted">#326EA7 强调色 / #F3F7F6 页面底色</span>

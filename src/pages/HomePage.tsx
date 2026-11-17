@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LaunchPlayIcon from "../assets/LaunchPlayIcon.svg";
 import settingsIcon from "../assets/SettingsIcon.svg";
 import SwitchPlayerIcon from "../assets/SwitchPlayerIcon.svg";
@@ -25,8 +25,10 @@ export default function HomePage() {
   const { openAccount, openInstances } = useNavigation();
   const { notify } = useToast();
   const { overview, accounts, instances: instanceCatalog, avatar, refreshState } = useLauncher();
-  const [status, setStatus] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [bumping, setBumping] = useState(false);
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number; scale: number }[]>([]);
+  const hostRef = useRef<HTMLDivElement>(null);
   const [playerPickerOpen, setPlayerPickerOpen] = useState(false);
 
   // 实例/角色浮层：点空白处或按 Esc 一起收起
@@ -88,18 +90,39 @@ export default function HomePage() {
     if (instanceId === current?.id) return;
     const result = await selectInstanceCommand(instanceId);
     await refreshState();
-    setStatus(result.message);
+    notify(result.message);
   };
 
-  const launch = async () => {
+  /** 水波：以启动按钮为圆心铺开，半径覆盖整页。 */
+  const spawnRipple = (button: HTMLElement) => {
+    const host = hostRef.current;
+    if (!host) return;
+    const area = host.getBoundingClientRect();
+    const rect = button.getBoundingClientRect();
+    const x = rect.left + rect.width / 2 - area.left;
+    const y = rect.top + rect.height / 2 - area.top;
+    const reach = Math.hypot(Math.max(x, area.width - x), Math.max(y, area.height - y));
+    const id = Date.now() + Math.random();
+    setRipples((previous) => [...previous, { id, x, y, scale: (reach * 2) / 20 }]);
+    window.setTimeout(() => setRipples((previous) => previous.filter((item) => item.id !== id)), 900);
+  };
+
+  /** 相邻两张卡的跟随抖动：重置类名以便重复触发。 */
+  const bumpCards = () => {
+    setBumping(false);
+    window.requestAnimationFrame(() => setBumping(true));
+  };
+
+  const launch = async (button: HTMLElement) => {
+    spawnRipple(button);
+    bumpCards();
     if (!current) {
-      setStatus("请先安装或选择实例。");
+      notify("请先安装或选择实例。");
       return;
     }
-    setStatus("正在准备启动…");
     const result = await launchGame(current.id, overview.activeAccountId ?? "");
     await refreshState();
-    setStatus(`启动请求已接受：${result.sessionId}`);
+    notify(`启动请求已接受：${result.sessionId}`);
   };
 
   /** 角色切换目前由「账号」页完成，这里只做跳转。 */
@@ -111,12 +134,25 @@ export default function HomePage() {
   };
 
   return (
-    <div className="home">
+    <div className="home" ref={hostRef}>
+      {/* 点击启动时的水波层，位于按钮之下、胶囊之下的同一平面 */}
+      <div className="ripple-layer" aria-hidden="true">
+        {ripples.map((item) => (
+          <span
+            key={item.id}
+            className="ripple"
+            style={{
+              left: item.x,
+              top: item.y,
+              ["--ripple-scale" as string]: item.scale,
+            }}
+          />
+        ))}
+      </div>
+
       {/* 右下角：角色 | 实例 | 启动 */}
       <div className="home-launch">
-        {status.length > 0 ? <p className="status home-status">{status}</p> : null}
-
-        <div className="launch-row">
+        <div className={`launch-row${bumping ? " is-bumping" : ""}`} onAnimationEnd={() => setBumping(false)}>
           {/* 角色卡：头像 + 名称 + 账号类型，右上角切换角色 */}
           <div className="player-card">
             <div className="player-card-main">
@@ -228,7 +264,7 @@ export default function HomePage() {
             className="btn launch-square"
             data-tip="启动游戏"
             aria-label="启动游戏"
-            onClick={() => void launch()}
+            onClick={(event) => void launch(event.currentTarget)}
             disabled={!current}
           >
             <img src={LaunchPlayIcon} alt="" />

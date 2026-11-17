@@ -17,11 +17,83 @@
   align-items: flex-end;
   gap: 8px;
   max-width: 500px;
+  z-index: 1; /* 压在水波之上 */
 }
 
-.home-status {
-  margin: 0;
-  text-align: right;
+/* ---------- 启动时的水波与相邻卡片抖动 ---------- */
+
+.ripple-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* 圆心的空洞半径，随扩散一起变大：水波从圆心向外退去 */
+@property --ripple-hole {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+.ripple {
+  /* 水波扩散倍数：默认值用于静态校验，实际每个水波由 HomePage.tsx 按点击距离写入 */
+  --ripple-scale: 40;
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgb(34 140 255 / 0%) var(--ripple-hole),
+    rgb(34 140 255 / 30%) calc(var(--ripple-hole) + 18%),
+    rgb(34 140 255 / 0%) calc(var(--ripple-hole) + 38%)
+  );
+  opacity: 0;
+  transform: scale(0);
+  animation: ripple-spread 900ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@keyframes ripple-spread {
+  0% {
+    opacity: 0.85;
+    transform: scale(0.2);
+    --ripple-hole: 0%;
+  }
+  55% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(var(--ripple-scale));
+    --ripple-hole: 30%;
+  }
+}
+
+/* 角色卡与实例卡跟随水波轻轻一顿 */
+.launch-row.is-bumping .player-card,
+.launch-row.is-bumping .btn.instance-card {
+  animation: card-bump 420ms cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+@keyframes card-bump {
+  0% {
+    transform: none;
+  }
+  22% {
+    transform: translateY(-2px) scale(0.994);
+  }
+  54% {
+    transform: translateY(1px) scale(1.004);
+  }
+  78% {
+    transform: translateY(-0.5px);
+  }
+  100% {
+    transform: none;
+  }
 }
 
 /* 角色、实例、启动三个按钮同高并排，底边对齐 */
