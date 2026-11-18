@@ -2,6 +2,7 @@ import { useState } from "react";
 import { saveRecommendations } from "../api/commands/community";
 import { verifyKey } from "../api/commands/settings";
 import Markdown from "../components/Markdown";
+import { AppInput } from "../components/AppInput";
 import Modal from "../components/Modal";
 import { useLauncher } from "../state/launcher";
 import type { AnnouncementInfo } from "../types/launcher";
@@ -65,9 +66,7 @@ export default function CommunityPage() {
                 : "尚未设置管理员密钥。首次输入任意 8 位以上密钥即设置本机管理员密钥。"}
             </p>
             <div className="row" style={{ gap: 8 }}>
-              <input
-                className="input"
-                type="password"
+              <AppInput type="password"
                 placeholder="首次输入即设置本机管理员密钥"
                 value={adminKey}
                 onChange={(event) => setAdminKey(event.target.value)}

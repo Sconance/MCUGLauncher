@@ -397,17 +397,24 @@
       "type": "object",
       "required": [
         "id",
+        "category",
         "name",
         "description",
         "author",
         "icon",
         "downloads",
-        "tags"
+        "tags",
+        "gameVersions",
+        "loaders"
       ],
       "properties": {
         "id": {
           "type": "string",
           "description": "id 字段。"
+        },
+        "category": {
+          "type": "string",
+          "description": "category 字段。"
         },
         "name": {
           "type": "string",
@@ -435,6 +442,20 @@
             "type": "string"
           },
           "description": "tags 字段。"
+        },
+        "gameVersions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "gameVersions 字段。"
+        },
+        "loaders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "loaders 字段。"
         }
       },
       "additionalProperties": false,

@@ -1,0 +1,44 @@
+/*
+ * 左右栏页面骨架：左栏分区导航（.extras-nav）+ 右栏内容（.split-body）。
+ * 栅格与内边距沿用 .extras，这里只补内容层的排布与切换动画。
+ */
+
+.split-page {
+  align-items: stretch;
+}
+
+.split-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/*
+ * 内容层：淡出旧分区 → useFadeSwap 换 key → 淡入新分区。
+ * 时长与缓动只在这里定义，四个左右栏页面因此完全一致。
+ */
+.split-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  /*
+   * 始终为滚动条留出 6px 槽位：内容长短变化时（例如展开版本抽屉），
+   * 滚动条出现/消失不会再把右栏里的元素整体挤动。
+   */
+  scrollbar-gutter: stable;
+  transition: opacity 130ms linear;
+}
+
+.split-content.is-out {
+  opacity: 0;
+}
+
+/*
+ * 内容项不压缩：滚动容器高度固定时，flex 会按 min-content 往下挤，
+ * 固定高度的元素（例如搜索栏）就会被压短。高度交给滚动条处理。
+ */
+.split-content > * {
+  flex: none;
+}

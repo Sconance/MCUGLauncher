@@ -5,11 +5,13 @@ interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   onClose: () => void;
+  /** 点遮罩关闭：默认不关，只有 Esc / 按钮能关 */
+  dismissOnOverlay?: boolean;
   width?: number;
 }
 
 /** 居中弹层：Esc 关闭，遮罩拦截点击，对应原 Avalonia 的覆盖页。 */
-export default function Modal({ title, children, footer, onClose, width }: ModalProps) {
+export default function Modal({ title, children, footer, onClose, dismissOnOverlay = false, width }: ModalProps) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -19,8 +21,8 @@ export default function Modal({ title, children, footer, onClose, width }: Modal
   }, [onClose]);
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true">
-      <div className="modal-card" style={width ? { width } : undefined}>
+    <div className="modal-overlay" role="dialog" aria-modal="true" onClick={dismissOnOverlay ? onClose : undefined}>
+      <div className="modal-card" style={width ? { width } : undefined} onClick={(event) => event.stopPropagation()}>
         {title ? <h2 className="modal-title">{title}</h2> : null}
         {children}
         {footer ? <div className="modal-actions">{footer}</div> : null}

@@ -16,6 +16,7 @@ import { launchGame } from "../api/commands/launch";
 import { openFolder as openFolderCommand } from "../api/commands/settings";
 import { selectInstance as selectInstanceCommand } from "../api/commands/state";
 import Field from "../components/Field";
+import { AppInput, AppSelect, AppTextarea } from "../components/AppInput";
 import PathPrompt from "../components/PathPrompt";
 import { LIMITS } from "../constants";
 import { useLauncher } from "../state/launcher";
@@ -275,9 +276,7 @@ export default function InstancesPage() {
       <div className="stack" style={{ gap: 8 }}>
         <h1 className="page-title">实例</h1>
         <div className="row" style={{ gap: 8 }}>
-          <select
-            className="select"
-            value={selected}
+          <AppSelect value={selected}
             style={{ flex: 1 }}
             onChange={(event) => void changeInstance(event.target.value)}
           >
@@ -288,7 +287,7 @@ export default function InstancesPage() {
                 {item.minecraft.length > 0 ? ` · ${item.minecraft}` : ""} · {item.loader}
               </option>
             ))}
-          </select>
+          </AppSelect>
           <button type="button" className="btn primary" disabled={!current} onClick={() => void launch()}>
             启动
           </button>
@@ -379,9 +378,7 @@ export default function InstancesPage() {
             <div className="instance-scroll">
               <div className="stack" style={{ gap: 10, paddingTop: 8 }}>
                 <Field label="实例显示名">
-                  <input
-                    className="input"
-                    placeholder="1–120 个字符"
+                  <AppInput placeholder="1–120 个字符"
                     value={form.displayName}
                     onChange={(event) => setForm({ ...form, displayName: event.target.value })}
                   />
@@ -398,9 +395,7 @@ export default function InstancesPage() {
 
                 <Field label="Java 路径（留空自动选择）">
                   <div className="row" style={{ gap: 8 }}>
-                    <input
-                      className="input"
-                      placeholder="留空自动选择"
+                    <AppInput placeholder="留空自动选择"
                       value={form.java}
                       disabled={disabled}
                       onChange={(event) => setForm({ ...form, java: event.target.value })}
@@ -422,25 +417,19 @@ export default function InstancesPage() {
                     自动分配内存
                   </label>
                   <Field label="内存 MB">
-                    <input
-                      className="input"
-                      value={form.ram}
+                    <AppInput value={form.ram}
                       disabled={disabled}
                       onChange={(event) => setForm({ ...form, ram: event.target.value })}
                     />
                   </Field>
                   <Field label="游戏窗口宽">
-                    <input
-                      className="input"
-                      value={form.width}
+                    <AppInput value={form.width}
                       disabled={disabled}
                       onChange={(event) => setForm({ ...form, width: event.target.value })}
                     />
                   </Field>
                   <Field label="游戏窗口高">
-                    <input
-                      className="input"
-                      value={form.height}
+                    <AppInput value={form.height}
                       disabled={disabled}
                       onChange={(event) => setForm({ ...form, height: event.target.value })}
                     />
@@ -467,26 +456,21 @@ export default function InstancesPage() {
                 </label>
 
                 <Field label="窗口标题">
-                  <input
-                    className="input"
-                    placeholder="可留空"
+                  <AppInput placeholder="可留空"
                     value={form.windowTitle}
                     disabled={disabled}
                     onChange={(event) => setForm({ ...form, windowTitle: event.target.value })}
                   />
                 </Field>
                 <Field label="自动进入服务器">
-                  <input
-                    className="input"
-                    placeholder="可留空，例如 play.example.com"
+                  <AppInput placeholder="可留空，例如 play.example.com"
                     value={form.server}
                     disabled={disabled}
                     onChange={(event) => setForm({ ...form, server: event.target.value })}
                   />
                 </Field>
                 <Field label="额外 JVM 参数" hint="只接受 - 开头的参数；内存请使用上方设置">
-                  <textarea
-                    className="input"
+                  <AppTextarea
                     rows={3}
                     value={form.jvmArguments}
                     disabled={disabled}
@@ -514,9 +498,7 @@ export default function InstancesPage() {
               <div className="stack" style={{ gap: 10, paddingTop: 8 }}>
                 <span className="field-label">克隆为独立实例</span>
                 <div className="row" style={{ gap: 8 }}>
-                  <input
-                    className="input"
-                    placeholder="新实例名称"
+                  <AppInput placeholder="新实例名称"
                     value={cloneName}
                     onChange={(event) => setCloneName(event.target.value)}
                   />

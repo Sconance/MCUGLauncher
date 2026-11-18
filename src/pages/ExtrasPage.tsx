@@ -1,18 +1,18 @@
 import type { ReactNode } from "react";
-import navAccount from "../assets/nav-account.svg";
-import navBookmarks from "../assets/nav-bookmarks.svg";
-import navCommunity from "../assets/nav-community.svg";
-import navGames from "../assets/nav-games.svg";
-import navInstances from "../assets/nav-instances.svg";
-import navTasks from "../assets/nav-tasks.svg";
-import SectionNav, { type NavItem } from "../components/SectionNav";
+import navAccount from "../assets/icons/nav/nav-account.svg";
+import navBookmarks from "../assets/icons/nav/nav-bookmarks.svg";
+import navCommunity from "../assets/icons/nav/nav-community.svg";
+import navGames from "../assets/icons/nav/nav-games.svg";
+import navInstances from "../assets/icons/nav/nav-instances.svg";
+import navTasks from "../assets/icons/nav/nav-tasks.svg";
+import type { NavItem } from "../components/SectionNav";
+import SplitPage from "../components/SplitPage";
 import AccountPage from "./AccountPage";
 import BookmarksPage from "./BookmarksPage";
 import CommunityPage from "./CommunityPage";
 import GamesPage from "./GamesPage";
 import InstancesPage from "./InstancesPage";
 import TasksPage from "./TasksPage";
-import { useFadeSwap } from "../shell/fade";
 
 interface Section {
   key: string;
@@ -52,20 +52,22 @@ interface ExtrasPageProps {
 
 /** 对应原 ExtrasView：左侧分区导航，右侧承载六个子页面。 */
 export default function ExtrasPage({ active, onChange }: ExtrasPageProps) {
-  const { shown, out } = useFadeSwap(active);
-
   return (
-    <div className="extras">
-      <aside className="extras-nav">
-        <SectionNav groups={NAV_GROUPS} active={active} onSelect={onChange} title="更多" label="更多页面" />
-      </aside>
-      <section className={`extras-body fade-swap${out ? " is-out" : ""}`}>
-        {SECTIONS.map((section) => (
+    <SplitPage
+      title="更多"
+      navLabel="更多页面"
+      groups={NAV_GROUPS}
+      active={active}
+      onSelect={onChange}
+      contentClassName="extras-content"
+    >
+      {(shown) =>
+        SECTIONS.map((section) => (
           <div key={section.key} className="extras-panel" hidden={section.key !== shown}>
             {section.page}
           </div>
-        ))}
-      </section>
-    </div>
+        ))
+      }
+    </SplitPage>
   );
 }

@@ -8,9 +8,9 @@ import type {
   VanillaVersionInfo,
 } from "../../types/launcher";
 
-/** 按分类与关键词搜索资源项目。 */
-export const searchContent = (category: string, query: string) =>
-  call<ContentSearchResult>("search_content", { category, query });
+/** 按分类与关键词搜索资源项目；`game` / `loader` 用于按实例的版本与加载器过滤，留空表示不筛。 */
+export const searchContent = (category: string, query: string, game = "", loader = "") =>
+  call<ContentSearchResult>("search_content", { category, query, game, loader });
 
 /** 读取项目的兼容版本与安装令牌；`requestId` 用于丢弃过期响应。 */
 export const listContentVersions = (id: string, requestId = "") =>

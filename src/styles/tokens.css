@@ -25,13 +25,13 @@
   --tip-bg: rgb(17 20 23 / 94%);
   --tip-ink: #fff;
 
-  /* 主色阶 */
-  --app-accent: #326ea7;
-  --app-accent-dark: #25517a;
-  --app-accent-deep: #193753;
-  --app-accent-soft: #c9dff3;
-  --app-accent-tint: #e9f1f8;
-  --app-accent-wash: #ecf4fb;
+  /* 主色阶（对齐 Chakra blue 预设） */
+  --app-accent: #3b82f6;
+  --app-accent-dark: #2563eb;
+  --app-accent-deep: #1d4ed8;
+  --app-accent-soft: #bfdbfe;
+  --app-accent-tint: #dbeafe;
+  --app-accent-wash: #eff6ff;
 
   /* 状态色 */
   --app-amber: #8f5a0e;

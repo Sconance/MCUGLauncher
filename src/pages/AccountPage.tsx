@@ -1,6 +1,7 @@
 import { useState } from "react";
 import * as accounts from "../api/commands/accounts";
 import PathPrompt from "../components/PathPrompt";
+import { AppInput } from "../components/AppInput";
 import { useLauncher } from "../state/launcher";
 import "./AccountPage.css";
 
@@ -138,15 +139,11 @@ export default function AccountPage() {
       <section className="card stack" style={{ gap: 8 }}>
         <h2 className="h2">MUA 账号</h2>
         <p className="muted">使用外置登录账号；存在多个角色时会显示角色选择。</p>
-        <input
-          className="input"
-          placeholder="MUA 账号"
+        <AppInput placeholder="MUA 账号"
           value={muaAccount}
           onChange={(event) => setMuaAccount(event.target.value)}
         />
-        <input
-          className="input"
-          type="password"
+        <AppInput type="password"
           placeholder="密码"
           value={muaPassword}
           onChange={(event) => setMuaPassword(event.target.value)}

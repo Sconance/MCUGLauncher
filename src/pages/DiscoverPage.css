@@ -1,30 +1,4 @@
-/* 「发现」页：一个大的圆角内容栏，内部左选择栏 + 右内容栏 */
-
-.page.discover {
-  padding: 0;
-}
-
-/* 内容栏由外壳统一提供，这里只负责左右两栏的排布 */
-.discover-shell {
-  display: grid;
-  grid-template-columns: 184px minmax(0, 1fr);
-  gap: 14px;
-  height: 100%;
-  min-height: 0;
-}
-
-.discover-nav {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.discover-main {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 0;
-}
+/* 「发现」页：左右栏骨架由 SplitPage 提供，这里只排右栏内容与底部名言 */
 
 /* 右栏内容容器：全透明背景的圆角矩形，高度只占右栏一部分，底部留给群友名言 */
 .discover-content {
@@ -39,6 +13,7 @@
 /* 群友名言常驻右栏底部，不随内容滚动 */
 .discover-quote {
   flex: none;
+  margin-top: 12px;
 }
 
 /* ---------- 群公告列表 ---------- */

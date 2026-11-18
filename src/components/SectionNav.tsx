@@ -3,7 +3,8 @@ import "./SectionNav.css";
 export interface NavItem {
   key: string;
   label: string;
-  icon: string;
+  /** 图标资源路径；不传则只显示文字（例如下载页的分区） */
+  icon?: string;
 }
 
 interface SectionNavProps {
@@ -30,7 +31,7 @@ export default function SectionNav({ groups, active, onSelect, title, label }: S
               aria-current={item.key === active ? "true" : undefined}
               onClick={() => onSelect(item.key)}
             >
-              <img className="section-icon" src={item.icon} alt="" width={16} height={16} />
+              {item.icon ? <img className="section-icon" src={item.icon} alt="" width={16} height={16} /> : null}
               <span className="section-label">{item.label}</span>
             </button>
           ))}

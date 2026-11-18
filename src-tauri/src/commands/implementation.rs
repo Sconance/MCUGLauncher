@@ -732,6 +732,8 @@ pub fn search_content(
     backend: State<'_, Backend>,
     category: String,
     query: String,
+    game: Option<String>,
+    loader: Option<String>,
 ) -> ContentSearchResult {
     let keyword = query.to_lowercase();
     let items = backend
@@ -748,6 +750,15 @@ pub fn search_content(
                     .tags
                     .iter()
                     .any(|tag| tag.to_lowercase().contains(&keyword))
+        })
+        .filter(|item| category.is_empty() || item.category == category)
+        .filter(|item| match game.as_deref() {
+            Some(game) if !game.is_empty() => item.game_versions.iter().any(|entry| entry == game),
+            _ => true,
+        })
+        .filter(|item| match loader.as_deref() {
+            Some(loader) if !loader.is_empty() => item.loaders.iter().any(|entry| entry == loader),
+            _ => true,
         })
         .cloned()
         .collect();

@@ -58,7 +58,7 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: url("../assets/TmpBackground.png") center / cover no-repeat;
+  background: url("../assets/wallpaper/TmpBackground.png") center / cover no-repeat;
   pointer-events: none;
 }
 

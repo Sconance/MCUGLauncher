@@ -72,7 +72,10 @@
   color: #414b55;
   font-size: 12px;
   cursor: pointer;
-  transition: background-color 120ms linear, color 120ms linear, border-color 120ms linear;
+  transition:
+    background-color 120ms linear,
+    color 120ms linear,
+    border-color 120ms linear;
   white-space: nowrap;
 }
 
@@ -197,16 +200,6 @@
   background: var(--app-accent-wash);
 }
 
-/* ---------- 分区切换的淡出淡入（配合 useFadeSwap） ---------- */
-
-.fade-swap {
-  transition: opacity 130ms linear;
-}
-
-.fade-swap.is-out {
-  opacity: 0;
-}
-
 /* ---------- 悬停提示 ---------- */
 
 /*
@@ -234,7 +227,9 @@
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, 2px);
-  transition: opacity 80ms linear, transform 80ms linear;
+  transition:
+    opacity 80ms linear,
+    transform 80ms linear;
 }
 
 [data-tip]:hover::after,
@@ -243,19 +238,19 @@
   transform: translate(-50%, 0);
 }
 
-[data-tip][data-tip-side="right"]::after {
+[data-tip][data-tip-side='right']::after {
   left: calc(100% + 7px);
   top: 50%;
   bottom: auto;
   transform: translate(-2px, -50%);
 }
 
-[data-tip][data-tip-side="right"]:hover::after,
-[data-tip][data-tip-side="right"]:focus-visible::after {
+[data-tip][data-tip-side='right']:hover::after,
+[data-tip][data-tip-side='right']:focus-visible::after {
   transform: translate(0, -50%);
 }
 
-[data-tip][data-tip-side="left"]::after {
+[data-tip][data-tip-side='left']::after {
   right: calc(100% + 7px);
   left: auto;
   top: 50%;
@@ -263,8 +258,8 @@
   transform: translate(2px, -50%);
 }
 
-[data-tip][data-tip-side="left"]:hover::after,
-[data-tip][data-tip-side="left"]:focus-visible::after {
+[data-tip][data-tip-side='left']:hover::after,
+[data-tip][data-tip-side='left']:focus-visible::after {
   transform: translate(0, -50%);
 }
 
@@ -282,6 +277,39 @@
   font-size: 12.5px;
   font-weight: 600;
   color: var(--app-ink);
+}
+
+/*
+ * 设置项状态标签（DEV / BETA / ERR）。
+ * 默认即 DEV 的黄底黑字，另外两种只覆盖两个颜色变量。
+ */
+.setting-tag {
+  --tag-bg: #f2c14e;
+  --tag-fg: #241d00;
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--tag-bg);
+  color: var(--tag-fg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  vertical-align: 1px;
+  user-select: none;
+}
+
+.setting-tag[data-tag='beta'] {
+  --tag-bg: #17b6c9;
+  --tag-fg: #fff;
+}
+
+.setting-tag[data-tag='err'] {
+  --tag-bg: #d9483c;
+  --tag-fg: #fff;
 }
 
 .switch {
@@ -335,7 +363,9 @@
   color: var(--app-ink);
   font-size: 12px;
   outline: none;
-  transition: border-color 120ms linear, box-shadow 120ms linear;
+  transition:
+    border-color 120ms linear,
+    box-shadow 120ms linear;
 }
 
 .input:focus,
@@ -347,10 +377,15 @@
 .select {
   appearance: none;
   padding-right: 26px;
-  background-image: linear-gradient(45deg, transparent 50%, #7c8791 50%),
+  background-image:
+    linear-gradient(45deg, transparent 50%, #7c8791 50%),
     linear-gradient(135deg, #7c8791 50%, transparent 50%);
-  background-position: calc(100% - 14px) 15px, calc(100% - 9px) 15px;
-  background-size: 5px 5px, 5px 5px;
+  background-position:
+    calc(100% - 14px) 15px,
+    calc(100% - 9px) 15px;
+  background-size:
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
 }
 
@@ -387,7 +422,7 @@ textarea.input {
   cursor: pointer;
 }
 
-.checkbox input[type="checkbox"] {
+.checkbox input[type='checkbox'] {
   width: 14px;
   height: 14px;
   margin: 0;
@@ -430,7 +465,7 @@ textarea.input {
 }
 
 .tab.active::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 10px;
   right: 10px;
@@ -642,11 +677,6 @@ textarea.input {
   min-height: 0;
 }
 
-.extras-body {
-  min-width: 0;
-  min-height: 0;
-}
-
 .extras-panel {
   height: 100%;
   min-height: 0;
@@ -663,4 +693,3 @@ textarea.input {
   height: 100%;
   min-height: 0;
 }
-

@@ -417,6 +417,10 @@ export interface ContentItem {
    */
   id: string;
   /**
+   * category 字段。
+   */
+  category: string;
+  /**
    * name 字段。
    */
   name: string;
@@ -440,6 +444,14 @@ export interface ContentItem {
    * tags 字段。
    */
   tags: string[];
+  /**
+   * gameVersions 字段。
+   */
+  gameVersions: string[];
+  /**
+   * loaders 字段。
+   */
+  loaders: string[];
 }
 /**
  * ContentSearchResult：通过 Tauri 命令在前后端之间传输的数据对象。

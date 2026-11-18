@@ -1,26 +1,1205 @@
+/* 下载页：左右栏骨架由 SplitPage 提供，这里只负责内容区的排布 */
+
+.dl-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 11px;
+}
+
+.dl {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 100%;
+}
+
+/* 列表 ↔ 详情：布局在外层，滑动 / 淡出复用 .vd-swap 的类名 */
+.dl-swap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- 原版游戏：三个版本抽屉 ---------- */
+
+.vn-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vn-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vn-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.vn-drawers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vn-drawer {
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 58%);
+  box-shadow: var(--shadow-card);
+}
+
+.vn-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--app-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vn-head:hover {
+  background: rgb(20 30 42 / 4%);
+}
+
+.vn-count {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(20 30 42 / 7%);
+  color: var(--app-ink-3);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.vn-chevron {
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
+  color: var(--app-ink-3);
+  transition: transform 140ms ease;
+}
+
+.vn-drawer.open .vn-chevron {
+  transform: rotate(90deg);
+}
+
+/*
+ * 抽出 / 抽回：外层网格行高在 0fr ↔ 1fr 之间过渡，内层 overflow 裁剪，
+ * 内容同时轻微下滑，收起来时不会再"啪"地一下消失。
+ */
+.vn-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 260ms cubic-bezier(0.22, 0.88, 0.3, 1);
+}
+
+.vn-collapse.open {
+  grid-template-rows: 1fr;
+}
+
+.vn-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+  transition:
+    opacity 200ms ease,
+    transform 260ms cubic-bezier(0.22, 0.88, 0.3, 1);
+}
+
+.vn-collapse:not(.open) .vn-collapse-inner {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.vn-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+/* 主题分组标题：混沌立方 / 小鬼当家 … */
+.vn-group-title {
+  margin: 2px 2px 5px;
+  color: var(--app-ink-3);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* 列表本体复用左栏 .section-group 的圆角块，这里压深一点以便在浅色面板上看清 */
+.vn-body .section-group {
+  background: rgb(20 30 42 / 4%);
+}
+
+.vn-item .section-label {
+  flex: 1 1 auto;
+}
+
+/* 选中的版本用主色淡底，区别于左栏的灰色导航高亮 */
+.vn-item.selected {
+  background: var(--app-accent-tint);
+  color: var(--app-accent-deep);
+  font-weight: 600;
+}
+
+.vn-date {
+  flex: none;
+  margin-left: 8px;
+  color: var(--app-ink-3);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 版本详情页：向左滑出、从右滑入 ---------- */
+
+.vd-swap {
+  transition:
+    opacity 180ms linear,
+    transform 200ms cubic-bezier(0.22, 0.88, 0.3, 1);
+}
+
+/* 旧页朝滑走方向淡出 */
+.vd-swap.is-out-left {
+  opacity: 0;
+  transform: translateX(-28px);
+}
+
+.vd-swap.is-out-right {
+  opacity: 0;
+  transform: translateX(28px);
+}
+
+.vd-swap.enter-forward {
+  animation: vd-enter-right 220ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+.vd-swap.enter-back {
+  animation: vd-enter-left 220ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+@keyframes vd-enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+
+@keyframes vd-enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}
+
+.vd-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vd-back {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px 2px 3px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-ink-3);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background-color 110ms linear, color 110ms linear;
+}
+
+.vd-back:hover {
+  background: rgb(20 30 42 / 5%);
+  color: var(--app-ink);
+}
+
+.vd-back svg {
+  width: 14px;
+  height: 14px;
+}
+
+.vd-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 实例图标：进入实例列表后会显示成这块 */
+.vd-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--app-accent-wash);
+  color: var(--app-accent-deep);
+  box-shadow: inset 0 0 0 1px rgb(20 30 42 / 6%);
+}
+
+.vd-cube {
+  width: 26px;
+  height: 26px;
+}
+
+.vd-name {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 加载器抽屉头：右侧显示已选版本，没有版本时显示「无」且不可展开 */
+.vn-head-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vn-head-main:disabled {
+  cursor: default;
+}
+
+.vd-loader-head.is-empty {
+  opacity: 0.75;
+  cursor: default;
+}
+
+/* 与已选加载器冲突：整行不可点、不可展开，右侧挂一条不兼容说明 */
+.vd-loader-head.is-blocked {
+  cursor: default;
+}
+
+.vd-loader-head.is-blocked:hover {
+  background: transparent;
+}
+
+.vd-loader-head.is-blocked .vn-head-title {
+  color: var(--app-ink-3);
+}
+
+.vd-loader-value {
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--app-ink-3);
+  font-size: 11.5px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vd-loader-value.is-blocked {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--app-amber-bg);
+  color: var(--app-amber);
+  font-size: 10.5px;
+  font-weight: 500;
+}
+
+.vd-loader-tail {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+}
+
+.vd-loader-head .vn-chevron {
+  margin-left: 0;
+}
+
+/* 已选版本时出现在箭头左侧，点掉即取消该加载器 */
+.vd-loader-clear {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-ink);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.vd-loader-clear svg {
+  width: 12px;
+  height: 12px;
+}
+
+.vd-loader-clear:hover {
+  background: rgb(198 47 47 / 14%);
+  color: #b32b2b;
+}
+
+.vd-loader-clear:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 1px;
+}
+
+/* 底部固定的下载按钮，位置对应胶囊栏 */
+.vd-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0 2px;
+}
+
+.vd-status {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vd-download {
+  min-width: 180px;
+  height: 40px;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgb(18 42 64 / 22%);
+}
+
+/* ---------- 工具条：排序 / 拉伸 / 显示样式 / 筛选 ---------- */
+
+.dl-topbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 整合包右上角：版本 / 加载器两个横排按钮 */
+.dl-pickers {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.dl-picker-wrap {
+  position: relative;
+}
+
+.dl-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid rgb(20 30 42 / 10%);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 70%);
+  color: var(--app-ink-2);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition:
+    border-color 120ms linear,
+    background-color 120ms linear;
+}
+
+.dl-picker:hover {
+  border-color: rgb(20 30 42 / 22%);
+  background: rgb(255 255 255 / 92%);
+}
+
+.dl-picker.on {
+  border-color: var(--app-accent);
+  background: var(--app-accent-wash);
+}
+
+.dl-picker-label {
+  color: var(--app-ink-3);
+  font-size: 10.5px;
+}
+
+.dl-picker-value {
+  color: var(--app-ink);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.dl-picker.has-value .dl-picker-value {
+  color: var(--app-accent-deep);
+}
+
+.dl-picker-caret {
+  width: 12px;
+  height: 12px;
+  color: var(--app-ink-3);
+}
+
+/* 下拉面板：版本列表较长，限高滚动 */
+.dl-picker-pop {
+  position: absolute;
+  top: 41px;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 168px;
+  max-height: 280px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--shadow-dialog);
+  overflow-y: auto;
+}
+
+.dl-picker-item {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--app-ink-2);
+  font-size: 11.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dl-picker-item:hover {
+  background: rgb(20 30 42 / 6%);
+  color: var(--app-ink);
+}
+
+.dl-picker-item.on {
+  background: var(--app-accent-tint);
+  color: var(--app-accent-deep);
+  font-weight: 600;
+}
+
+/* 右上角的实例选择器：图标 + 实例名 + 版本 / 加载器副标题 */
+.dl-instance {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 7px;
+  max-width: 220px;
+  height: 36px;
+  padding: 0 10px 0 8px;
+  border: 1px solid rgb(20 30 42 / 10%);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 70%);
+  color: var(--app-ink);
+  cursor: pointer;
+  transition:
+    border-color 120ms linear,
+    background-color 120ms linear;
+}
+
+.dl-instance:hover {
+  border-color: rgb(20 30 42 / 22%);
+  background: rgb(255 255 255 / 92%);
+}
+
+.dl-instance .dl-instance-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: var(--app-accent);
+}
+
+.dl-instance-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  text-align: left;
+}
+
+.dl-instance-name {
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dl-instance-sub {
+  overflow: hidden;
+  color: var(--app-ink-3);
+  font-size: 9.5px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 实例选择弹层 */
+.dl-instance-hint {
+  margin: -6px 0 0;
+  font-size: 11.5px;
+}
+
+.dl-instance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.dl-instance-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid rgb(20 30 42 / 8%);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 62%);
+  color: var(--app-ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms linear,
+    background-color 120ms linear;
+}
+
+.dl-instance-row:hover {
+  border-color: rgb(20 30 42 / 20%);
+  background: rgb(255 255 255 / 88%);
+}
+
+.dl-instance-row.on {
+  border-color: var(--app-accent);
+  background: var(--app-accent-wash);
+}
+
+.dl-instance-row .dl-instance-icon {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  color: var(--app-accent);
+}
+
+.dl-instance-row .dl-instance-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.dl-instance-row .dl-instance-sub {
+  margin-top: 2px;
+  font-size: 10.5px;
+}
+
+.dl-instance-tag {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgb(20 30 42 / 7%);
+  color: var(--app-ink-3);
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+.dl-instance-check {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-left: auto;
+  color: var(--app-accent);
+}
+
+.dl-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  color: var(--app-ink-3);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.dl-sort-select {
+  width: auto;
+  height: 30px;
+}
+
+.dl-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgb(20 30 42 / 10%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 70%);
+  color: var(--app-ink-2);
+  cursor: pointer;
+}
+
+.dl-icon-btn:hover {
+  border-color: rgb(20 30 42 / 22%);
+  color: var(--app-ink);
+}
+
+.dl-icon-btn.on {
+  border-color: var(--app-accent);
+  color: var(--app-accent);
+  background: var(--app-accent-tint);
+}
+
+.dl-icon-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.dl-filter-wrap {
+  position: relative;
+}
+
+.dl-filter-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--app-accent);
+}
+
+/* 筛选二级菜单 */
+.dl-filter-pop {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 300px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--shadow-dialog);
+}
+
+.dl-filter-pop .input {
+  width: 100%;
+}
+
+.dl-filter-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+/* ---------- 搜索条 ---------- */
+
+/* 搜索输入框与「搜索」按钮并排：按钮在胶囊外面 */
+.dl-searchrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 搜索输入框：撑满剩余宽度，其余视觉走 .input 默认 */
+.dl-search-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.dl-search-input::placeholder {
+  color: var(--app-ink-3);
+}
+
+/* ---------- 筛选 chip ---------- */
+
+.dl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dl-chips.scroll-x {
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.dl-chips.scroll-x .dl-chip {
+  flex: none;
+}
+
+.dl-group + .dl-group {
+  margin-top: 2px;
+}
+
+.dl-group-title {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 10.5px;
+  color: var(--app-ink-3);
+}
+
+.dl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px;
+  border: 1px solid rgb(20 30 42 / 10%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 70%);
+  color: var(--app-ink-2);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition:
+    background-color 120ms linear,
+    border-color 120ms linear,
+    color 120ms linear;
+}
+
+.dl-chip:hover {
+  border-color: rgb(20 30 42 / 22%);
+  color: var(--app-ink);
+}
+
+.dl-chip.on {
+  background: var(--app-accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+.dl-chip-count {
+  font-size: 10.5px;
+  opacity: 0.55;
+}
+
+.dl-chip.on .dl-chip-count {
+  opacity: 0.8;
+}
+
+.dl-active {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dl-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-ink-3);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.dl-clear:hover {
+  color: var(--app-ink);
+}
+
+.dl-clear-x {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgb(20 30 42 / 10%);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.dl-active-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgb(20 30 42 / 12%);
+  border-radius: 999px;
+  background: var(--app-accent-tint);
+  color: var(--app-accent-deep);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.dl-active-x {
+  opacity: 0.55;
+}
+
+/* ---------- 结果卡片 ---------- */
+
+.dl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dl-list.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.dl-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background-color: var(--app-glass);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: var(--app-glass-blur);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.dl-card:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+}
+
+.dl-card:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px 0 rgb(0 0 0 / 4%),
+    0 12px 28px 0 rgb(0 0 0 / 6%);
+}
+
+/* 网格里把统计挪到底部整行，正文不再被挤窄 */
+.dl-list.grid .dl-card {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-areas:
+    'icon main'
+    'stats stats';
+  row-gap: 8px;
+}
+
+.dl-list.grid .dl-icon {
+  grid-area: icon;
+  width: 56px;
+  height: 56px;
+  font-size: 20px;
+}
+
+.dl-list.grid .dl-card-main {
+  grid-area: main;
+}
+
+.dl-list.grid .dl-stats {
+  grid-area: stats;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.dl-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e2ebf4, #c8d8e7);
+  color: #4a6b85;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.dl-icon.big {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  font-size: 26px;
+}
+
+.dl-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dl-card-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dl-card-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.dl-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--app-ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dl-link:hover {
+  color: var(--app-accent);
+}
+
+.dl-by {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--app-ink-3);
+}
+
+.dl-desc {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--app-ink-2);
+  font-size: 12px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.dl-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.dl-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 21px;
+  padding: 0 8px;
+  border: 1px solid rgb(20 30 42 / 9%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 70%);
+  color: var(--app-ink-2);
+  font-size: 11px;
+}
+
+.dl-tag.more {
+  color: var(--app-ink-3);
+}
+
+.dl-stats {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  color: var(--app-ink-2);
+  font-size: 11.5px;
+}
+
+.dl-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dl-stat svg {
+  width: 13px;
+  height: 13px;
+}
+
+.dl-fav {
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid rgb(20 30 42 / 12%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 70%);
+  color: var(--app-ink-2);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dl-fav:hover {
+  border-color: rgb(20 30 42 / 24%);
+}
+
+.dl-fav.on {
+  background: var(--app-accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+.dl-more {
+  border: 0;
+  background: transparent;
+  color: var(--app-ink-3);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dl-more:hover {
+  color: var(--app-accent);
+}
+
+/* ---------- 翻页（PCL2 风格：白色圆角条 + « ‹ 页码 › »） ---------- */
+
+.dl-pager-bar {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  gap: 2px;
+  margin: 4px auto 8px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(20 32 50 / 10%);
+}
+
+.dl-pg {
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #9aa4b2;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dl-pg:hover:not(:disabled) {
+  background: rgb(20 30 42 / 6%);
+  color: var(--app-ink);
+}
+
+.dl-pg.on {
+  color: var(--app-accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dl-pg:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dl-pg-gap {
+  padding: 0 2px;
+  color: #b6bfcc;
+  font-size: 12px;
+}
+
+/* ---------- 详情 ---------- */
+
+.dl-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  background-color: var(--app-glass);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: var(--app-glass-blur);
+  box-shadow: var(--shadow-card);
+}
+
+.dl-detail-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.dl-detail-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.dl-detail-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--app-ink);
+}
+
+.dl-detail-desc {
+  margin: 0;
+  color: var(--app-ink-2);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.dl-detail-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dl-close {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(20 30 42 / 6%);
+  color: var(--app-ink-2);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dl-close:hover {
+  background: rgb(20 30 42 / 12%);
+}
+
+/* ---------- 其它页面沿用 ---------- */
+
 .download-body {
   flex: 1;
   min-height: 0;
   margin-top: 12px;
   padding-right: 11px;
   overflow-y: auto;
-}
-
-.download-results {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-
-.download-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 350px;
-}
-
-.download-name {
-  font-weight: 600;
 }
 
 .version-list {

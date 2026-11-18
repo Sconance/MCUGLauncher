@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { listContentVersions, queueContentVersion, toggleBookmark } from "../api/commands/content";
 import PathPrompt from "../components/PathPrompt";
+import { AppSelect } from "../components/AppInput";
 import { useLauncher } from "../state/launcher";
 import type { FavoriteInfo, ResourceVersionsInfo } from "../types/launcher";
 import "./BookmarksPage.css";
@@ -136,9 +137,7 @@ export default function BookmarksPage() {
                       </button>
                     ))}
                   </div>
-                  <select
-                    className="select"
-                    style={{ width: 200 }}
+                  <AppSelect style={{ width: 200 }}
                     value={selected.kind === "modpack" || selected.kind === "datapack" ? "local" : mode}
                     onChange={(event) => setMode(event.target.value)}
                   >
@@ -150,7 +149,7 @@ export default function BookmarksPage() {
                         <option value="local">下载到目录</option>
                       </>
                     )}
-                  </select>
+                  </AppSelect>
                 </>
               ) : null}
               <div className="row" style={{ gap: 8 }}>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import LaunchPlayIcon from "../assets/LaunchPlayIcon.svg";
-import settingsIcon from "../assets/SettingsIcon.svg";
-import SwitchPlayerIcon from "../assets/SwitchPlayerIcon.svg";
+import LaunchPlayIcon from "../assets/icons/capsule/LaunchPlayIcon.svg";
+import settingsIcon from "../assets/icons/capsule/SettingsIcon.svg";
+import SwitchPlayerIcon from "../assets/icons/app/SwitchPlayerIcon.svg";
 import { launchGame } from "../api/commands/launch";
 import { selectInstance as selectInstanceCommand } from "../api/commands/state";
 import type { PlayerInfo } from "../types/view-models";

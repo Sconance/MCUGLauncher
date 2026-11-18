@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import wallpaperUrl from "../assets/TmpBackground.png";
-import DiscoverIcon from "../assets/DiscoverIcon.svg";
-import DiscoverIconActive from "../assets/DiscoverIconActive.svg";
-import downloadIcon from "../assets/DownloadIcon.svg";
-import downloadIconActive from "../assets/DownloadIconActive.svg";
-import extraIcon from "../assets/ExtraIcon.svg";
-import extraIconActive from "../assets/ExtraIconActive.svg";
-import launchIcon from "../assets/LaunchIcon.svg";
-import launchIconActive from "../assets/LaunchIconActive.svg";
-import settingsIcon from "../assets/SettingsIcon.svg";
-import settingsIconActive from "../assets/SettingsIconActive.svg";
+import wallpaperUrl from "../assets/wallpaper/TmpBackground.png";
+import DiscoverIcon from "../assets/icons/capsule/DiscoverIcon.svg";
+import DiscoverIconActive from "../assets/icons/capsule/DiscoverIconActive.svg";
+import downloadIcon from "../assets/icons/capsule/DownloadIcon.svg";
+import downloadIconActive from "../assets/icons/capsule/DownloadIconActive.svg";
+import extraIcon from "../assets/icons/capsule/ExtraIcon.svg";
+import extraIconActive from "../assets/icons/capsule/ExtraIconActive.svg";
+import launchIcon from "../assets/icons/capsule/LaunchIcon.svg";
+import launchIconActive from "../assets/icons/capsule/LaunchIconActive.svg";
+import settingsIcon from "../assets/icons/capsule/SettingsIcon.svg";
+import settingsIconActive from "../assets/icons/capsule/SettingsIconActive.svg";
 import DiscoverPage from "../pages/DiscoverPage";
 import DownloadPage from "../pages/DownloadPage";
 import ExtrasPage from "../pages/ExtrasPage";
@@ -18,16 +18,17 @@ import SettingsPage from "../pages/SettingsPage";
 import GlassSurface from "../components/GlassSurface";
 import { useLiquidGlass } from "./liquid";
 import { useLauncher } from "../state/launcher";
+import { useI18n } from "../i18n";
 import { NavigationContext } from "./navigation";
 
 type PageKey = "home" | "discover" | "download" | "settings" | "extras";
 
-const NAV: { key: PageKey; label: string; icon: string; iconActive: string }[] = [
-  { key: "home", label: "启动", icon: launchIcon, iconActive: launchIconActive },
-  { key: "discover", label: "发现", icon: DiscoverIcon, iconActive: DiscoverIconActive },
-  { key: "download", label: "下载", icon: downloadIcon, iconActive: downloadIconActive },
-  { key: "settings", label: "设置", icon: settingsIcon, iconActive: settingsIconActive },
-  { key: "extras", label: "更多", icon: extraIcon, iconActive: extraIconActive },
+const NAV: { key: PageKey; labelKey: string; icon: string; iconActive: string }[] = [
+  { key: "home", labelKey: "nav.home", icon: launchIcon, iconActive: launchIconActive },
+  { key: "discover", labelKey: "nav.discover", icon: DiscoverIcon, iconActive: DiscoverIconActive },
+  { key: "download", labelKey: "nav.download", icon: downloadIcon, iconActive: downloadIconActive },
+  { key: "settings", labelKey: "nav.settings", icon: settingsIcon, iconActive: settingsIconActive },
+  { key: "extras", labelKey: "nav.extras", icon: extraIcon, iconActive: extraIconActive },
 ];
 
 /**
@@ -64,6 +65,7 @@ const prefersReducedMotion = () =>
 /** 应用外壳：悬浮胶囊导航 + 页面宿主 + 后端错误提示（Toast 由 App 统一提供）。 */
 export default function Shell() {
   const { error } = useLauncher();
+  const { locale, t } = useI18n();
   const liquid = useLiquidGlass();
 
   const [page, setPage] = useState<PageKey>("home");
@@ -193,6 +195,17 @@ export default function Shell() {
     if (!active) return;
     setIndicator({ left: active.offsetLeft, width: active.offsetWidth });
   }, [page]);
+
+  // 切语言后文案长度变了：胶囊宽度与选中底都要重新量一次，否则文字会溢出白底
+  useLayoutEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      syncSceneBar();
+      paintBandBackground();
+      const active = navRef.current?.querySelector<HTMLButtonElement>(`button[data-page="${pageRef.current}"]`);
+      if (active) setIndicator({ left: active.offsetLeft, width: active.offsetWidth });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [locale, syncSceneBar, paintBandBackground]);
 
   // 按钮高亮默认跟着页面走；只有玻璃动画期间（pendingActive 非空）延后到玻璃到位
   useEffect(() => {
@@ -610,7 +623,7 @@ export default function Shell() {
             <div className="nav-stack">
               <nav
                 className={`nav-pill${pressing ? " is-pressing" : ""}${settling ? " is-settling" : ""}`}
-                aria-label="主导航"
+                aria-label={t("nav.main")}
                 ref={navRef}
               >
               <span
@@ -647,7 +660,7 @@ export default function Shell() {
                   }}
                 >
                   <img src={item.key === activeKey ? item.iconActive : item.icon} alt="" width={16} height={16} />
-                  {item.label}
+                  {t(item.labelKey)}
                 </button>
               ))}
             </nav>

@@ -1,10 +1,6 @@
-.settings-body {
-  min-width: 0;
-  min-height: 0;
-}
-
 .settings-scroll {
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 11px;
 }
@@ -26,7 +22,7 @@
 .log-box {
   min-height: 260px;
   max-height: 420px;
-  font-family: Consolas, "Microsoft YaHei UI", monospace;
+  font-family: Consolas, 'Microsoft YaHei UI', monospace;
   white-space: pre;
   resize: vertical;
 }
