@@ -2,17 +2,17 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import wallpaperUrl from "../assets/wallpaper/TmpBackground.png";
 import DiscoverIcon from "../assets/icons/capsule/DiscoverIcon.svg";
 import DiscoverIconActive from "../assets/icons/capsule/DiscoverIconActive.svg";
+import accountIcon from "../assets/icons/capsule/AccountIcon.svg";
+import accountIconActive from "../assets/icons/capsule/AccountIconActive.svg";
 import downloadIcon from "../assets/icons/capsule/DownloadIcon.svg";
 import downloadIconActive from "../assets/icons/capsule/DownloadIconActive.svg";
-import extraIcon from "../assets/icons/capsule/ExtraIcon.svg";
-import extraIconActive from "../assets/icons/capsule/ExtraIconActive.svg";
 import launchIcon from "../assets/icons/capsule/LaunchIcon.svg";
 import launchIconActive from "../assets/icons/capsule/LaunchIconActive.svg";
 import settingsIcon from "../assets/icons/capsule/SettingsIcon.svg";
 import settingsIconActive from "../assets/icons/capsule/SettingsIconActive.svg";
-import DiscoverPage from "../pages/DiscoverPage";
+import AccountPage from "../pages/AccountPage";
+import DiscoverPage, { type DiscoverSectionKey } from "../pages/DiscoverPage";
 import DownloadPage from "../pages/DownloadPage";
-import ExtrasPage from "../pages/ExtrasPage";
 import HomePage from "../pages/HomePage";
 import InstanceManagerPage from "../pages/InstanceManagerPage";
 import SettingsPage from "../pages/SettingsPage";
@@ -23,14 +23,14 @@ import { useLauncher } from "../state/launcher";
 import { useI18n } from "../i18n";
 import { NavigationContext } from "./navigation";
 
-type PageKey = "home" | "discover" | "download" | "settings" | "extras" | "instances";
+type PageKey = "home" | "discover" | "download" | "settings" | "account" | "instances";
 
 const NAV: { key: PageKey; labelKey: string; icon: string; iconActive: string }[] = [
   { key: "home", labelKey: "nav.home", icon: launchIcon, iconActive: launchIconActive },
   { key: "discover", labelKey: "nav.discover", icon: DiscoverIcon, iconActive: DiscoverIconActive },
   { key: "download", labelKey: "nav.download", icon: downloadIcon, iconActive: downloadIconActive },
+  { key: "account", labelKey: "nav.account", icon: accountIcon, iconActive: accountIconActive },
   { key: "settings", labelKey: "nav.settings", icon: settingsIcon, iconActive: settingsIconActive },
-  { key: "extras", labelKey: "nav.extras", icon: extraIcon, iconActive: extraIconActive },
 ];
 
 /**
@@ -71,13 +71,16 @@ export default function Shell() {
   const liquid = useLiquidGlass();
 
   const [page, setPage] = useState<PageKey>("home");
+  /** 实例管理器要直接展开的实例；undefined 表示显示「全部实例」。 */
+  const [instanceTarget, setInstanceTarget] = useState<string | undefined>();
+  /** 发现页当前分区；由外壳保存，跨页面跳转时才能直接落到「我的收藏」。 */
+  const [discoverSection, setDiscoverSection] = useState<DiscoverSectionKey>("servers");
   /**
    * 导航按钮的「高亮」状态：页面可以立刻切（`page`），但按钮的图标/文字颜色要等玻璃滑到位再变，
    * 所以按钮外观单独用 activeKey，默认跟着 page 走，只有玻璃动画期间被延后。
    */
   const [activeKey, setActiveKey] = useState<PageKey>("home");
   const pendingActive = useRef<PageKey | null>(null);
-  const [extrasSection, setExtrasSection] = useState("bookmarks");
 
   // 页面切换的淡出淡入：page 是选中态（胶囊高亮立刻跟随），shown 是正在渲染的页
   const [shown, setShown] = useState<PageKey>("home");
@@ -247,10 +250,21 @@ export default function Shell() {
   }, [phase]);
 
   const openAccount = useCallback(() => {
-    setExtrasSection("account");
-    go("extras");
+    go("account");
   }, [go]);
-  const openInstanceManager = useCallback(() => go("instances"), [go]);
+  const openDiscoverBookmarks = useCallback(() => {
+    setDiscoverSection("bookmarks");
+    go("discover");
+  }, [go]);
+  const openInstanceManager = useCallback((instanceId?: string) => {
+    setInstanceTarget(instanceId);
+    go("instances");
+  }, [go]);
+  /** 顶部导航进入发现时回到默认分区；只有下载页的收藏快捷入口会指定分区。 */
+  const goTop = useCallback((key: PageKey) => {
+    if (key === "discover") setDiscoverSection("servers");
+    go(key);
+  }, [go]);
   const goHome = useCallback(() => go("home"), [go]);
 
   let content;
@@ -259,7 +273,7 @@ export default function Shell() {
       content = <HomePage />;
       break;
     case "discover":
-      content = <DiscoverPage />;
+      content = <DiscoverPage section={discoverSection} onSectionChange={setDiscoverSection} />;
       break;
     case "download":
       content = <DownloadPage />;
@@ -267,11 +281,16 @@ export default function Shell() {
     case "settings":
       content = <SettingsPage />;
       break;
-    case "extras":
-      content = <ExtrasPage active={extrasSection} onChange={setExtrasSection} />;
+    case "account":
+      content = <AccountPage />;
       break;
     case "instances":
-      content = <InstanceManagerPage />;
+      content = (
+        <InstanceManagerPage
+          key={instanceTarget ?? "all"}
+          initialInstanceId={instanceTarget}
+        />
+      );
       break;
   }
 
@@ -585,7 +604,7 @@ export default function Shell() {
     .join(" ");
 
   return (
-    <NavigationContext.Provider value={{ goHome, openAccount, openInstanceManager }}>
+    <NavigationContext.Provider value={{ goHome, openAccount, openDiscoverBookmarks, openInstanceManager }}>
       <div className="shell" ref={shellRef}>
         {/*
           壁纸 + 页面：只是「看得见」的那一层，已经不参与折射采样了（太大、太慢）。
@@ -653,13 +672,13 @@ export default function Shell() {
                     // 液态玻璃模式下，跳转由 settlePress 在「玻璃滑到位」之后处理
                     if (liquid) return;
                     // 按住 A 拖到 B 再松开：click 不会落在 B 上，这里补一次跳转
-                    if (pressRef.current !== null && pressRef.current !== item.key) go(item.key);
+                    if (pressRef.current !== null && pressRef.current !== item.key) goTop(item.key);
                     pressRef.current = null;
                   }}
                   onClick={(event) => {
                     // 键盘激活（detail === 0）直接跳；指针点击交给 settlePress 按动画节奏处理
                     if (liquid && event.detail > 0) return;
-                    go(item.key);
+                    goTop(item.key);
                   }}
                 >
                   <img src={item.key === activeKey ? item.iconActive : item.icon} alt="" width={16} height={16} />

@@ -11,7 +11,7 @@ export const zhCN = {
         discover: '发现',
         download: '下载',
         settings: '设置',
-        extras: '更多',
+        account: '账户',
         main: '主导航',
     },
     common: {

@@ -114,3 +114,28 @@
 .about-version {
   font-weight: 700;
 }
+
+/* 社区管理：公告与推荐列表 */
+.community-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.community-title {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.community-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--app-line);
+}
+
+.community-row:last-of-type {
+  border-bottom: 0;
+}

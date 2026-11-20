@@ -71,7 +71,31 @@
 }
 
 .section-label {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 跳转条目：右侧的箭头只做提示，点击整行仍然跳转 */
+.section-jump {
+  flex: none;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-ink-3);
+  opacity: 0.72;
+}
+
+.section-jump-icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.section-item-jump:hover .section-jump {
+  color: var(--app-ink);
+  opacity: 1;
 }

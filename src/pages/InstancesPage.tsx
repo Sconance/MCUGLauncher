@@ -74,7 +74,7 @@ function formatSize(bytes: number): string {
 }
 
 interface InstancesPageProps {
-  /** 外部控制选中的实例；不传则用页面自己的选择状态（ExtrasPage 里这样用） */
+  /** 外部控制选中的实例；不传则用页面自己的选择状态（分区页面里这样用） */
   selectedId?: string;
   /** 选中实例变化时回调，供外层同步（例如实例管理器左栏的固定标签） */
   onSelectInstance?: (id: string) => void;

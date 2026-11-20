@@ -10,7 +10,7 @@ export const enUS: typeof zhCN = {
         discover: 'Discover',
         download: 'Download',
         settings: 'Settings',
-        extras: 'More',
+        account: 'Account',
         main: 'Main navigation',
     },
     common: {

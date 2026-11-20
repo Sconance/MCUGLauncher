@@ -5,6 +5,7 @@ import SettingTag from "../../components/SettingTag";
 import { useI18n } from "../../i18n";
 import { setHomeAlignment, useHomeAlignment } from "../../shell/homeAlignment";
 import { isLiquidGlass, setLiquidGlass } from "../../shell/liquid";
+import SettingHint from "./SettingHint";
 import SettingRow from "./SettingRow";
 import SettingsCard from "./SettingsCard";
 
@@ -47,9 +48,13 @@ export default function AppearanceSettings({ active }: AppearanceSettingsProps) 
   };
 
   return (
-    <SettingsCard title="外观" description="固定蓝白主题；可恢复默认窗口尺寸。">
+    <SettingsCard title="外观">
       <SettingRow
-        title={t("settings.language")}
+        title={
+          <>
+            {t("settings.language")}
+          </>
+        }
         control={
           <div className="settings-actions">
             <AppSelect
@@ -84,8 +89,6 @@ export default function AppearanceSettings({ active }: AppearanceSettingsProps) 
           </div>
         }
       >
-        <span className="muted">{t("settings.languageHint")}</span>
-        <span className="muted">{t("settings.languagePackHint")}</span>
         {languageStatus.length > 0 ? <span className="muted">{languageStatus}</span> : null}
       </SettingRow>
       <input
@@ -101,6 +104,7 @@ export default function AppearanceSettings({ active }: AppearanceSettingsProps) 
           <>
             液态玻璃效果
             <SettingTag kind="dev" />
+            <SettingHint tip="由于要保持液态玻璃的质感，低配设备慎用" />
           </>
         }
         control={
@@ -115,13 +119,14 @@ export default function AppearanceSettings({ active }: AppearanceSettingsProps) 
             <span className="switch-thumb" />
           </button>
         }
-      >
-        <span className="muted">胶囊栏与内容栏改用折射玻璃；关闭时保持当前的磨砂玻璃。</span>
-        <span className="muted">手势与折射都走 GPU，低配设备按住导航按钮时可能出现掉帧。</span>
-      </SettingRow>
+      />
 
       <SettingRow
-        title="主页按钮对齐"
+        title={
+          <>
+            主页按钮对齐
+          </>
+        }
         control={
           <div className="segmented" role="radiogroup" aria-label="主页按钮对齐">
             {(
@@ -143,15 +148,7 @@ export default function AppearanceSettings({ active }: AppearanceSettingsProps) 
             ))}
           </div>
         }
-      >
-        <span className="muted">角色、实例与启动按钮在主页底部的位置。</span>
-        <span className="muted">居中对齐时启动按钮位于正中，启动水波与进度提示也会随之调整。</span>
-      </SettingRow>
-
-      <div className="theme-preview">
-        <span className="theme-name">蓝白 · 默认</span>
-        <span className="muted">#326EA7 强调色 / #F3F7F6 页面底色</span>
-      </div>
+      />
       <div className="settings-actions">
         <button
           type="button"

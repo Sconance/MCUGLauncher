@@ -1,5 +1,7 @@
 import { AppInput } from '../../components/AppInput';
-import CubeIcon from '../../components/CubeIcon';
+import SvgIcon from '../../components/SvgIcon';
+import cubeIcon from '../../assets/icons/ui/cube.svg';
+import chevronRightIcon from '../../assets/icons/ui/chevron-right.svg';
 import type { VanillaVersionInfo } from '../../types/launcher';
 import { useI18n } from '../../i18n';
 
@@ -65,16 +67,7 @@ export default function VanillaVersionList({
                             >
                                 <span className="vn-head-title">{drawer.label}</span>
                                 <span className="vn-count">{drawer.items.length}</span>
-                                <svg className="vn-chevron" viewBox="0 0 16 16" aria-hidden="true">
-                                    <path
-                                        d="m6 4 4 4-4 4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="1.6"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
+                                <SvgIcon src={chevronRightIcon} className="vn-chevron" />
                             </button>
 
                             {/* 抽出/抽回：外层用 0fr→1fr 过渡高度，内层裁剪，收起时禁止聚焦 */}
@@ -93,7 +86,7 @@ export default function VanillaVersionList({
                                                             className="section-item vn-item"
                                                             onClick={() => onPick(item)}
                                                         >
-                                                            <CubeIcon className="section-icon" />
+                                                            <SvgIcon src={cubeIcon} className="section-icon" />
                                                             <span className="section-label">{item.id}</span>
                                                             <span className="vn-date">{item.released}</span>
                                                         </button>

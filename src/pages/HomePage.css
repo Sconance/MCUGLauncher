@@ -214,6 +214,27 @@
   background-image: var(--app-glass-grain);
   background-size: 160px 160px;
   backdrop-filter: blur(32px) saturate(135%);
+  transform-origin: bottom right;
+  animation: player-picker-in 160ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+.player-picker.is-closing {
+  animation: player-picker-out 140ms ease-in both;
+  pointer-events: none;
+}
+
+@keyframes player-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+
+@keyframes player-picker-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
 }
 
 .player-picker-item {

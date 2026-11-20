@@ -1,5 +1,7 @@
 import type { RefObject } from 'react';
+import filterIcon from '../../assets/icons/ui/filter.svg';
 import { AppInput } from '../../components/AppInput';
+import SvgIcon from '../../components/SvgIcon';
 
 interface ChipGroupProps {
     title: string;
@@ -78,15 +80,7 @@ export default function FilterPanel({
                 aria-expanded={open}
                 onClick={onToggle}
             >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <path
-                        d="M2 3h12l-4.6 5.3v4.2L6.6 14V8.3L2 3Z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                        strokeLinejoin="round"
-                    />
-                </svg>
+                <SvgIcon src={filterIcon} />
                 {activeCount > 0 ? <span className="dl-filter-dot" /> : null}
             </button>
 

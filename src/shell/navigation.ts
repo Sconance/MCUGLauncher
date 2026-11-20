@@ -5,13 +5,16 @@ interface Navigation {
   goHome: () => void;
   /** 跳到「更多 → 账号与皮肤」。 */
   openAccount: () => void;
-  /** 打开实例管理器（主页实例卡与实例设置进入的左右栏页面）。 */
-  openInstanceManager: () => void;
+  /** 跳到「发现 → 我的收藏」。 */
+  openDiscoverBookmarks: () => void;
+  /** 打开实例管理器；传入实例 id 时直接展开该实例的设置。 */
+  openInstanceManager: (instanceId?: string) => void;
 }
 
 export const NavigationContext = createContext<Navigation>({
   goHome: () => {},
   openAccount: () => {},
+  openDiscoverBookmarks: () => {},
   openInstanceManager: () => {},
 });
 

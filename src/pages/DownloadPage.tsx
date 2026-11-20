@@ -1,19 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    confirmPack,
     installLoader,
     installVanilla,
     listContentVersions,
     listLoaders,
     listVanillaVersions,
-    previewPack,
     queueContentVersion,
     searchContent,
     toggleBookmark,
 } from '../api/commands/content';
-import CubeIcon from '../components/CubeIcon';
 import { AppSelect } from '../components/AppInput';
 import SplitPage from '../components/SplitPage';
+import SvgIcon from '../components/SvgIcon';
 import ContentDetail from './download/ContentDetail';
 import VanillaInstallPage from './download/VanillaInstallPage';
 import VanillaVersionList from './download/VanillaVersionList';
@@ -24,31 +22,32 @@ import SearchRow from './download/SearchRow';
 import ActiveFilters from './download/ActiveFilters';
 import InstancePicker from './download/InstancePicker';
 import DownloadPrompts from './download/DownloadPrompts';
-import LoaderSection from './download/LoaderSection';
-import PackSection from './download/PackSection';
 import Pager from './download/Pager';
 import { LOADER_DEFS, SUPPORTED_LOADERS, versionAtLeast } from './download/loaders';
 import datapackIcon from '../assets/icons/download/datapack.svg';
+import cubeIcon from '../assets/icons/ui/cube.svg';
+import gridIcon from '../assets/icons/ui/grid.svg';
+import listIcon from '../assets/icons/ui/list.svg';
+import navBookmarks from '../assets/icons/nav/nav-bookmarks.svg';
 import modIcon from '../assets/icons/download/mod.svg';
 import modpackIcon from '../assets/icons/download/modpack.svg';
 import resourcepackIcon from '../assets/icons/download/resourcepack.svg';
 import shaderIcon from '../assets/icons/download/shader.svg';
 import vanillaIcon from '../assets/icons/download/vanilla.svg';
 import { useLauncher } from '../state/launcher';
+import { useNavigation } from '../shell/navigation';
 import { useI18n } from '../i18n';
 import type {
     ContentItem,
     InstanceInfo,
-    PackPreviewInfo,
     ResourceVersionsInfo,
     VanillaVersionInfo,
 } from '../types/launcher';
 import { groupVersions } from './vanillaThemes';
 import './DownloadPage.css';
 
-/** 左栏分区：前六个是内容页，后两个是安装类页面。 */
+/** 左栏内容分区；「原版游戏」单独成组。 */
 const SECTIONS = [
-    ['vanilla', 'download.sections.vanilla'],
     ['mod', 'download.sections.mod'],
     ['modpack', 'download.sections.modpack'],
     ['resourcepack', 'download.sections.resourcepack'],
@@ -56,7 +55,6 @@ const SECTIONS = [
     ['datapack', 'download.sections.datapack'],
 ] as const;
 
-/** 六个内容分区的图标；加载器 / 整合包导入预计删除，暂不给图标 */
 const SECTION_ICONS: Record<string, string> = {
     vanilla: vanillaIcon,
     mod: modIcon,
@@ -66,14 +64,9 @@ const SECTION_ICONS: Record<string, string> = {
     datapack: datapackIcon,
 };
 
-const EXTRA_SECTIONS = [
-    ['loader', 'download.sections.loader'],
-    ['pack', 'download.sections.pack'],
-] as const;
+type SectionKey = 'vanilla' | (typeof SECTIONS)[number][0];
 
-type SectionKey = (typeof SECTIONS)[number][0] | (typeof EXTRA_SECTIONS)[number][0];
-
-const CONTENT_SECTIONS: SectionKey[] = ['mod', 'modpack', 'resourcepack', 'shader', 'datapack'];
+const CONTENT_SECTIONS: SectionKey[] = SECTIONS.map(([key]) => key);
 
 /** 实例的加载器主名：`Fabric 0.16.9` → `fabric`；原版实例统一成 `vanilla` */
 function instanceLoaderKey(instance: InstanceInfo): string {
@@ -114,16 +107,7 @@ const CATEGORY_LABELS: Record<string, string> = {
     resourcepack: 'download.sections.resourcepack',
     shader: 'download.sections.shader',
     datapack: 'download.sections.datapack',
-    loader: 'download.sections.loader',
-    pack: 'download.sections.pack',
 };
-
-const LOADERS = [
-    ['fabric', 'Fabric'],
-    ['quilt', 'Quilt'],
-    ['forge', 'Forge'],
-    ['neoforge', 'NeoForge'],
-] as const;
 
 /** 下载量字符串（38.2M / 1.68亿 等）换算成可比较的数值。 */
 function downloadWeight(value: string): number {
@@ -137,9 +121,10 @@ function downloadWeight(value: string): number {
     return amount * scale;
 }
 
-/** 下载页：搜索安装、原版版本、加载器与整合包导入。 */
+/** 下载页：原版安装与内容搜索。 */
 export default function DownloadPage() {
-    const { overview, settings, instances: instanceCatalog, bookmarks, refreshState } = useLauncher();
+    const { overview, instances: instanceCatalog, bookmarks, refreshState } = useLauncher();
+    const { openDiscoverBookmarks } = useNavigation();
     const { t } = useI18n();
     // 左栏分区：内容页直接对应 category，安装类页面单独处理
     const [section, setSection] = useState<SectionKey>('mod');
@@ -194,18 +179,7 @@ export default function DownloadPage() {
     const [enterAnim, setEnterAnim] = useState<null | 'forward' | 'back'>(null);
     const slideTimers = useRef<number[]>([]);
 
-    const [loaderGame, setLoaderGame] = useState('');
-    const [loaderType, setLoaderType] = useState<string>('fabric');
-    const [loaderVersions, setLoaderVersions] = useState<string[]>([]);
-    const [loaderVersion, setLoaderVersion] = useState('');
-    const [loaderHint, setLoaderHint] = useState('');
-
-    const [pack, setPack] = useState<PackPreviewInfo | null>(null);
-    const [packName, setPackName] = useState('');
-    const [packRoot, setPackRoot] = useState('');
-    const [packHint, setPackHint] = useState('');
-
-    const [prompt, setPrompt] = useState<'packFile' | 'localImport' | 'packRoot' | 'download' | null>(null);
+    const [prompt, setPrompt] = useState<'download' | null>(null);
 
     useEffect(() => {
         let alive = true;
@@ -218,13 +192,6 @@ export default function DownloadPage() {
             alive = false;
         };
     }, []);
-
-    useEffect(() => {
-        if (!overview || !instanceCatalog) return;
-        const instanceGame =
-            instanceCatalog.items.find((item) => item.id === overview.selectedInstanceId)?.minecraft ?? '';
-        setLoaderGame((current) => current || instanceGame || vanilla[0]?.id || '');
-    }, [overview, instanceCatalog, vanilla]);
 
     /** 三个抽屉：正式版 / 快照版 / 远古版，各自按主题更新分组 */
     const vanillaDrawers = useMemo(() => {
@@ -314,6 +281,11 @@ export default function DownloadPage() {
 
     /** 切分区：只换 key，搜索等旧内容淡出、新内容就位后由 handleShownChange 触发。 */
     const selectSection = (key: string) => {
+        if (key === 'bookmarks') {
+            setFilterOpen(false);
+            openDiscoverBookmarks();
+            return;
+        }
         if (key === section) return;
         setFilterOpen(false);
         setSection(key as SectionKey);
@@ -548,70 +520,15 @@ export default function DownloadPage() {
         }
     };
 
-    const loadLoaderVersions = async () => {
-        if (loaderGame.length === 0) {
-            setLoaderHint('请先选择游戏版本。');
-            return;
-        }
-        setLoaderVersions([]);
-        setLoaderHint(`正在读取 ${LOADERS.find(([value]) => value === loaderType)?.[1] ?? ''} 版本…`);
-        const result = await listLoaders(loaderGame, loaderType);
-        setLoaderVersions(result.versions);
-        setLoaderVersion(result.versions[0] ?? '');
-        setLoaderHint(
-            result.versions.length === 0
-                ? '没有读取到加载器版本。'
-                : `已读取 ${result.versions.length} 个 ${LOADERS.find(([value]) => value === loaderType)?.[1] ?? ''} 版本。`,
-        );
-    };
-
-    const installConfiguredLoader = async () => {
-        if (loaderGame.length === 0 || loaderVersion.length === 0) {
-            setLoaderHint('请先选择游戏版本和加载器版本。');
-            return;
-        }
-        await installLoader(loaderGame, loaderType, loaderVersion);
-        setLoaderHint(
-            `安装请求已提交：${loaderGame} / ${LOADERS.find(([value]) => value === loaderType)?.[1] ?? ''} ${loaderVersion}`,
-        );
-    };
-
-    const pickPackFile = async (path: string) => {
-        setPackHint('正在读取整合包…');
-        const preview = await previewPack(path);
-        setPack(preview);
-        setPackName(preview.name);
-        setPackRoot(preview.root);
-        setPackHint('已读取整合包信息，确认后加入导入队列。');
-    };
-
-    const importPack = async () => {
-        if (!pack) return;
-        if (packName.trim().length === 0 || packRoot.trim().length === 0) {
-            setPackHint('请填写实例名称并选择已存在的安装目录。');
-            return;
-        }
-        setPackHint('正在提交导入…');
-        await confirmPack(pack.planId, packName.trim(), packRoot.trim());
-        setPackHint('整合包导入请求已提交，请查看任务列表。');
-    };
-
-    const loaderGames = Array.from(
-        new Set(
-            [vanilla.map((item) => item.id), currentInstance?.minecraft ?? '']
-                .flat()
-                .filter((value) => value.length > 0),
-        ),
-    );
-
     return (
         <>
             <SplitPage
                 title={t('download.title')}
                 navLabel="下载分区"
                 groups={[
+                    [{ key: 'vanilla', label: t('download.sections.vanilla'), icon: vanillaIcon }],
                     SECTIONS.map(([key, label]) => ({ key, label: t(label), icon: SECTION_ICONS[key] })),
-                    EXTRA_SECTIONS.map(([key, label]) => ({ key, label: t(label) })),
+                    [{ key: 'bookmarks', label: '收藏', icon: navBookmarks, jump: true }],
                 ]}
                 active={section}
                 onSelect={selectSection}
@@ -639,7 +556,7 @@ export default function DownloadPage() {
             >
                 {(shown) => {
                     // 渲染跟着 shown 走：淡出的那 130ms 里仍然是旧分区的内容
-                    const tab = shown === 'vanilla' || shown === 'loader' || shown === 'pack' ? shown : 'search';
+                    const tab = shown === 'vanilla' ? 'vanilla' : 'search';
                     const viewCategory = CONTENT_SECTIONS.includes(shown as SectionKey) ? shown : 'mod';
                     return (
                         <>
@@ -721,7 +638,7 @@ export default function DownloadPage() {
                                                             onClick={() => setInstanceOpen(true)}
                                                         >
                                                             <span className="dl-instance-icon" aria-hidden="true">
-                                                                <CubeIcon />
+                                                                <SvgIcon src={cubeIcon} />
                                                             </span>
                                                             <span className="dl-instance-text">
                                                                 <span className="dl-instance-name">
@@ -747,70 +664,9 @@ export default function DownloadPage() {
                                                         }
                                                     >
                                                         {view === 'list' ? (
-                                                            <svg viewBox="0 0 16 16" aria-hidden="true">
-                                                                <rect
-                                                                    x="2"
-                                                                    y="2"
-                                                                    width="5"
-                                                                    height="5"
-                                                                    rx="1"
-                                                                    fill="currentColor"
-                                                                />
-                                                                <rect
-                                                                    x="9"
-                                                                    y="2"
-                                                                    width="5"
-                                                                    height="5"
-                                                                    rx="1"
-                                                                    fill="currentColor"
-                                                                    opacity="0.4"
-                                                                />
-                                                                <rect
-                                                                    x="2"
-                                                                    y="9"
-                                                                    width="5"
-                                                                    height="5"
-                                                                    rx="1"
-                                                                    fill="currentColor"
-                                                                    opacity="0.4"
-                                                                />
-                                                                <rect
-                                                                    x="9"
-                                                                    y="9"
-                                                                    width="5"
-                                                                    height="5"
-                                                                    rx="1"
-                                                                    fill="currentColor"
-                                                                />
-                                                            </svg>
+                                                            <SvgIcon src={gridIcon} />
                                                         ) : (
-                                                            <svg viewBox="0 0 16 16" aria-hidden="true">
-                                                                <rect
-                                                                    x="2"
-                                                                    y="3"
-                                                                    width="12"
-                                                                    height="3"
-                                                                    rx="1.2"
-                                                                    fill="currentColor"
-                                                                />
-                                                                <rect
-                                                                    x="2"
-                                                                    y="8"
-                                                                    width="12"
-                                                                    height="3"
-                                                                    rx="1.2"
-                                                                    fill="currentColor"
-                                                                />
-                                                                <rect
-                                                                    x="2"
-                                                                    y="13"
-                                                                    width="12"
-                                                                    height="2"
-                                                                    rx="1"
-                                                                    fill="currentColor"
-                                                                    opacity="0.4"
-                                                                />
-                                                            </svg>
+                                                            <SvgIcon src={listIcon} />
                                                         )}
                                                     </button>
 
@@ -951,38 +807,6 @@ export default function DownloadPage() {
                                     )}
                                 </div>
                             ) : null}
-
-                            {tab === 'loader' ? (
-                                <LoaderSection
-                                    games={loaderGames}
-                                    game={loaderGame}
-                                    onGameChange={setLoaderGame}
-                                    type={loaderType}
-                                    onTypeChange={setLoaderType}
-                                    versions={loaderVersions}
-                                    version={loaderVersion}
-                                    onVersionChange={setLoaderVersion}
-                                    hint={loaderHint}
-                                    onRefreshVersions={() => setLoaderHint('版本列表已是最新。')}
-                                    onLoadVersions={() => void loadLoaderVersions()}
-                                    onInstall={() => void installConfiguredLoader()}
-                                />
-                            ) : null}
-
-                            {tab === 'pack' ? (
-                                <PackSection
-                                    pack={pack}
-                                    name={packName}
-                                    onNameChange={setPackName}
-                                    root={packRoot}
-                                    onRootChange={setPackRoot}
-                                    hint={packHint}
-                                    onPickFile={() => setPrompt('packFile')}
-                                    onPickLocal={() => setPrompt('localImport')}
-                                    onPickRoot={() => setPrompt('packRoot')}
-                                    onConfirm={() => void importPack()}
-                                />
-                            ) : null}
                         </>
                     );
                 }}
@@ -991,20 +815,6 @@ export default function DownloadPage() {
             <DownloadPrompts
                 prompt={prompt}
                 onCancel={() => setPrompt(null)}
-                packRoot={packRoot}
-                defaultRoot={settings?.root ?? ''}
-                onPickPackFile={(path) => {
-                    setPrompt(null);
-                    void pickPackFile(path);
-                }}
-                onPickLocalFile={(path) => {
-                    setPrompt(null);
-                    setStatus(`已选择本地文件：${path}（导入对话框待接入）`);
-                }}
-                onPickPackRoot={(path) => {
-                    setPrompt(null);
-                    setPackRoot(path);
-                }}
                 onPickDownloadDir={(path) => {
                     setPrompt(null);
                     if (!versions || versionId.length === 0) return;

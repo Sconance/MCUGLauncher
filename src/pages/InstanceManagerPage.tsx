@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { selectInstance as selectInstanceCommand } from "../api/commands/state";
-import CubeIcon from "../components/CubeIcon";
+import SvgIcon from "../components/SvgIcon";
+import closeIcon from "../assets/icons/ui/close.svg";
+import cubeIcon from "../assets/icons/ui/cube.svg";
+import gearIcon from "../assets/icons/ui/gear.svg";
 import { useFadeSwap } from "../shell/fade";
 import { useNavigation } from "../shell/navigation";
 import { useToast } from "../shell/toast";
 import { useLauncher } from "../state/launcher";
 import type { InstanceInfo } from "../types/launcher";
 import InstancesPage from "./InstancesPage";
+import { getPinnedInstanceTabs, setPinnedInstanceTabs } from "./instanceTabs";
 import "./InstanceManagerPage.css";
 
 function validInstances(items: InstanceInfo[]): InstanceInfo[] {
@@ -18,15 +22,28 @@ function validInstances(items: InstanceInfo[]): InstanceInfo[] {
  * 左栏：「全部实例」按钮 + 固定下来的实例标签（hover 才显示 ×，新标签有入场动画）；
  * 右栏：全部实例列表（点卡片 = 切换启动页的当前实例，hover 出设置按钮）或某个实例的设置。
  */
-export default function InstanceManagerPage() {
+interface InstanceManagerPageProps {
+  /** 进入页面时直接展开设置的实例；不传则显示「全部实例」。 */
+  initialInstanceId?: string;
+}
+
+export default function InstanceManagerPage({ initialInstanceId }: InstanceManagerPageProps) {
   const { instances: instanceCatalog, overview, refreshState } = useLauncher();
   const { notify } = useToast();
   const { goHome } = useNavigation();
   const instances = instanceCatalog ? validInstances(instanceCatalog.items) : [];
   const currentId = overview?.selectedInstanceId ?? "";
 
-  /** 固定到左栏的实例 id，顺序即标签顺序 */
-  const [pinned, setPinned] = useState<string[]>([]);
+  /** 固定到左栏的实例 id，顺序即标签顺序；重新进入页面时从模块级 store 恢复 */
+  const [pinned, setPinned] = useState<string[]>(() => {
+    const stored = [...getPinnedInstanceTabs()];
+    if (!initialInstanceId || stored.includes(initialInstanceId)) return stored;
+    return [...stored, initialInstanceId];
+  });
+  /** 离开页面后仍保留已打开的标签，下次进入继续显示 */
+  useEffect(() => {
+    setPinnedInstanceTabs(pinned);
+  }, [pinned]);
   /** 正在播放移除动画的标签；动画结束后才真正从 pinned 里移除 */
   const [closing, setClosing] = useState<string[]>([]);
   const closingTimers = useRef<number[]>([]);
@@ -40,7 +57,7 @@ export default function InstanceManagerPage() {
     [],
   );
   /** 当前右栏显示的内容：'all' = 全部实例，其它 = 某个实例的设置 */
-  const [active, setActive] = useState<string>("all");
+  const [active, setActive] = useState<string>(initialInstanceId ?? "all");
   /** 右栏内容跟随 fade 后的 shown，切换才有淡出淡入 */
   const { shown, out } = useFadeSwap(active);
 
@@ -128,15 +145,7 @@ export default function InstanceManagerPage() {
                         aria-label={`取消固定 ${item.displayName}`}
                         onClick={() => unpin(id)}
                       >
-                        <svg viewBox="0 0 16 16" aria-hidden="true">
-                          <path
-                            d="M4.5 4.5l7 7M11.5 4.5l-7 7"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                          />
-                        </svg>
+                        <SvgIcon src={closeIcon} />
                       </button>
                     )}
                   </div>
@@ -174,7 +183,7 @@ export default function InstanceManagerPage() {
                         disabled={switching.length > 0}
                         onClick={() => void chooseInstance(item)}
                       >
-                        <CubeIcon className="im-all-icon" />
+                        <SvgIcon src={cubeIcon} className="im-all-icon" />
                         <span className="im-all-text">
                           <span className="im-all-name">{item.displayName}</span>
                           <span className="im-all-sub">
@@ -189,22 +198,7 @@ export default function InstanceManagerPage() {
                         aria-label={`打开 ${item.displayName} 的实例设置`}
                         onClick={() => openInstance(item.id)}
                       >
-                        <svg viewBox="0 0 32 32" aria-hidden="true">
-                          <path
-                            d="M22.6669 27.3334L29.3333 16L22.6669 4.66669L9.33346 4.66669L2.66666 16L9.33346 27.3334L22.6669 27.3334Z"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M16 19.3334C17.8409 19.3334 19.3333 17.841 19.3333 16C19.3333 14.1591 17.8409 12.6667 16 12.6667C14.1591 12.6667 12.6667 14.1591 12.6667 16C12.6667 17.841 14.1591 19.3334 16 19.3334Z"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
+                        <SvgIcon src={gearIcon} />
                       </button>
                     </div>
                   );

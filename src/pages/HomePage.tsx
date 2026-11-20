@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import LaunchPlayIcon from "../assets/icons/capsule/LaunchPlayIcon.svg";
 import settingsIcon from "../assets/icons/capsule/SettingsIcon.svg";
 import SwitchPlayerIcon from "../assets/icons/app/SwitchPlayerIcon.svg";
+import closeIcon from "../assets/icons/ui/close.svg";
+import SvgIcon from "../components/SvgIcon";
 import { launchGame } from "../api/commands/launch";
 import type { PlayerInfo } from "../types/view-models";
 import { useHomeAlignment } from "../shell/homeAlignment";
@@ -40,17 +42,20 @@ export default function HomePage() {
   const launchCancelled = useRef(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const [playerPickerOpen, setPlayerPickerOpen] = useState(false);
+  const [playerPickerClosing, setPlayerPickerClosing] = useState(false);
 
   // 角色浮层：点空白处或按 Esc 收起
   useEffect(() => {
     if (!playerPickerOpen) return;
     const close = (event: MouseEvent) => {
       if ((event.target as HTMLElement).closest(".player-card, .player-picker")) return;
-      setPlayerPickerOpen(false);
+      if (playerPickerClosing) return;
+      setPlayerPickerClosing(true);
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      setPlayerPickerOpen(false);
+      if (playerPickerClosing) return;
+      setPlayerPickerClosing(true);
     };
     window.addEventListener("click", close);
     window.addEventListener("keydown", onKey);
@@ -58,7 +63,26 @@ export default function HomePage() {
       window.removeEventListener("click", close);
       window.removeEventListener("keydown", onKey);
     };
-  }, [playerPickerOpen]);
+  }, [playerPickerOpen, playerPickerClosing]);
+
+  // 浮层先淡出，动画结束后再卸载
+  useEffect(() => {
+    if (!playerPickerClosing) return;
+    const timer = window.setTimeout(() => {
+      setPlayerPickerOpen(false);
+      setPlayerPickerClosing(false);
+    }, 140);
+    return () => window.clearTimeout(timer);
+  }, [playerPickerClosing]);
+
+  const openPlayerPicker = () => {
+    setPlayerPickerClosing(false);
+    setPlayerPickerOpen(true);
+  };
+
+  const closePlayerPicker = () => {
+    if (playerPickerOpen && !playerPickerClosing) setPlayerPickerClosing(true);
+  };
 
   if (!overview || !accounts || !instanceCatalog) {
     return (
@@ -151,7 +175,7 @@ export default function HomePage() {
 
   /** 角色切换目前由「账号」页完成，这里只做跳转。 */
   const choosePlayer = (id: string) => {
-    setPlayerPickerOpen(false);
+    closePlayerPicker();
     if (id === selectedPlayer.id) return;
     notify("在「账号」页切换登录的角色。");
     openAccount();
@@ -176,14 +200,15 @@ export default function HomePage() {
         aria-label="切换角色"
         aria-expanded={playerPickerOpen}
         onClick={() => {
-          setPlayerPickerOpen((open) => !open);
+          if (playerPickerOpen && !playerPickerClosing) closePlayerPicker();
+          else openPlayerPicker();
         }}
       >
         <img src={SwitchPlayerIcon} alt="" />
       </button>
 
       {playerPickerOpen ? (
-        <div className="player-picker" role="listbox" aria-label="选择角色">
+        <div className={`player-picker${playerPickerClosing ? " is-closing" : ""}`} role="listbox" aria-label="选择角色">
           {players.length === 0 ? (
             <p className="muted player-picker-empty">还没有登录的角色。</p>
           ) : (
@@ -220,7 +245,7 @@ export default function HomePage() {
         className="btn instance-card"
         aria-label="打开实例管理器"
         onClick={() => {
-          setPlayerPickerOpen(false);
+          closePlayerPicker();
           openInstanceManager();
         }}
       >
@@ -232,7 +257,7 @@ export default function HomePage() {
         className="btn card-action"
         data-tip="实例设置"
         aria-label="实例设置"
-        onClick={openInstanceManager}
+        onClick={() => openInstanceManager(current?.id)}
       >
         <img src={settingsIcon} alt="" />
       </button>
@@ -251,15 +276,7 @@ export default function HomePage() {
       disabled={!current && !launching}
     >
       {launching ? (
-        <svg className="launch-cancel-icon" viewBox="0 0 32 32" aria-hidden="true">
-          <path
-            d="M10.5 10.5l11 11M21.5 10.5l-11 11"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.6"
-            strokeLinecap="round"
-          />
-        </svg>
+        <SvgIcon src={closeIcon} className="launch-cancel-icon" />
       ) : (
         <img src={LaunchPlayIcon} alt="" />
       )}

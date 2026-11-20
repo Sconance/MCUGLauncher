@@ -342,6 +342,48 @@
   --tag-fg: #fff;
 }
 
+/*
+ * 设置标题后的圆形问号标签：外观与 DEV 标签同高，但用边框和问号表示「可查看说明」。
+ * 说明文本走全局 data-tip，长文本在左侧设置列向右展开并自动换行。
+ */
+.setting-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  border: 1px solid var(--app-line-2);
+  border-radius: 50%;
+  background: var(--app-card);
+  color: var(--app-ink-3);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: 1px;
+  user-select: none;
+  transition:
+    color 120ms linear,
+    border-color 120ms linear,
+    background-color 120ms linear;
+}
+
+.setting-hint:hover,
+.setting-hint:focus-visible {
+  border-color: var(--app-accent-soft);
+  background: var(--app-accent-wash);
+  color: var(--app-accent-deep);
+  outline: none;
+}
+
+[data-tip].setting-hint::after {
+  width: max-content;
+  max-width: 240px;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.5;
+}
+
 .switch {
   flex: none;
   width: 40px;

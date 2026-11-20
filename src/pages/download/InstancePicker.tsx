@@ -1,4 +1,6 @@
-import CubeIcon from '../../components/CubeIcon';
+import cubeIcon from '../../assets/icons/ui/cube.svg';
+import checkIcon from '../../assets/icons/ui/check.svg';
+import SvgIcon from '../../components/SvgIcon';
 import Modal from '../../components/Modal';
 import type { InstanceInfo } from '../../types/launcher';
 
@@ -41,7 +43,7 @@ export default function InstancePicker({
                                     onClick={() => close(() => onPick(item.id))}
                                 >
                                     <span className="dl-instance-icon" aria-hidden="true">
-                                        <CubeIcon />
+                                        <SvgIcon src={cubeIcon} />
                                     </span>
                                     <span className="dl-instance-text">
                                         <span className="dl-instance-name">
@@ -53,16 +55,7 @@ export default function InstancePicker({
                                         </span>
                                     </span>
                                     {active ? (
-                                        <svg className="dl-instance-check" viewBox="0 0 16 16" aria-hidden="true">
-                                            <path
-                                                d="m3.5 8.5 3 3 6-6"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="1.8"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
+                                        <SvgIcon src={checkIcon} className="dl-instance-check" />
                                     ) : null}
                                 </button>
                             );

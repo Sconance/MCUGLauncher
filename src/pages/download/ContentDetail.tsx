@@ -1,4 +1,6 @@
 import { AppSelect } from '../../components/AppInput';
+import SvgIcon from '../../components/SvgIcon';
+import chevronLeftIcon from '../../assets/icons/ui/chevron-left.svg';
 import type { ContentItem, ResourceVersionsInfo } from '../../types/launcher';
 
 interface ContentDetailProps {
@@ -36,16 +38,7 @@ export default function ContentDetail({
     return (
         <section className="dl-detail">
             <button type="button" className="vd-back" onClick={onBack}>
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <path
-                        d="M10 4 6 8l4 4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    />
-                </svg>
+                <SvgIcon src={chevronLeftIcon} />
                 {categoryLabel}
             </button>
 

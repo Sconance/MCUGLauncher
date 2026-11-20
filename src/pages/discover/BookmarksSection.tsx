@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { listContentVersions, queueContentVersion, toggleBookmark } from "../api/commands/content";
-import PathPrompt from "../components/PathPrompt";
-import { AppSelect } from "../components/AppInput";
-import { useLauncher } from "../state/launcher";
-import type { FavoriteInfo, ResourceVersionsInfo } from "../types/launcher";
-import "./BookmarksPage.css";
+import { listContentVersions, queueContentVersion, toggleBookmark } from "../../api/commands/content";
+import PathPrompt from "../../components/PathPrompt";
+import { AppSelect } from "../../components/AppInput";
+import { useLauncher } from "../../state/launcher";
+import type { FavoriteInfo, ResourceVersionsInfo } from "../../types/launcher";
+import "./BookmarksSection.css";
 
 function kindLabel(kind: string): string {
   switch (kind) {
@@ -23,8 +23,8 @@ function kindLabel(kind: string): string {
   }
 }
 
-/** 我的收藏：收藏列表来自后端状态，安装与取消均通过命令提交。 */
-export default function BookmarksPage() {
+/** 发现页的收藏分区：收藏列表来自后端状态，安装与取消均通过命令提交。 */
+export default function BookmarksSection() {
   const { bookmarks, refreshState } = useLauncher();
   const [status, setStatus] = useState("");
   const [selected, setSelected] = useState<FavoriteInfo | null>(null);
@@ -35,11 +35,7 @@ export default function BookmarksPage() {
   const [folderPrompt, setFolderPrompt] = useState(false);
 
   if (!bookmarks) {
-    return (
-      <div className="subpage">
-        <div className="empty">正在读取收藏…</div>
-      </div>
-    );
+    return <div className="empty">正在读取收藏…</div>;
   }
 
   const openInstall = async (favorite: FavoriteInfo) => {
@@ -87,13 +83,15 @@ export default function BookmarksPage() {
   };
 
   return (
-    <div className="subpage">
-      <div className="stack" style={{ gap: 6 }}>
-        <h1 className="page-title">我的收藏</h1>
+    <>
+      <section className="stack" style={{ gap: 10 }}>
+        <div className="row" style={{ gap: 8 }}>
+          <h2 className="h2">我的收藏</h2>
+          <span className="spacer" />
+          <span className="muted">{bookmarks.length} 项</span>
+        </div>
         <p className="muted">收藏保存在本机；下载时仍会按当前实例重新检查兼容版本。</p>
-      </div>
 
-      <div className="page-scroll" style={{ marginTop: 10 }}>
         <div className="stack" style={{ gap: 8 }}>
           {bookmarks.length === 0 ? (
             <p className="muted">没有收藏的资源。在下载页搜索并收藏后会出现在这里。</p>
@@ -170,7 +168,7 @@ export default function BookmarksPage() {
 
           <span className="status">{status}</span>
         </div>
-      </div>
+      </section>
 
       {folderPrompt ? (
         <PathPrompt
@@ -187,6 +185,6 @@ export default function BookmarksPage() {
           }}
         />
       ) : null}
-    </div>
+    </>
   );
 }

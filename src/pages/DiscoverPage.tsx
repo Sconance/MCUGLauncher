@@ -7,6 +7,7 @@ import {
 } from "../api/commands/servers";
 import type { AnnouncementInfo, RecommendationInfo, SavedServerInfo, ServerPingInfo } from "../types/launcher";
 import navAnnouncement from "../assets/icons/nav/nav-announcement.svg";
+import navBookmarks from "../assets/icons/nav/nav-bookmarks.svg";
 import navRecommend from "../assets/icons/nav/nav-recommend.svg";
 import navServers from "../assets/icons/nav/nav-servers.svg";
 import Field from "../components/Field";
@@ -16,6 +17,7 @@ import SplitPage from "../components/SplitPage";
 import Markdown from "../components/Markdown";
 import Modal from "../components/Modal";
 import { useLauncher } from "../state/launcher";
+import BookmarksSection from "./discover/BookmarksSection";
 import "./DiscoverPage.css";
 
 interface ServerDraft {
@@ -38,10 +40,13 @@ interface MenuState {
 
 const EMPTY_DRAFT: ServerDraft = { name: "", address: "", instanceId: null };
 
-type SectionKey = "servers" | "announcements" | "recommendations";
+export type DiscoverSectionKey = "servers" | "bookmarks" | "announcements" | "recommendations";
 
 const NAV_GROUPS: NavItem[][] = [
-  [{ key: "servers", label: "服务器收藏", icon: navServers }],
+  [
+    { key: "servers", label: "服务器收藏", icon: navServers },
+    { key: "bookmarks", label: "我的收藏", icon: navBookmarks },
+  ],
   [
     { key: "announcements", label: "群公告", icon: navAnnouncement },
     { key: "recommendations", label: "群友推荐", icon: navRecommend },
@@ -55,9 +60,14 @@ function pingText(ping: ServerPingInfo | undefined): string {
 }
 
 /** 发现：服务器收藏、群公告、群友推荐与语录（原主页右栏内容）。 */
-export default function DiscoverPage() {
+export default function DiscoverPage({
+  section,
+  onSectionChange,
+}: {
+  section: DiscoverSectionKey;
+  onSectionChange: (section: DiscoverSectionKey) => void;
+}) {
   const { overview, instances: instanceCatalog, servers, community, refreshState, refreshCommunity } = useLauncher();
-  const [section, setSection] = useState<SectionKey>("servers");
   const [pings, setPings] = useState<Record<string, ServerPingInfo>>({});
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [status, setStatus] = useState("");
@@ -201,12 +211,13 @@ export default function DiscoverPage() {
         navLabel="发现分区"
         groups={NAV_GROUPS}
         active={section}
-        onSelect={(key) => setSection(key as SectionKey)}
+        onSelect={(key) => onSectionChange(key as DiscoverSectionKey)}
         contentClassName="discover-content"
         footer={quoteCard}
       >
         {(shown) => (
           <>
+            {shown === "bookmarks" ? <BookmarksSection /> : null}
             {shown === "servers" ? (
               <section className="stack" style={{ gap: 10 }}>
                 <div className="row" style={{ gap: 8 }}>

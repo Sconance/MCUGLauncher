@@ -1,3 +1,5 @@
+import jumpIcon from "../assets/icons/ui/jump.svg";
+import SvgIcon from "./SvgIcon";
 import "./SectionNav.css";
 
 export interface NavItem {
@@ -5,6 +7,8 @@ export interface NavItem {
   label: string;
   /** 图标资源路径；不传则只显示文字（例如下载页的分区） */
   icon?: string;
+  /** 该条目用于跳转到其他页面，右侧显示跳转箭头，不参与当前分区高亮 */
+  jump?: boolean;
 }
 
 interface SectionNavProps {
@@ -27,12 +31,17 @@ export default function SectionNav({ groups, active, onSelect, title, label }: S
             <button
               key={item.key}
               type="button"
-              className={`section-item${item.key === active ? " selected" : ""}`}
+              className={`section-item${item.key === active ? " selected" : ""}${item.jump ? " section-item-jump" : ""}`}
               aria-current={item.key === active ? "true" : undefined}
               onClick={() => onSelect(item.key)}
             >
               {item.icon ? <img className="section-icon" src={item.icon} alt="" width={16} height={16} /> : null}
               <span className="section-label">{item.label}</span>
+              {item.jump ? (
+                <span className="section-jump" aria-hidden="true">
+                  <SvgIcon src={jumpIcon} className="section-jump-icon" />
+                </span>
+              ) : null}
             </button>
           ))}
         </div>

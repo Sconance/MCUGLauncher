@@ -32,7 +32,7 @@
   color: #b32b2b;
 }
 
-.im-close svg {
+.im-close .svg-icon {
   width: 10px;
   height: 10px;
 }
@@ -136,7 +136,7 @@
   color: var(--app-accent-deep);
 }
 
-.im-all-settings svg {
+.im-all-settings .svg-icon {
   width: 16px;
   height: 16px;
 }

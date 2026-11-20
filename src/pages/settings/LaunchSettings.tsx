@@ -12,7 +12,7 @@ interface LaunchSettingsProps {
   active: boolean;
 }
 
-/** 启动设置：游戏目录、Java、内存、窗口与玩家名。 */
+/** 启动：游戏目录、Java、内存、窗口与玩家名。 */
 export default function LaunchSettings({ active }: LaunchSettingsProps) {
   const { overview, settings, accounts, resourceVersions, refreshState } = useSettingsData();
   const [root, setRoot] = useState("");
@@ -103,8 +103,7 @@ export default function LaunchSettings({ active }: LaunchSettingsProps) {
   return (
     <>
       <SettingsCard
-        title="启动设置"
-        description="修改后写入本机配置，下次启动生效。"
+        title="启动"
       >
         <Field label="游戏目录">
           <div className="settings-actions">

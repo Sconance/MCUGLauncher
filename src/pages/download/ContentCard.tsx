@@ -1,3 +1,5 @@
+import downloadIcon from '../../assets/icons/ui/download.svg';
+import SvgIcon from '../../components/SvgIcon';
 import type { ContentItem } from '../../types/launcher';
 
 interface ContentCardProps {
@@ -55,17 +57,7 @@ export default function ContentCard({ item, bookmarked, onOpen, onToggleBookmark
 
             <div className="dl-stats">
                 <span className="dl-stat" title="下载量">
-                    <svg viewBox="0 0 16 16" aria-hidden="true">
-                        <path
-                            d="M8 2.5v7m0 0 2.8-2.8M8 9.5 5.2 6.7"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                        <path d="M3 13h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
+                    <SvgIcon src={downloadIcon} />
                     {item.downloads.length > 0 ? item.downloads : '—'}
                 </span>
                 <button

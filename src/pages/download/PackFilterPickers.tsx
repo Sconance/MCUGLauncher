@@ -1,4 +1,6 @@
 import type { RefObject } from 'react';
+import chevronDownIcon from '../../assets/icons/ui/chevron-down.svg';
+import SvgIcon from '../../components/SvgIcon';
 
 /** 整合包右上角「加载器选择」的可选项，空字符串表示不限 */
 const PACK_LOADERS: [string, string][] = [
@@ -48,16 +50,7 @@ export default function PackFilterPickers({
                 >
                     <span className="dl-picker-label">版本</span>
                     <span className="dl-picker-value">{game.length > 0 ? game : '全部'}</span>
-                    <svg className="dl-picker-caret" viewBox="0 0 16 16" aria-hidden="true">
-                        <path
-                            d="m4 6 4 4 4-4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </svg>
+                    <SvgIcon src={chevronDownIcon} className="dl-picker-caret" />
                 </button>
                 {gameOpen ? (
                     <div className="dl-picker-pop">
@@ -91,16 +84,7 @@ export default function PackFilterPickers({
                 >
                     <span className="dl-picker-label">加载器</span>
                     <span className="dl-picker-value">{loader.length > 0 ? loaderLabel : '全部'}</span>
-                    <svg className="dl-picker-caret" viewBox="0 0 16 16" aria-hidden="true">
-                        <path
-                            d="m4 6 4 4 4-4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
-                    </svg>
+                    <SvgIcon src={chevronDownIcon} className="dl-picker-caret" />
                 </button>
                 {loaderOpen ? (
                     <div className="dl-picker-pop">

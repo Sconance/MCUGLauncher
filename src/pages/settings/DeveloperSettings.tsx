@@ -32,11 +32,18 @@ export default function DeveloperSettings({ active }: DeveloperSettingsProps) {
   return (
     <div className="settings-cards">
       <SettingsCard
-        title="开发者选项"
-        description="开发调试用的开关；运行日志见下方卡片，系统信息在「维护」分区。"
+        title={
+          <>
+            开发者选项
+          </>
+        }
       >
         <SettingRow
-          title="强制显示运行实例按钮"
+          title={
+            <>
+              强制显示运行实例按钮
+            </>
+          }
           control={
             <button
               type="button"
@@ -49,11 +56,13 @@ export default function DeveloperSettings({ active }: DeveloperSettingsProps) {
               <span className="switch-thumb" />
             </button>
           }
-        >
-          <span className="muted">即使当前没有实例在运行，也在右上角保留这个入口。</span>
-        </SettingRow>
+        />
         <SettingRow
-          title="强制显示下载任务按钮"
+          title={
+            <>
+              强制显示下载任务按钮
+            </>
+          }
           control={
             <button
               type="button"
@@ -66,12 +75,16 @@ export default function DeveloperSettings({ active }: DeveloperSettingsProps) {
               <span className="switch-thumb" />
             </button>
           }
-        >
-          <span className="muted">即使当前没有未结束的下载任务，也在右上角保留这个入口。</span>
-        </SettingRow>
+        />
       </SettingsCard>
 
-      <SettingsCard title="运行日志" description="最近 400 行启动与启动游戏记录。">
+      <SettingsCard
+        title={
+          <>
+            运行日志
+          </>
+        }
+      >
         <div className="settings-actions">
           <button type="button" className="btn primary" onClick={() => void readLog()}>
             刷新日志

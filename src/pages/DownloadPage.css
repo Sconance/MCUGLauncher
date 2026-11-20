@@ -229,7 +229,7 @@
   color: var(--app-ink);
 }
 
-.vd-back svg {
+.vd-back .svg-icon {
   width: 14px;
   height: 14px;
 }
@@ -351,7 +351,7 @@
     color 120ms ease;
 }
 
-.vd-loader-clear svg {
+.vd-loader-clear .svg-icon {
   width: 12px;
   height: 12px;
 }
@@ -672,7 +672,7 @@
   background: var(--app-accent-tint);
 }
 
-.dl-icon-btn svg {
+.dl-icon-btn .svg-icon {
   width: 14px;
   height: 14px;
 }
@@ -1044,7 +1044,7 @@
   gap: 4px;
 }
 
-.dl-stat svg {
+.dl-stat .svg-icon {
   width: 13px;
   height: 13px;
 }

@@ -12,6 +12,7 @@ import {
 import { AppTextarea } from "../../components/AppInput";
 import type { SaveBackupInfo } from "../../types/launcher";
 import SettingsCard from "./SettingsCard";
+import SettingHint from "./SettingHint";
 import { useSettingsStatus } from "./useSettingsStatus";
 
 interface MaintenanceSettingsProps {
@@ -87,8 +88,12 @@ export default function MaintenanceSettings({ active }: MaintenanceSettingsProps
   return (
     <div className="settings-cards">
       <SettingsCard
-        title="存档保护"
-        description="备份写到本地数据目录的 backups 文件夹，不修改原存档；恢复会创建新存档。"
+        title={
+          <>
+            存档保护
+            <SettingHint tip="备份保存到数据目录的 backups 文件夹" />
+          </>
+        }
       >
         <div className="settings-actions">
           <button type="button" className="btn primary" onClick={() => void backupSaves()}>
@@ -131,8 +136,11 @@ export default function MaintenanceSettings({ active }: MaintenanceSettingsProps
       </SettingsCard>
 
       <SettingsCard
-        title="任务与恢复"
-        description="窗口尺寸异常时可恢复；打开配置目录查看账号与队列数据。"
+        title={
+          <>
+            任务与恢复
+          </>
+        }
       >
         <div className="settings-actions">
           <button
@@ -172,7 +180,14 @@ export default function MaintenanceSettings({ active }: MaintenanceSettingsProps
         <p className="status">{statusAt("maintenance:recovery")}</p>
       </SettingsCard>
 
-      <SettingsCard title="系统信息" description="反馈问题时请附上运行环境信息。">
+      <SettingsCard
+        title={
+          <>
+            系统信息
+            <SettingHint tip="反馈问题时请附上这些运行环境信息" />
+          </>
+        }
+      >
         <div className="settings-actions">
           <button type="button" className="btn primary" onClick={() => void readSystemInfo()}>
             读取系统信息

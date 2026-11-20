@@ -1,5 +1,9 @@
 import { AppInput } from '../../components/AppInput';
-import CubeIcon from '../../components/CubeIcon';
+import SvgIcon from '../../components/SvgIcon';
+import cubeIcon from '../../assets/icons/ui/cube.svg';
+import chevronLeftIcon from '../../assets/icons/ui/chevron-left.svg';
+import chevronRightIcon from '../../assets/icons/ui/chevron-right.svg';
+import closeIcon from '../../assets/icons/ui/close.svg';
 import { LOADER_CONFLICTS, LOADER_DEFS, type LoaderDef } from './loaders';
 
 export interface LoaderRow extends LoaderDef {
@@ -38,22 +42,13 @@ export default function VanillaInstallPage({
     return (
         <div className="vd-page">
             <button type="button" className="vd-back" onClick={onBack}>
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <path
-                        d="M10 4 6 8l4 4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    />
-                </svg>
+                <SvgIcon src={chevronLeftIcon} />
                 版本列表
             </button>
 
             <div className="vd-head">
                 <div className="vd-icon" aria-hidden="true">
-                    <CubeIcon className="vd-cube" />
+                    <SvgIcon src={cubeIcon} className="vd-cube" />
                 </div>
                 <AppInput
                     className="vd-name"
@@ -110,28 +105,11 @@ export default function VanillaInstallPage({
                                             title={`取消选择 ${row.label}`}
                                             onClick={() => onClearLoader(row.key)}
                                         >
-                                            <svg viewBox="0 0 16 16" aria-hidden="true">
-                                                <path
-                                                    d="M4.5 4.5l7 7M11.5 4.5l-7 7"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="1.5"
-                                                    strokeLinecap="round"
-                                                />
-                                            </svg>
+                                            <SvgIcon src={closeIcon} />
                                         </button>
                                     ) : null}
                                     {locked ? null : (
-                                        <svg className="vn-chevron" viewBox="0 0 16 16" aria-hidden="true">
-                                            <path
-                                                d="m6 4 4 4-4 4"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="1.6"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
+                                        <SvgIcon src={chevronRightIcon} className="vn-chevron" />
                                     )}
                                 </span>
                             </div>
