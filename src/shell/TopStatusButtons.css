@@ -1,0 +1,245 @@
+/*
+ * 右上角的状态入口：与导航胶囊同一高度（顶部 10px、高 34px）。
+ * 只有一个入口时是圆形；两个入口合成一枚胶囊。按钮顺序由组件按出现先后决定，
+ * 这里用 row-reverse 让先出现的落在最右边。
+ */
+.top-status {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  z-index: 11; /* 高于导航（10），低于弹层（20）与 Toast（40） */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.top-status-buttons {
+  position: relative;
+  z-index: 2; /* 浮窗在下方展开时，按钮的 hover 提示仍要压在浮窗之上 */
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  pointer-events: auto;
+}
+
+.top-status.is-single .top-status-buttons {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+}
+
+.top-status-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-ink-2);
+  cursor: pointer;
+  transition:
+    background-color 120ms linear,
+    color 120ms linear;
+}
+
+.top-status.is-single .top-status-button {
+  width: 34px;
+  height: 34px;
+}
+
+.top-status-button:hover {
+  background: rgb(20 30 42 / 7%);
+  color: var(--app-ink);
+}
+
+.top-status-button.is-open {
+  background: rgb(20 30 42 / 9%);
+  color: var(--app-accent-deep);
+}
+
+.top-status-button img {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+/* 靠右的按钮，提示也向右对齐，避免文字溢出窗口。 */
+.top-status-button[data-tip][data-tip-side="bottom"]::after {
+  right: 0;
+  left: auto;
+  transform: translateY(-2px);
+}
+
+.top-status-button[data-tip][data-tip-side="bottom"]:hover::after,
+.top-status-button[data-tip][data-tip-side="bottom"]:focus-visible::after {
+  transform: translateY(0);
+}
+
+.top-status-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 340px;
+  max-width: calc(100vw - 28px);
+  max-height: min(360px, calc(100vh - 120px));
+  overflow: auto;
+  padding: 14px;
+  pointer-events: auto;
+  animation: top-status-in 160ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+.top-status-popover.is-closing {
+  pointer-events: none;
+  animation: top-status-out 140ms ease-in both;
+}
+
+@keyframes top-status-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@keyframes top-status-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+}
+
+.top-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.top-status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  background: var(--app-bg);
+}
+
+.top-status-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.top-status-item-name {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-ink);
+  word-break: break-word;
+}
+
+.top-status-pill {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--app-accent-wash);
+  color: var(--app-accent-deep);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.top-status-meta {
+  color: var(--app-ink-3);
+  font-size: 10.5px;
+}
+
+.top-status-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--app-line);
+}
+
+.top-status-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--app-accent);
+  transition: width 300ms ease;
+}
+
+.top-status-error {
+  margin: 0;
+  color: var(--app-red);
+  font-size: 10.5px;
+}
+
+.top-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.top-status-action {
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: rgb(18 31 43 / 6%);
+  color: var(--app-ink-2);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.top-status-action:hover:not(:disabled) {
+  background: rgb(18 31 43 / 10%);
+  color: var(--app-ink);
+}
+
+.top-status-action:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.top-status-empty {
+  margin: 0;
+  padding: 6px 0 2px;
+  color: var(--app-ink-3);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+.top-status-result {
+  margin: 0;
+  padding-top: 2px;
+  color: var(--app-ink-2);
+  font-size: 10.5px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top-status-popover,
+  .top-status-popover.is-closing {
+    animation: none;
+  }
+
+  .top-status-button,
+  .top-status-fill {
+    transition: none;
+  }
+}

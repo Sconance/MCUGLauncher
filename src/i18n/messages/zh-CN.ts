@@ -25,6 +25,10 @@ export const zhCN = {
     settings: {
         language: '界面语言',
         languageHint: '切换后立即生效，下次启动沿用。',
+        languagePackHint: '语言包像资源包一样：导入一个 .json 文件就能新增显示语言。',
+        languageImport: '导入语言包…',
+        languageRemove: '删除',
+        languageImported: '已导入 {name}（{code}）。',
     },
     download: {
         title: '下载',

@@ -53,9 +53,11 @@
   --radius-btn: 8px;
   --radius-input: 7px;
   --radius-pill: 18px;
+  --radius-panel: 18px;
 
   /* 阴影 */
   --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 3%), 0 8px 24px 0 rgb(0 0 0 / 3.5%);
+  --shadow-nav: 0 8px 24px rgb(18 42 64 / 12%);
   --shadow-dialog: 0 18px 48px 0 rgb(20 32 50 / 20%);
   --shadow-avatar: 0 3px 10px 0 rgb(14 43 63 / 13%);
 

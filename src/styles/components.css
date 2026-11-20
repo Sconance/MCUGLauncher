@@ -57,6 +57,24 @@
   flex: 1;
 }
 
+/* 一行里混放复选框和多个数字/文本字段，自动按列对齐。 */
+.launch-numbers {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.2fr) repeat(3, minmax(96px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.launch-numbers .field {
+  min-width: 0;
+}
+
+@media (max-width: 1280px) {
+  .launch-numbers {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ---------- 按钮 ---------- */
 
 .btn {
@@ -263,6 +281,18 @@
   transform: translate(0, -50%);
 }
 
+/* 顶部按钮用：提示向下展开，避免挡住窗口标题区域 */
+[data-tip][data-tip-side='bottom']::after {
+  top: calc(100% + 7px);
+  bottom: auto;
+  transform: translate(-50%, -2px);
+}
+
+[data-tip][data-tip-side='bottom']:hover::after,
+[data-tip][data-tip-side='bottom']:focus-visible::after {
+  transform: translate(-50%, 0);
+}
+
 /* ---------- 开关与设置行 ---------- */
 
 .setting-row {
@@ -307,8 +337,8 @@
   --tag-fg: #fff;
 }
 
-.setting-tag[data-tag='err'] {
-  --tag-bg: #d9483c;
+.setting-tag[data-tag='dep'] {
+  --tag-bg: #b8863b;
   --tag-fg: #fff;
 }
 
@@ -564,6 +594,42 @@ textarea.input {
   display: grid;
   place-items: center;
   background: rgb(18 31 43 / 25%);
+  animation: modal-mask-in 160ms linear both;
+}
+
+/* 遮罩淡入淡出；卡片跟着轻微缩放上浮，收起时反过来 */
+@keyframes modal-mask-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-mask-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@keyframes modal-card-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+
+.modal-overlay.is-leaving {
+  animation: modal-mask-out 160ms linear both;
+}
+
+.modal-overlay.is-leaving .modal-card {
+  animation: modal-card-out 160ms ease-in both;
 }
 
 .modal-card {
@@ -582,6 +648,7 @@ textarea.input {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  animation: modal-card-in 180ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
 }
 
 .modal-title {

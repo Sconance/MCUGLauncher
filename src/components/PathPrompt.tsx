@@ -19,33 +19,35 @@ export default function PathPrompt({ title, label, initial, hint, onCancel, onCo
     <Modal
       title={title}
       onClose={onCancel}
-      footer={
+      footer={(close) => (
         <>
-          <button type="button" className="btn ghost" onClick={onCancel}>
+          <button type="button" className="btn ghost" onClick={() => close()}>
             取消
           </button>
           <button
             type="button"
             className="btn primary"
             disabled={value.trim().length === 0}
-            onClick={() => onConfirm(value.trim())}
+            onClick={() => close(() => onConfirm(value.trim()))}
           >
             确定
           </button>
         </>
-      }
+      )}
     >
-      <Field label={label} hint={hint}>
-        <input
-          className="input"
-          value={value}
-          autoFocus
-          onChange={(event) => setValue(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && value.trim().length > 0) onConfirm(value.trim());
-          }}
-        />
-      </Field>
+      {(close) => (
+        <Field label={label} hint={hint}>
+          <input
+            className="input"
+            value={value}
+            autoFocus
+            onChange={(event) => setValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && value.trim().length > 0) close(() => onConfirm(value.trim()));
+            }}
+          />
+        </Field>
+      )}
     </Modal>
   );
 }

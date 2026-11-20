@@ -106,7 +106,7 @@ export default function DiscoverPage() {
     });
   };
 
-  const saveServer = async () => {
+  const saveServer = async (close?: (after?: () => void) => void) => {
     if (!dialog) return;
     const address = dialog.draft.address.trim();
     if (address.length === 0) {
@@ -120,7 +120,9 @@ export default function DiscoverPage() {
       dialog.editing?.id ?? "",
       dialog.draft.instanceId
     );
-    setDialog(null);
+    // 有淡出动画时交给弹层收尾，否则直接关
+    if (close) close();
+    else setDialog(null);
     await refreshState();
     setStatus(result.message);
   };
@@ -351,16 +353,16 @@ export default function DiscoverPage() {
         <Modal
           title={dialog.editing ? "编辑服务器" : "添加服务器"}
           onClose={() => setDialog(null)}
-          footer={
+          footer={(close) => (
             <>
-              <button type="button" className="btn ghost" onClick={() => setDialog(null)}>
+              <button type="button" className="btn ghost" onClick={() => close()}>
                 取消
               </button>
-              <button type="button" className="btn primary" onClick={() => void saveServer()}>
+              <button type="button" className="btn primary" onClick={() => void saveServer(close)}>
                 保存
               </button>
             </>
-          }
+          )}
         >
           <p className="muted">保存后会作为一张卡片出现在「正在开设的服务器」里。</p>
           <Field label="服务器名称" hint="可留空，默认显示地址">
@@ -414,11 +416,11 @@ export default function DiscoverPage() {
           title={announcement.title}
           width={640}
           onClose={() => setAnnouncement(null)}
-          footer={
-            <button type="button" className="btn primary" onClick={() => setAnnouncement(null)}>
+          footer={(close) => (
+            <button type="button" className="btn primary" onClick={() => close()}>
               关闭
             </button>
-          }
+          )}
         >
           <p className="muted">
             {[announcement.tag, announcement.author, announcement.publishedAt?.slice(0, 10) ?? ""]

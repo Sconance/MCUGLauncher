@@ -5,6 +5,52 @@
   padding-right: 11px;
 }
 
+/* 一个分区里拆成多张卡片时使用，保持和原单卡片相近的视觉节奏。 */
+.settings-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 设置卡片的内部节奏：标题、说明、表单之间统一 10px。 */
+.settings-card {
+  gap: 10px;
+}
+
+/* 左侧标题 + 说明，右侧控件。 */
+.setting-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* 输入框/下拉框与按钮同一行；输入框吃掉剩余宽度。 */
+.settings-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-actions > .input,
+.settings-actions > .select {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+.settings-self-start {
+  align-self: flex-start;
+}
+
+.settings-list {
+  gap: 8px;
+}
+
+.settings-list-group {
+  gap: 4px;
+}
+
 .theme-preview {
   display: flex;
   flex-direction: column;
@@ -17,6 +63,44 @@
 
 .theme-name {
   font-weight: 700;
+}
+
+/* 两段式选择器：主页按钮对齐 */
+.segmented {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgb(18 31 43 / 6%);
+}
+
+.segmented-option {
+  min-width: 76px;
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--app-ink-3);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 120ms linear,
+    color 120ms linear,
+    box-shadow 120ms linear;
+}
+
+.segmented-option:hover {
+  color: var(--app-ink);
+}
+
+.segmented-option.is-selected {
+  background: #fff;
+  color: var(--app-accent-deep);
+  box-shadow: 0 1px 3px rgb(18 31 43 / 16%);
 }
 
 .log-box {

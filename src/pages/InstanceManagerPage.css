@@ -1,0 +1,239 @@
+/* 实例管理器：左栏 = 全部实例按钮 + 固定标签（hover 才有 ×），右栏 = 全部实例列表或实例设置 */
+
+/* 固定标签的 ×：默认隐藏，hover 到标签项才出现 */
+.im-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-ink);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 110ms linear,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.section-item:hover .im-close,
+.section-item:focus-within .im-close {
+  opacity: 1;
+}
+
+/* 与下载-原版游戏安装页加载器抽屉的取消按钮同款交互 */
+.im-close:hover {
+  background: rgb(198 47 47 / 14%);
+  color: #b32b2b;
+}
+
+.im-close svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* 右栏「全部实例」列表 */
+.im-all {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.im-all-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.im-all-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+  border-radius: 14px;
+  background-color: var(--app-glass);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: var(--app-glass-blur);
+  box-shadow: var(--shadow-card);
+  color: var(--app-ink);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.im-all-item:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px 0 rgb(0 0 0 / 4%),
+    0 12px 28px 0 rgb(0 0 0 / 6%);
+}
+
+/* 启动页当前的实例：淡蓝描边 + 图标跟主题色 */
+.im-all-item.is-current {
+  box-shadow:
+    inset 0 0 0 1px var(--app-accent-soft),
+    var(--shadow-card);
+}
+
+.im-all-item.is-switching {
+  opacity: 0.72;
+}
+
+/* 卡片主体：点它 = 切换启动页的当前实例 */
+.im-all-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 12px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.im-all-main:disabled {
+  cursor: default;
+}
+
+/* 右侧设置按钮：平时隐藏，hover / 键盘聚焦卡片时浮现 */
+.im-all-settings {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-ink-3);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 110ms linear,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.im-all-item:hover .im-all-settings,
+.im-all-item:focus-within .im-all-settings {
+  opacity: 1;
+}
+
+.im-all-settings:hover {
+  background: var(--app-accent-tint);
+  color: var(--app-accent-deep);
+}
+
+.im-all-settings svg {
+  width: 16px;
+  height: 16px;
+}
+
+.im-all-icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  color: var(--app-ink-3);
+}
+
+.im-all-item.is-current .im-all-icon {
+  color: var(--app-accent);
+}
+
+.im-all-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.im-all-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.im-all-sub {
+  overflow: hidden;
+  color: var(--app-ink-3);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 固定分组与标签的入场：新固定一个实例时，分组（首个标签）与标签各自淡入下移 */
+@keyframes im-group-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes im-tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.im-pinned-group {
+  animation: im-group-in 180ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+.im-tab {
+  animation: im-tab-in 200ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+/* 已存在的标签不重播入场动画（key 稳定，animation 只在挂载时跑一次） */
+
+/* 移除标签的出场动画：淡出上移后 React 才把标签真正移除 */
+@keyframes im-tab-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.im-tab.is-closing {
+  animation: im-tab-out 200ms ease-in both;
+  pointer-events: none;
+}
+
+/*
+ * 标签行拆成 div + 两个真按钮：button 里不能再套交互元素，
+ * 之前把 × 做成 button 里的 role=button span，点击在 WebView2 里命中不到。
+ */
+.im-tab {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  cursor: default;
+}
+
+.im-tab-main {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 0 7px 9px;
+  border: 0;
+  border-radius: 8px 0 0 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.im-close {
+  margin-right: 6px;
+}

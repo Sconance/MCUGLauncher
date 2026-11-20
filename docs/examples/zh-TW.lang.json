@@ -1,0 +1,60 @@
+{
+  "code": "zh-TW",
+  "name": "繁體中文",
+  "nativeName": "繁體中文",
+  "regionName": "台灣",
+  "author": "MCUG",
+  "version": "1.0.0",
+  "messages": {
+    "app": {
+      "name": "MCUG Launcher"
+    },
+    "nav": {
+      "home": "啟動",
+      "discover": "發現",
+      "download": "下載",
+      "settings": "設定",
+      "extras": "更多",
+      "main": "主導覽"
+    },
+    "common": {
+      "ok": "確定",
+      "cancel": "取消",
+      "back": "返回",
+      "close": "關閉",
+      "search": "搜尋",
+      "loading": "載入中…"
+    },
+    "settings": {
+      "language": "介面語言",
+      "languageHint": "切換後立即生效，下次啟動沿用。",
+      "languagePackHint": "語言包像資源包一樣：匯入一個 .json 檔就能新增顯示語言。",
+      "languageImport": "匯入語言包…",
+      "languageRemove": "刪除",
+      "languageImported": "已匯入 {name}（{code}）。"
+    },
+    "download": {
+      "title": "下載",
+      "sections": {
+        "vanilla": "原版遊戲",
+        "mod": "模組",
+        "modpack": "整合包",
+        "resourcepack": "資源包",
+        "shader": "光影包",
+        "datapack": "資料包",
+        "loader": "載入器",
+        "pack": "整合包匯入"
+      },
+      "searchPlaceholder": "搜尋{sections}……",
+      "refresh": "重新整理列表",
+      "list": "列表",
+      "pickInstanceTitle": "選擇安裝{sections}的實例",
+      "instanceHint": {
+        "mod": "只顯示與該實例的遊戲版本、載入器相符的模組。",
+        "shader": "光影包依實例區分 Iris / OptiFine 來源。",
+        "other": "資源包與資料包與載入器無關，不依實例篩選。"
+      },
+      "searchVersionPlaceholder": "搜尋 Minecraft 版本"
+    }
+  }
+}

@@ -144,11 +144,11 @@ export default function CommunityPage() {
           title={announcement.title}
           width={640}
           onClose={() => setAnnouncement(null)}
-          footer={
-            <button type="button" className="btn primary" onClick={() => setAnnouncement(null)}>
+          footer={(close) => (
+            <button type="button" className="btn primary" onClick={() => close()}>
               关闭
             </button>
-          }
+          )}
         >
           <p className="muted">
             {[announcement.tag, announcement.author, announcement.publishedAt?.slice(0, 10) ?? ""]

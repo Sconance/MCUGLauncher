@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   applyUninstall as applyUninstallCommand,
   applyUpdates as applyUpdatesCommand,
@@ -19,6 +19,7 @@ import Field from "../components/Field";
 import { AppInput, AppSelect, AppTextarea } from "../components/AppInput";
 import PathPrompt from "../components/PathPrompt";
 import { LIMITS } from "../constants";
+import { useFadeSwap } from "../shell/fade";
 import { useLauncher } from "../state/launcher";
 import type {
   ContentUpdatePreviewInfo,
@@ -57,6 +58,12 @@ const EMPTY_FORM: LaunchForm = {
   jvmArguments: "",
 };
 
+const TABS: (readonly [key: "content" | "launch" | "maintenance", label: string])[] = [
+  ["content", "内容"],
+  ["launch", "启动设置"],
+  ["maintenance", "维护"],
+];
+
 function validInstances(items: InstanceInfo[]): InstanceInfo[] {
   return items.filter((item) => item.name.length > 0 && !item.isPlaceholder);
 }
@@ -66,11 +73,31 @@ function formatSize(bytes: number): string {
   return bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+interface InstancesPageProps {
+  /** 外部控制选中的实例；不传则用页面自己的选择状态（ExtrasPage 里这样用） */
+  selectedId?: string;
+  /** 选中实例变化时回调，供外层同步（例如实例管理器左栏的固定标签） */
+  onSelectInstance?: (id: string) => void;
+}
+
 /** 实例页：内容（模组）、启动设置与维护（克隆/导出/卸载/更新）。 */
-export default function InstancesPage() {
+export default function InstancesPage({ selectedId, onSelectInstance }: InstancesPageProps) {
   const { overview, accounts, instances: instanceCatalog, mods, refreshState } = useLauncher();
-  const [selected, setSelected] = useState("");
+  const [internalSelected, setInternalSelected] = useState("");
+  const selected = selectedId !== undefined ? selectedId : internalSelected;
+  /** 被嵌入左右栏页面（实例管理器）时隐藏实例选择行，标签改为胶囊样式 */
+  const embedded = selectedId !== undefined;
   const [tab, setTab] = useState<"content" | "launch" | "maintenance">("content");
+  const tabRef = useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  /** 标签内容跟随 fade 后的 shownTab，切换才有淡出淡入 */
+  const { shown: shownTab, out: tabOut } = useFadeSwap(tab);
+
+  useLayoutEffect(() => {
+    const active = tabRef.current?.querySelector<HTMLButtonElement>(`button[data-tab="${tab}"]`);
+    if (!active) return;
+    setIndicator({ left: active.offsetLeft, width: active.offsetWidth });
+  }, [tab]);
   const [status, setStatus] = useState("");
   const [options, setOptions] = useState<LaunchOptionsInfo | null>(null);
   const [optionsStatus, setOptionsStatus] = useState("");
@@ -93,7 +120,7 @@ export default function InstancesPage() {
     if (!instanceCatalog || !overview) return;
     const items = validInstances(instanceCatalog.items);
     if (selected.length === 0 || !items.some((item) => item.id === selected)) {
-      setSelected(overview.selectedInstanceId ?? items[0]?.id ?? "");
+      setInternalSelected(overview.selectedInstanceId ?? items[0]?.id ?? "");
     }
   }, [instanceCatalog, overview, selected]);
 
@@ -130,7 +157,8 @@ export default function InstancesPage() {
   };
 
   const changeInstance = async (instanceId: string) => {
-    setSelected(instanceId);
+    setInternalSelected(instanceId);
+    onSelectInstance?.(instanceId);
     setUninstall(null);
     setUpdates(null);
     setUpdatePreview(null);
@@ -265,7 +293,7 @@ export default function InstancesPage() {
   };
 
   const instances = instanceCatalog ? validInstances(instanceCatalog.items) : [];
-  const current = instances.find((item) => item.name === selected);
+  const current = instances.find((item) => item.id === selected);
   const inheritHint = inherit
     ? "当前继承全局启动设置；取消勾选后可保存独立设置。"
     : "当前使用独立设置；勾选“继承”并保存会恢复全局设置。";
@@ -273,6 +301,7 @@ export default function InstancesPage() {
 
   return (
     <div className="subpage">
+      {embedded ? null : (
       <div className="stack" style={{ gap: 8 }}>
         <h1 className="page-title">实例</h1>
         <div className="row" style={{ gap: 8 }}>
@@ -309,28 +338,44 @@ export default function InstancesPage() {
             : `共 ${instances.length} 个实例 · 当前 ${current?.displayName ?? selected} · ${current?.minecraft ?? ""} · ${current?.loader ?? ""}`}
         </p>
       </div>
+      )}
 
-      <div className="tabs" style={{ marginTop: 12 }}>
-        {(
-          [
-            ["content", "内容"],
-            ["launch", "启动设置"],
-            ["maintenance", "维护"],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            className={`tab ${tab === key ? "active" : ""}`}
-            onClick={() => setTab(key)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {embedded ? (
+        <div className="tab-pill" ref={tabRef}>
+          <span
+            className="tab-indicator"
+            style={{ transform: `translateX(${indicator.left}px)`, width: indicator.width }}
+            aria-hidden="true"
+          />
+          {TABS.map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              data-tab={key}
+              className={`tab-pill-item${tab === key ? " active" : ""}`}
+              onClick={() => setTab(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="tabs" style={{ marginTop: 12 }}>
+          {TABS.map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              className={`tab ${tab === key ? "active" : ""}`}
+              onClick={() => setTab(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <div className="instance-tab-body">
-        {tab === "content" ? (
+      <div className={`instance-tab-body${tabOut ? " is-fading" : ""}`}>
+        {shownTab === "content" ? (
           <section className="card instance-card">
             <div className="instance-scroll">
               <p className="muted">
@@ -373,7 +418,7 @@ export default function InstancesPage() {
           </section>
         ) : null}
 
-        {tab === "launch" ? (
+        {shownTab === "launch" ? (
           <section className="card instance-card">
             <div className="instance-scroll">
               <div className="stack" style={{ gap: 10, paddingTop: 8 }}>
@@ -492,7 +537,7 @@ export default function InstancesPage() {
           </section>
         ) : null}
 
-        {tab === "maintenance" ? (
+        {shownTab === "maintenance" ? (
           <section className="card instance-card">
             <div className="instance-scroll">
               <div className="stack" style={{ gap: 10, paddingTop: 8 }}>

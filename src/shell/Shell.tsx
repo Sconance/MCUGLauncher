@@ -14,14 +14,16 @@ import DiscoverPage from "../pages/DiscoverPage";
 import DownloadPage from "../pages/DownloadPage";
 import ExtrasPage from "../pages/ExtrasPage";
 import HomePage from "../pages/HomePage";
+import InstanceManagerPage from "../pages/InstanceManagerPage";
 import SettingsPage from "../pages/SettingsPage";
 import GlassSurface from "../components/GlassSurface";
 import { useLiquidGlass } from "./liquid";
+import TopStatus from "./TopStatusButtons";
 import { useLauncher } from "../state/launcher";
 import { useI18n } from "../i18n";
 import { NavigationContext } from "./navigation";
 
-type PageKey = "home" | "discover" | "download" | "settings" | "extras";
+type PageKey = "home" | "discover" | "download" | "settings" | "extras" | "instances";
 
 const NAV: { key: PageKey; labelKey: string; icon: string; iconActive: string }[] = [
   { key: "home", labelKey: "nav.home", icon: launchIcon, iconActive: launchIconActive },
@@ -75,7 +77,7 @@ export default function Shell() {
    */
   const [activeKey, setActiveKey] = useState<PageKey>("home");
   const pendingActive = useRef<PageKey | null>(null);
-  const [extrasSection, setExtrasSection] = useState("instances");
+  const [extrasSection, setExtrasSection] = useState("bookmarks");
 
   // 页面切换的淡出淡入：page 是选中态（胶囊高亮立刻跟随），shown 是正在渲染的页
   const [shown, setShown] = useState<PageKey>("home");
@@ -248,10 +250,8 @@ export default function Shell() {
     setExtrasSection("account");
     go("extras");
   }, [go]);
-  const openInstances = useCallback(() => {
-    setExtrasSection("instances");
-    go("extras");
-  }, [go]);
+  const openInstanceManager = useCallback(() => go("instances"), [go]);
+  const goHome = useCallback(() => go("home"), [go]);
 
   let content;
   switch (shown) {
@@ -269,6 +269,9 @@ export default function Shell() {
       break;
     case "extras":
       content = <ExtrasPage active={extrasSection} onChange={setExtrasSection} />;
+      break;
+    case "instances":
+      content = <InstanceManagerPage />;
       break;
   }
 
@@ -582,7 +585,7 @@ export default function Shell() {
     .join(" ");
 
   return (
-    <NavigationContext.Provider value={{ openAccount, openInstances }}>
+    <NavigationContext.Provider value={{ goHome, openAccount, openInstanceManager }}>
       <div className="shell" ref={shellRef}>
         {/*
           壁纸 + 页面：只是「看得见」的那一层，已经不参与折射采样了（太大、太慢）。
@@ -618,7 +621,7 @@ export default function Shell() {
         */}
         <div className="nav-band" ref={bandRef}>
           {/* 采样条里的白胶囊：位置由 syncSceneBar() 按真实胶囊的 rect 逐像素对齐 */}
-          <div className="nav-scene-bar" aria-hidden="true" />
+          <div className="nav-scene-bar glass-surface glass-pill" aria-hidden="true" />
           <div className="nav-dock">
             <div className="nav-stack">
               <nav
@@ -667,6 +670,9 @@ export default function Shell() {
           </div>
         </div>
         </div>
+
+        {/* 右上角状态入口：运行中的实例与下载任务，按需出现 */}
+        <TopStatus />
 
         {/*
           按压时浮起的液态玻璃：比胶囊高出一圈，**盖在胶囊与按钮文字之上**，

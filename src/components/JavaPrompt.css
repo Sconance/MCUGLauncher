@@ -1,0 +1,22 @@
+.java-prompt-results {
+  gap: 6px;
+  max-height: 238px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.java-prompt-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--app-line);
+}
+
+.java-prompt-option:first-of-type {
+  border-top: 0;
+}
+
+.java-prompt-path {
+  word-break: break-all;
+}

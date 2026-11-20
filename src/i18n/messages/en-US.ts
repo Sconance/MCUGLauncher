@@ -24,6 +24,10 @@ export const enUS: typeof zhCN = {
     settings: {
         language: 'Language',
         languageHint: 'Applies immediately and is remembered next time.',
+        languagePackHint: 'Language packs work like resource packs: import a .json file to add a language.',
+        languageImport: 'Import pack…',
+        languageRemove: 'Remove',
+        languageImported: 'Imported {name} ({code}).',
     },
     download: {
         title: 'Download',

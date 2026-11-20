@@ -2,17 +2,11 @@ import type { ReactNode } from "react";
 import navAccount from "../assets/icons/nav/nav-account.svg";
 import navBookmarks from "../assets/icons/nav/nav-bookmarks.svg";
 import navCommunity from "../assets/icons/nav/nav-community.svg";
-import navGames from "../assets/icons/nav/nav-games.svg";
-import navInstances from "../assets/icons/nav/nav-instances.svg";
-import navTasks from "../assets/icons/nav/nav-tasks.svg";
 import type { NavItem } from "../components/SectionNav";
 import SplitPage from "../components/SplitPage";
 import AccountPage from "./AccountPage";
 import BookmarksPage from "./BookmarksPage";
 import CommunityPage from "./CommunityPage";
-import GamesPage from "./GamesPage";
-import InstancesPage from "./InstancesPage";
-import TasksPage from "./TasksPage";
 
 interface Section {
   key: string;
@@ -22,23 +16,13 @@ interface Section {
 }
 
 const SECTIONS: Section[] = [
-  { key: "instances", label: "实例", icon: navInstances, page: <InstancesPage /> },
-  { key: "games", label: "运行中的游戏", icon: navGames, page: <GamesPage /> },
-  { key: "tasks", label: "下载任务", icon: navTasks, page: <TasksPage /> },
   { key: "bookmarks", label: "我的收藏", icon: navBookmarks, page: <BookmarksPage /> },
   { key: "account", label: "账号与皮肤", icon: navAccount, page: <AccountPage /> },
   { key: "community", label: "社区管理", icon: navCommunity, page: <CommunityPage /> },
 ];
 
 const NAV_GROUPS: NavItem[][] = [
-  [
-    { key: "instances", label: "实例", icon: navInstances },
-    { key: "games", label: "运行中的游戏", icon: navGames },
-  ],
-  [
-    { key: "tasks", label: "下载任务", icon: navTasks },
-    { key: "bookmarks", label: "我的收藏", icon: navBookmarks },
-  ],
+  [{ key: "bookmarks", label: "我的收藏", icon: navBookmarks }],
   [
     { key: "account", label: "账号与皮肤", icon: navAccount },
     { key: "community", label: "社区管理", icon: navCommunity },
@@ -50,7 +34,7 @@ interface ExtrasPageProps {
   onChange: (key: string) => void;
 }
 
-/** 对应原 ExtrasView：左侧分区导航，右侧承载六个子页面。 */
+/** 对应原 ExtrasView：左侧分区导航，右侧承载收藏、账号与社区三个子页面。 */
 export default function ExtrasPage({ active, onChange }: ExtrasPageProps) {
   return (
     <SplitPage

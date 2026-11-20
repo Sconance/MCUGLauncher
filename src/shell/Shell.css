@@ -111,12 +111,6 @@
   z-index: 3; /* 压住页面内容，但仍低于导航按钮（nav-dock 的 z-index 10） */
   width: var(--nav-bar-w, 0px);
   height: var(--nav-bar-h, 0px);
-  border-radius: 999px;
-  background-color: var(--app-glass-strong);
-  background-image: var(--app-glass-grain);
-  background-size: 160px 160px;
-  backdrop-filter: var(--app-glass-blur);
-  box-shadow: 0 8px 24px rgb(18 42 64 / 12%);
   pointer-events: none;
 }
 
@@ -442,8 +436,8 @@
 
 .toast {
   position: fixed;
-  right: 24px;
   bottom: 24px;
+  left: 24px;
   z-index: 40;
   max-width: 420px;
   padding: 10px 14px;
@@ -454,4 +448,24 @@
   line-height: 1.55;
   box-shadow: var(--shadow-card);
   word-break: break-all;
+  animation: toast-in 200ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+/* 弹出：从左边缘向右滑入；收起：再向左滑出 */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-100% - 24px));
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateX(calc(-100% - 24px));
+  }
+}
+
+.toast.is-leaving {
+  animation: toast-out 180ms ease-in both;
 }

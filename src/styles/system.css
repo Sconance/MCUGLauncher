@@ -1,0 +1,26 @@
+/*
+ * 通用视觉规范（与 docs/UI_STYLEGUIDE.md 配套）。
+ *
+ * 这里只收「跨页面复用、且靠组合类名生效」的表面样式：
+ * - .glass-surface 提供磨砂玻璃的材质（底色、噪点、模糊、投影）；
+ * - .glass-pill / .glass-panel 只负责胶囊/面板的圆角。
+ *
+ * 内容卡片仍用 components.css 的 .card（较浅的玻璃 + 内容卡阴影），
+ * 不要为了复用把卡片改成导航胶囊的强玻璃，否则层级会变重。
+ */
+
+.glass-surface {
+  background-color: var(--app-glass-strong);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  box-shadow: var(--shadow-nav);
+  backdrop-filter: var(--app-glass-blur);
+}
+
+.glass-surface.glass-pill {
+  border-radius: 999px;
+}
+
+.glass-surface.glass-panel {
+  border-radius: var(--radius-panel);
+}

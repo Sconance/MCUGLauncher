@@ -20,6 +20,15 @@
   z-index: 1; /* 压在水波之上 */
 }
 
+/* 居中：整栏贴页面中线，toast 与按钮行横向居中；控件顺序由 HomePage 重排 */
+.home-launch.is-centered {
+  right: auto;
+  left: 50%;
+  margin-right: 0;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
 /* ---------- 启动时的水波与相邻卡片抖动 ---------- */
 
 .ripple-layer {
@@ -342,6 +351,12 @@
 }
 
 .btn.launch-square img {
+  width: 30px;
+  height: 30px;
+}
+
+/* 启动中：图标换成 X，点击取消 */
+.btn.launch-square .launch-cancel-icon {
   width: 30px;
   height: 30px;
 }

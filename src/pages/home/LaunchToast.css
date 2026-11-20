@@ -1,0 +1,94 @@
+/*
+ * 启动进度 toast：白色卡片，放在底部按钮栏上方（.home-launch 的第一个子元素）。
+ * 靠右时从右侧横向滑入/滑出；居中对齐时位于启动图标正上方，改为向上滑入、向下滑出。
+ */
+
+.launch-toast {
+  width: 300px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow:
+    0 2px 4px 0 rgb(0 0 0 / 5%),
+    0 12px 28px 0 rgb(0 0 0 / 12%);
+  animation: launch-toast-in 200ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+@keyframes launch-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 24px));
+  }
+}
+
+@keyframes launch-toast-out {
+  to {
+    opacity: 0;
+    transform: translateX(calc(100% + 24px));
+  }
+}
+
+/* 居中布局：从启动按钮上沿由下往上升起，结束时再向下退回按钮后面 */
+@keyframes launch-toast-in-centered {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes launch-toast-out-centered {
+  to {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+.launch-toast.is-leaving {
+  animation: launch-toast-out 180ms ease-in both;
+}
+
+.home-launch.is-centered .launch-toast {
+  animation-name: launch-toast-in-centered;
+}
+
+.home-launch.is-centered .launch-toast.is-leaving {
+  animation-name: launch-toast-out-centered;
+}
+
+.launch-toast-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.launch-toast-title {
+  overflow: hidden;
+  color: var(--app-ink);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.launch-toast-pct {
+  flex: none;
+  color: var(--app-ink-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.launch-toast-track {
+  height: 6px;
+  margin-top: 9px;
+  border-radius: 999px;
+  background: rgb(18 31 43 / 8%);
+  overflow: hidden;
+}
+
+.launch-toast-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--app-accent);
+}
