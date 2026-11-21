@@ -6,6 +6,8 @@ MCUGLauncher 是基于 Tauri、React 与 TypeScript 的 Minecraft 启动器前�
 
 ## 开发
 
+安装依赖前，请查看[开发环境要求](docs/DEVELOPMENT_ENVIRONMENT.md)，确认 Node.js、Rust 和桌面平台依赖。
+
 ```bash
 npm install
 npm run tauri dev
