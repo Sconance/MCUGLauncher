@@ -19,6 +19,7 @@ pub enum StateResource {
     Overview,
     Settings,
     Accounts,
+    Instances,
     InstanceMods,
     Servers,
     Bookmarks,
@@ -148,6 +149,7 @@ impl Data {
             StateResource::Overview => &mut self.revisions.overview,
             StateResource::Settings => &mut self.revisions.settings,
             StateResource::Accounts => &mut self.revisions.accounts,
+            StateResource::Instances => &mut self.revisions.instances,
             StateResource::InstanceMods => &mut self.revisions.instance_mods,
             StateResource::Servers => &mut self.revisions.servers,
             StateResource::Bookmarks => &mut self.revisions.bookmarks,
@@ -155,6 +157,20 @@ impl Data {
             StateResource::Community => &mut self.revisions.community,
         };
         *revision = revision.saturating_add(1);
+    }
+
+    pub(crate) fn replace_instance_catalog(&mut self, catalog: InstanceCatalogInfo) {
+        self.state.instances = catalog.items;
+        self.state.version_groups = catalog.version_groups;
+        self.state.mods.clear();
+        if self.state.selected_instance_id.as_ref().is_some_and(|id| {
+            !self.state.instances.iter().any(|instance| &instance.id == id)
+        }) {
+            self.state.selected_instance_id = None;
+            self.touch(StateResource::Overview);
+        }
+        self.touch(StateResource::Instances);
+        self.touch(StateResource::InstanceMods);
     }
 
     pub fn ensure_settings_revision(&self, expected: u64) -> Result<(), ApiError> {
@@ -258,7 +274,7 @@ impl Data {
             expires_at: expires_at.format(&Rfc3339).unwrap_or_default(),
             name: instance.display_name,
             notice: "执行前会再次检查目标实例及修订号。".into(),
-            paths: vec![format!("{}/versions/{}", self.state.config.root, instance.name)],
+            paths: vec![format!("{}/versions/{}", self.state.config.root(), instance.name)],
             shared: false,
         })
     }
@@ -409,6 +425,9 @@ pub fn avatar_for(player: &str, account: &str) -> AvatarInfo {
 }
 
 fn demo_state() -> BackendState {
+    let mut config = LauncherConfig::default();
+    config.game_roots = vec!["D:/Games/Minecraft/MCUG".into(), "E:/Minecraft/Backup".into()];
+    config.java = "C:/Program Files/Eclipse Adoptium/jdk-21.0.4.7-hotspot/bin/javaw.exe".into();
     BackendState {
         app_version: "0.22.3".into(),
         active_account_id: Some("account-demo-microsoft".into()),
@@ -426,15 +445,7 @@ fn demo_state() -> BackendState {
                 status: "ready".into(),
             },
         ],
-        config: LauncherConfig {
-            root: "D:/Games/Minecraft/MCUG".into(),
-            game_roots: vec![
-                "D:/Games/Minecraft/MCUG".into(),
-                "E:/Minecraft/Backup".into(),
-            ],
-            java: "C:/Program Files/Eclipse Adoptium/jdk-21.0.4.7-hotspot/bin/javaw.exe".into(),
-            ..LauncherConfig::default()
-        },
+        config,
         has_community_key: true,
         has_admin_key: true,
         skin_station: String::new(),

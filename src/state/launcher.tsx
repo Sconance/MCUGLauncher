@@ -261,12 +261,23 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
 
   const refreshSettingsResources = useCallback(async (changed: readonly ResourceKeyInfo[]) => {
     const kinds = new Set(changed.map(({ kind }) => kind));
+    const mods = changed.find(({ kind }) => kind === "instanceMods");
+    const instanceId = mods?.instanceId;
+    if (mods && !instanceId) {
+      requests.current.mods = (requests.current.mods ?? 0) + 1;
+      setMods([]);
+    }
     await Promise.allSettled([
       kinds.has("settings") ? refreshSettings() : undefined,
       kinds.has("accounts") ? refreshAccounts() : undefined,
       kinds.has("avatar") ? refreshAvatar() : undefined,
+      kinds.has("overview") ? loadCore("overview", stateCommands.getOverview, setOverview) : undefined,
+      kinds.has("instances") ? loadCore("instances", stateCommands.listInstances, setInstances) : undefined,
+      instanceId
+        ? loadCore("mods", () => stateCommands.listInstanceMods(instanceId), setMods)
+        : undefined,
     ]);
-  }, [refreshSettings, refreshAccounts, refreshAvatar]);
+  }, [loadCore, refreshSettings, refreshAccounts, refreshAvatar]);
 
   useEffect(() => {
     if (!isTauri()) {

@@ -1,6 +1,7 @@
 mod commands;
 mod demo;
 mod launcher_config;
+mod local_instances;
 mod model;
 mod schema_dto;
 mod state;

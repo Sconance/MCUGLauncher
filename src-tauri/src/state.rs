@@ -7,6 +7,7 @@ use std::{
 use crate::{
     demo::{Data, StateResource},
     launcher_config::LauncherConfig,
+    local_instances,
     model::ApiError,
 };
 
@@ -23,7 +24,12 @@ impl Backend {
     ) -> io::Result<Self> {
         let config = LauncherConfig::load_or_create(&config_dir, default_game_root)?;
         let mut data = Data::demo();
+        let catalog = local_instances::scan(Path::new(config.root())).unwrap_or_else(|error| {
+            eprintln!("[mcugl] 无法读取游戏目录 {}：{error}", config.root());
+            local_instances::empty_catalog()
+        });
         data.state.config = config;
+        data.replace_instance_catalog(catalog);
         Ok(Self {
             data: Mutex::new(data),
             config_dir,
@@ -60,6 +66,23 @@ mod tests {
     use std::fs;
 
     #[test]
+    fn migrates_legacy_root_to_the_first_list_entry() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_path = temp.path().join(FILE_NAME);
+        let mut legacy = serde_json::to_value(LauncherConfig::default()).unwrap();
+        legacy["root"] = serde_json::json!("/game/active");
+        legacy["gameRoots"] = serde_json::json!(["/game/other", "/game/active"]);
+        fs::write(&config_path, serde_json::to_vec(&legacy).unwrap()).unwrap();
+
+        let backend = Backend::open(temp.path().to_path_buf(), || panic!("existing config")).unwrap();
+        let data = backend.data.lock().unwrap();
+        assert_eq!(data.state.config.root(), "/game/active");
+        let config: serde_json::Value = serde_json::from_slice(&fs::read(config_path).unwrap()).unwrap();
+        assert_eq!(config["gameRoots"], serde_json::json!(["/game/active", "/game/other"]));
+        assert!(config.get("root").is_none());
+    }
+
+    #[test]
     fn creates_config_and_restores_saved_settings_on_restart() {
         let temp = tempfile::tempdir().unwrap();
         let directory = temp.path().join("app-data");
@@ -74,8 +97,7 @@ mod tests {
             assert_eq!(data.state.config.game_roots, vec![root.to_str().unwrap()]);
             let revision = data.revisions.settings;
             let mut config = data.state.config.clone();
-            config.root = new_root.to_str().unwrap().into();
-            config.game_roots.push(config.root.clone());
+            config.select_root(new_root.to_str().unwrap().into());
             config.ram = 4096;
             backend.save_config(&mut data, config, revision).unwrap();
             assert_eq!(data.revisions.settings, revision + 1);
@@ -86,7 +108,7 @@ mod tests {
             .unwrap();
         let data = backend.data.lock().unwrap();
         assert_eq!(data.state.config.ram, 4096);
-        assert_eq!(data.state.config.root, new_root.to_str().unwrap());
+        assert_eq!(data.state.config.root(), new_root.to_str().unwrap());
         assert_eq!(data.state.config.game_roots.len(), 2);
     }
 

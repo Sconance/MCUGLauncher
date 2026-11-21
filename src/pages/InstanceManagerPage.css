@@ -50,6 +50,17 @@
   gap: 8px;
 }
 
+.im-directory-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.im-directory-path {
+  overflow-wrap: anywhere;
+}
+
 .im-all-item {
   display: flex;
   align-items: center;

@@ -41,7 +41,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `get_overview` | — | `ResourceSnapshot<LauncherOverview>` | 应用版本与当前实例、账号 ID |
 | `get_settings` | — | `ResourceSnapshot<SettingsInfo>` | 全局设置 |
 | `list_accounts` | — | `ResourceSnapshot<AccountInfo[]>` | 本机账号 |
-| `list_instances` | — | `ResourceSnapshot<InstanceCatalogInfo>` | 实例与版本分组 |
+| `list_instances` | — | `ResourceSnapshot<InstanceCatalogInfo>` | 当前游戏根目录的本地实例与版本分组 |
 | `list_instance_mods` | `instanceId` | `ResourceSnapshot<ModInfo[]>` | 指定实例模组 |
 | `list_servers` | — | `ResourceSnapshot<SavedServerInfo[]>` | 服务器收藏 |
 | `list_bookmarks` | — | `ResourceSnapshot<FavoriteInfo[]>` | 内容收藏 |
@@ -79,7 +79,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `save_settings` | `patch`（`AppSettingsPatch`）、`expectedRevision` | `SavedInfo` | 按预期修订号更新；过期返回 `CONFLICT` |
+| `save_settings` | `patch`（`AppSettingsPatch`）、`expectedRevision` | `SavedInfo` | 按预期修订号更新，过期返回 `CONFLICT`。传入 `root` 时登记或切换游戏目录并刷新该目录的实例 |
 | `scan_java` | — | `JavaInfo[]` | 扫描本机 Java |
 | `save_custom_sources` | `sources`（`DataSourceSet`）、`expectedRevision`、`activate?` | `SavedInfo` | 保存自定义数据源，`activate` 为真时在同一次写入中启用 |
 | `use_data_sources` | `mode`（`default` / `custom`）、`expectedRevision` | `SavedInfo` | 切换默认或自定义数据源 |
@@ -93,6 +93,8 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 启动时读取 `mcuglauncher.conf.json`，文件缺失时创建默认配置。Linux 使用 `$XDG_DATA_HOME/com.mcug.launcher/`（默认 `~/.local/share/com.mcug.launcher/`），Windows 使用 `%LOCALAPPDATA%\com.mcug.launcher\`，macOS 使用 `~/Library/Application Support/com.mcug.launcher/`。
 
 首次初始化时，默认游戏根目录分别是 Linux 的 `~/.minecraft`、Windows 的 `%APPDATA%\.minecraft` 和 macOS 的 `~/Library/Application Support/minecraft`。此时只保存目录路径。已有配置优先，读取失败时报告错误并保留原文件。设置写入先校验 `expectedRevision`，过期时返回 `CONFLICT`，写盘成功后更新内存状态和修订号。
+
+配置文件的 `gameRoots` 按列表保存目录，第一项为当前目录。启动时会迁移旧文件的 `root` 字段。`get_settings.root` 仍返回当前目录，新增目录使用已存在的绝对路径，`list_instances` 读取当前目录启动或切换时生成的 `versions` 清单。
 
 ### 存档
 
