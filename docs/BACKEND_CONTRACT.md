@@ -174,10 +174,10 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 ## 5. 演示后端之外的原生适配
 
-当前文件/目录选择由前端的 `PathPrompt` 弹层模拟。真实内核可接入 `tauri-plugin-dialog` 或等价能力；这属于平台适配，不阻塞 V2 契约：
+Rust 侧已接入原生文件和目录选择器。两条命令都接受可选的 `title` 和 `defaultDirectory`，返回选中的本地路径字符串，取消时返回 `null`。游戏目录登记由 `save_settings` 负责。
 
 | 命令 / 插件 | 用途 |
 | --- | --- |
 | `pick_file` | 选择 Java、皮肤、整合包、本地导入文件 |
-| `pick_folder` | 选择游戏目录、下载目录 |
+| `pick_folder` | 在桌面端选择游戏目录、下载目录 |
 | `open_folder` | 当前返回提示，后续调用系统文件管理器 |

@@ -154,6 +154,7 @@ fn create_main_window(app: &AppHandle) -> tauri::Result<()> {
 pub fn run() {
     eprintln!("[mcugl] device_os={DEVICE_OS}");
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let paths = app.path();
@@ -211,6 +212,9 @@ pub fn run() {
             commands::implementation::read_log,
             commands::implementation::get_system_info,
             commands::implementation::verify_key,
+            commands::path_picker::pick_file,
+            #[cfg(desktop)]
+            commands::path_picker::pick_folder,
             // 存档
             commands::implementation::list_save_backups,
             commands::implementation::backup_saves,
