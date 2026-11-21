@@ -14,6 +14,7 @@ use tauri::{AppHandle, Emitter, State};
 use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
 
 use crate::{
+    DEVICE_OS,
     demo::{StateResource, avatar_for},
     model::*,
     state::Backend,
@@ -25,10 +26,6 @@ pub const EVENT_AVATAR: &str = "launcher://avatar";
 
 fn emit<T: Serialize + Clone>(app: &AppHandle, event: &str, payload: T) {
     let _ = app.emit(event, payload);
-}
-
-fn clamp(value: i32, min: i32, max: i32) -> i32 {
-    value.min(max).max(min)
 }
 
 fn generated_id(prefix: &str) -> String {
@@ -60,26 +57,32 @@ pub fn get_overview(backend: State<'_, Backend>) -> ResourceSnapshot {
 pub fn get_settings(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
     let state = &data.state;
+    let config = &state.config;
+    let active_sources = if config.data_source_mode == "custom" {
+        &config.custom_data_sources
+    } else {
+        &state.default_data_sources
+    };
     data.resource_snapshot(
         data.revisions.settings,
         SettingsInfo {
-            root: state.root.clone(),
-            game_roots: state.game_roots.clone(),
-            java: state.java.clone(),
-            width: state.width as i64,
-            height: state.height as i64,
-            ram: state.ram as i64,
-            auto_memory: state.auto_memory,
-            anonymous: state.anonymous,
+            root: config.root.clone(),
+            game_roots: config.game_roots.clone(),
+            java: config.java.clone(),
+            width: config.width as i64,
+            height: config.height as i64,
+            ram: config.ram as i64,
+            auto_memory: config.auto_memory,
+            anonymous: config.anonymous,
             has_community_key: state.has_community_key,
             has_admin_key: state.has_admin_key,
             skin_station: state.skin_station.clone(),
             cape: state.cape.clone(),
-            data_sources: state.data_sources.clone(),
+            data_sources: active_sources.clone(),
             default_data_sources: state.default_data_sources.clone(),
-            custom_data_sources: state.custom_data_sources.clone(),
-            data_source_mode: state.data_source_mode.clone(),
-            auto_chinese: state.auto_chinese,
+            custom_data_sources: config.custom_data_sources.clone(),
+            data_source_mode: config.data_source_mode.clone(),
+            auto_chinese: config.auto_chinese,
         },
     )
 }
@@ -433,7 +436,7 @@ pub fn cancel_login(auth_session_id: String) -> Result<LoginSessionInfo, ApiErro
 
 // ---------------------------------------------------------------- 设置
 
-/// 按补丁更新启动设置并钳制数值范围。
+/// 校验并持久化启动设置补丁。
 #[tauri::command]
 pub fn save_settings(
     app: AppHandle,
@@ -468,58 +471,69 @@ pub fn save_settings(
             ));
         }
     }
-    let state = {
+    let account_id = {
         let mut data = backend.data.lock().unwrap();
-        data.ensure_settings_revision(expected_revision)?;
-        let state = &mut data.state;
+        let mut config = data.state.config.clone();
         if let Some(root) = patch.root.filter(|value| !value.is_empty()) {
-            if root != state.root {
-                state.game_roots.push(state.root.clone());
-                state.game_roots.push(root.clone());
-                state.game_roots.sort();
-                state.game_roots.dedup();
-                state.root = root;
+            if root != config.root {
+                config.game_roots.push(config.root.clone());
+                config.game_roots.push(root.clone());
+                config.game_roots.sort();
+                config.game_roots.dedup();
+                config.root = root;
             }
         }
         if let Some(java) = patch.java {
-            state.java = java;
+            config.java = java;
         }
         if let Some(ram) = patch.ram {
-            state.ram = clamp(ram as i32, 512, 65536);
+            config.ram = ram as i32;
         }
         if let Some(width) = patch.width {
-            state.width = clamp(width as i32, 640, 7680);
+            config.width = width as i32;
         }
         if let Some(height) = patch.height {
-            state.height = clamp(height as i32, 480, 4320);
+            config.height = height as i32;
         }
         if let Some(value) = patch.auto_memory {
-            state.auto_memory = value;
+            config.auto_memory = value;
         }
         if let Some(value) = patch.auto_chinese {
-            state.auto_chinese = value;
+            config.auto_chinese = value;
         }
         if let Some(value) = patch.anonymous {
-            state.anonymous = value;
+            config.anonymous = value;
         }
-        if let Some(player) = patch.player.filter(|value| !value.is_empty()) {
-            if let Some(account) = state.accounts.iter_mut().find(|account| {
+        backend.save_config(&mut data, config, expected_revision)?;
+        let state = &mut data.state;
+        let account_id = patch.player.filter(|value| !value.is_empty()).and_then(|player| {
+            let account = state.accounts.iter_mut().find(|account| {
                 state.active_account_id.as_deref() == Some(account.id.as_str())
                     && account.kind == "offline"
-            }) {
-                account.player = player;
-            }
+                    && account.player != player
+            })?;
+            account.player = player;
+            Some(account.id.clone())
+        });
+        if account_id.is_some() {
+            data.touch(StateResource::Accounts);
         }
-        data.mutating_snapshot(&[StateResource::Settings, StateResource::Accounts])
+        account_id
     };
-    drop(state);
+    let mut changed = vec![ResourceKeyInfo {
+        kind: "settings".into(),
+        instance_id: None,
+    }];
+    if account_id.is_some() {
+        changed.extend(["accounts", "avatar"].map(|kind| ResourceKeyInfo {
+            kind: kind.into(),
+            instance_id: None,
+        }));
+    }
     Ok(SavedInfo::changed(
         "设置已保存。",
-        vec![ResourceKeyInfo {
-            kind: "settings".into(),
-            instance_id: None,
-        }],
-        Vec::new(),
+        changed,
+        account_id.into_iter().collect(),
     ))
 }
 
@@ -530,51 +544,69 @@ pub fn scan_java(backend: State<'_, Backend>) -> Result<Vec<JavaInfo>, ApiError>
     Err(ApiError::unsupported("scan_java"))
 }
 
-/// 保存自定义数据源地址。
+/// 保存自定义数据源地址，可同时启用。
 #[tauri::command]
 pub fn save_custom_sources(
     app: AppHandle,
     backend: State<'_, Backend>,
     sources: DataSourceSet,
-) -> SavedInfo {
-    let state = {
+    expected_revision: u64,
+    activate: Option<bool>,
+) -> Result<SavedInfo, ApiError> {
+    let activate = activate.unwrap_or(false);
+    {
         let mut data = backend.data.lock().unwrap();
-        data.state.custom_data_sources = sources;
-        data.mutating_snapshot(&[StateResource::Settings])
-    };
-    drop(state);
-    SavedInfo::changed(
-        "已保存自定义数据源，可点击「使用自定义」切换。",
+        let mut config = data.state.config.clone();
+        config.custom_data_sources = sources;
+        if activate {
+            config.data_source_mode = "custom".into();
+        }
+        backend.save_config(&mut data, config, expected_revision)?;
+    }
+    Ok(SavedInfo::changed(
+        if activate {
+            "已保存并切换到自定义数据源。"
+        } else {
+            "已保存自定义数据源。"
+        },
         vec![ResourceKeyInfo {
             kind: "settings".into(),
             instance_id: None,
         }],
         Vec::new(),
-    )
+    ))
 }
 
 /// 切换默认或自定义数据源。
 #[tauri::command]
-pub fn use_data_sources(app: AppHandle, backend: State<'_, Backend>, mode: String) -> SavedInfo {
-    let state = {
+pub fn use_data_sources(
+    app: AppHandle,
+    backend: State<'_, Backend>,
+    mode: String,
+    expected_revision: u64,
+) -> Result<SavedInfo, ApiError> {
+    if !matches!(mode.as_str(), "default" | "custom") {
+        return Err(ApiError::validation("切换数据源失败。", "mode", "未知的数据源模式。"));
+    }
+    {
         let mut data = backend.data.lock().unwrap();
-        data.state.data_source_mode = mode.clone();
-        data.mutating_snapshot(&[StateResource::Settings])
-    };
-    drop(state);
+        let mut config = data.state.config.clone();
+        config.data_source_mode = mode.clone();
+        backend.save_config(&mut data, config, expected_revision)?;
+    }
     let message = if mode == "custom" {
         "已切换为自定义数据源。"
     } else {
         "已恢复默认数据源。"
     };
-    SavedInfo::changed(
+    Ok(SavedInfo::changed(
         message,
         vec![ResourceKeyInfo {
             kind: "settings".into(),
             instance_id: None,
         }],
         Vec::new(),
-    )
+    ))
 }
 
 /// 测试数据源地址是否可访问。
@@ -607,14 +639,14 @@ pub fn read_log(backend: State<'_, Backend>) -> String {
 /// 读取运行环境信息。
 #[tauri::command]
 pub fn get_system_info(backend: State<'_, Backend>) -> SystemInfoInfo {
-    let root = backend.data.lock().unwrap().state.root.clone();
+    let root = backend.data.lock().unwrap().state.config.root.clone();
     SystemInfoInfo {
         app: "0.22.3".into(),
         dotnet: ".NET 8.0.11".into(),
         webview: "WebView2 130.0.2849.68".into(),
-        os: "Windows 11 23H2 (22631.4460)".into(),
+        os: DEVICE_OS.into(),
         root,
-        data: "C:/Users/XiaoMu/AppData/Roaming/MCUGLauncher".into(),
+        data: backend.config_dir().to_string_lossy().into_owned(),
     }
 }
 
@@ -1103,6 +1135,7 @@ pub fn read_launch_options(
     request_id: Option<String>,
 ) -> LaunchOptionsInfo {
     let data = backend.data.lock().unwrap();
+    let config = &data.state.config;
     LaunchOptionsInfo {
         request_id: request_id.unwrap_or_else(|| instance_id.clone()),
         token: format!("launch-{instance_id}"),
@@ -1110,16 +1143,16 @@ pub fn read_launch_options(
         display_name: instance_id,
         inherited: false,
         settings: LaunchSettings {
-            auto_memory: data.state.auto_memory,
+            auto_memory: config.auto_memory,
             full_screen: false,
-            ram_mb: data.state.ram as i64,
-            width: data.state.width as i64,
-            height: data.state.height as i64,
-            java: data.state.java.clone(),
+            ram_mb: config.ram as i64,
+            width: config.width as i64,
+            height: config.height as i64,
+            java: config.java.clone(),
             jvm_arguments: String::new(),
             window_title: "MCUG Launcher".into(),
             server: String::new(),
-            auto_chinese: data.state.auto_chinese,
+            auto_chinese: config.auto_chinese,
         },
     }
 }

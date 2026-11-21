@@ -89,7 +89,7 @@
 1. 接收 `{ active: boolean }`，组件常驻挂载，`active` 为 false 时 `return null`。
    这样切换分区不会丢掉未保存的输入。
 2. 分区自己的输入、请求和 `useState` 放在组件内部；共享的 `overview/settings/accounts/
-   resourceVersions/refreshState` 从 `useSettingsData()` 取。
+   resourceVersions/refreshSettingsResources` 从 `useSettingsData()` 取。设置写入成功后按响应的 `changed` 刷新资源。
 3. 多张卡片用 `<div className="settings-cards">` 包起来，卡片用
    `SettingsCard`，行用 `SettingRow`。`SettingsCard` 不再接受说明段落：
    卡片级必要信息放在标题里的 `SettingHint`，其余直接删掉。

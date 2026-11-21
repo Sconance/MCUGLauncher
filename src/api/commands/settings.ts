@@ -16,12 +16,13 @@ export const saveSettings = (patch: AppSettingsPatch, expectedRevision: number) 
 /** 扫描本机可用的 Java 运行时。 */
 export const scanJava = () => call<JavaInfo[]>("scan_java");
 
-/** 保存自定义数据源地址。 */
-export const saveCustomSources = (sources: DataSourceSet) =>
-  call<SavedInfo>("save_custom_sources", { sources });
+/** 保存自定义数据源地址，可在同一次写入中启用。 */
+export const saveCustomSources = (sources: DataSourceSet, expectedRevision: number, activate = false) =>
+  call<SavedInfo>("save_custom_sources", { sources, expectedRevision, activate });
 
 /** 切换默认或自定义数据源。 */
-export const useDataSources = (mode: string) => call<SavedInfo>("use_data_sources", { mode });
+export const useDataSources = (mode: "default" | "custom", expectedRevision: number) =>
+  call<SavedInfo>("use_data_sources", { mode, expectedRevision });
 
 /** 测试数据源地址是否可访问。 */
 export const testDataSource = (name: string, url: string) =>

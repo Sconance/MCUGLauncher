@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { ResourceVersion } from "../../state/launcher";
-import type { AccountInfo, LauncherOverview, SettingsInfo } from "../../types/launcher";
+import type { AccountInfo, LauncherOverview, ResourceKeyInfo, SettingsInfo } from "../../types/launcher";
 
 /**
  * 设置分区共享的已加载数据。
@@ -13,7 +13,7 @@ export interface SettingsData {
   settings: SettingsInfo;
   accounts: AccountInfo[];
   resourceVersions: Partial<Record<string, ResourceVersion>>;
-  refreshState: () => Promise<void>;
+  refreshSettingsResources: (changed: readonly ResourceKeyInfo[]) => Promise<void>;
 }
 
 const SettingsDataContext = createContext<SettingsData | null>(null);

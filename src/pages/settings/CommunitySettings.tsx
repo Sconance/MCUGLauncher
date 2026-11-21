@@ -27,7 +27,8 @@ const EMPTY_SOURCES: DataSourceSet = {
 
 /** 社区：数据源地址与社区身份密钥。 */
 export default function CommunitySettings({ active }: CommunitySettingsProps) {
-    const { settings, resourceVersions, refreshState } = useSettingsData();
+    const { settings, resourceVersions, refreshSettingsResources } = useSettingsData();
+    const settingsRevision = resourceVersions.settings?.revision ?? 0;
     const { say, statusAt } = useSettingsStatus();
     const [sources, setSources] = useState<DataSourceSet>(EMPTY_SOURCES);
     const [anonymous, setAnonymous] = useState(false);
@@ -60,22 +61,26 @@ export default function CommunitySettings({ active }: CommunitySettingsProps) {
     };
 
     const saveSources = async (use: boolean) => {
-        await saveCustomSourcesCommand(sources);
-        if (use) await useDataSourcesCommand('custom');
-        await refreshState();
-        say(
-            'community:data',
-            use ? '已保存并切换到自定义数据源。' : '已保存自定义数据源，可点击「使用自定义」切换。',
-        );
+        try {
+            const result = await saveCustomSourcesCommand(sources, settingsRevision, use);
+            await refreshSettingsResources(result.changed);
+            say('community:data', result.message);
+        } catch (error) {
+            say('community:data', error instanceof Error ? error.message : '保存数据源失败。');
+        }
     };
 
     const saveAnonymous = async () => {
-        const result = await saveSettingsCommand(
-            { anonymous },
-            resourceVersions.settings?.revision ?? 0,
-        );
-        await refreshState();
-        say('community:identity', result.message);
+        try {
+            const result = await saveSettingsCommand(
+                { anonymous },
+                settingsRevision,
+            );
+            await refreshSettingsResources(result.changed);
+            say('community:identity', result.message);
+        } catch (error) {
+            say('community:identity', error instanceof Error ? error.message : '保存匿名模式失败。');
+        }
     };
 
     const verifyKey = async (role: string, key: string, clear?: () => void) => {
@@ -133,10 +138,14 @@ export default function CommunitySettings({ active }: CommunitySettingsProps) {
                         type="button"
                         className="btn ghost"
                         onClick={() =>
-                            void useDataSourcesCommand('default').then(async (result) => {
-                                await refreshState();
-                                say('community:data', result.message);
-                            })
+                            void useDataSourcesCommand('default', settingsRevision)
+                                .then(async (result) => {
+                                    await refreshSettingsResources(result.changed);
+                                    say('community:data', result.message);
+                                })
+                                .catch((error) => {
+                                    say('community:data', error instanceof Error ? error.message : '切换数据源失败。');
+                                })
                         }
                     >
                         使用默认

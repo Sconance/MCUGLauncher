@@ -5,8 +5,10 @@ import Field from "../../components/Field";
 import JavaPrompt from "../../components/JavaPrompt";
 import PathPrompt from "../../components/PathPrompt";
 import { LIMITS } from "../../constants";
+import type { AppSettingsPatch } from "../../types/launcher";
 import SettingsCard from "./SettingsCard";
 import { useSettingsData } from "./SettingsData";
+import { useSettingsStatus } from "./useSettingsStatus";
 
 interface LaunchSettingsProps {
   active: boolean;
@@ -14,7 +16,8 @@ interface LaunchSettingsProps {
 
 /** 启动：游戏目录、Java、内存、窗口与玩家名。 */
 export default function LaunchSettings({ active }: LaunchSettingsProps) {
-  const { overview, settings, accounts, resourceVersions, refreshState } = useSettingsData();
+  const { overview, settings, accounts, resourceVersions, refreshSettingsResources } = useSettingsData();
+  const { say, statusAt } = useSettingsStatus();
   const [root, setRoot] = useState("");
   const [java, setJava] = useState("");
   const [ram, setRam] = useState("4096");
@@ -24,7 +27,6 @@ export default function LaunchSettings({ active }: LaunchSettingsProps) {
   const [autoMemory, setAutoMemory] = useState(true);
   const [autoChinese, setAutoChinese] = useState(true);
   const [prompt, setPrompt] = useState<null | "root" | "java">(null);
-  const [status, setStatus] = useState("");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -47,32 +49,44 @@ export default function LaunchSettings({ active }: LaunchSettingsProps) {
   );
   const offline = accounts.find((account) => account.id === overview.activeAccountId)?.kind === "offline";
 
+  const persistLaunchSettings = async (patch: AppSettingsPatch, pendingMessage: string) => {
+    say("launch:settings", pendingMessage);
+    try {
+      const result = await saveSettingsCommand(patch, resourceVersions.settings?.revision ?? 0);
+      await refreshSettingsResources(result.changed);
+      say("launch:settings", result.message);
+      return true;
+    } catch (error) {
+      say("launch:settings", error instanceof Error ? error.message : "保存启动设置失败。");
+      return false;
+    }
+  };
+
   const saveLaunch = async () => {
     if (ram.length === 0 || root.trim().length === 0) {
-      setStatus("请选择已有游戏目录。");
+      say("launch:settings", "请选择已有游戏目录。");
       return;
     }
     const ramValue = Number.parseInt(ram, 10);
     if (!Number.isFinite(ramValue) || ramValue < LIMITS.ramMin || ramValue > LIMITS.ramMax) {
-      setStatus(`最大内存需在 ${LIMITS.ramMin}–${LIMITS.ramMax} MB 之间。`);
+      say("launch:settings", `最大内存需在 ${LIMITS.ramMin}–${LIMITS.ramMax} MB 之间。`);
       return;
     }
     const widthValue = Number.parseInt(width, 10);
     if (!Number.isFinite(widthValue) || widthValue < LIMITS.windowWidthMin || widthValue > LIMITS.windowWidthMax) {
-      setStatus(`窗口宽需在 ${LIMITS.windowWidthMin}–${LIMITS.windowWidthMax} 之间。`);
+      say("launch:settings", `窗口宽需在 ${LIMITS.windowWidthMin}–${LIMITS.windowWidthMax} 之间。`);
       return;
     }
     const heightValue = Number.parseInt(height, 10);
     if (!Number.isFinite(heightValue) || heightValue < LIMITS.windowHeightMin || heightValue > LIMITS.windowHeightMax) {
-      setStatus(`窗口高需在 ${LIMITS.windowHeightMin}–${LIMITS.windowHeightMax} 之间。`);
+      say("launch:settings", `窗口高需在 ${LIMITS.windowHeightMin}–${LIMITS.windowHeightMax} 之间。`);
       return;
     }
     if (offline && player.trim().length === 0) {
-      setStatus("离线账号需要填写玩家名。");
+      say("launch:settings", "离线账号需要填写玩家名。");
       return;
     }
-    setStatus("正在保存…");
-    const result = await saveSettingsCommand(
+    await persistLaunchSettings(
       {
         root: root.trim(),
         java: java.trim(),
@@ -83,21 +97,12 @@ export default function LaunchSettings({ active }: LaunchSettingsProps) {
         autoChinese,
         ...(offline ? { player: player.trim() } : {}),
       },
-      resourceVersions.settings?.revision ?? 0,
+      "正在保存…",
     );
-    await refreshState();
-    setStatus(result.message);
   };
 
   const switchRoot = async (value: string) => {
-    setRoot(value);
-    setStatus("正在切换游戏目录…");
-    const result = await saveSettingsCommand(
-      { root: value },
-      resourceVersions.settings?.revision ?? 0,
-    );
-    await refreshState();
-    setStatus(result.message);
+    if (await persistLaunchSettings({ root: value }, "正在切换游戏目录…")) setRoot(value);
   };
 
   return (
@@ -182,7 +187,7 @@ export default function LaunchSettings({ active }: LaunchSettingsProps) {
           <button type="button" className="btn primary" onClick={() => void saveLaunch()}>
             保存设置
           </button>
-          <span className="status">{status}</span>
+          <span className="status">{statusAt("launch:settings")}</span>
         </div>
       </SettingsCard>
 
@@ -207,7 +212,7 @@ export default function LaunchSettings({ active }: LaunchSettingsProps) {
           onConfirm={(path) => {
             setPrompt(null);
             setJava(path);
-            setStatus("已选择 Java 路径，保存后生效。");
+            say("launch:settings", "已选择 Java 路径，保存后生效。");
           }}
         />
       ) : null}

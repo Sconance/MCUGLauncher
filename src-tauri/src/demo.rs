@@ -2,7 +2,7 @@
 //!
 //! 全部集中在 `Data` 里，替换为真实实现时可以整块删除。
 
-use crate::model::*;
+use crate::{launcher_config::LauncherConfig, model::*};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
@@ -258,7 +258,7 @@ impl Data {
             expires_at: expires_at.format(&Rfc3339).unwrap_or_default(),
             name: instance.display_name,
             notice: "执行前会再次检查目标实例及修订号。".into(),
-            paths: vec![format!("{}/versions/{}", self.state.root, instance.name)],
+            paths: vec![format!("{}/versions/{}", self.state.config.root, instance.name)],
             shared: false,
         })
     }
@@ -426,17 +426,15 @@ fn demo_state() -> BackendState {
                 status: "ready".into(),
             },
         ],
-        root: "D:/Games/Minecraft/MCUG".into(),
-        game_roots: vec![
-            "D:/Games/Minecraft/MCUG".into(),
-            "E:/Minecraft/Backup".into(),
-        ],
-        java: "C:/Program Files/Eclipse Adoptium/jdk-21.0.4.7-hotspot/bin/javaw.exe".into(),
-        width: 1280,
-        height: 720,
-        ram: 8192,
-        auto_memory: true,
-        anonymous: false,
+        config: LauncherConfig {
+            root: "D:/Games/Minecraft/MCUG".into(),
+            game_roots: vec![
+                "D:/Games/Minecraft/MCUG".into(),
+                "E:/Minecraft/Backup".into(),
+            ],
+            java: "C:/Program Files/Eclipse Adoptium/jdk-21.0.4.7-hotspot/bin/javaw.exe".into(),
+            ..LauncherConfig::default()
+        },
         has_community_key: true,
         has_admin_key: true,
         skin_station: String::new(),
@@ -572,11 +570,7 @@ fn demo_state() -> BackendState {
                 ],
             },
         ],
-        data_sources: DataSourceSet::demo(),
         default_data_sources: DataSourceSet::demo(),
-        custom_data_sources: DataSourceSet::default(),
-        data_source_mode: "default".into(),
-        auto_chinese: true,
     }
 }
 

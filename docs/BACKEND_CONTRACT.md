@@ -81,14 +81,18 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | --- | --- | --- | --- |
 | `save_settings` | `patch`（`AppSettingsPatch`）、`expectedRevision` | `SavedInfo` | 按预期修订号更新；过期返回 `CONFLICT` |
 | `scan_java` | — | `JavaInfo[]` | 扫描本机 Java |
-| `save_custom_sources` | `sources`（`DataSourceSet`） | `SavedInfo` | 保存自定义数据源 |
-| `use_data_sources` | `mode` | `SavedInfo` | 切换默认/自定义，推送 `state` |
+| `save_custom_sources` | `sources`（`DataSourceSet`）、`expectedRevision`、`activate?` | `SavedInfo` | 保存自定义数据源，`activate` 为真时在同一次写入中启用 |
+| `use_data_sources` | `mode`（`default` / `custom`）、`expectedRevision` | `SavedInfo` | 切换默认或自定义数据源 |
 | `test_data_source` | `name`, `url` | `TestResultInfo` | 测试数据源 |
 | `reset_window` | — | `SavedInfo` | 恢复默认窗口尺寸 |
 | `open_folder` | `kind` | `SavedInfo` | 打开目录（`root`/`config`/`saves`/`version`） |
 | `read_log` | — | `string` | 读取启动器日志 |
-| `get_system_info` | — | `SystemInfoInfo` | 运行环境信息 |
+| `get_system_info` | — | `SystemInfoInfo` | `os` 为二进制的目标操作系统标识，`data` 为实际的启动器配置目录 |
 | `verify_key` | `role`, `key` | `KeyResultInfo` | 校验社区/管理员密钥 |
+
+启动时读取 `mcuglauncher.conf.json`，文件缺失时创建默认配置。Linux 使用 `$XDG_DATA_HOME/com.mcug.launcher/`（默认 `~/.local/share/com.mcug.launcher/`），Windows 使用 `%LOCALAPPDATA%\com.mcug.launcher\`，macOS 使用 `~/Library/Application Support/com.mcug.launcher/`。
+
+首次初始化时，默认游戏根目录分别是 Linux 的 `~/.minecraft`、Windows 的 `%APPDATA%\.minecraft` 和 macOS 的 `~/Library/Application Support/minecraft`。此时只保存目录路径。已有配置优先，读取失败时报告错误并保留原文件。设置写入先校验 `expectedRevision`，过期时返回 `CONFLICT`，写盘成功后更新内存状态和修订号。
 
 ### 存档
 

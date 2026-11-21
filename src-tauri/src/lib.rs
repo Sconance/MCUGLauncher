@@ -1,5 +1,6 @@
 mod commands;
 mod demo;
+mod launcher_config;
 mod model;
 mod schema_dto;
 mod state;
@@ -9,6 +10,8 @@ use std::time::Duration;
 
 use state::Backend;
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+
+pub(crate) const DEVICE_OS: &str = std::env::consts::OS;
 
 /// 主窗口的默认 label（创建时会在后面加序号，见 `create_main_window`）。
 const MAIN_LABEL: &str = "main";
@@ -148,10 +151,25 @@ fn create_main_window(app: &AppHandle) -> tauri::Result<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    eprintln!("[mcugl] device_os={DEVICE_OS}");
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(Backend::new())
         .setup(|app| {
+            let paths = app.path();
+            let config_dir = if DEVICE_OS == "windows" {
+                paths.app_local_data_dir()?
+            } else {
+                paths.app_data_dir()?
+            };
+            let backend = Backend::open(config_dir, || {
+                match DEVICE_OS {
+                    "windows" => paths.data_dir().map(|dir| dir.join(".minecraft")),
+                    "macos" => paths.data_dir().map(|dir| dir.join("minecraft")),
+                    _ => paths.home_dir().map(|dir| dir.join(".minecraft")),
+                }
+                .map_err(std::io::Error::other)
+            })?;
+            app.manage(backend);
             create_main_window(app.handle())?;
             Ok(())
         })
