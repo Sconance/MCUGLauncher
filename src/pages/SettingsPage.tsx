@@ -51,7 +51,7 @@ const NAV_GROUPS: NavItem[][] = [
  * 七个分区常驻挂载、用 active 控制显隐，切换分区时未保存的输入不会丢。
  */
 export default function SettingsPage() {
-  const { overview, settings, accounts, resourceVersions, refreshState } = useLauncher();
+  const { overview, settings, accounts, resourceVersions, refreshSettingsResources } = useLauncher();
   const [section, setSection] = useState<SectionKey>("launch");
 
   if (!overview || !settings || !accounts) {
@@ -64,7 +64,7 @@ export default function SettingsPage() {
 
   return (
     <SettingsDataProvider
-      value={{ overview, settings, accounts, resourceVersions, refreshState }}
+      value={{ overview, settings, accounts, resourceVersions, refreshSettingsResources }}
     >
       <SplitPage
         title="设置"

@@ -15,6 +15,7 @@ import type {
   InstanceCatalogInfo,
   LauncherOverview,
   ModInfo,
+  ResourceKeyInfo,
   ResourceSnapshot,
   SavedServerInfo,
   SettingsInfo,
@@ -53,6 +54,7 @@ interface LauncherStore {
   error: string;
   resourceStatus: Partial<ResourceStatus>;
   refreshState: () => Promise<void>;
+  refreshSettingsResources: (changed: readonly ResourceKeyInfo[]) => Promise<void>;
   refreshTasks: () => Promise<void>;
   refreshGames: () => Promise<void>;
   refreshCommunity: () => Promise<void>;
@@ -156,6 +158,15 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     }
   }, [notify, receiveSnapshot]);
 
+  const refreshSettings = useCallback(
+    () => loadCore("settings", stateCommands.getSettings, setSettings),
+    [loadCore],
+  );
+  const refreshAccounts = useCallback(
+    () => loadCore("accounts", stateCommands.listAccounts, setAccounts),
+    [loadCore],
+  );
+
   const refreshState = useCallback(async () => {
     const overview = await loadCore(
       "overview",
@@ -164,10 +175,8 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     );
     const instanceId = overview?.data.selectedInstanceId ?? null;
     await Promise.allSettled([
-      loadCore("settings", stateCommands.getSettings, (value) => {
-        setSettings(value);
-      }),
-      loadCore("accounts", stateCommands.listAccounts, setAccounts),
+      refreshSettings(),
+      refreshAccounts(),
       loadCore("instances", stateCommands.listInstances, setInstances),
       loadCore("servers", stateCommands.listServers, setServers),
       loadCore("bookmarks", stateCommands.listBookmarks, setBookmarks),
@@ -175,7 +184,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
         ? loadCore("mods", () => stateCommands.listInstanceMods(instanceId), setMods)
         : Promise.resolve(null).then(() => setMods([])),
     ]);
-  }, [loadCore]);
+  }, [loadCore, refreshSettings, refreshAccounts]);
 
   const refreshTasks = useCallback(async () => {
     const sequence = (requests.current.tasks ?? 0) + 1;
@@ -250,6 +259,26 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     }
   }, [notify]);
 
+  const refreshSettingsResources = useCallback(async (changed: readonly ResourceKeyInfo[]) => {
+    const kinds = new Set(changed.map(({ kind }) => kind));
+    const mods = changed.find(({ kind }) => kind === "instanceMods");
+    const instanceId = mods?.instanceId;
+    if (mods && !instanceId) {
+      requests.current.mods = (requests.current.mods ?? 0) + 1;
+      setMods([]);
+    }
+    await Promise.allSettled([
+      kinds.has("settings") ? refreshSettings() : undefined,
+      kinds.has("accounts") ? refreshAccounts() : undefined,
+      kinds.has("avatar") ? refreshAvatar() : undefined,
+      kinds.has("overview") ? loadCore("overview", stateCommands.getOverview, setOverview) : undefined,
+      kinds.has("instances") ? loadCore("instances", stateCommands.listInstances, setInstances) : undefined,
+      instanceId
+        ? loadCore("mods", () => stateCommands.listInstanceMods(instanceId), setMods)
+        : undefined,
+    ]);
+  }, [loadCore, refreshSettings, refreshAccounts, refreshAvatar]);
+
   useEffect(() => {
     if (!isTauri()) {
       setError("后端未连接：请使用 npm run tauri dev 启动桌面应用。");
@@ -302,6 +331,7 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
     error,
     resourceStatus,
     refreshState,
+    refreshSettingsResources,
     refreshTasks,
     refreshGames,
     refreshCommunity,

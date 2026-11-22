@@ -41,7 +41,8 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `get_overview` | — | `ResourceSnapshot<LauncherOverview>` | 应用版本与当前实例、账号 ID |
 | `get_settings` | — | `ResourceSnapshot<SettingsInfo>` | 全局设置 |
 | `list_accounts` | — | `ResourceSnapshot<AccountInfo[]>` | 本机账号 |
-| `list_instances` | — | `ResourceSnapshot<InstanceCatalogInfo>` | 实例与版本分组 |
+| `list_instances` | — | `ResourceSnapshot<InstanceCatalogInfo>` | 当前游戏根目录的本地实例与版本分组 |
+| `list_all_instances` | — | `InstanceCatalogInfo` | 扫描全部已登记游戏目录并合并返回本地实例 |
 | `list_instance_mods` | `instanceId` | `ResourceSnapshot<ModInfo[]>` | 指定实例模组 |
 | `list_servers` | — | `ResourceSnapshot<SavedServerInfo[]>` | 服务器收藏 |
 | `list_bookmarks` | — | `ResourceSnapshot<FavoriteInfo[]>` | 内容收藏 |
@@ -79,16 +80,23 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `save_settings` | `patch`（`AppSettingsPatch`）、`expectedRevision` | `SavedInfo` | 按预期修订号更新；过期返回 `CONFLICT` |
+| `save_settings` | `patch`（`AppSettingsPatch`）、`expectedRevision` | `SavedInfo` | 按预期修订号更新，过期返回 `CONFLICT`。传入 `root` 时登记或切换游戏目录并刷新该目录的实例 |
+| `remove_game_root` | `root`, `expectedRevision` | `SavedInfo` | 从已登记目录列表移除路径，不删除磁盘文件；移除当前目录时切换到列表首项并刷新实例 |
 | `scan_java` | — | `JavaInfo[]` | 扫描本机 Java |
-| `save_custom_sources` | `sources`（`DataSourceSet`） | `SavedInfo` | 保存自定义数据源 |
-| `use_data_sources` | `mode` | `SavedInfo` | 切换默认/自定义，推送 `state` |
+| `save_custom_sources` | `sources`（`DataSourceSet`）、`expectedRevision`、`activate?` | `SavedInfo` | 保存自定义数据源，`activate` 为真时在同一次写入中启用 |
+| `use_data_sources` | `mode`（`default` / `custom`）、`expectedRevision` | `SavedInfo` | 切换默认或自定义数据源 |
 | `test_data_source` | `name`, `url` | `TestResultInfo` | 测试数据源 |
 | `reset_window` | — | `SavedInfo` | 恢复默认窗口尺寸 |
 | `open_folder` | `kind` | `SavedInfo` | 打开目录（`root`/`config`/`saves`/`version`） |
 | `read_log` | — | `string` | 读取启动器日志 |
-| `get_system_info` | — | `SystemInfoInfo` | 运行环境信息 |
+| `get_system_info` | — | `SystemInfoInfo` | `os` 为二进制的目标操作系统标识，`data` 为实际的启动器配置目录 |
 | `verify_key` | `role`, `key` | `KeyResultInfo` | 校验社区/管理员密钥 |
+
+启动时读取 `mcuglauncher.conf.json`，文件缺失时创建默认配置。Linux 使用 `$XDG_DATA_HOME/com.mcug.launcher/`（默认 `~/.local/share/com.mcug.launcher/`），Windows 使用 `%LOCALAPPDATA%\com.mcug.launcher\`，macOS 使用 `~/Library/Application Support/com.mcug.launcher/`。
+
+首次初始化时，默认游戏根目录分别是 Linux 的 `~/.minecraft`、Windows 的 `%APPDATA%\.minecraft` 和 macOS 的 `~/Library/Application Support/minecraft`。此时只保存目录路径。已有配置优先，读取失败时报告错误并保留原文件。设置写入先校验 `expectedRevision`，过期时返回 `CONFLICT`，写盘成功后更新内存状态和修订号。
+
+配置文件的 `gameRoots` 按列表保存目录，第一项为当前目录。启动时会迁移旧文件的 `root` 字段。`get_settings.root` 仍返回当前目录，新增目录使用已存在的绝对路径，`list_instances` 读取当前目录的实例，`list_all_instances` 扫描全部登记目录并合并实例清单。移除目录仅更新配置，不删除磁盘文件。
 
 ### 存档
 
@@ -168,10 +176,10 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 ## 5. 演示后端之外的原生适配
 
-当前文件/目录选择由前端的 `PathPrompt` 弹层模拟。真实内核可接入 `tauri-plugin-dialog` 或等价能力；这属于平台适配，不阻塞 V2 契约：
+Rust 侧已接入原生文件和目录选择器。两条命令都接受可选的 `title` 和 `defaultDirectory`，返回选中的本地路径字符串，取消时返回 `null`。游戏目录登记由 `save_settings` 负责。
 
 | 命令 / 插件 | 用途 |
 | --- | --- |
 | `pick_file` | 选择 Java、皮肤、整合包、本地导入文件 |
-| `pick_folder` | 选择游戏目录、下载目录 |
+| `pick_folder` | 在桌面端选择游戏目录、下载目录 |
 | `open_folder` | 当前返回提示，后续调用系统文件管理器 |

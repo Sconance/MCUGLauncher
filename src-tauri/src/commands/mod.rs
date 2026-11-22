@@ -9,6 +9,7 @@ pub mod content;
 pub mod implementation;
 pub mod instances;
 pub mod launch;
+pub mod path_picker;
 pub mod saves;
 pub mod servers;
 pub mod settings;

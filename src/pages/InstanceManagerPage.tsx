@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { saveSettings } from "../api/commands/settings";
 import { selectInstance as selectInstanceCommand } from "../api/commands/state";
 import SvgIcon from "../components/SvgIcon";
 import closeIcon from "../assets/icons/ui/close.svg";
@@ -10,6 +11,7 @@ import { useToast } from "../shell/toast";
 import { useLauncher } from "../state/launcher";
 import type { InstanceInfo } from "../types/launcher";
 import InstancesPage from "./InstancesPage";
+import GameDirectoryList from "./instances/GameDirectoryList";
 import { getPinnedInstanceTabs, setPinnedInstanceTabs } from "./instanceTabs";
 import "./InstanceManagerPage.css";
 
@@ -19,16 +21,15 @@ function validInstances(items: InstanceInfo[]): InstanceInfo[] {
 
 /**
  * 实例管理器：点击主页实例卡进入的左右栏页面。
- * 左栏：「全部实例」按钮 + 固定下来的实例标签（hover 才显示 ×，新标签有入场动画）；
- * 右栏：全部实例列表（点卡片 = 切换启动页的当前实例，hover 出设置按钮）或某个实例的设置。
+ * 从游戏目录进入当前目录的实例清单，也可通过固定标签打开实例设置。
  */
 interface InstanceManagerPageProps {
-  /** 进入页面时直接展开设置的实例；不传则显示「全部实例」。 */
+  /** 进入页面时直接展开设置的实例；不传则显示游戏目录。 */
   initialInstanceId?: string;
 }
 
 export default function InstanceManagerPage({ initialInstanceId }: InstanceManagerPageProps) {
-  const { instances: instanceCatalog, overview, refreshState } = useLauncher();
+  const { instances: instanceCatalog, overview, settings, resourceVersions, refreshState, refreshSettingsResources } = useLauncher();
   const { notify } = useToast();
   const { goHome } = useNavigation();
   const instances = instanceCatalog ? validInstances(instanceCatalog.items) : [];
@@ -49,6 +50,7 @@ export default function InstanceManagerPage({ initialInstanceId }: InstanceManag
   const closingTimers = useRef<number[]>([]);
   /** 正在切换启动实例的 id，切换期间禁用列表避免连点 */
   const [switching, setSwitching] = useState("");
+  const [switchingRoot, setSwitchingRoot] = useState(false);
 
   useEffect(
     () => () => {
@@ -56,10 +58,23 @@ export default function InstanceManagerPage({ initialInstanceId }: InstanceManag
     },
     [],
   );
-  /** 当前右栏显示的内容：'all' = 全部实例，其它 = 某个实例的设置 */
-  const [active, setActive] = useState<string>(initialInstanceId ?? "all");
+  const [active, setActive] = useState<string>(initialInstanceId ?? "roots");
   /** 右栏内容跟随 fade 后的 shown，切换才有淡出淡入 */
   const { shown, out } = useFadeSwap(active);
+
+  const openGameRoot = async (path: string) => {
+    if (switchingRoot) return;
+    setSwitchingRoot(true);
+    try {
+      const result = await saveSettings({ root: path }, resourceVersions.settings?.revision ?? 0);
+      await refreshSettingsResources(result.changed);
+      setActive("all");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSwitchingRoot(false);
+    }
+  };
 
   /** 把「全部实例」里的某一项固定到左栏并打开它的设置 */
   const openInstance = (id: string) => {
@@ -110,14 +125,20 @@ export default function InstanceManagerPage({ initialInstanceId }: InstanceManag
     <div className="extras split-page">
       <aside className="extras-nav">
         <nav className="section-nav" aria-label="实例管理">
-          {/* 全部实例 */}
           <div className="section-group">
+            <button
+              type="button"
+              className={`section-item${active === "roots" ? " selected" : ""}`}
+              onClick={() => setActive("roots")}
+            >
+              <span className="section-label">游戏目录</span>
+            </button>
             <button
               type="button"
               className={`section-item${active === "all" ? " selected" : ""}`}
               onClick={() => setActive("all")}
             >
-              <span className="section-label">全部实例</span>
+              <span className="section-label">目录内实例</span>
             </button>
           </div>
 
@@ -158,12 +179,20 @@ export default function InstanceManagerPage({ initialInstanceId }: InstanceManag
 
       <div className="split-body">
         <div className={`split-content${out ? " is-out" : ""}`}>
-          {shown === "all" ? (
+          {shown === "roots" ? (
+            <GameDirectoryList
+              roots={settings?.gameRoots ?? []}
+              activeRoot={settings?.root ?? ""}
+              pending={switchingRoot || !settings}
+              onOpen={(path) => void openGameRoot(path)}
+            />
+          ) : shown === "all" ? (
             <div className="im-all">
-              <h1 className="page-title">全部实例</h1>
+              <h1 className="page-title">目录内实例</h1>
+              {settings?.root ? <p className="muted im-directory-path">{settings.root}</p> : null}
               <p className="muted">
                 {instances.length === 0
-                  ? "尚未找到已安装实例。请先在下载页安装或导入整合包。"
+                  ? "当前游戏目录中未找到已安装实例。"
                   : `共 ${instances.length} 个实例 · 当前启动：${current?.displayName ?? "未选择"} · 点击实例设为当前实例并回到启动页，悬停后点右侧按钮打开它的设置。`}
               </p>
               <div className="im-all-list">
@@ -187,7 +216,7 @@ export default function InstanceManagerPage({ initialInstanceId }: InstanceManag
                         <span className="im-all-text">
                           <span className="im-all-name">{item.displayName}</span>
                           <span className="im-all-sub">
-                            {item.minecraft} · {item.loader} · {item.mods} 个模组
+                            {item.minecraft} · {item.loader}
                           </span>
                         </span>
                       </button>

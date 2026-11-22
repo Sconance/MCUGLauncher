@@ -1,5 +1,7 @@
 mod commands;
 mod demo;
+mod launcher_config;
+mod local_instances;
 mod model;
 mod schema_dto;
 mod state;
@@ -9,6 +11,8 @@ use std::time::Duration;
 
 use state::Backend;
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+
+pub(crate) const DEVICE_OS: &str = std::env::consts::OS;
 
 /// 主窗口的默认 label（创建时会在后面加序号，见 `create_main_window`）。
 const MAIN_LABEL: &str = "main";
@@ -148,10 +152,26 @@ fn create_main_window(app: &AppHandle) -> tauri::Result<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    eprintln!("[mcugl] device_os={DEVICE_OS}");
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .manage(Backend::new())
         .setup(|app| {
+            let paths = app.path();
+            let config_dir = if DEVICE_OS == "windows" {
+                paths.app_local_data_dir()?
+            } else {
+                paths.app_data_dir()?
+            };
+            let backend = Backend::open(config_dir, || {
+                match DEVICE_OS {
+                    "windows" => paths.data_dir().map(|dir| dir.join(".minecraft")),
+                    "macos" => paths.data_dir().map(|dir| dir.join("minecraft")),
+                    _ => paths.home_dir().map(|dir| dir.join(".minecraft")),
+                }
+                .map_err(std::io::Error::other)
+            })?;
+            app.manage(backend);
             create_main_window(app.handle())?;
             Ok(())
         })
@@ -161,6 +181,7 @@ pub fn run() {
             commands::implementation::get_settings,
             commands::implementation::list_accounts,
             commands::implementation::list_instances,
+            commands::implementation::list_all_instances,
             commands::implementation::list_instance_mods,
             commands::implementation::list_servers,
             commands::implementation::list_bookmarks,
@@ -183,6 +204,7 @@ pub fn run() {
             commands::implementation::set_offline_skin,
             // 设置与系统
             commands::implementation::save_settings,
+            commands::implementation::remove_game_root,
             commands::implementation::scan_java,
             commands::implementation::save_custom_sources,
             commands::implementation::use_data_sources,
@@ -192,6 +214,9 @@ pub fn run() {
             commands::implementation::read_log,
             commands::implementation::get_system_info,
             commands::implementation::verify_key,
+            commands::path_picker::pick_file,
+            #[cfg(desktop)]
+            commands::path_picker::pick_folder,
             // 存档
             commands::implementation::list_save_backups,
             commands::implementation::backup_saves,
