@@ -181,6 +181,7 @@ pub fn run() {
             commands::implementation::get_settings,
             commands::implementation::list_accounts,
             commands::implementation::list_instances,
+            commands::implementation::list_all_instances,
             commands::implementation::list_instance_mods,
             commands::implementation::list_servers,
             commands::implementation::list_bookmarks,
@@ -203,6 +204,7 @@ pub fn run() {
             commands::implementation::set_offline_skin,
             // 设置与系统
             commands::implementation::save_settings,
+            commands::implementation::remove_game_root,
             commands::implementation::scan_java,
             commands::implementation::save_custom_sources,
             commands::implementation::use_data_sources,

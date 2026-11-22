@@ -57,6 +57,10 @@ impl LauncherConfig {
         self.game_roots.insert(0, root);
     }
 
+    pub(crate) fn remove_root(&mut self, root: &str) {
+        self.game_roots.retain(|entry| entry != root);
+    }
+
     pub(crate) fn load_or_create(
         directory: &Path,
         default_game_root: impl FnOnce() -> io::Result<PathBuf>,

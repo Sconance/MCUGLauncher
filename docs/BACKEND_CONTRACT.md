@@ -42,6 +42,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `get_settings` | — | `ResourceSnapshot<SettingsInfo>` | 全局设置 |
 | `list_accounts` | — | `ResourceSnapshot<AccountInfo[]>` | 本机账号 |
 | `list_instances` | — | `ResourceSnapshot<InstanceCatalogInfo>` | 当前游戏根目录的本地实例与版本分组 |
+| `list_all_instances` | — | `InstanceCatalogInfo` | 扫描全部已登记游戏目录并合并返回本地实例 |
 | `list_instance_mods` | `instanceId` | `ResourceSnapshot<ModInfo[]>` | 指定实例模组 |
 | `list_servers` | — | `ResourceSnapshot<SavedServerInfo[]>` | 服务器收藏 |
 | `list_bookmarks` | — | `ResourceSnapshot<FavoriteInfo[]>` | 内容收藏 |
@@ -80,6 +81,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
 | `save_settings` | `patch`（`AppSettingsPatch`）、`expectedRevision` | `SavedInfo` | 按预期修订号更新，过期返回 `CONFLICT`。传入 `root` 时登记或切换游戏目录并刷新该目录的实例 |
+| `remove_game_root` | `root`, `expectedRevision` | `SavedInfo` | 从已登记目录列表移除路径，不删除磁盘文件；移除当前目录时切换到列表首项并刷新实例 |
 | `scan_java` | — | `JavaInfo[]` | 扫描本机 Java |
 | `save_custom_sources` | `sources`（`DataSourceSet`）、`expectedRevision`、`activate?` | `SavedInfo` | 保存自定义数据源，`activate` 为真时在同一次写入中启用 |
 | `use_data_sources` | `mode`（`default` / `custom`）、`expectedRevision` | `SavedInfo` | 切换默认或自定义数据源 |
@@ -94,7 +96,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 首次初始化时，默认游戏根目录分别是 Linux 的 `~/.minecraft`、Windows 的 `%APPDATA%\.minecraft` 和 macOS 的 `~/Library/Application Support/minecraft`。此时只保存目录路径。已有配置优先，读取失败时报告错误并保留原文件。设置写入先校验 `expectedRevision`，过期时返回 `CONFLICT`，写盘成功后更新内存状态和修订号。
 
-配置文件的 `gameRoots` 按列表保存目录，第一项为当前目录。启动时会迁移旧文件的 `root` 字段。`get_settings.root` 仍返回当前目录，新增目录使用已存在的绝对路径，`list_instances` 读取当前目录启动或切换时生成的 `versions` 清单。
+配置文件的 `gameRoots` 按列表保存目录，第一项为当前目录。启动时会迁移旧文件的 `root` 字段。`get_settings.root` 仍返回当前目录，新增目录使用已存在的绝对路径，`list_instances` 读取当前目录的实例，`list_all_instances` 扫描全部登记目录并合并实例清单。移除目录仅更新配置，不删除磁盘文件。
 
 ### 存档
 

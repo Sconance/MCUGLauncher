@@ -108,6 +108,87 @@ pub fn list_instances(backend: State<'_, Backend>) -> ResourceSnapshot {
     )
 }
 
+/// 扫描所有已登记游戏目录，并合并其本地实例。
+#[tauri::command]
+pub fn list_all_instances(backend: State<'_, Backend>) -> Result<InstanceCatalogInfo, ApiError> {
+    let roots = backend.data.lock().unwrap().state.config.game_roots.clone();
+    let mut combined = InstanceCatalogInfo {
+        items: Vec::new(),
+        version_groups: Vec::new(),
+    };
+    let mut groups = std::collections::BTreeMap::<String, Vec<VersionChoice>>::new();
+
+    for root in roots {
+        let path = Path::new(&root);
+        let catalog = local_instances::scan(path).map_err(|error| game_root_error(path, error))?;
+        combined.items.extend(catalog.items);
+        for group in catalog.version_groups {
+            groups.entry(group.label).or_default().extend(group.versions);
+        }
+    }
+
+    combined.items.sort_by(|left, right| left.id.cmp(&right.id));
+    combined.version_groups = groups
+        .into_iter()
+        .map(|(label, mut versions)| {
+            versions.sort_by(|left, right| left.name.cmp(&right.name));
+            VersionGroupInfo {
+                label,
+                count: versions.len() as u64,
+                versions,
+            }
+        })
+        .collect();
+    Ok(combined)
+}
+
+/// 从已登记列表移除游戏目录，不会删除目录中的文件。
+#[tauri::command]
+pub fn remove_game_root(
+    backend: State<'_, Backend>,
+    root: String,
+    expected_revision: u64,
+) -> Result<SavedInfo, ApiError> {
+    let mut data = backend.data.lock().unwrap();
+    data.ensure_settings_revision(expected_revision)?;
+    let mut config = data.state.config.clone();
+    if !config.game_roots.iter().any(|entry| entry == &root) {
+        return Err(ApiError {
+            code: "NOT_FOUND".into(),
+            message: "游戏目录不在已登记列表中。".into(),
+            retryable: false,
+            field_errors: HashMap::new(),
+        });
+    }
+    config.remove_root(&root);
+    let active_root_removed = data.state.config.root() == root;
+    let catalog = if active_root_removed {
+        let next_root = config.root().to_owned();
+        Some(if next_root.is_empty() {
+            local_instances::scan(Path::new("")).map_err(|error| game_root_error(Path::new(""), error))?
+        } else {
+            select_game_root(&mut config, next_root)?
+        })
+    } else {
+        None
+    };
+    backend.save_config(&mut data, config, expected_revision)?;
+    if let Some(catalog) = catalog {
+        data.replace_instance_catalog(catalog);
+    }
+    let mut changed = vec![ResourceKeyInfo {
+        kind: "settings".into(),
+        instance_id: None,
+    }];
+    if active_root_removed {
+        changed.extend(["instances", "overview", "instanceMods"].map(|kind| ResourceKeyInfo {
+            kind: kind.into(),
+            instance_id: None,
+        }));
+    }
+    Ok(SavedInfo::changed("游戏目录已移除。", changed, vec![root]))
+}
+
 #[tauri::command]
 pub fn list_instance_mods(
     backend: State<'_, Backend>,
