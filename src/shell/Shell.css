@@ -10,10 +10,7 @@
   background: var(--app-bg);
 }
 
-/*
- * 玻璃的采样层：壁纸 + 页面 + 白胶囊 + 导航文字都在这层里。
- * 玻璃本身挂在这层**外面**（见 .nav-press-glass），所以能把盖住的文字一起拍进折射图。
- */
+/* 壁纸 + 页面 + 导航的定位层：整块铺满窗口，作为外壳的坐标基准。 */
 .glass-source {
   position: absolute;
   inset: 0;
@@ -21,13 +18,10 @@
 }
 
 /*
- * 玻璃的采样条：窗口顶部 64px 一条。
- * 里面是「预渲染的壁纸条 + 白胶囊 + 导航文字」，WebGL 把这一条拍成快照去折射。
- * 之前采的是整窗（壁纸 4.4MB + 整页 DOM），单次快照 100~275ms，按压必卡；
- * 收到这一条之后快照只剩几毫秒。**这一条的高度受限**：面板页从 y=64 开始。
+ * 导航定位条：窗口顶部 64px 一条，只用来把白胶囊放到真实胶囊的位置上。
+ * 白胶囊的位置/尺寸运行时由 syncSceneBar() 覆盖，这里是首帧默认值。
  */
 .nav-band {
-  /* 采样条内白胶囊的位置/尺寸：运行时由 syncSceneBar() 覆盖，这里是首帧默认值 */
   --nav-bar-left: 0px;
   --nav-bar-top: 10px;
   --nav-bar-w: 0px;
@@ -38,16 +32,10 @@
   right: 0;
   z-index: 2;
   height: 64px;
-  background-repeat: no-repeat;
-  background-position: 0 0;
-  background-size: 100% 100%;
   pointer-events: none;
 }
 
-/*
- * 壁纸 + 页面内容的合成层。它现在只是「看得见」的那一层，
- * 不参与折射采样（采样走 .nav-band）。
- */
+/* 壁纸 + 页面内容的合成层。 */
 .shell-scene {
   position: absolute;
   inset: 0;
@@ -100,8 +88,6 @@
 
 /*
  * 胶囊本体：始终是一块白色磨砂玻璃。
- * 它住在 .shell-scene 里（而不是导航层里），因为 WebGL 玻璃拍的就是这一层 ——
- * 白底必须在采样图里，玻璃才折射得到栏，否则玻璃后面就只剩壁纸。
  * 位置/尺寸由 Shell.tsx 的 syncSceneBar() 按真实胶囊的 rect 写进 --nav-bar-*。
  */
 .nav-scene-bar {
@@ -114,103 +100,6 @@
   pointer-events: none;
 }
 
-/*
- * 按压时浮起的液态玻璃：比胶囊上下各高出一圈，
- * 这样既能看出胶囊边缘的层次，也能采到栏外的壁纸；位置随指针横向移动。
- *
- * 玻璃本体（真实折射）是内层的 LiquidGlass，这里只负责几何、投影与边缘光。
- * 显隐刻意不走 opacity：Chromium 会把带 opacity 的祖先当成新的 backdrop root，
- * backdrop-filter 在淡入期间会整块失效（先白后糊）。因此只用 transform + visibility。
- * 位置与缩放由 Shell.tsx 的弹簧循环逐帧写进 style（left / transform），CSS 不加过渡。
- *
- * 收起时弹簧把缩放拉回「灰胶囊」尺寸，到点之后再隐藏，
- * 读起来就是灰胶囊变成了玻璃、松开又变回灰胶囊。
- */
-.nav-press-glass {
-  position: fixed;
-  z-index: 3; /* 盖在 .nav-band（2）之上：文字也在这层下面，跟着一起被折射 */
-  overflow: hidden;
-  border-radius: 999px;
-  pointer-events: none;
-  visibility: hidden;
-  /* 位置与尺寸由脚本的弹簧逐帧写进 style（left/top/width/height），这里不要再加过渡 */
-  transition: none;
-  box-shadow: 0 3px 10px rgb(8 26 44 / 16%);
-}
-
-.nav-press-glass.is-on {
-  /* 浮起：外投影压深一档，玻璃和栏之间才有厚度 */
-  box-shadow:
-    0 10px 22px -2px rgb(8 26 44 / 30%),
-    0 2px 6px rgb(8 26 44 / 18%);
-}
-
-/* 折射玻璃：尺寸由外层几何决定，组件自己撑满 */
-.nav-press-glass-lens {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-}
-
-/*
- * 灰胶囊与玻璃之间的过渡色：按下时它从灰底淡出（玻璃显形），
- * 松手时再淡回来（玻璃收回灰胶囊）。它只是玻璃之上的普通覆盖层，不影响 backdrop-filter。
- */
-.nav-press-glass-tint {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: rgb(20 30 42 / 10%);
-  opacity: 1;
-  transition: opacity 170ms linear;
-  pointer-events: none;
-}
-
-.nav-press-glass.is-on .nav-press-glass-tint {
-  opacity: 0;
-}
-
-/*
- * 手写的边缘光，补库没画的部分：顶亮线 + 一圈细亮边 + 底部内侧暗边。
- * 注意别用大面积白色渐变盖住库画的边缘亮线，整块会糊成没有边界的光雾。
- */
-.nav-press-glass-rim {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 78%),
-    inset 0 0 0 1px rgb(255 255 255 / 24%),
-    inset 0 -15px 18px -15px rgb(8 26 44 / 40%);
-}
-
-/* 顶部窄高光：只压住上缘一条，模拟光从上方打到玻璃的弧面 */
-.nav-press-glass-rim::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 36%;
-  border-radius: inherit;
-  background: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 20%) 0%,
-    rgb(255 255 255 / 5%) 62%,
-    transparent 100%
-  );
-}
-
-/* 底部内侧的冷色反射：玻璃下缘把光聚回来，比四周亮一点才有厚度 */
-.nav-press-glass-rim::after {
-  content: "";
-  position: absolute;
-  inset: auto 14% 1px;
-  height: 9px;
-  border-radius: 999px;
-  background: radial-gradient(50% 120% at 50% 100%, rgb(255 255 255 / 55%), transparent 72%);
-  filter: blur(1.5px);
-}
-
 /* 选中的灰色小胶囊：位置与宽度由脚本按当前按钮计算，切换时滑过去 */
 .nav-indicator {
   position: absolute;
@@ -221,7 +110,7 @@
   border-radius: 999px;
   background: rgb(20 30 42 / 10%);
   pointer-events: none;
-  /* 平时只过渡 opacity：位置变化由 .slide 负责，玻璃收回后淡入 */
+  /* 平时只过渡 opacity：位置变化由 .slide 负责 */
   transition: opacity 120ms linear;
 }
 
@@ -230,16 +119,6 @@
     transform 260ms cubic-bezier(0.34, 0.9, 0.3, 1),
     width 260ms cubic-bezier(0.34, 0.9, 0.3, 1),
     opacity 120ms linear;
-}
-
-/*
- * 按住 / 玻璃收回期间，灰色选中胶囊整段让位：
- * 只用一枚元素表达「灰胶囊 → 液态玻璃 → 灰胶囊」，避免两个胶囊同时动。
- */
-.nav-pill.is-pressing .nav-indicator,
-.nav-pill.is-settling .nav-indicator {
-  opacity: 0;
-  transition: none;
 }
 
 /* 胶囊内的导航按钮：文字压在滑块之上，选中态自身不再上底色 */
@@ -289,11 +168,6 @@
   background: transparent;
 }
 
-/* 按住时按钮上不要叠 hover 底，玻璃下面保持干净 */
-.nav-pill.is-pressing .btn.topnav::before {
-  background: transparent;
-}
-
 .nav-pill .btn.topnav img {
   width: 16px;
   height: 16px;
@@ -306,7 +180,7 @@
   overflow: hidden;
 }
 
-/* 后端错误条：浮在内容栏上方，不参与布局（避开顶部 64px 的采样条） */
+/* 后端错误条：浮在内容栏上方，不参与布局 */
 .backend-error {
   position: absolute;
   top: 72px;
@@ -410,28 +284,6 @@
   to {
     opacity: 1;
   }
-}
-
-/* ---------- 液态玻璃：玻璃面由 GlassSurface 组件渲染 ---------- */
-
-/* 开启后隐藏磨砂栏体，改由组件画真实的折射玻璃 */
-.page-stage.panel.is-liquid::before {
-  display: none;
-}
-
-/* 玻璃板只铺在内容下面，本身不参与布局、不接收事件 */
-.page-glass-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  border-radius: 18px;
-  pointer-events: none;
-}
-
-.page-glass {
-  width: 100%;
-  height: 100%;
 }
 
 .toast {

@@ -6,8 +6,10 @@
 pub mod accounts;
 pub mod community;
 pub mod content;
+pub mod frontends;
 pub mod implementation;
 pub mod instances;
+pub mod kernel;
 pub mod launch;
 pub mod path_picker;
 pub mod saves;

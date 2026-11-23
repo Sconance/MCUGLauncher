@@ -24,6 +24,36 @@
   gap: 2px;
 }
 
+/* 前端包一行：图标 + 文案，图标不参与压缩。 */
+.frontend-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.frontend-icon {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 9px;
+  object-fit: cover;
+  background: var(--app-line-2);
+}
+
+/* 没有图标时回退到内置方块图标，用虚线框提示“这是占位”。 */
+.frontend-icon.fallback {
+  display: grid;
+  place-items: center;
+  color: var(--app-ink-3);
+  border: 1px dashed var(--app-line-2);
+}
+
+.frontend-icon-glyph {
+  width: 18px;
+  height: 18px;
+}
+
 /* 输入框/下拉框与按钮同一行；输入框吃掉剩余宽度。 */
 .settings-actions {
   display: flex;

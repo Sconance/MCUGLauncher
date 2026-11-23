@@ -2045,6 +2045,8 @@ name = "mcuglauncher"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "flate2",
+ "semver",
  "serde",
  "serde_json",
  "tauri",
@@ -2054,6 +2056,7 @@ dependencies = [
  "tempfile",
  "time",
  "typify",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

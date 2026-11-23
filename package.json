@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:demo": "vite --mode demo",
     "build": "tsc && vite build",
+    "build:demo": "tsc && vite build --mode demo",
     "dto:generate": "node scripts/split-schemas.mjs && node scripts/annotate-schemas.mjs && node scripts/generate-dto.mjs",
     "dto:check": "npm run dto:generate && git diff --exit-code -- src/types/generated.ts",
+    "frontend:pack": "node scripts/pack-frontend.mjs examples/third-party-frontend",
     "preview": "vite preview",
     "tauri": "tauri"
   },
@@ -17,8 +20,7 @@
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "simple-liquid-glass": "^6.0.0"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

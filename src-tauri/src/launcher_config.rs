@@ -27,6 +27,9 @@ pub(crate) struct LauncherConfig {
     pub anonymous: bool,
     pub custom_data_sources: DataSourceSet,
     pub data_source_mode: String,
+    /// 选中的第三方前端 identifier；`None` 表示使用官方前端。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub frontend: Option<String>,
 }
 
 impl Default for LauncherConfig {
@@ -43,6 +46,7 @@ impl Default for LauncherConfig {
             anonymous: false,
             custom_data_sources: DataSourceSet::default(),
             data_source_mode: "default".into(),
+            frontend: None,
         }
     }
 }

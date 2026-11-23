@@ -1,11 +1,8 @@
 import { useRef, useState } from "react";
 import { resetWindow as resetWindowCommand } from "../../api/commands/settings";
 import { AppSelect } from "../../components/AppInput";
-import SettingTag from "../../components/SettingTag";
 import { useI18n } from "../../i18n";
 import { setHomeAlignment, useHomeAlignment } from "../../shell/homeAlignment";
-import { isLiquidGlass, setLiquidGlass } from "../../shell/liquid";
-import SettingHint from "./SettingHint";
 import SettingRow from "./SettingRow";
 import SettingsCard from "./SettingsCard";
 
@@ -13,12 +10,11 @@ interface AppearanceSettingsProps {
   active: boolean;
 }
 
-/** 外观：语言、液态玻璃、主页对齐与主题信息。 */
+/** 外观：语言、主页对齐与主题信息。 */
 export default function AppearanceSettings({ active }: AppearanceSettingsProps) {
   const { locale, setLocale, t, packs, labelOf, builtinCodes, importPack, removePack } = useI18n();
   const [languageStatus, setLanguageStatus] = useState("");
   const [windowStatus, setWindowStatus] = useState("");
-  const [liquidGlass, setLiquidGlassState] = useState(isLiquidGlass);
   const homeAlignment = useHomeAlignment();
   const languageInput = useRef<HTMLInputElement>(null);
 
@@ -40,11 +36,6 @@ export default function AppearanceSettings({ active }: AppearanceSettingsProps) 
     } finally {
       if (languageInput.current) languageInput.current.value = "";
     }
-  };
-
-  const toggleLiquidGlass = (next: boolean) => {
-    setLiquidGlassState(next);
-    setLiquidGlass(next);
   };
 
   return (
@@ -97,28 +88,6 @@ export default function AppearanceSettings({ active }: AppearanceSettingsProps) 
         accept="application/json,.json"
         hidden
         onChange={(event) => void importLanguageFile(event.target.files)}
-      />
-
-      <SettingRow
-        title={
-          <>
-            液态玻璃效果
-            <SettingTag kind="dev" />
-            <SettingHint tip="由于要保持液态玻璃的质感，低配设备慎用" />
-          </>
-        }
-        control={
-          <button
-            type="button"
-            role="switch"
-            aria-checked={liquidGlass}
-            aria-label="液态玻璃效果"
-            className={`switch${liquidGlass ? " on" : ""}`}
-            onClick={() => toggleLiquidGlass(!liquidGlass)}
-          >
-            <span className="switch-thumb" />
-          </button>
-        }
       />
 
       <SettingRow

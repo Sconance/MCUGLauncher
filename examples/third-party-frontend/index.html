@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MCUG 第三方前端示例</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0e14;
+        --card: rgba(20, 26, 38, 0.86);
+        --line: rgba(120, 160, 255, 0.18);
+        --text: #e8edf7;
+        --muted: #93a1bb;
+        --accent: #6ea8ff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 32px;
+        font: 14px/1.6 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(900px 500px at 12% -10%, #1c2b4a 0%, transparent 60%),
+          radial-gradient(700px 420px at 100% 0%, #1a3a3a 0%, transparent 55%),
+          var(--bg);
+      }
+      h1 { margin: 0 0 4px; font-size: 20px; }
+      p.sub { margin: 0 0 24px; color: var(--muted); }
+      .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px 18px;
+        background: var(--card);
+        backdrop-filter: blur(12px);
+      }
+      .card h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+      .row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+      .row span:first-child { color: var(--muted); }
+      code, pre { font-family: "Cascadia Code", Consolas, monospace; }
+      pre {
+        margin: 0;
+        max-height: 260px;
+        overflow: auto;
+        padding: 12px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.32);
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      button {
+        margin-top: 12px;
+        padding: 8px 14px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: rgba(110, 168, 255, 0.14);
+        color: var(--text);
+        cursor: pointer;
+      }
+      button:hover { background: rgba(110, 168, 255, 0.24); }
+      .err { color: #ff9b9b; white-space: pre-wrap; }
+      .ok { color: #8be0b0; }
+    </style>
+  </head>
+  <body>
+    <h1>MCUG 第三方前端示例</h1>
+    <p class="sub">
+      这个目录没有打包、没有 npm、没有 React。它由内核用 <code>mcugl://</code> 协议直接提供，
+      通过 <code>window.__TAURI_INTERNALS__.invoke</code> 调用同一套方法表。
+    </p>
+
+    <div class="grid">
+      <section class="card">
+        <h2>内核</h2>
+        <div class="row"><span>API 版本</span><code id="api">—</code></div>
+        <div class="row"><span>协议</span><code id="protocol">—</code></div>
+        <div class="row"><span>后端</span><code id="backend">—</code></div>
+        <div class="row"><span>方法 / 已实现</span><code id="methods">—</code></div>
+        <div class="row"><span>前端</span><code id="frontend">—</code></div>
+        <div class="row"><span>注入上下文</span><code id="injected">—</code></div>
+      </section>
+
+      <section class="card">
+        <h2>get_overview 快照</h2>
+        <pre id="overview">加载中…</pre>
+        <button id="reload" type="button">重新获取</button>
+      </section>
+
+      <section class="card">
+        <h2>kernel_manifest</h2>
+        <pre id="manifest">加载中…</pre>
+      </section>
+    </div>
+
+    <script>
+      const invoke = window.__TAURI_INTERNALS__?.invoke;
+      const text = (value) => (typeof value === "string" ? value : JSON.stringify(value, null, 2));
+
+      function fail(element, error) {
+        element.textContent = String(error);
+        element.className = "err";
+      }
+
+      async function load() {
+        const overview = document.getElementById("overview");
+        const manifestBox = document.getElementById("manifest");
+
+        if (!invoke) {
+          fail(manifestBox, "window.__TAURI_INTERNALS__ 不存在：这个页面不是内核加载的。");
+          return;
+        }
+
+        try {
+          const manifest = await invoke("kernel_manifest", {});
+          document.getElementById("api").textContent = manifest.apiVersion;
+          document.getElementById("protocol").textContent = manifest.protocol;
+          document.getElementById("backend").textContent = manifest.backend;
+          const implemented = Object.values(manifest.capabilities).filter(Boolean).length;
+          document.getElementById("methods").textContent =
+            `${manifest.methods.length} / ${implemented}`;
+          document.getElementById("frontend").textContent = manifest.frontend
+            ? `${manifest.frontend.name} ${manifest.frontend.version}`
+            : "官方打包前端";
+          document.getElementById("injected").textContent = window.__MCUGL__
+            ? `${window.__MCUGL__.apiVersion}（${window.__MCUGL__.frontend?.mode ?? "-"}）`
+            : "未注入";
+          manifestBox.textContent = text(manifest);
+          manifestBox.className = "ok";
+        } catch (error) {
+          fail(manifestBox, error);
+        }
+
+        try {
+          const snapshot = await invoke("get_overview", {});
+          overview.textContent = text(snapshot.data ?? snapshot);
+          overview.className = "ok";
+        } catch (error) {
+          fail(overview, error);
+        }
+      }
+
+      document.getElementById("reload").addEventListener("click", load);
+      load();
+    </script>
+  </body>
+</html>

@@ -4,7 +4,7 @@ import * as communityCommands from "../api/commands/community";
 import * as gameCommands from "../api/commands/games";
 import * as stateCommands from "../api/commands/state";
 import * as taskCommands from "../api/commands/tasks";
-import { isTauri } from "../api/invoke";
+import { backendAvailable } from "../api/invoke";
 import { useToast } from "../shell/toast";
 import type {
   AccountInfo,
@@ -280,8 +280,8 @@ export function LauncherProvider({ children }: { children: ReactNode }) {
   }, [loadCore, refreshSettings, refreshAccounts, refreshAvatar]);
 
   useEffect(() => {
-    if (!isTauri()) {
-      setError("后端未连接：请使用 npm run tauri dev 启动桌面应用。");
+    if (!backendAvailable()) {
+      setError("后端未连接：请使用 npm run tauri dev 启动桌面应用，或用 npm run dev:demo 打开演示模式。");
       setReady(true);
       return;
     }

@@ -6,7 +6,11 @@
 
 本文档是唯一的契约清单：改动命令名、参数或事件时必须同步修改本文档、`src/api/commands/*.ts` 与 `src/types/launcher.ts`。
 
-DTO 的结构以 [schemas/launcher.schema.json](../schemas/launcher.schema.json) 为单一机器可读来源；TypeScript 通过生成文件消费 Schema，Rust 通过 Typify 在编译期生成类型，本文档只描述命令语义。
+第三方前端整体替换前端时使用的对外接口（`kernel_manifest`、本地目录加载、`window.__MCUGL__`、版本兼容规则）见 [KERNEL_API_V1.md](KERNEL_API_V1.md)（协议标识 `mcugl.kernel/v1`）。本文档仍是方法语义的基准。
+
+第三方前端的安装与分发格式（`.mcuglf`）、导入/切换/卸载命令以及它们各自的错误码见 [FRONTEND_PACKAGE.md](FRONTEND_PACKAGE.md)。这四个命令是宿主管理接口，不属于内核方法表。
+
+DTO 的结构以 [schemas/](../schemas/) 下的领域 Schema 为单一机器可读来源；TypeScript 通过生成文件消费 Schema，Rust 通过 Typify 在编译期生成类型，本文档只描述命令语义。
 
 ## 当前演示能力限制
 
@@ -93,6 +97,8 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `verify_key` | `role`, `key` | `KeyResultInfo` | 校验社区/管理员密钥 |
 
 启动时读取 `mcuglauncher.conf.json`，文件缺失时创建默认配置。Linux 使用 `$XDG_DATA_HOME/com.mcug.launcher/`（默认 `~/.local/share/com.mcug.launcher/`），Windows 使用 `%LOCALAPPDATA%\com.mcug.launcher\`，macOS 使用 `~/Library/Application Support/com.mcug.launcher/`。
+
+标准目录不可写时（沙箱、受控文件夹访问、ACL 损坏、便携部署）按以下顺序退到第一个真正可写的目录，并在 `get_system_info.data` 中报告实际使用的位置：`MCUGL_DATA_DIR` 环境变量 → `%LOCALAPPDATA%\MCUGLauncher\` → 程序所在目录的 `mcugl-data\` → 临时目录的 `MCUGLauncher-data\`。设置 `MCUGL_DATA_DIR` 表示显式指定，写不进去会直接报错退出，不再静默换目录。数据目录在启动早期用写探针验证，不可写时弹窗说明原因并退出，而不是 panic。
 
 首次初始化时，默认游戏根目录分别是 Linux 的 `~/.minecraft`、Windows 的 `%APPDATA%\.minecraft` 和 macOS 的 `~/Library/Application Support/minecraft`。此时只保存目录路径。已有配置优先，读取失败时报告错误并保留原文件。设置写入先校验 `expectedRevision`，过期时返回 `CONFLICT`，写盘成功后更新内存状态和修订号。
 

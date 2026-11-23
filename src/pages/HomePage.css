@@ -368,7 +368,19 @@
 }
 
 .btn.launch-square:disabled {
+  /* 没有实例可启动时也要看起来是「实心按钮」：
+     默认 .btn:disabled 的 65% 透明 + .btn:hover 的白底会让它像玻璃，
+     所以这里显式盖回不透明底色，并让 hover 不改变外观。 */
+  background: #7fb2e0;
+  color: #f4f9ff;
+  opacity: 1;
   box-shadow: none;
+  cursor: default;
+}
+
+.btn.launch-square:disabled:hover {
+  background: #7fb2e0;
+  transform: none;
 }
 
 .btn.launch-square img {

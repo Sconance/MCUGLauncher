@@ -1,0 +1,9 @@
+{
+  "identifier": "com.example.mcugl-showcase",
+  "name": "MCUGL 示例前端",
+  "version": "0.1.0",
+  "kernelApi": "^1.0.0",
+  "entry": "index.html",
+  "author": "MCUGL",
+  "description": "演示第三方前端如何只依赖 mcugl.kernel/v1 挂到启动器上。"
+}

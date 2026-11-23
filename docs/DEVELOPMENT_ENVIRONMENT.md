@@ -62,3 +62,60 @@ node scripts/build.mjs
 单独检查 Rust 后端可运行 `cargo check --locked --manifest-path src-tauri/Cargo.toml`。
 
 日常桌面开发使用 `npm run tauri dev`。当前分支使用演示后端，桌面构建通过只验证应用可以编译，真实游戏安装和启动仍待实现。详见 [V2 实施状态](BACKEND_V2.md#实施状态)。
+
+## 前端演示模式（`npm run dev:demo`）
+
+只改前端时，不必每次启动 Rust 内核。演示模式用一组内存假数据渲染完整界面，适合调样式、走交互和截取 UI：
+
+```powershell
+npm run dev:demo
+# 浏览器打开 http://localhost:5174/
+```
+
+- 演示模式使用独立端口 `5174`，可以和 `npm run tauri dev`（`1420`）同时开着。
+- 标记写进 `index.html`（`window.__MCUGL_DEMO__`），因此 dev 与 build 行为一致；用普通 `npm run dev` 打开时没有这个标记，界面会显示「后端未连接」的错误页，而不是假数据。
+- 假数据在 `src/demo/fixtures.ts`（实例、账号、服务器、模组、社区内容等），命令实现子集在 `src/demo/backend.ts`，未实现的命令返回 `UNSUPPORTED`。数据只存在内存里，刷新页面即重置。
+- 启动任务会随 `list_tasks` 轮询推进进度，方便观察任务状态机；启动游戏、取消启动、水波动画和 toast 都可以直接点。
+- 左上角固定显示「演示模式 · 假数据」标记，避免把演示界面误当真实环境。
+- 需要静态产物时用 `npm run build:demo`（同样输出到 `dist/`，`index.html` 带演示标记）；正式发布仍用 `npm run build`。
+
+## 数据目录与启动失败排查
+
+配置和日志默认写到平台标准目录（Windows 为 `%LOCALAPPDATA%\com.mcug.launcher\`）。沙箱、受控文件夹访问或 ACL 异常会让这个目录不可写；启动器会先写探针，再按顺序退到第一个可写目录：`%LOCALAPPDATA%\MCUGLauncher\` → 程序所在目录的 `mcugl-data\`（`tauri dev` 下即 `src-tauri\target\debug\mcugl-data\`） → 临时目录的 `MCUGLauncher-data\`。
+
+指定固定位置时设置 `MCUGL_DATA_DIR`（显式指定，不可写会直接报错，不会静默换目录；留空字符串等同于未设置）：
+
+```powershell
+$env:MCUGL_DATA_DIR = "D:\mcugl-data"
+npm run tauri dev
+```
+
+实际使用的目录会打印在启动日志里，同时通过 `get_system_info` 的 `data` 字段返回，设置页的「配置目录」开的就是它。所有候选都不可写时程序弹窗说明每个路径的失败原因并退出，不再出现 setup hook 的 `panic`。
+
+## 第三方前端（目录 / `.mcuglf`）
+
+v1 支持在运行时把整个前端换成第三方实现，不需要重新编译 Rust。接口与加载规则见 [Kernel API v1](KERNEL_API_V1.md)，包格式见 [前端包（`.mcuglf`）](FRONTEND_PACKAGE.md)。
+
+开发目录（改文件刷新即生效，不用重启）：
+
+```powershell
+$env:MCUGL_FRONTEND = "examples\third-party-frontend"
+npm run tauri dev
+```
+
+打成包、按正式流程验收：
+
+```powershell
+npm run frontend:pack   # 产出 dist-frontends\com.example.mcugl-showcase-0.1.0.mcuglf
+# 设置 → 开发者选项 → 前端（第三方 UI）→ 导入前端包…（或让 MCUGL_FRONTEND 直接指向 .mcuglf）
+```
+
+- 目录根部必须有 `frontend.json`：`name`、`version`、`kernelApi` 必填；`entry` 默认 `index.html`；打包分发时另需 `identifier`（可选 `author` / `description` / `homepage` / `icon`）。
+- 校验失败时**不退回**官方前端，而是弹窗说明原因后退出，避免作者误以为自己的前端已加载。
+- 文件由内核注册的 `mcugl` 自定义协议直接读取，带 `Cache-Control: no-store`；改完文件刷新页面即可看到，不需要重启进程。
+- 页面在 Windows 上的地址是 `http://mcugl.localhost/…`，其他平台是 `mcugl://localhost/…`。它属于本地 origin，页面里可以直接 `invoke`，不需要额外的 Tauri capability 或远程域名白名单。
+- 优先级：`MCUGL_FRONTEND`（目录或包）> 设置页选中的已安装前端 > 内置官方前端。清空变量（`Remove-Item Env:MCUGL_FRONTEND`）才会回到「配置里选的前端」。
+- `MCUGL_FRONTEND` 指向 `.mcuglf` / `.zip` 时解压到 `<数据目录>/frontends/.dev/`，日志里的模式显示为 `package`；指向目录时模式为 `directory`。
+- 第三方前端白屏或卡死时，Windows 上按 **Ctrl+Alt+C** 强制切回官方前端：清空 `MCUGL_FRONTEND` 与配置里的选择，并原地重建主窗口（不退出进程）。快捷键由 Rust 侧注册，不依赖页面 JS。
+- 设置 → 开发者选项 → 前端：切换或卸载后点「重启前端」立即生效，不需要重启启动器。
+- 示例目录 `examples/third-party-frontend/` 不含 npm、不含构建步骤，复制过去改 `index.html` 就能开始写。
