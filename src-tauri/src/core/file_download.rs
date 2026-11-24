@@ -4,6 +4,8 @@ use std::{
     fs::{self, File},
     io::{self, Read},
     path::Path,
+    thread,
+    time::Duration,
 };
 
 use reqwest::blocking::Client;
@@ -30,7 +32,10 @@ pub fn verify_file(path: &Path, integrity: &FileIntegrity<'_>) -> io::Result<()>
 
     let mut hash = Sha1::new();
     io::copy(&mut file, &mut hash)?;
-    if !integrity.sha1.eq_ignore_ascii_case(&format!("{:x}", hash.finalize())) {
+    if !integrity
+        .sha1
+        .eq_ignore_ascii_case(&format!("{:x}", hash.finalize()))
+    {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
             "文件 SHA-1 校验失败。",
@@ -54,7 +59,11 @@ pub fn download_file(
     }
     match verify_file(destination, integrity) {
         Ok(()) => return Ok(()),
-        Err(error) if matches!(error.kind(), io::ErrorKind::NotFound | io::ErrorKind::InvalidData) => {}
+        Err(error)
+            if matches!(
+                error.kind(),
+                io::ErrorKind::NotFound | io::ErrorKind::InvalidData
+            ) => {}
         Err(error) => return Err(error),
     }
 
@@ -63,6 +72,45 @@ pub fn download_file(
         .filter(|path| !path.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
     fs::create_dir_all(directory)?;
+
+    let mut delays = [250, 1000].into_iter();
+    loop {
+        match download_once(client, url, directory, destination, integrity) {
+            Err(error) if download_can_retry(&error) => {
+                let Some(delay) = delays.next() else {
+                    return Err(error);
+                };
+                thread::sleep(Duration::from_millis(delay));
+            }
+            result => return result,
+        }
+    }
+}
+
+fn download_can_retry(error: &io::Error) -> bool {
+    let mut cause = error.get_ref().map(|cause| cause as &dyn std::error::Error);
+    while let Some(inner) = cause {
+        if let Some(request) = inner.downcast_ref::<reqwest::Error>() {
+            return request.is_timeout()
+                || request.is_connect()
+                || request.is_request()
+                || request.is_body()
+                || request.status().is_some_and(|status| {
+                    status.is_server_error() || matches!(status.as_u16(), 408 | 429)
+                });
+        }
+        cause = inner.source();
+    }
+    false
+}
+
+fn download_once(
+    client: &Client,
+    url: &str,
+    directory: &Path,
+    destination: &Path,
+    integrity: &FileIntegrity<'_>,
+) -> io::Result<()> {
     let mut response = client
         .get(url)
         .send()
@@ -78,7 +126,9 @@ pub fn download_file(
         io::copy(&mut response, temporary.as_file_mut())?;
     }
     verify_file(temporary.path(), integrity)?;
-    temporary.persist(destination).map_err(|error| error.error)?;
+    temporary
+        .persist(destination)
+        .map_err(|error| error.error)?;
     Ok(())
 }
 
@@ -99,7 +149,11 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let url = format!("http://{}/", listener.local_addr().unwrap());
         let server = thread::spawn(move || {
-            for body in [b"bad", b"abc"] {
+            for (status, body) in [
+                ("200 OK", b"bad"),
+                ("503 Service Unavailable", b"err"),
+                ("200 OK", b"abc"),
+            ] {
                 let (mut stream, _) = listener.accept().unwrap();
                 stream
                     .set_read_timeout(Some(Duration::from_secs(5)))
@@ -110,9 +164,11 @@ mod tests {
                     stream.read_exact(&mut byte).unwrap();
                     request.extend(byte);
                 }
-                stream
-                    .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 3\r\nConnection: close\r\n\r\n")
-                    .unwrap();
+                write!(
+                    stream,
+                    "HTTP/1.1 {status}\r\nContent-Length: 3\r\nConnection: close\r\n\r\n"
+                )
+                .unwrap();
                 stream.write_all(body).unwrap();
             }
         });

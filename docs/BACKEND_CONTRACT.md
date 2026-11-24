@@ -138,7 +138,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `preview_pack` | `path` | `PackPreviewInfo` | 读取整合包计划；演示后端返回 `UNSUPPORTED` |
 | `confirm_pack` | `planId`, `name`, `directory` | `SavedInfo` | 按计划确认导入；演示后端返回 `UNSUPPORTED` |
 
-原版任务通过 `list_tasks` 返回按文件计数的进度。暂停与取消在当前一批文件处理结束后生效。安装完成后，当前目录仍为任务目标时会刷新实例清单。已有同名实例会返回 `CONFLICT`。任务暂存于当前运行期，重新提交时会复用已经校验过的公共文件。
+原版任务通过 `list_tasks` 返回按文件计数的进度。文件下载遇到连接失败、超时、响应中断或服务器临时错误时最多重试两次。暂停与取消在当前一批文件处理结束后生效。安装完成后，当前目录仍为任务目标时会刷新实例清单。已有同名实例会返回 `CONFLICT`。任务暂存于当前运行期，重新提交时会复用已经校验过的公共文件。
 
 ### 实例维护
 
