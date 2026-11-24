@@ -9,6 +9,7 @@ import {
     searchContent,
     toggleBookmark,
 } from '../api/commands/content';
+import { isDemoMode } from '../api/invoke';
 import { AppSelect } from '../components/AppInput';
 import SplitPage from '../components/SplitPage';
 import SvgIcon from '../components/SvgIcon';
@@ -123,13 +124,25 @@ function downloadWeight(value: string): number {
 
 /** 下载页：原版安装与内容搜索。 */
 export default function DownloadPage() {
-    const { overview, instances: instanceCatalog, bookmarks, refreshState } = useLauncher();
+    const { overview, instances: instanceCatalog, bookmarks, tasks, refreshState, refreshTasks } = useLauncher();
+    const demo = isDemoMode();
     const { openDiscoverBookmarks } = useNavigation();
     const { t } = useI18n();
     // 左栏分区：内容页直接对应 category，安装类页面单独处理
     const [section, setSection] = useState<SectionKey>('mod');
     const isContentSection = CONTENT_SECTIONS.includes(section);
     const [status, setStatus] = useState('');
+    const [vanillaTaskId, setVanillaTaskId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!vanillaTaskId) return;
+        const task = tasks.find((item) => item.id === vanillaTaskId);
+        if (task?.status === 'succeeded') setStatus(`${task.name} 已完成。`);
+        else if (task?.status === 'failed') setStatus(task.error?.message ?? `${task.name}失败。`);
+        else if (task?.status === 'cancelled') setStatus(`${task.name}已取消。`);
+        else return;
+        setVanillaTaskId(null);
+    }, [tasks, vanillaTaskId]);
 
     const category = isContentSection ? section : 'mod';
     const [query, setQuery] = useState('');
@@ -187,6 +200,8 @@ export default function DownloadPage() {
             if (!alive) return;
             setVanilla(vanillaResult);
             setVanillaHint(`已读取 ${vanillaResult.length} 个正式版、快照和远古版本。`);
+        }).catch((error) => {
+            if (alive) setVanillaHint(`读取原版版本列表失败：${String(error)}`);
         });
         return () => {
             alive = false;
@@ -471,6 +486,8 @@ export default function DownloadPage() {
         void listVanillaVersions().then((result) => {
             setVanilla(result);
             setVanillaHint(`已读取 ${result.length} 个正式版、快照和远古版本。`);
+        }).catch((error) => {
+            setVanillaHint(`读取原版版本列表失败：${String(error)}`);
         });
     };
 
@@ -508,15 +525,26 @@ export default function DownloadPage() {
 
     const submitVanillaInstance = async () => {
         if (!vanillaPick) return;
+        setVanillaTaskId(null);
         const base = LOADER_DEFS.find(
             (def) => def.key !== 'optifine' && def.key !== 'liteloader' && pickLoader[def.key],
         );
+        if (!demo && !base && (pickLoader.optifine || pickLoader.liteloader)) {
+            setStatus('暂不支持安装所选加载器，请先取消加载器选择。');
+            return;
+        }
         try {
             if (base) await installLoader(vanillaPick.id, base.key, pickLoader[base.key]);
-            else await installVanilla(vanillaPick.id);
-            setStatus(`下载请求已提交：${instanceName}`);
-        } catch {
-            setStatus(`安装接口尚未接入，已记录：${instanceName}`);
+            else {
+                const accepted = await installVanilla(vanillaPick.id);
+                if (!demo) setVanillaTaskId(accepted.entityIds[0] ?? null);
+            }
+            setStatus(`下载请求已提交：${demo ? instanceName : vanillaPick.id}`);
+            if (!demo) await refreshTasks();
+        } catch (error) {
+            setStatus(demo
+                ? `安装接口尚未接入，已记录：${instanceName}`
+                : `提交安装失败：${error instanceof Error ? error.message : String(error)}`);
         }
     };
 
@@ -763,11 +791,11 @@ export default function DownloadPage() {
                                         /* ---------- 版本详情：实例名 + 加载器抽屉 ---------- */
                                         <VanillaInstallPage
                                             minecraft={vanillaPick.id}
-                                            instanceName={instanceName}
-                                            onInstanceNameChange={(name) => {
+                                            instanceName={demo ? instanceName : vanillaPick.id}
+                                            onInstanceNameChange={demo ? (name) => {
                                                 setNameTouched(true);
                                                 setInstanceName(name);
-                                            }}
+                                            } : undefined}
                                             loading={pickLoading}
                                             rows={loaderRows}
                                             pickLoader={pickLoader}

@@ -1,4 +1,5 @@
 mod commands;
+pub mod core;
 mod demo;
 mod frontend;
 mod frontends;
@@ -556,8 +557,8 @@ pub fn run() {
             commands::implementation::list_content_versions,
             commands::implementation::queue_content_version,
             commands::implementation::toggle_bookmark,
-            commands::implementation::list_vanilla_versions,
-            commands::implementation::install_vanilla,
+            commands::vanilla::list_vanilla_versions,
+            commands::vanilla::install_vanilla,
             commands::implementation::list_loaders,
             commands::implementation::install_loader,
             commands::implementation::preview_pack,

@@ -14,7 +14,7 @@ interface VanillaInstallPageProps {
     /** 选中的原版版本号，例如 1.21.1 */
     minecraft: string;
     instanceName: string;
-    onInstanceNameChange: (name: string) => void;
+    onInstanceNameChange?: (name: string) => void;
     loading: boolean;
     rows: LoaderRow[];
     pickLoader: Record<string, string>;
@@ -54,7 +54,8 @@ export default function VanillaInstallPage({
                     className="vd-name"
                     placeholder="实例名称"
                     value={instanceName}
-                    onChange={(event) => onInstanceNameChange(event.target.value)}
+                    readOnly={!onInstanceNameChange}
+                    onChange={(event) => onInstanceNameChange?.(event.target.value)}
                 />
             </div>
 

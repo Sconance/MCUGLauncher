@@ -114,7 +114,6 @@ const DEMO_UNSUPPORTED: &[&str] = &[
     "restore_save",
     "stop_game",
     "queue_content_version",
-    "install_vanilla",
     "install_loader",
     "preview_pack",
     "confirm_pack",

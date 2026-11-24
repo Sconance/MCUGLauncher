@@ -61,7 +61,7 @@ node scripts/build.mjs
 
 单独检查 Rust 后端可运行 `cargo check --locked --manifest-path src-tauri/Cargo.toml`。
 
-日常桌面开发使用 `npm run tauri dev`。当前分支使用演示后端，桌面构建通过只验证应用可以编译，真实游戏安装和启动仍待实现。详见 [V2 实施状态](BACKEND_V2.md#实施状态)。
+日常桌面开发使用 `npm run tauri dev`。测试真实原版下载时，在「下载 → 原版游戏」选中版本并点击「下载」。文件保存到当前游戏目录。游戏启动仍待接入。详见 [V2 实施状态](BACKEND_V2.md#实施状态)。
 
 ## 前端演示模式（`npm run dev:demo`）
 

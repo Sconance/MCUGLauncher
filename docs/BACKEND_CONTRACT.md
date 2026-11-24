@@ -14,7 +14,7 @@ DTO 的结构以 [schemas/](../schemas/) 下的领域 Schema 为单一机器可�
 
 ## 当前演示能力限制
 
-安装、启动、在线登录、系统交互、网络探测、备份恢复和部分计划执行尚未接入真实内核，相应命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。表中的成功类型定义真实适配器接入后必须遵守的返回契约，不表示演示后端已具备该能力。
+加载器安装、启动、在线登录、系统交互、网络探测、备份恢复和部分计划执行尚未接入真实内核，相应命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。表中的成功类型定义真实适配器接入后必须遵守的返回契约，不表示演示后端已具备该能力。
 
 任务状态使用小写 `queued`、`running`、`paused`、`cancelling`、`succeeded`、`failed`、`cancelled`；`allowedActions` 是后端计算的可执行动作。提交阶段禁止中断，取消请求不等于清理完成，终态才可删除。未知任务返回 `NOT_FOUND`，非法转换返回 `CONFLICT`。演示队列仅在内存中保存，重启重置。
 
@@ -129,12 +129,14 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `list_content_versions` | `id`, `requestId?` | `ResourceVersionsInfo` | 兼容版本 |
 | `queue_content_version` | `token`, `versionId`, `mode?`, `path?` | `SavedInfo` | 加入下载队列 |
 | `toggle_bookmark` | `id`, `name`, `description`, `kind` | `SavedInfo` | 收藏/取消收藏，推送 `state` |
-| `list_vanilla_versions` | — | `VanillaVersionInfo[]` | 原版版本清单 |
-| `install_vanilla` | `minecraftVersion` | `SavedInfo` | 安装原版 |
+| `list_vanilla_versions` | — | `VanillaVersionInfo[]` | 桌面端从 Mojang 或 BMCLAPI 获取原版版本清单 |
+| `install_vanilla` | `minecraftVersion` | `SavedInfo` | 在当前游戏目录提交原版安装任务，以版本 ID 为实例名，`entityIds` 包含任务 ID |
 | `list_loaders` | `minecraftVersion`, `loader` | `LoaderListInfo` | 加载器版本 |
 | `install_loader` | `minecraftVersion`, `loader`, `loaderVersion` | `SavedInfo` | 安装加载器 |
 | `preview_pack` | `path` | `PackPreviewInfo` | 读取整合包计划；演示后端返回 `UNSUPPORTED` |
 | `confirm_pack` | `planId`, `name`, `directory` | `SavedInfo` | 按计划确认导入；演示后端返回 `UNSUPPORTED` |
+
+原版任务通过 `list_tasks` 返回按文件计数的进度。暂停与取消在当前一批文件处理结束后生效。安装完成后，当前目录仍为任务目标时会刷新实例清单。已有同名实例会返回 `CONFLICT`。任务暂存于当前运行期，重新提交时会复用已经校验过的公共文件。
 
 ### 实例维护
 

@@ -31,7 +31,7 @@ fn emit<T: Serialize + Clone>(app: &AppHandle, event: &str, payload: T) {
     let _ = app.emit(event, payload);
 }
 
-fn generated_id(prefix: &str) -> String {
+pub(super) fn generated_id(prefix: &str) -> String {
     let value = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
@@ -1032,19 +1032,6 @@ pub fn toggle_bookmark(
             vec![id],
         )
     }
-}
-
-/// 读取原版版本清单。
-#[tauri::command]
-pub fn list_vanilla_versions(backend: State<'_, Backend>) -> Vec<VanillaVersionInfo> {
-    backend.data.lock().unwrap().vanilla.clone()
-}
-
-/// 安装指定原版版本。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn install_vanilla(minecraft_version: String) -> Result<SavedInfo, ApiError> {
-    Err(ApiError::unsupported("install_vanilla"))
 }
 
 /// 读取指定游戏版本可用的加载器版本。
