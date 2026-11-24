@@ -31,7 +31,7 @@ struct ClientDownloads {
 }
 
 #[derive(Clone, Deserialize)]
-struct Artifact {
+pub(super) struct Artifact {
     url: String,
     sha1: String,
     size: Option<u64>,
@@ -57,33 +57,33 @@ struct Asset {
 }
 
 #[derive(Deserialize)]
-struct Library {
-    downloads: LibraryDownloads,
-    rules: Option<Vec<Rule>>,
+pub(super) struct Library {
+    pub(super) downloads: LibraryDownloads,
+    pub(super) rules: Option<Vec<Rule>>,
     #[serde(default)]
-    natives: BTreeMap<String, String>,
+    pub(super) natives: BTreeMap<String, String>,
 }
 
 #[derive(Deserialize)]
-struct LibraryDownloads {
-    artifact: Option<Artifact>,
+pub(super) struct LibraryDownloads {
+    pub(super) artifact: Option<Artifact>,
     #[serde(default)]
-    classifiers: BTreeMap<String, Artifact>,
+    pub(super) classifiers: BTreeMap<String, Artifact>,
 }
 
 #[derive(Deserialize)]
-struct Rule {
-    action: String,
-    os: Option<PlatformRule>,
+pub(super) struct Rule {
+    pub(super) action: String,
+    pub(super) os: Option<PlatformRule>,
     #[serde(default)]
-    features: BTreeMap<String, bool>,
+    pub(super) features: BTreeMap<String, bool>,
 }
 
 #[derive(Deserialize)]
-struct PlatformRule {
-    name: Option<String>,
-    arch: Option<String>,
-    version: Option<String>,
+pub(super) struct PlatformRule {
+    pub(super) name: Option<String>,
+    pub(super) arch: Option<String>,
+    pub(super) version: Option<String>,
 }
 
 impl Rule {
@@ -238,7 +238,7 @@ fn install_version(
     fs::rename(staging.path(), &destination)
 }
 
-fn library_path(artifact: &Artifact, root: &Path) -> io::Result<PathBuf> {
+pub(super) fn library_path(artifact: &Artifact, root: &Path) -> io::Result<PathBuf> {
     let relative = artifact.path.as_deref().filter(|path| path.split('/').all(safe_component))
         .ok_or_else(|| invalid("版本 JSON 中的库文件路径无效。"))?;
     Ok(root.join("libraries").join(relative))

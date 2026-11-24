@@ -513,7 +513,7 @@ pub fn run() {
             commands::implementation::list_bookmarks,
             commands::implementation::select_instance,
             // 启动
-            commands::implementation::launch_game,
+            commands::launch::launch_game,
             commands::implementation::launch_to_server,
             // 服务器
             commands::implementation::save_server,
@@ -531,7 +531,7 @@ pub fn run() {
             // 设置与系统
             commands::implementation::save_settings,
             commands::implementation::remove_game_root,
-            commands::implementation::scan_java,
+            commands::launch::scan_java,
             commands::implementation::save_custom_sources,
             commands::implementation::use_data_sources,
             commands::implementation::test_data_source,
@@ -551,7 +551,7 @@ pub fn run() {
             commands::implementation::list_tasks,
             commands::implementation::task_action,
             commands::implementation::list_game_sessions,
-            commands::implementation::stop_game,
+            commands::launch::stop_game,
             // 内容与版本
             commands::implementation::search_content,
             commands::implementation::list_content_versions,

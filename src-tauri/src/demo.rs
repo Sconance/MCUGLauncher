@@ -24,6 +24,7 @@ pub enum StateResource {
     Servers,
     Bookmarks,
     Tasks,
+    GameSessions,
     Community,
 }
 
@@ -152,6 +153,7 @@ impl Data {
             StateResource::Servers => &mut self.revisions.servers,
             StateResource::Bookmarks => &mut self.revisions.bookmarks,
             StateResource::Tasks => &mut self.revisions.tasks,
+            StateResource::GameSessions => &mut self.revisions.game_sessions,
             StateResource::Community => &mut self.revisions.community,
         };
         *revision = revision.saturating_add(1);

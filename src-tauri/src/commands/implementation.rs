@@ -272,16 +272,6 @@ pub fn select_instance(
 
 // ---------------------------------------------------------------- 启动
 
-/// 启动指定版本；内核重写后接入真实启动流程。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn launch_game(
-    instance_id: String,
-    account_id: String,
-) -> Result<LaunchAcceptedInfo, ApiError> {
-    Err(ApiError::unsupported("launch_game"))
-}
-
 /// 使用指定实例直连服务器启动。
 #[tauri::command]
 #[allow(unused_variables)]
@@ -672,13 +662,6 @@ pub fn save_settings(
     ))
 }
 
-/// 扫描本机可用的 Java 运行时。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn scan_java(backend: State<'_, Backend>) -> Result<Vec<JavaInfo>, ApiError> {
-    Err(ApiError::unsupported("scan_java"))
-}
-
 /// 保存自定义数据源地址，可同时启用。
 #[tauri::command]
 pub fn save_custom_sources(
@@ -878,17 +861,6 @@ pub fn task_action(
 pub fn list_game_sessions(backend: State<'_, Backend>) -> ResourceSnapshot {
     let data = backend.data.lock().unwrap();
     data.resource_snapshot(data.revisions.game_sessions, data.games.clone())
-}
-
-/// 请求关闭指定游戏进程。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn stop_game(
-    app: AppHandle,
-    backend: State<'_, Backend>,
-    session_id: String,
-) -> Result<SavedInfo, ApiError> {
-    Err(ApiError::unsupported("stop_game"))
 }
 
 // ---------------------------------------------------------------- 内容

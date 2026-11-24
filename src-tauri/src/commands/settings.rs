@@ -5,5 +5,7 @@
 #[allow(unused_imports)]
 pub use super::implementation::{
     get_system_info, open_folder, read_log, reset_window, save_custom_sources, save_settings,
-    scan_java, test_data_source, use_data_sources, verify_key,
+    test_data_source, use_data_sources, verify_key,
 };
+#[allow(unused_imports)]
+pub use super::launch::scan_java;

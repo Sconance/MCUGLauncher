@@ -14,7 +14,7 @@ DTO 的结构以 [schemas/](../schemas/) 下的领域 Schema 为单一机器可�
 
 ## 当前演示能力限制
 
-加载器安装、启动、在线登录、系统交互、网络探测、备份恢复和部分计划执行尚未接入真实内核，相应命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。表中的成功类型定义真实适配器接入后必须遵守的返回契约，不表示演示后端已具备该能力。
+加载器安装、加载器实例启动、在线登录、直连服务器启动、部分系统交互、网络探测、备份恢复和部分计划执行尚未接入真实内核，相应命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。
 
 任务状态使用小写 `queued`、`running`、`paused`、`cancelling`、`succeeded`、`failed`、`cancelled`；`allowedActions` 是后端计算的可执行动作。提交阶段禁止中断，取消请求不等于清理完成，终态才可删除。未知任务返回 `NOT_FOUND`，非法转换返回 `CONFLICT`。演示队列仅在内存中保存，重启重置。
 
@@ -56,7 +56,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `launch_game` | `instanceId`, `accountId` | `LaunchAcceptedInfo` | 接受后返回会话与准备任务 ID；演示后端返回 `UNSUPPORTED` |
+| `launch_game` | `instanceId`, `accountId` | `LaunchAcceptedInfo` | 启动当前目录中的本地原版实例，首版支持离线账号。提交后返回会话与准备任务 ID |
 | `launch_to_server` | `instanceId`, `accountId`, `serverAddress` | `LaunchAcceptedInfo` | 接受直连启动；演示后端返回 `UNSUPPORTED` |
 
 ### 服务器
@@ -86,7 +86,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | --- | --- | --- | --- |
 | `save_settings` | `patch`（`AppSettingsPatch`）、`expectedRevision` | `SavedInfo` | 按预期修订号更新，过期返回 `CONFLICT`。传入 `root` 时登记或切换游戏目录并刷新该目录的实例 |
 | `remove_game_root` | `root`, `expectedRevision` | `SavedInfo` | 从已登记目录列表移除路径，不删除磁盘文件；移除当前目录时切换到列表首项并刷新实例 |
-| `scan_java` | — | `JavaInfo[]` | 扫描本机 Java |
+| `scan_java` | — | `JavaInfo[]` | 探测已配置的 Java、`JAVA_HOME`、`PATH`、系统常用安装目录与启动器管理的运行时 |
 | `save_custom_sources` | `sources`（`DataSourceSet`）、`expectedRevision`、`activate?` | `SavedInfo` | 保存自定义数据源，`activate` 为真时在同一次写入中启用 |
 | `use_data_sources` | `mode`（`default` / `custom`）、`expectedRevision` | `SavedInfo` | 切换默认或自定义数据源 |
 | `test_data_source` | `name`, `url` | `TestResultInfo` | 测试数据源 |
@@ -119,7 +119,9 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `list_tasks` | — | `ResourceSnapshot<TaskInfo[]>` | 带独立修订号的任务列表 |
 | `task_action` | `id`, `action`（`pause`/`resume`/`cancel`/`delete`） | `SavedInfo` | 任务操作，推送 `tasks` |
 | `list_game_sessions` | — | `ResourceSnapshot<GameSessionInfo[]>` | 带独立修订号的游戏会话 |
-| `stop_game` | `sessionId` | `SavedInfo` | 请求停止游戏会话；当前演示后端返回 `UNSUPPORTED` |
+| `stop_game` | `sessionId` | `SavedInfo` | 请求结束该启动器启动的游戏进程，进程退出后更新会话状态 |
+
+原版启动使用版本 JSON 指定的 Java 主版本。有显式 Java 路径时使用该路径，否则从本机选择满足要求的运行时。启动前检查游戏文件并准备原生库与旧版资源，启动后记录进程和退出状态。每次启动的标准输出和错误输出写入配置目录的 `game-logs/`。
 
 ### 内容与版本
 
