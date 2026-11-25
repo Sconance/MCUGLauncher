@@ -51,12 +51,7 @@ pub fn download_file(
     destination: &Path,
     integrity: &FileIntegrity<'_>,
 ) -> io::Result<()> {
-    if integrity.sha1.len() != 40 || !integrity.sha1.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "无效的 SHA-1 校验值。",
-        ));
-    }
+    validate_integrity(integrity)?;
     match verify_file(destination, integrity) {
         Ok(()) => return Ok(()),
         Err(error)
@@ -71,11 +66,35 @@ pub fn download_file(
         .parent()
         .filter(|path| !path.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
+    stage_file(client, url, directory, integrity)?
+        .persist(destination)
+        .map_err(|error| error.error)?;
+    Ok(())
+}
+
+fn validate_integrity(integrity: &FileIntegrity<'_>) -> io::Result<()> {
+    if integrity.sha1.len() != 40 || !integrity.sha1.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "无效的 SHA-1 校验值。",
+        ));
+    }
+    Ok(())
+}
+
+/// 下载并校验临时文件，由调用方决定何时发布。
+pub fn stage_file(
+    client: &Client,
+    url: &str,
+    directory: &Path,
+    integrity: &FileIntegrity<'_>,
+) -> io::Result<NamedTempFile> {
+    validate_integrity(integrity)?;
     fs::create_dir_all(directory)?;
 
     let mut delays = [250, 1000].into_iter();
     loop {
-        match download_once(client, url, directory, destination, integrity) {
+        match download_once(client, url, directory, integrity) {
             Err(error) if download_can_retry(&error) => {
                 let Some(delay) = delays.next() else {
                     return Err(error);
@@ -108,9 +127,8 @@ fn download_once(
     client: &Client,
     url: &str,
     directory: &Path,
-    destination: &Path,
     integrity: &FileIntegrity<'_>,
-) -> io::Result<()> {
+) -> io::Result<NamedTempFile> {
     let mut response = client
         .get(url)
         .send()
@@ -126,10 +144,7 @@ fn download_once(
         io::copy(&mut response, temporary.as_file_mut())?;
     }
     verify_file(temporary.path(), integrity)?;
-    temporary
-        .persist(destination)
-        .map_err(|error| error.error)?;
-    Ok(())
+    Ok(temporary)
 }
 
 #[cfg(test)]

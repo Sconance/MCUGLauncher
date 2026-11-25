@@ -19,11 +19,9 @@ use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 use super::implementation::generated_id;
 use crate::{
     core::{
-        game_launch::{
-            LaunchLog, LaunchOptions, PlayerProfile, VersionProfile, offline_profile,
-            prepare_launch,
-        },
+        game_launch::{LaunchLog, LaunchOptions, PlayerProfile, offline_profile, prepare_launch},
         java_runtime::{scan_java_runtimes, select_java},
+        launch_profile::VersionProfile,
     },
     demo::StateResource,
     launcher_config::LauncherConfig,
@@ -80,8 +78,11 @@ pub fn launch_game(
         .iter()
         .find(|instance| instance.id == instance_id && !instance.is_placeholder)
         .ok_or_else(|| api_error("NOT_FOUND", "当前目录没有该实例。"))?;
-    if instance.loader != "Vanilla" {
-        return Err(api_error("UNSUPPORTED", "当前只支持原版实例启动。"));
+    if !matches!(instance.loader.as_str(), "Vanilla" | "NeoForge") {
+        return Err(api_error(
+            "UNSUPPORTED",
+            "当前只支持原版和 NeoForge 实例启动。",
+        ));
     }
     let path = instance
         .id
@@ -194,26 +195,27 @@ pub fn stop_game(backend: State<'_, Backend>, session_id: String) -> Result<Save
 fn run_game(app: &AppHandle, request: LaunchRequest) {
     let backend = app.state::<Backend>();
     let prepared = (|| {
+        launch_phase(&backend, &request.task_id, "resolvingVersion")?;
+        let versions = request
+            .instance
+            .parent()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "实例目录结构无效。"))?;
+        let root = versions
+            .parent()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "实例目录结构无效。"))?;
+        let version = VersionProfile::resolve(versions, &request.name)?;
         launch_phase(&backend, &request.task_id, "selectingJava")?;
-        let version =
-            VersionProfile::read(&request.instance.join(format!("{}.json", request.name)))?;
         let java = select_java(
             &request.config.java,
             version.required_java(),
             &backend.config_dir().join("java-runtimes"),
         )?;
         launch_phase(&backend, &request.task_id, "preparingFiles")?;
-        let root = request
-            .instance
-            .parent()
-            .and_then(|versions| versions.parent())
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "实例目录结构无效。"))?;
         prepare_launch(
             &version,
             LaunchOptions {
                 root,
                 version_dir: &request.instance,
-                instance_name: &request.name,
                 java: &java,
                 player: &request.player,
                 ram_mb: request.config.ram.clamp(512, 65536) as u32,

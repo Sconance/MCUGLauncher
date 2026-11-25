@@ -14,7 +14,7 @@ DTO 的结构以 [schemas/](../schemas/) 下的领域 Schema 为单一机器可�
 
 ## 当前演示能力限制
 
-加载器安装、加载器实例启动、在线登录、直连服务器启动、部分系统交互、网络探测、备份恢复和部分计划执行尚未接入真实内核，相应命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。
+Forge、Fabric、Quilt 等加载器的安装和启动、在线登录、直连服务器启动、部分系统交互、网络探测、备份恢复和部分计划执行尚未接入真实内核，相应命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。
 
 任务状态使用小写 `queued`、`running`、`paused`、`cancelling`、`succeeded`、`failed`、`cancelled`；`allowedActions` 是后端计算的可执行动作。提交阶段禁止中断，取消请求不等于清理完成，终态才可删除。未知任务返回 `NOT_FOUND`，非法转换返回 `CONFLICT`。演示队列仅在内存中保存，重启重置。
 
@@ -56,7 +56,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `launch_game` | `instanceId`, `accountId` | `LaunchAcceptedInfo` | 启动当前目录中的本地原版实例，首版支持离线账号。提交后返回会话与准备任务 ID |
+| `launch_game` | `instanceId`, `accountId` | `LaunchAcceptedInfo` | 启动当前目录中的本地原版或 NeoForge 实例，支持离线账号。提交后返回会话与准备任务 ID |
 | `launch_to_server` | `instanceId`, `accountId`, `serverAddress` | `LaunchAcceptedInfo` | 接受直连启动；演示后端返回 `UNSUPPORTED` |
 
 ### 服务器
@@ -121,24 +121,30 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `list_game_sessions` | — | `ResourceSnapshot<GameSessionInfo[]>` | 带独立修订号的游戏会话 |
 | `stop_game` | `sessionId` | `SavedInfo` | 请求结束该启动器启动的游戏进程，进程退出后更新会话状态 |
 
-原版启动使用版本 JSON 指定的 Java 主版本。有显式 Java 路径时使用该路径，否则从本机选择满足要求的运行时。启动前检查游戏文件并准备原生库与旧版资源，启动后记录进程和退出状态。每次启动的标准输出和错误输出写入配置目录的 `game-logs/`。
+原版和 NeoForge 共用启动流程。NeoForge 启动前按 `inheritsFrom` 解析父子版本，合并客户端 JAR、资源、依赖和启动参数。此前已安装的 NeoForge 实例可以通过同一入口启动。Java 选择使用解析配置要求的主版本。有显式 Java 路径时使用该路径，否则从本机选择满足要求的运行时。启动前检查游戏文件并准备原生库与旧版资源，启动后记录进程和退出状态。每次启动的标准输出和错误输出写入配置目录的 `game-logs/`。
 
 ### 内容与版本
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `search_content` | `category`, `query` | `ContentSearchResult` | 搜索资源 |
-| `list_content_versions` | `id`, `requestId?` | `ResourceVersionsInfo` | 兼容版本 |
-| `queue_content_version` | `token`, `versionId`, `mode?`, `path?` | `SavedInfo` | 加入下载队列 |
+| `search_content` | `category`, `query`, `game?`, `loader?` | `ContentSearchResult` | 桌面端默认查询 Modrinth 模组索引，每次最多 100 条，供页面分页 |
+| `list_content_versions` | `id`, `requestId?`, `game?`, `loader?` | `ResourceVersionsInfo` | 按项目 ID 查询对应来源，返回真实版本、文件名和十分钟有效的令牌 |
+| `queue_content_version` | `token`, `versionId`, `mode?`, `path?` | `SavedInfo` | `mode=local` 时下载到用户指定的现有目录，`entityIds` 包含任务 ID |
 | `toggle_bookmark` | `id`, `name`, `description`, `kind` | `SavedInfo` | 收藏/取消收藏，推送 `state` |
 | `list_vanilla_versions` | — | `VanillaVersionInfo[]` | 桌面端从 Mojang 或 BMCLAPI 获取原版版本清单 |
 | `install_vanilla` | `minecraftVersion` | `SavedInfo` | 在当前游戏目录提交原版安装任务，以版本 ID 为实例名，`entityIds` 包含任务 ID |
-| `list_loaders` | `minecraftVersion`, `loader` | `LoaderListInfo` | 加载器版本 |
-| `install_loader` | `minecraftVersion`, `loader`, `loaderVersion` | `SavedInfo` | 安装加载器 |
+| `list_loaders` | `minecraftVersion`, `loader` | `LoaderListInfo` | NeoForge 从官方 Maven 查询兼容版本，其他加载器保留示例版本 |
+| `install_loader` | `minecraftVersion`, `loader`, `loaderVersion` | `SavedInfo` | 桌面端提交 NeoForge 安装，`entityIds` 包含任务 ID |
 | `preview_pack` | `path` | `PackPreviewInfo` | 读取整合包计划；演示后端返回 `UNSUPPORTED` |
 | `confirm_pack` | `planId`, `name`, `directory` | `SavedInfo` | 按计划确认导入；演示后端返回 `UNSUPPORTED` |
 
 原版任务通过 `list_tasks` 返回按文件计数的进度。文件下载遇到连接失败、超时、响应中断或服务器临时错误时最多重试两次。暂停与取消在当前一批文件处理结束后生效。安装完成后，当前目录仍为任务目标时会刷新实例清单。已有同名实例会返回 `CONFLICT`。任务暂存于当前运行期，重新提交时会复用已经校验过的公共文件。
+
+NeoForge 安装复用原版安装与 Java 选择。安装器下载后校验官方 SHA-1，并在独立临时目录运行官方客户端安装命令。`runningInstaller` 阶段可以取消子进程。完成后将依赖和 `neoforge-<loaderVersion>` 版本发布到当前游戏目录并刷新实例清单。Minecraft 1.20.1 的旧版 NeoForge 使用独立 Forge 包，当前不提供。Maven 清单不可用时，NeoForge 版本列表为空。浏览器演示继续从演示数据读取加载器。
+
+Modrinth 模组搜索直接按关键词、游戏版本和加载器筛选，列表只返回项目摘要。原版实例可以按游戏版本浏览。读取 `modrinth:` 项目的版本时，直接向 Modrinth 查询。启动时设置 `MCUG_MOD_INDEX=mcmod` 可切换到独立的 MC 百科目录模块。该模块只读取 Java 版目录首页，成功响应复用五分钟，失败响应复用一分钟。读取 `mcmod:` 项目的版本时，根据词条的来源链接选择平台，优先使用 Modrinth。词条提供 CurseForge 链接且配置了 `MCUG_CURSEFORGE_API_KEY` 时可通过 CurseForge 查文件。
+
+只有平台提供下载地址及 SHA-1 的 JAR 才会进入版本列表。选择版本后复用下载校验模块，校验通过才发布文件，同名冲突保留原文件。安装到实例需要目标实例 ID，当前入口支持下载到目录。浏览器演示模式继续使用独立数据。
 
 ### 实例维护
 

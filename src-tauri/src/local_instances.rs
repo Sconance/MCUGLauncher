@@ -2,6 +2,7 @@ use std::{collections::BTreeMap, fs, io, path::Path};
 
 use serde::Deserialize;
 
+use crate::core::neoforge::is_loader_library as is_neoforge_library;
 use crate::model::{InstanceCatalogInfo, InstanceInfo, VersionChoice, VersionGroupInfo};
 
 #[derive(Deserialize)]
@@ -30,9 +31,7 @@ fn loader(metadata: &VersionMetadata) -> &'static str {
             "net.minecraftforge" if library.name.starts_with("net.minecraftforge:forge:") => {
                 Some("Forge")
             }
-            "net.neoforged" if library.name.starts_with("net.neoforged:neoforge:") => {
-                Some("NeoForge")
-            }
+            _ if is_neoforge_library(&library.name) => Some("NeoForge"),
             "optifine" => Some("OptiFine"),
             _ => None,
         })

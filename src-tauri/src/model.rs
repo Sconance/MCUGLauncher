@@ -136,6 +136,7 @@ impl TaskInfo {
         let actions: &[&str] = match self.status.as_str() {
             "succeeded" | "failed" | "cancelled" => &["delete"],
             _ if self.phase == "committing" => &[],
+            "running" if self.phase == "runningInstaller" => &["cancel"],
             "running" if self.kind == "launch" => &["cancel"],
             "running" => &["pause", "cancel"],
             "paused" => &["resume", "cancel"],

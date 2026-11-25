@@ -11,6 +11,7 @@ pub mod implementation;
 pub mod instances;
 pub mod kernel;
 pub mod launch;
+pub(crate) mod mod_download;
 pub mod path_picker;
 pub mod saves;
 pub mod servers;
