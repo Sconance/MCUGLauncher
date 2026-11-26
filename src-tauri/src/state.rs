@@ -1,11 +1,12 @@
 use std::{
+    collections::HashMap,
     io,
     path::{Path, PathBuf},
     sync::Mutex,
 };
 
 use crate::{
-    commands::mod_download::ModDownloadState,
+    commands::{mod_download::ModDownloadState, modrinth_pack::PackPlan},
     core::mod_sources::mcmod::CatalogCache,
     demo::{Data, StateResource},
     launcher_config::LauncherConfig,
@@ -18,6 +19,7 @@ pub struct Backend {
     pub data: Mutex<Data>,
     pub(crate) mod_downloads: Mutex<ModDownloadState>,
     pub(crate) mod_catalog: tauri::async_runtime::Mutex<CatalogCache>,
+    pub(crate) pack_plans: Mutex<HashMap<String, PackPlan>>,
     config_dir: PathBuf,
 }
 
@@ -40,6 +42,7 @@ impl Backend {
             data: Mutex::new(data),
             mod_downloads: Mutex::default(),
             mod_catalog: tauri::async_runtime::Mutex::default(),
+            pack_plans: Mutex::default(),
             config_dir,
         })
     }

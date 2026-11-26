@@ -1004,27 +1004,6 @@ pub(super) fn list_demo_loaders(minecraft_version: String, loader: String) -> Lo
     }
 }
 
-/// 读取整合包预览信息。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn preview_pack(
-    backend: State<'_, Backend>,
-    path: String,
-) -> Result<PackPreviewInfo, ApiError> {
-    Err(ApiError::unsupported("preview_pack"))
-}
-
-/// 确认导入整合包到指定目录。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn confirm_pack(
-    plan_id: String,
-    name: String,
-    directory: String,
-) -> Result<SavedInfo, ApiError> {
-    Err(ApiError::unsupported("confirm_pack"))
-}
-
 // ---------------------------------------------------------------- 实例维护
 
 /// 生成绑定实例修订号且十分钟有效的卸载计划。

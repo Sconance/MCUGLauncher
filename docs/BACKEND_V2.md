@@ -8,11 +8,11 @@
 
 已补充：未实现的系统、网络、登录和长操作返回 UNSUPPORTED；任务动作由后端校验，提交阶段禁止中断，取消进入 cancelling，终态才允许删除。实例、服务器和模组使用稳定 ID，选择实例不再混用版本名称。启动器状态查询返回 epoch/revision 快照，设置写入校验 expectedRevision，前端拒绝同代次的旧修订。
 
-能力边界：全局启动设置和自定义数据源配置已写入本地 JSON，实例清单读取当前游戏目录。桌面端已接入原版游戏下载、离线启动和会话停止。桌面任务队列在启动时为空，实际提交的任务暂存于内存。账号仍使用内存演示数据。桌面端可查询、安装并离线启动 NeoForge。其他加载器的安装和启动、正版及其他登录方式、更新和整合包处理待接入。卸载预览会生成十分钟有效的 `planId`，绑定实例 ID 和实例资源修订号；执行前区分 `PLAN_EXPIRED`、`CONFLICT` 和有效但未实现的 `UNSUPPORTED`，演示后端不会删除文件。
+能力边界：全局启动设置和自定义数据源配置已写入本地 JSON，实例清单读取当前游戏目录。桌面端已接入原版游戏下载、离线启动和会话停止。桌面任务队列在启动时为空，实际提交的任务暂存于内存。账号仍使用内存演示数据。桌面端可查询、安装并离线启动 NeoForge、Forge、Fabric 和 Quilt，并可通过现有接口导入本地 Modrinth 整合包。OptiFine、LiteLoader 等加载器、正版及其他登录方式、内容更新和其他整合包格式待接入。卸载预览会生成十分钟有效的 `planId`，绑定实例 ID 和实例资源修订号；执行前区分 `PLAN_EXPIRED`、`CONFLICT` 和有效但未实现的 `UNSUPPORTED`，演示后端不会删除文件。
 
 原版下载模块位于 `src-tauri/src/core/`。`game_sources` 从 Mojang 或 BMCLAPI 获取版本清单，保留每个版本的 JSON 地址和 SHA-1。`vanilla_install` 按需下载并校验选中版本的 JSON。`vanilla_download` 解析客户端、平台支持库和资源清单，复用 `file_download` 下载并校验文件，完成后公开实例目录。桌面端通过后台任务调用这些模块，浏览器演示模式继续使用前端演示数据。
 
-`core::launch_profile` 将原版或 NeoForge 的版本数据解析成共用启动配置。`core::java_runtime` 独立探测与选择本机 Java，`core::game_launch` 使用选定的运行时生成命令并启动进程。Tauri 命令编排准备任务与游戏会话。正版与第三方账号统一经过待实现的 `resolve_online_profile` 认证入口。
+`core::launch_profile` 将原版或加载器的版本数据解析成共用启动配置。`core::java_runtime` 独立探测与选择本机 Java，`core::game_launch` 使用选定的运行时生成命令并启动进程。Tauri 命令编排准备任务与游戏会话。正版与第三方账号统一经过待实现的 `resolve_online_profile` 认证入口。
 
 `core::java_install::install_java` 从 Mojang 获取当前平台指定主版本的运行时，逐文件校验大小和 SHA-1，并实际运行 Java 探针后再发布。启动器管理的运行时目录为数据目录下的 `java-runtimes/java-<major>`。已有的 Java 扫描和启动选择会读取该目录。安装目前由 Rust 调用方显式发起。
 

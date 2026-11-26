@@ -175,13 +175,21 @@ pub(crate) fn prepare_launch(
             extract_natives(&library_path(artifact, options.root)?, natives.path())?;
         }
     }
-    jars.push(require_file(
+    let base_jar = require_file(
         options
             .root
             .join("versions")
             .join(&version.jar)
             .join(format!("{}.jar", version.jar)),
-    )?);
+    )?;
+    if !version.inherits
+        || !version.libraries.iter().any(|library| {
+            library.name.starts_with("net.minecraftforge:forge:")
+                && library.name.ends_with(":client")
+        })
+    {
+        jars.push(base_jar);
+    }
     let classpath = env::join_paths(jars)
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
     let mut fields = HashMap::<&str, OsString>::from([

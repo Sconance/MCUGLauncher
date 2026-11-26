@@ -28,7 +28,7 @@ fn loader(metadata: &VersionMetadata) -> &'static str {
                 Some("Fabric")
             }
             "org.quiltmc" if library.name.starts_with("org.quiltmc:quilt-loader:") => Some("Quilt"),
-            "net.minecraftforge" if library.name.starts_with("net.minecraftforge:forge:") => {
+            "net.minecraftforge" if crate::core::forge::is_loader_library(&library.name) => {
                 Some("Forge")
             }
             _ if is_neoforge_library(&library.name) => Some("NeoForge"),

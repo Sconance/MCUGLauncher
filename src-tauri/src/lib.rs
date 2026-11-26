@@ -561,8 +561,8 @@ pub fn run() {
             commands::vanilla::install_vanilla,
             commands::vanilla::list_loaders,
             commands::vanilla::install_loader,
-            commands::implementation::preview_pack,
-            commands::implementation::confirm_pack,
+            commands::modrinth_pack::preview_pack,
+            commands::modrinth_pack::confirm_pack,
             // 实例维护
             commands::implementation::preview_uninstall,
             commands::implementation::apply_uninstall,

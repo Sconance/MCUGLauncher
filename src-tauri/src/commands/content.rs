@@ -13,7 +13,10 @@ use crate::{
 };
 
 #[allow(unused_imports)]
-pub use super::implementation::{confirm_pack, preview_pack, toggle_bookmark};
+pub use super::{
+    implementation::toggle_bookmark,
+    modrinth_pack::{confirm_pack, preview_pack},
+};
 #[allow(unused_imports)]
 pub use super::vanilla::{install_loader, install_vanilla, list_loaders, list_vanilla_versions};
 

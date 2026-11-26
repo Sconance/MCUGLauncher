@@ -78,10 +78,13 @@ pub fn launch_game(
         .iter()
         .find(|instance| instance.id == instance_id && !instance.is_placeholder)
         .ok_or_else(|| api_error("NOT_FOUND", "当前目录没有该实例。"))?;
-    if !matches!(instance.loader.as_str(), "Vanilla" | "NeoForge") {
+    if !matches!(
+        instance.loader.as_str(),
+        "Vanilla" | "NeoForge" | "Forge" | "Fabric" | "Quilt"
+    ) {
         return Err(api_error(
             "UNSUPPORTED",
-            "当前只支持原版和 NeoForge 实例启动。",
+            "当前只支持原版、NeoForge、Forge、Fabric 和 Quilt 实例启动。",
         ));
     }
     let path = instance
