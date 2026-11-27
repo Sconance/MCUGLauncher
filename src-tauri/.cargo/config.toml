@@ -1,0 +1,4 @@
+[env]
+# Windows MSVC cl.exe 编译 aws-lc-sys 时可能触发 D8050（未能将命令行放入调试记录中）。
+# 优先使用 clang-cl；若本机未安装 clang-cl，cc-rs 会自动回退到 cl.exe。
+CC_PREFER_CLANG_CL_OVER_MSVC = "1"

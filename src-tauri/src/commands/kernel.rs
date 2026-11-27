@@ -71,6 +71,7 @@ pub const METHODS: &[&str] = &[
     "queue_content_version",
     "toggle_bookmark",
     "list_vanilla_versions",
+    "list_vanilla_themes",
     "install_vanilla",
     "list_loaders",
     "install_loader",

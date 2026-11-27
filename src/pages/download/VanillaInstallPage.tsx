@@ -13,7 +13,10 @@ export interface LoaderRow extends LoaderDef {
 interface VanillaInstallPageProps {
     /** 选中的原版版本号，例如 1.21.1 */
     minecraft: string;
+    /** 用户手动输入的自定义实例名；为空时展示并使用 defaultInstanceName */
     instanceName: string;
+    /** 按原版版本与已选加载器自动生成的默认实例名 */
+    defaultInstanceName: string;
     onInstanceNameChange?: (name: string) => void;
     loading: boolean;
     rows: LoaderRow[];
@@ -29,6 +32,7 @@ interface VanillaInstallPageProps {
 export default function VanillaInstallPage({
     minecraft,
     instanceName,
+    defaultInstanceName,
     onInstanceNameChange,
     loading,
     rows,
@@ -52,7 +56,8 @@ export default function VanillaInstallPage({
                 </div>
                 <AppInput
                     className="vd-name"
-                    placeholder="实例名称"
+                    aria-label="实例名称"
+                    placeholder={defaultInstanceName}
                     value={instanceName}
                     readOnly={!onInstanceNameChange}
                     onChange={(event) => onInstanceNameChange?.(event.target.value)}

@@ -364,6 +364,8 @@ export async function demoInvoke<T>(command: string, args?: Record<string, unkno
       ];
       return versions as T;
     }
+    case "list_vanilla_themes":
+      return {} as T;
     case "list_loaders": {
       const loader: LoaderListInfo = {
         minecraftVersion: text(args, "minecraftVersion") || "1.21.1",

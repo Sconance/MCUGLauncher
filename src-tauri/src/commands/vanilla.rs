@@ -1,6 +1,7 @@
 //! Tauri 原版版本查询与安装任务。
 
 use std::{
+    collections::BTreeMap,
     fs, io,
     path::{Path, PathBuf},
     thread,
@@ -15,6 +16,7 @@ use crate::{
     core::{
         game_sources::available_versions,
         vanilla_download::{download_vanilla, safe_component},
+        wiki_themes::load_or_refresh_themes,
     },
     demo::StateResource,
     local_instances,
@@ -37,6 +39,26 @@ pub async fn list_vanilla_versions() -> Result<Vec<VanillaVersionInfo>, ApiError
                 released: version.release_time,
             })
             .collect())
+    })
+    .await
+    .map_err(|error| download_error("INTERNAL_ERROR", error))?
+}
+
+/// 从本地缓存或中文 Minecraft Wiki 读取原版版本主题映射。
+#[tauri::command]
+pub async fn list_vanilla_themes(
+    app: AppHandle,
+    force_refresh: Option<bool>,
+) -> Result<BTreeMap<String, String>, ApiError> {
+    let cache_dir = app
+        .path()
+        .app_cache_dir()
+        .unwrap_or_else(|_| std::env::temp_dir().join("mcuglauncher"));
+    let cache_path = cache_dir.join("vanilla_themes_v3.json");
+    let force = force_refresh.unwrap_or(false);
+    tauri::async_runtime::spawn_blocking(move || {
+        load_or_refresh_themes(&cache_path, force)
+            .map_err(|error| download_error("NETWORK_ERROR", error))
     })
     .await
     .map_err(|error| download_error("INTERNAL_ERROR", error))?

@@ -7,8 +7,8 @@ import {
     verifyKey as verifyKeyCommand,
 } from '../../api/commands/settings';
 import { AppInput } from '../../components/AppInput';
-import Field from '../../components/Field';
 import type { DataSourceSet } from '../../types/launcher';
+import SettingRow from './SettingRow';
 import SettingsCard from './SettingsCard';
 import { useSettingsData } from './SettingsData';
 import SettingHint from './SettingHint';
@@ -96,13 +96,7 @@ export default function CommunitySettings({ active }: CommunitySettingsProps) {
 
     return (
         <div className="settings-cards">
-            <SettingsCard
-                title={
-                    <>
-                        数据源
-                    </>
-                }
-            >
+            <SettingsCard title="数据源">
                 {(
                     [
                         ['announcements', '公告地址'],
@@ -111,21 +105,26 @@ export default function CommunitySettings({ active }: CommunitySettingsProps) {
                         ['quotes', '语录地址'],
                     ] as const
                 ).map(([key, label]) => (
-                    <Field key={key} label={label}>
-                        <div className="settings-actions">
-                            <AppInput
-                                value={sources[key]}
-                                onChange={(event) => setSources({ ...sources, [key]: event.target.value })}
-                            />
-                            <button
-                                type="button"
-                                className="btn ghost"
-                                onClick={() => void testSource(label.replace('地址', ''), sources[key])}
-                            >
-                                测试
-                            </button>
-                        </div>
-                    </Field>
+                    <SettingRow
+                        key={key}
+                        title={label}
+                        control={
+                            <div className="setting-control">
+                                <AppInput
+                                    className="setting-control-input-wide"
+                                    value={sources[key]}
+                                    onChange={(event) => setSources({ ...sources, [key]: event.target.value })}
+                                />
+                                <button
+                                    type="button"
+                                    className="btn ghost"
+                                    onClick={() => void testSource(label.replace('地址', ''), sources[key])}
+                                >
+                                    测试
+                                </button>
+                            </div>
+                        }
+                    />
                 ))}
                 <div className="settings-actions">
                     <button type="button" className="btn primary" onClick={() => void saveSources(false)}>
@@ -157,65 +156,90 @@ export default function CommunitySettings({ active }: CommunitySettingsProps) {
                 </p>
             </SettingsCard>
 
-            <SettingsCard
-                title={
-                    <>
-                        社区身份
-                    </>
-                }
-            >
-                <label className="checkbox">
-                    <input
-                        type="checkbox"
-                        checked={anonymous}
-                        onChange={(event) => setAnonymous(event.target.checked)}
-                    />
-                    匿名模式
-                    <SettingHint tip="匿名模式影响主页身份展示；密钥只保存在本机" />
-                </label>
-                <button
-                    type="button"
-                    className="btn ghost settings-self-start"
-                    onClick={() => void saveAnonymous()}
+            <SettingsCard title="社区身份">
+                <SettingRow
+                    title={
+                        <>
+                            匿名模式
+                            <SettingHint tip="匿名模式影响主页身份展示；密钥只保存在本机" />
+                        </>
+                    }
+                    control={
+                        <div className="setting-control">
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={anonymous}
+                                aria-label="匿名模式"
+                                className={`switch${anonymous ? ' on' : ''}`}
+                                onClick={() => setAnonymous((current) => !current)}
+                            >
+                                <span className="switch-thumb" />
+                            </button>
+                            <button
+                                type="button"
+                                className="btn ghost"
+                                onClick={() => void saveAnonymous()}
+                            >
+                                保存
+                            </button>
+                        </div>
+                    }
                 >
-                    保存匿名设置
-                </button>
-                <Field label="社区身份密钥">
-                    <div className="settings-actions">
-                        <AppInput
-                            type="password"
-                            placeholder="向群管理员获取"
-                            value={communityKey}
-                            onChange={(event) => setCommunityKey(event.target.value)}
-                        />
-                        <button
-                            type="button"
-                            className="btn ghost"
-                            onClick={() => void verifyKey('community', communityKey, () => setCommunityKey(''))}
-                        >
-                            验证
-                        </button>
-                    </div>
-                </Field>
-                <Field label="管理员密钥">
-                    <div className="settings-actions">
-                        <AppInput
-                            type="password"
-                            placeholder="首次输入即设置本机管理员密钥"
-                            value={adminKey}
-                            onChange={(event) => setAdminKey(event.target.value)}
-                        />
-                        <button type="button" className="btn ghost" onClick={() => void verifyKey('admin', adminKey)}>
-                            验证
-                        </button>
-                    </div>
-                </Field>
-                <p className="status">
-                    {statusAt('community:identity') ||
-                        `身份密钥：${settings.hasCommunityKey ? '已设置' : '未设置'} · 管理员密钥：${
-                            settings.hasAdminKey ? '已设置' : '未设置'
-                        }`}
-                </p>
+                    <span className="setting-subtitle">匿名模式影响主页身份展示；密钥只保存在本机</span>
+                </SettingRow>
+
+                <SettingRow
+                    title="社区身份密钥"
+                    control={
+                        <div className="setting-control">
+                            <AppInput
+                                className="setting-control-input"
+                                type="password"
+                                placeholder="向群管理员获取"
+                                value={communityKey}
+                                onChange={(event) => setCommunityKey(event.target.value)}
+                            />
+                            <button
+                                type="button"
+                                className="btn ghost"
+                                onClick={() => void verifyKey('community', communityKey, () => setCommunityKey(''))}
+                            >
+                                验证
+                            </button>
+                        </div>
+                    }
+                >
+                    <span className="setting-subtitle">
+                        {settings.hasCommunityKey ? '本机已设置身份密钥' : '尚未设置 · 向群管理员获取'}
+                    </span>
+                </SettingRow>
+
+                <SettingRow
+                    title="管理员密钥"
+                    control={
+                        <div className="setting-control">
+                            <AppInput
+                                className="setting-control-input"
+                                type="password"
+                                placeholder="首次输入即设置本机管理员密钥"
+                                value={adminKey}
+                                onChange={(event) => setAdminKey(event.target.value)}
+                            />
+                            <button type="button" className="btn ghost" onClick={() => void verifyKey('admin', adminKey)}>
+                                验证
+                            </button>
+                        </div>
+                    }
+                >
+                    <span className="setting-subtitle">
+                        {settings.hasAdminKey ? '本机已设置管理员密钥' : '尚未设置 · 首次输入即设置本机管理员密钥'}
+                    </span>
+                </SettingRow>
+
+                {statusAt('community:identity') ? (
+                    <p className="status">{statusAt('community:identity')}</p>
+                ) : null}
             </SettingsCard>
         </div>
     );

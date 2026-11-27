@@ -6,4 +6,4 @@ pub use super::implementation::{
     queue_content_version, search_content, toggle_bookmark,
 };
 #[allow(unused_imports)]
-pub use super::vanilla::{install_vanilla, list_vanilla_versions};
+pub use super::vanilla::{install_vanilla, list_vanilla_themes, list_vanilla_versions};

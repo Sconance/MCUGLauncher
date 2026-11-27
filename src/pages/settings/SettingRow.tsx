@@ -9,13 +9,14 @@ interface SettingRowProps {
   control: ReactNode;
 }
 
-/** 一行设置：左侧是标题与说明，右侧是控件。 */
+/** 一行设置：左侧是标题与可选说明，右侧是控件。 */
 export default function SettingRow({ title, children, control }: SettingRowProps) {
+  const hasSubtitle = children !== undefined && children !== null && children !== false;
   return (
-    <div className="setting-row">
+    <div className={`setting-row${hasSubtitle ? " has-subtitle" : ""}`}>
       <div className="setting-copy">
         <span className="setting-title">{title}</span>
-        {children}
+        {hasSubtitle ? children : null}
       </div>
       {control}
     </div>

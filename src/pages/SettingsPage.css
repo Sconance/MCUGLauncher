@@ -5,11 +5,22 @@
   padding-right: 11px;
 }
 
-/* 一个分区里拆成多张卡片时使用，保持和原单卡片相近的视觉节奏。 */
+/* 一个分区里拆成多张卡片时使用，留足每组标题与上一张卡片之间的呼吸感。 */
 .settings-cards {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-section-title {
+  margin: 0;
+  padding: 0 4px;
 }
 
 /* 设置卡片的内部节奏：标题、说明、表单之间统一 10px。 */
@@ -17,11 +28,81 @@
   gap: 10px;
 }
 
+/* SJMCL 风格设置行：左标题与可选副标题，右操作控件，行间以细线分隔。 */
+.settings-card .setting-row {
+  padding: 0;
+  gap: 16px;
+}
+
+.settings-card .setting-row.has-subtitle {
+  padding: 2px 0;
+}
+
+.settings-card .setting-row + .setting-row {
+  padding-top: 10px;
+  border-top: 1px solid rgb(20 30 42 / 7%);
+}
+
 /* 左侧标题 + 说明，右侧控件。 */
 .setting-copy {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
+  min-width: 0;
+}
+
+.setting-row.has-subtitle .setting-copy {
+  gap: 3px;
+}
+
+.setting-subtitle {
+  color: var(--app-ink-3);
+  font-size: 11.5px;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.setting-control {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.setting-control .btn {
+  flex: none;
+  white-space: nowrap;
+}
+
+.input.setting-control-input {
+  flex: none;
+  width: 220px;
+}
+
+.input.setting-control-input-wide {
+  flex: none;
+  width: 260px;
+}
+
+.app-select-trigger.setting-control-select {
+  flex: none;
+  width: 220px;
+}
+
+.input.setting-control-num {
+  flex: none;
+  width: 82px;
+  text-align: center;
+}
+
+.setting-control-x {
+  flex: none;
+  color: var(--app-ink-3);
+  font-size: 13px;
+  user-select: none;
 }
 
 /* 前端包一行：图标 + 文案，图标不参与压缩。 */
@@ -63,10 +144,70 @@
 }
 
 .settings-actions > .input,
-.settings-actions > .select {
+.settings-actions > .select,
+.settings-actions > .app-select-trigger {
   flex: 1 1 0;
   width: auto;
   min-width: 0;
+}
+
+/* 启动设置里的内联 Java 扫描选择区（位于 Java 路径输入框下方） */
+.java-inline-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 45%);
+}
+
+.java-inline-results {
+  gap: 6px;
+  max-height: 238px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.java-list-group {
+  background: rgb(20 30 42 / 4%);
+}
+
+.java-list-item {
+  align-items: flex-start;
+  width: 100%;
+  cursor: pointer;
+}
+
+.java-list-item.selected {
+  background: var(--app-accent-tint);
+  color: var(--app-accent-deep);
+}
+
+.java-list-item.selected:hover {
+  background: var(--app-accent-soft);
+}
+
+.java-list-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  width: 100%;
+}
+
+.java-list-title {
+  font-weight: 500;
+}
+
+.java-list-item.selected .java-list-title {
+  font-weight: 600;
+}
+
+.java-list-path {
+  font-size: 11px;
+  font-weight: 400;
+  word-break: break-all;
 }
 
 .settings-self-start {

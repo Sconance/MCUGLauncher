@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { openPathInExplorer } from "../../api/commands/pathPicker";
 import {
   getSystemInfo as getSystemInfoCommand,
-  openFolder as openFolderCommand,
   resetWindow as resetWindowCommand,
 } from "../../api/commands/settings";
 import {
@@ -10,9 +10,10 @@ import {
   restoreSave as restoreSaveCommand,
 } from "../../api/commands/saves";
 import { AppTextarea } from "../../components/AppInput";
-import type { SaveBackupInfo } from "../../types/launcher";
-import SettingsCard from "./SettingsCard";
+import type { SaveBackupInfo, SystemInfo } from "../../types/launcher";
 import SettingHint from "./SettingHint";
+import SettingRow from "./SettingRow";
+import SettingsCard from "./SettingsCard";
 import { useSettingsStatus } from "./useSettingsStatus";
 
 interface MaintenanceSettingsProps {
@@ -23,22 +24,25 @@ interface MaintenanceSettingsProps {
 export default function MaintenanceSettings({ active }: MaintenanceSettingsProps) {
   const { say, statusAt } = useSettingsStatus();
   const [backups, setBackups] = useState<SaveBackupInfo[]>([]);
+  const [sysInfo, setSysInfo] = useState<SystemInfo | null>(null);
   const [diagnostics, setDiagnostics] = useState("");
+
+  const formatDiagnostics = (info: SystemInfo) =>
+    [
+      `MCUG Launcher ${info.app}`,
+      `.NET ${info.dotnet}`,
+      `WebView2 ${info.webview}`,
+      `系统 ${info.os}`,
+      `游戏目录 ${info.root}`,
+      `数据目录 ${info.data}`,
+    ].join("\n");
 
   useEffect(() => {
     if (!active) return;
     void listSaveBackupsCommand().then(setBackups);
     void getSystemInfoCommand().then((info) => {
-      setDiagnostics(
-        [
-          `MCUG Launcher ${info.app}`,
-          `.NET ${info.dotnet}`,
-          `WebView2 ${info.webview}`,
-          `系统 ${info.os}`,
-          `游戏目录 ${info.root}`,
-          `数据目录 ${info.data}`,
-        ].join("\n"),
-      );
+      setSysInfo(info);
+      setDiagnostics(formatDiagnostics(info));
     });
   }, [active]);
 
@@ -72,16 +76,8 @@ export default function MaintenanceSettings({ active }: MaintenanceSettingsProps
 
   const readSystemInfo = async () => {
     const info = await getSystemInfoCommand();
-    setDiagnostics(
-      [
-        `MCUG Launcher ${info.app}`,
-        `.NET ${info.dotnet}`,
-        `WebView2 ${info.webview}`,
-        `系统 ${info.os}`,
-        `游戏目录 ${info.root}`,
-        `数据目录 ${info.data}`,
-      ].join("\n"),
-    );
+    setSysInfo(info);
+    setDiagnostics(formatDiagnostics(info));
     say("maintenance:system", "系统信息已更新。");
   };
 
@@ -95,23 +91,31 @@ export default function MaintenanceSettings({ active }: MaintenanceSettingsProps
           </>
         }
       >
-        <div className="settings-actions">
-          <button type="button" className="btn primary" onClick={() => void backupSaves()}>
-            立即备份
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() =>
-              void openFolderCommand("saves").then((result) =>
-                say("maintenance:saves", result.message),
-              )
-            }
-          >
-            打开存档文件夹
-          </button>
-          <span className="status">{statusAt("maintenance:saves")}</span>
-        </div>
+        <SettingRow
+          title="存档备份"
+          control={
+            <div className="setting-control">
+              <button type="button" className="btn primary" onClick={() => void backupSaves()}>
+                立即备份
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() =>
+                  void openPathInExplorer("", "saves").then((message) =>
+                    say("maintenance:saves", message),
+                  )
+                }
+              >
+                打开
+              </button>
+            </div>
+          }
+        >
+          <span className="setting-subtitle">
+            {statusAt("maintenance:saves") || "备份保存到数据目录的 backups 文件夹"}
+          </span>
+        </SettingRow>
         <div className="stack settings-list">
           {backups.length === 0 ? (
             <p className="muted">还没有存档备份。</p>
@@ -135,49 +139,67 @@ export default function MaintenanceSettings({ active }: MaintenanceSettingsProps
         </div>
       </SettingsCard>
 
-      <SettingsCard
-        title={
-          <>
-            任务与恢复
-          </>
-        }
-      >
-        <div className="settings-actions">
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() =>
-              void resetWindowCommand().then((result) =>
-                say("maintenance:recovery", result.message),
-              )
-            }
-          >
-            恢复窗口尺寸
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() =>
-              void openFolderCommand("config").then((result) =>
-                say("maintenance:recovery", result.message),
-              )
-            }
-          >
-            打开配置目录
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() =>
-              void openFolderCommand("root").then((result) =>
-                say("maintenance:recovery", result.message),
-              )
-            }
-          >
-            打开游戏目录
-          </button>
-        </div>
-        <p className="status">{statusAt("maintenance:recovery")}</p>
+      <SettingsCard title="任务与恢复">
+        <SettingRow
+          title="恢复窗口尺寸"
+          control={
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() =>
+                void resetWindowCommand().then((result) =>
+                  say("maintenance:recovery", result.message),
+                )
+              }
+            >
+              恢复
+            </button>
+          }
+        >
+          <span className="setting-subtitle">将启动器窗口恢复到默认大小</span>
+        </SettingRow>
+
+        <SettingRow
+          title="配置目录"
+          control={
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() =>
+                void openPathInExplorer(sysInfo?.data ?? "", "config").then((message) =>
+                  say("maintenance:recovery", message),
+                )
+              }
+            >
+              打开
+            </button>
+          }
+        >
+          <span className="setting-subtitle">{sysInfo?.data || "启动器配置与数据所在目录"}</span>
+        </SettingRow>
+
+        <SettingRow
+          title="游戏目录"
+          control={
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() =>
+                void openPathInExplorer(sysInfo?.root ?? "", "root").then((message) =>
+                  say("maintenance:recovery", message),
+                )
+              }
+            >
+              打开
+            </button>
+          }
+        >
+          <span className="setting-subtitle">{sysInfo?.root || "当前活动的游戏根目录"}</span>
+        </SettingRow>
+
+        {statusAt("maintenance:recovery") ? (
+          <p className="status">{statusAt("maintenance:recovery")}</p>
+        ) : null}
       </SettingsCard>
 
       <SettingsCard
@@ -188,15 +210,23 @@ export default function MaintenanceSettings({ active }: MaintenanceSettingsProps
           </>
         }
       >
-        <div className="settings-actions">
-          <button type="button" className="btn primary" onClick={() => void readSystemInfo()}>
-            读取系统信息
-          </button>
-          <button type="button" className="btn ghost" onClick={() => void copyDiagnostics()}>
-            复制
-          </button>
-          <span className="status">{statusAt("maintenance:system")}</span>
-        </div>
+        <SettingRow
+          title="运行环境诊断信息"
+          control={
+            <div className="setting-control">
+              <button type="button" className="btn primary" onClick={() => void readSystemInfo()}>
+                读取
+              </button>
+              <button type="button" className="btn ghost" onClick={() => void copyDiagnostics()}>
+                复制
+              </button>
+            </div>
+          }
+        >
+          <span className="setting-subtitle">
+            {statusAt("maintenance:system") || "反馈问题时请附上这些运行环境信息"}
+          </span>
+        </SettingRow>
         <AppTextarea className="log-box" readOnly value={diagnostics} />
       </SettingsCard>
     </div>

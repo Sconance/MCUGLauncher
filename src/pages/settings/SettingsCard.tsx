@@ -7,12 +7,14 @@ interface SettingsCardProps {
   className?: string;
 }
 
-/** 设置页的标准内容卡片：标题 + 内容，间距与旧版内联结构一致。 */
+/** 设置页的标准分组：卡片外标题 + 圆角内容卡片。 */
 export default function SettingsCard({ title, children, className }: SettingsCardProps) {
   return (
-    <section className={`card stack settings-card${className ? ` ${className}` : ""}`}>
-      <h2 className="h2">{title}</h2>
-      {children}
+    <section className="settings-section">
+      <h2 className="h2 settings-section-title">{title}</h2>
+      <div className={`card stack settings-card${className ? ` ${className}` : ""}`}>
+        {children}
+      </div>
     </section>
   );
 }

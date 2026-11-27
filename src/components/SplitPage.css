@@ -23,11 +23,6 @@
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
-  /*
-   * 始终为滚动条留出 6px 槽位：内容长短变化时（例如展开版本抽屉），
-   * 滚动条出现/消失不会再把右栏里的元素整体挤动。
-   */
-  scrollbar-gutter: stable;
   transition: opacity 130ms linear;
 }
 

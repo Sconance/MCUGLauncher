@@ -7,3 +7,4 @@ pub mod java_install;
 pub mod java_runtime;
 pub mod vanilla_download;
 pub mod vanilla_install;
+pub mod wiki_themes;

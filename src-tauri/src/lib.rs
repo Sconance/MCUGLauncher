@@ -558,6 +558,7 @@ pub fn run() {
             commands::implementation::queue_content_version,
             commands::implementation::toggle_bookmark,
             commands::vanilla::list_vanilla_versions,
+            commands::vanilla::list_vanilla_themes,
             commands::vanilla::install_vanilla,
             commands::implementation::list_loaders,
             commands::implementation::install_loader,

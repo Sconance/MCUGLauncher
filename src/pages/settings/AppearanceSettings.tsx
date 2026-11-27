@@ -47,9 +47,9 @@ export default function AppearanceSettings({ active }: AppearanceSettingsProps) 
           </>
         }
         control={
-          <div className="settings-actions">
+          <div className="setting-control">
             <AppSelect
-              style={{ width: 260 }}
+              className="setting-control-select"
               value={locale}
               onChange={(event) => {
                 setLocale(event.target.value);
@@ -80,7 +80,7 @@ export default function AppearanceSettings({ active }: AppearanceSettingsProps) 
           </div>
         }
       >
-        {languageStatus.length > 0 ? <span className="muted">{languageStatus}</span> : null}
+        {languageStatus.length > 0 ? <span className="setting-subtitle">{languageStatus}</span> : null}
       </SettingRow>
       <input
         ref={languageInput}
@@ -118,18 +118,24 @@ export default function AppearanceSettings({ active }: AppearanceSettingsProps) 
           </div>
         }
       />
-      <div className="settings-actions">
-        <button
-          type="button"
-          className="btn ghost"
-          onClick={() =>
-            void resetWindowCommand().then((result) => setWindowStatus(result.message))
-          }
-        >
-          恢复默认窗口 1200 × 780
-        </button>
-        <span className="status">{windowStatus}</span>
-      </div>
+      <SettingRow
+        title="恢复默认窗口尺寸"
+        control={
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={() =>
+              void resetWindowCommand().then((result) => setWindowStatus(result.message))
+            }
+          >
+            恢复默认
+          </button>
+        }
+      >
+        <span className="setting-subtitle">
+          {windowStatus || "将启动器窗口重置为 1200 × 780"}
+        </span>
+      </SettingRow>
     </SettingsCard>
   );
 }
