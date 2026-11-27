@@ -26,6 +26,12 @@ npm run dto:generate
 npm run dto:check
 ```
 
+检查前端类型 SDK（`@mcugl/frontpack-sdk`）与内核方法表是否一致：
+
+```bash
+npm run sdk:check
+```
+
 检查 Rust 后端：
 
 ```bash
@@ -35,7 +41,10 @@ cargo check --manifest-path src-tauri/Cargo.toml
 
 ## 契约文档
 
+- [内核接口 v1](docs/KERNEL_API_V1.md)
+- [前端类型 SDK](docs/KERNEL_SDK.md)
+- [前端包 `.mcuglf`](docs/FRONTEND_PACKAGE.md)
 - [当前后端契约](docs/BACKEND_CONTRACT.md)
 - [V2 状态与迁移方案](docs/BACKEND_V2.md)
 - [UI 迁移说明](docs/UI_PORTING.md)
-- [DTO JSON Schema](schemas/launcher.schema.json)
+- [DTO JSON Schema](schemas/README.md)

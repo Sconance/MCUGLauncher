@@ -10,6 +10,7 @@
     "build:demo": "tsc && vite build --mode demo",
     "dto:generate": "node scripts/split-schemas.mjs && node scripts/annotate-schemas.mjs && node scripts/generate-dto.mjs",
     "dto:check": "npm run dto:generate && git diff --exit-code -- src/types/generated.ts",
+    "sdk:check": "node scripts/check-sdk.mjs",
     "frontend:pack": "node scripts/pack-frontend.mjs examples/third-party-frontend",
     "preview": "vite preview",
     "tauri": "tauri"
@@ -17,6 +18,7 @@
   "dependencies": {
     "@chakra-ui/react": "^3.38.0",
     "@emotion/react": "^11.14.0",
+    "@mcugl/frontpack-sdk": "^0.1.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "react": "^19.1.0",
