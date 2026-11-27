@@ -24,6 +24,8 @@ impl Backend {
     ) -> io::Result<Self> {
         let config = LauncherConfig::load_or_create(&config_dir, default_game_root)?;
         let mut data = Data::demo();
+        data.tasks.clear();
+        data.games.clear();
         let catalog = local_instances::scan(Path::new(config.root())).unwrap_or_else(|error| {
             eprintln!("[mcugl] 无法读取游戏目录 {}：{error}", config.root());
             local_instances::empty_catalog()
@@ -64,6 +66,15 @@ mod tests {
     use super::*;
     use crate::launcher_config::FILE_NAME;
     use std::fs;
+
+    #[test]
+    fn desktop_starts_with_an_empty_task_queue() {
+        let temp = tempfile::tempdir().unwrap();
+        let config_dir = temp.path().join("app-data");
+        let root = temp.path().join(".minecraft");
+        let backend = Backend::open(config_dir, || Ok(root)).unwrap();
+        assert!(backend.data.lock().unwrap().tasks.is_empty());
+    }
 
     #[test]
     fn migrates_legacy_root_to_the_first_list_entry() {

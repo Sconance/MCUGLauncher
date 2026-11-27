@@ -16,7 +16,7 @@ DTO 的结构以 [schemas/](../schemas/) 下的领域 Schema 为单一机器可�
 
 ## 当前演示能力限制
 
-安装、启动、在线登录、系统交互、网络探测、备份恢复和部分计划执行尚未接入真实内核，相应命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。表中的成功类型定义真实适配器接入后必须遵守的返回契约，不表示演示后端已具备该能力。
+加载器安装、加载器实例启动、在线登录、直连服务器启动、部分系统交互、网络探测、备份恢复和部分计划执行尚未接入真实内核，相应命令返回结构化 `UNSUPPORTED` 错误，操作不会执行。
 
 任务状态使用小写 `queued`、`running`、`paused`、`cancelling`、`succeeded`、`failed`、`cancelled`；`allowedActions` 是后端计算的可执行动作。提交阶段禁止中断，取消请求不等于清理完成，终态才可删除。未知任务返回 `NOT_FOUND`，非法转换返回 `CONFLICT`。演示队列仅在内存中保存，重启重置。
 
@@ -58,7 +58,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 
 | 命令 | 参数 | 返回 | 说明 |
 | --- | --- | --- | --- |
-| `launch_game` | `instanceId`, `accountId` | `LaunchAcceptedInfo` | 接受后返回会话与准备任务 ID；演示后端返回 `UNSUPPORTED` |
+| `launch_game` | `instanceId`, `accountId` | `LaunchAcceptedInfo` | 启动当前目录中的本地原版实例，首版支持离线账号。提交后返回会话与准备任务 ID |
 | `launch_to_server` | `instanceId`, `accountId`, `serverAddress` | `LaunchAcceptedInfo` | 接受直连启动；演示后端返回 `UNSUPPORTED` |
 
 ### 服务器
@@ -88,7 +88,7 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | --- | --- | --- | --- |
 | `save_settings` | `patch`（`AppSettingsPatch`）、`expectedRevision` | `SavedInfo` | 按预期修订号更新，过期返回 `CONFLICT`。传入 `root` 时登记或切换游戏目录并刷新该目录的实例 |
 | `remove_game_root` | `root`, `expectedRevision` | `SavedInfo` | 从已登记目录列表移除路径，不删除磁盘文件；移除当前目录时切换到列表首项并刷新实例 |
-| `scan_java` | — | `JavaInfo[]` | 扫描本机 Java |
+| `scan_java` | — | `JavaInfo[]` | 探测已配置的 Java、`JAVA_HOME`、`PATH`、系统常用安装目录与启动器管理的运行时 |
 | `save_custom_sources` | `sources`（`DataSourceSet`）、`expectedRevision`、`activate?` | `SavedInfo` | 保存自定义数据源，`activate` 为真时在同一次写入中启用 |
 | `use_data_sources` | `mode`（`default` / `custom`）、`expectedRevision` | `SavedInfo` | 切换默认或自定义数据源 |
 | `test_data_source` | `name`, `url` | `TestResultInfo` | 测试数据源 |
@@ -121,7 +121,9 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `list_tasks` | — | `ResourceSnapshot<TaskInfo[]>` | 带独立修订号的任务列表 |
 | `task_action` | `id`, `action`（`pause`/`resume`/`cancel`/`delete`） | `SavedInfo` | 任务操作，推送 `tasks` |
 | `list_game_sessions` | — | `ResourceSnapshot<GameSessionInfo[]>` | 带独立修订号的游戏会话 |
-| `stop_game` | `sessionId` | `SavedInfo` | 请求停止游戏会话；当前演示后端返回 `UNSUPPORTED` |
+| `stop_game` | `sessionId` | `SavedInfo` | 请求结束该启动器启动的游戏进程，进程退出后更新会话状态 |
+
+原版启动使用版本 JSON 指定的 Java 主版本。有显式 Java 路径时使用该路径，否则从本机选择满足要求的运行时。启动前检查游戏文件并准备原生库与旧版资源，启动后记录进程和退出状态。每次启动的标准输出和错误输出写入配置目录的 `game-logs/`。
 
 ### 内容与版本
 
@@ -131,12 +133,14 @@ const overview = await call<ResourceSnapshot<LauncherOverview>>("get_overview");
 | `list_content_versions` | `id`, `requestId?` | `ResourceVersionsInfo` | 兼容版本 |
 | `queue_content_version` | `token`, `versionId`, `mode?`, `path?` | `SavedInfo` | 加入下载队列 |
 | `toggle_bookmark` | `id`, `name`, `description`, `kind` | `SavedInfo` | 收藏/取消收藏，推送 `state` |
-| `list_vanilla_versions` | — | `VanillaVersionInfo[]` | 原版版本清单 |
-| `install_vanilla` | `minecraftVersion` | `SavedInfo` | 安装原版 |
+| `list_vanilla_versions` | — | `VanillaVersionInfo[]` | 桌面端从 Mojang 或 BMCLAPI 获取原版版本清单 |
+| `install_vanilla` | `minecraftVersion` | `SavedInfo` | 在当前游戏目录提交原版安装任务，以版本 ID 为实例名，`entityIds` 包含任务 ID |
 | `list_loaders` | `minecraftVersion`, `loader` | `LoaderListInfo` | 加载器版本 |
 | `install_loader` | `minecraftVersion`, `loader`, `loaderVersion` | `SavedInfo` | 安装加载器 |
 | `preview_pack` | `path` | `PackPreviewInfo` | 读取整合包计划；演示后端返回 `UNSUPPORTED` |
 | `confirm_pack` | `planId`, `name`, `directory` | `SavedInfo` | 按计划确认导入；演示后端返回 `UNSUPPORTED` |
+
+原版任务通过 `list_tasks` 返回按文件计数的进度。文件下载遇到连接失败、超时、响应中断或服务器临时错误时最多重试两次。暂停与取消在当前一批文件处理结束后生效。安装完成后，当前目录仍为任务目标时会刷新实例清单。已有同名实例会返回 `CONFLICT`。任务暂存于当前运行期，重新提交时会复用已经校验过的公共文件。
 
 ### 实例维护
 

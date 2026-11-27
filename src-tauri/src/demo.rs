@@ -24,6 +24,7 @@ pub enum StateResource {
     Servers,
     Bookmarks,
     Tasks,
+    GameSessions,
     Community,
 }
 
@@ -68,7 +69,6 @@ pub struct Data {
     pub backups: Vec<SaveBackupInfo>,
     pub log: String,
     pub content: Vec<ContentItem>,
-    pub vanilla: Vec<VanillaVersionInfo>,
     pub plans: HashMap<String, PlanRecord>,
     next_plan_id: u64,
 }
@@ -115,7 +115,6 @@ impl Data {
             ]
             .join("\n"),
             content: demo_content(),
-            vanilla: demo_vanilla(),
             plans: HashMap::new(),
             next_plan_id: 1,
         }
@@ -154,6 +153,7 @@ impl Data {
             StateResource::Servers => &mut self.revisions.servers,
             StateResource::Bookmarks => &mut self.revisions.bookmarks,
             StateResource::Tasks => &mut self.revisions.tasks,
+            StateResource::GameSessions => &mut self.revisions.game_sessions,
             StateResource::Community => &mut self.revisions.community,
         };
         *revision = revision.saturating_add(1);
@@ -950,26 +950,4 @@ fn content(
         game_versions: game_versions.iter().map(|v| (*v).to_string()).collect(),
         loaders: loaders.iter().map(|v| (*v).to_string()).collect(),
     }
-}
-
-fn demo_vanilla() -> Vec<VanillaVersionInfo> {
-    [
-        ("1.21.1", "release", "2024-08-08"),
-        ("1.21", "release", "2024-06-13"),
-        ("1.20.6", "release", "2024-04-29"),
-        ("1.20.4", "release", "2023-12-07"),
-        ("1.20.1", "release", "2023-06-12"),
-        ("1.19.4", "release", "2023-03-14"),
-        ("24w45a", "snapshot", "2024-11-06"),
-        ("24w44a", "snapshot", "2024-10-30"),
-        ("b1.7.3", "old_beta", "2011-07-08"),
-        ("a1.2.6", "old_alpha", "2010-12-02"),
-    ]
-    .into_iter()
-    .map(|(id, kind, released)| VanillaVersionInfo {
-        id: id.into(),
-        type_: kind.into(),
-        released: released.into(),
-    })
-    .collect()
 }

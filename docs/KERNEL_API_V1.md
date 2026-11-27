@@ -174,7 +174,7 @@ npm run tauri dev
 - **覆盖范围**：一个可分发的前端必须覆盖 `kernel_manifest.methods` 里的全部方法，而不是只做几个演示按钮；缺失的方法等于让用户失去对应功能。
 - **基线实现**：`mcugl-buildtool/templates/vite-react`（`npx mcugl-buildtool my-frontend -t vite-react`）是参考实现——它用 `src/actions.ts` 把 66 个内核方法 + 4 个宿主命令列成可点击的表单，并在页面上显示 `覆盖数/总数` 与缺失清单。
 - **打包期强制**：`mcugl-buildtool` 的 `scripts/pack.mjs` 会读取随包的 `kernel-methods.json`，扫描前端目录里的文本文件，缺方法时拒绝出包并列出缺项；只做原型预览时才允许 `--allow-incomplete`（或 `MCUGL_PACK_ALLOW_INCOMPLETE=1`），产物会带警告。`simple`、`vanilla` 是有意不完整的布局起点；`vite-react-simple` 通过「命令」页覆盖全部 66 个方法，可直接出包。
-- **能力降级**：演示后端对 28 个写操作返回 `UNSUPPORTED`；前端应原样展示错误码并说明「当前后端不支持」，不要吞掉或假装成功。
+- **能力降级**：桌面端的能力以 `kernel_manifest.capabilities` 为准。未接入的操作返回 `UNSUPPORTED`，前端应展示错误码和提示。
 
 ## 5. 官方前端的模组化（配套，不阻塞 v1）
 

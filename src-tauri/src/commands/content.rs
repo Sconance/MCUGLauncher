@@ -2,6 +2,8 @@
 
 #[allow(unused_imports)]
 pub use super::implementation::{
-    confirm_pack, install_loader, install_vanilla, list_content_versions, list_loaders,
-    list_vanilla_versions, preview_pack, queue_content_version, search_content, toggle_bookmark,
+    confirm_pack, install_loader, list_content_versions, list_loaders, preview_pack,
+    queue_content_version, search_content, toggle_bookmark,
 };
+#[allow(unused_imports)]
+pub use super::vanilla::{install_vanilla, list_vanilla_versions};

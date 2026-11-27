@@ -97,7 +97,6 @@ pub const METHODS: &[&str] = &[
 /// 演示后端里明确返回 `UNSUPPORTED` 的命令。真实内核接入后逐条删掉即可，
 /// `capabilities` 会随之自动变成 `true`。
 const DEMO_UNSUPPORTED: &[&str] = &[
-    "launch_game",
     "launch_to_server",
     "ping_server",
     "start_login",
@@ -105,16 +104,13 @@ const DEMO_UNSUPPORTED: &[&str] = &[
     "get_login_session",
     "select_login_profile",
     "cancel_login",
-    "scan_java",
     "test_data_source",
     "reset_window",
     "open_folder",
     "verify_key",
     "backup_saves",
     "restore_save",
-    "stop_game",
     "queue_content_version",
-    "install_vanilla",
     "install_loader",
     "preview_pack",
     "confirm_pack",

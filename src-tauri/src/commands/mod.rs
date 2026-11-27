@@ -17,3 +17,4 @@ pub mod servers;
 pub mod settings;
 pub mod state;
 pub mod tasks;
+pub mod vanilla;
