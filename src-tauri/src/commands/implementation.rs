@@ -865,9 +865,8 @@ pub fn list_game_sessions(backend: State<'_, Backend>) -> ResourceSnapshot {
 
 // ---------------------------------------------------------------- 内容
 
-/// 按分类与关键词搜索资源项目。
-#[tauri::command]
-pub fn search_content(
+/// 搜索尚未接入在线来源的内置演示项目。
+pub(super) fn search_demo_content(
     backend: State<'_, Backend>,
     category: String,
     query: String,
@@ -908,16 +907,13 @@ pub fn search_content(
     }
 }
 
-/// 读取项目的兼容版本与安装令牌。
-#[tauri::command]
-pub fn list_content_versions(
+/// 返回内置演示项目的示例版本。
+pub(super) fn list_demo_content_versions(
     backend: State<'_, Backend>,
     id: String,
     request_id: Option<String>,
     game: Option<String>,
     loader: Option<String>,
-    #[allow(unused_variables)] category: Option<String>,
-    #[allow(unused_variables)] instance: Option<String>,
 ) -> ResourceVersionsInfo {
     let name = backend
         .data
@@ -944,18 +940,6 @@ pub fn list_content_versions(
         loader: loader.unwrap_or_else(|| "Fabric".into()),
         items: versions,
     }
-}
-
-/// 将资源版本加入下载队列。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn queue_content_version(
-    token: String,
-    version_id: String,
-    #[allow(unused_variables)] mode: Option<String>,
-    #[allow(unused_variables)] path: Option<String>,
-) -> Result<SavedInfo, ApiError> {
-    Err(ApiError::unsupported("queue_content_version"))
 }
 
 /// 收藏或取消收藏资源项目。
@@ -1006,13 +990,11 @@ pub fn toggle_bookmark(
     }
 }
 
-/// 读取指定游戏版本可用的加载器版本。
-#[tauri::command]
-pub fn list_loaders(minecraft_version: String, loader: String) -> LoaderListInfo {
+/// 返回尚未接入在线来源的加载器示例版本。
+pub(super) fn list_demo_loaders(minecraft_version: String, loader: String) -> LoaderListInfo {
     let versions = match loader.to_lowercase().as_str() {
         "quilt" => vec!["0.24.0", "0.23.2", "0.23.1"],
         "forge" => vec!["47.2.0", "47.1.3", "47.0.19"],
-        "neoforge" => vec!["21.1.72", "21.1.66", "21.1.59"],
         _ => vec!["0.16.9", "0.16.8", "0.16.5", "0.15.11"],
     };
     LoaderListInfo {
@@ -1020,38 +1002,6 @@ pub fn list_loaders(minecraft_version: String, loader: String) -> LoaderListInfo
         loader,
         versions: versions.into_iter().map(String::from).collect(),
     }
-}
-
-/// 安装指定加载器版本。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn install_loader(
-    minecraft_version: String,
-    loader: String,
-    loader_version: String,
-) -> Result<SavedInfo, ApiError> {
-    Err(ApiError::unsupported("install_loader"))
-}
-
-/// 读取整合包预览信息。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn preview_pack(
-    backend: State<'_, Backend>,
-    path: String,
-) -> Result<PackPreviewInfo, ApiError> {
-    Err(ApiError::unsupported("preview_pack"))
-}
-
-/// 确认导入整合包到指定目录。
-#[tauri::command]
-#[allow(unused_variables)]
-pub fn confirm_pack(
-    plan_id: String,
-    name: String,
-    directory: String,
-) -> Result<SavedInfo, ApiError> {
-    Err(ApiError::unsupported("confirm_pack"))
 }
 
 // ---------------------------------------------------------------- 实例维护

@@ -58,6 +58,8 @@ struct Asset {
 
 #[derive(Deserialize)]
 pub(super) struct Library {
+    #[serde(default)]
+    pub(super) name: String,
     pub(super) downloads: LibraryDownloads,
     pub(super) rules: Option<Vec<Rule>>,
     #[serde(default)]

@@ -113,8 +113,6 @@ const DEMO_UNSUPPORTED: &[&str] = &[
     "restore_save",
     "queue_content_version",
     "install_loader",
-    "preview_pack",
-    "confirm_pack",
     "apply_uninstall",
     "clone_instance",
     "export_instance",

@@ -1,7 +1,7 @@
-//! 从本地原版实例生成 Java 命令，准备原生库并启动子进程。
+//! 从已解析的本地实例生成 Java 命令，准备原生库并启动子进程。
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     env,
     ffi::OsString,
     fs::{self, File},
@@ -16,6 +16,7 @@ use tempfile::TempDir;
 
 use super::{
     java_runtime::JavaRuntime,
+    launch_profile::{Argument, ArgumentValue, VersionProfile},
     vanilla_download::{Library, Rule, library_path, safe_component},
 };
 
@@ -49,56 +50,6 @@ pub fn offline_profile(name: &str) -> io::Result<PlayerProfile> {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VersionProfile {
-    id: String,
-    #[serde(rename = "type")]
-    kind: String,
-    main_class: String,
-    inherits_from: Option<String>,
-    java_version: Option<JavaVersion>,
-    asset_index: Option<AssetIndex>,
-    assets: Option<String>,
-    libraries: Vec<Library>,
-    arguments: Option<Arguments>,
-    minecraft_arguments: Option<String>,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct JavaVersion {
-    major_version: u32,
-}
-
-#[derive(Deserialize)]
-struct AssetIndex {
-    id: String,
-}
-
-#[derive(Deserialize)]
-struct Arguments {
-    jvm: Vec<Argument>,
-    game: Vec<Argument>,
-}
-
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Argument {
-    Text(String),
-    Conditional {
-        rules: Vec<Rule>,
-        value: ArgumentValue,
-    },
-}
-
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum ArgumentValue {
-    Text(String),
-    List(Vec<String>),
-}
-
-#[derive(Deserialize)]
 struct LegacyIndex {
     #[serde(default, rename = "virtual")]
     virtual_assets: bool,
@@ -113,35 +64,9 @@ struct LegacyAsset {
     size: u64,
 }
 
-impl VersionProfile {
-    pub fn read(path: &Path) -> io::Result<Self> {
-        let profile: Self = read_json(path)?;
-        if profile.inherits_from.is_some() {
-            return Err(io::Error::new(
-                io::ErrorKind::Unsupported,
-                "暂未接入继承版本和加载器启动。",
-            ));
-        }
-        if !safe_component(&profile.id) || profile.main_class.is_empty() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "版本缺少有效 ID 或 Java 主类。",
-            ));
-        }
-        Ok(profile)
-    }
-
-    pub fn required_java(&self) -> u32 {
-        self.java_version
-            .as_ref()
-            .map_or(8, |version| version.major_version)
-    }
-}
-
 pub struct LaunchOptions<'a> {
     pub root: &'a Path,
     pub version_dir: &'a Path,
-    pub instance_name: &'a str,
     pub java: &'a JavaRuntime,
     pub player: &'a PlayerProfile,
     pub ram_mb: u32,
@@ -199,7 +124,7 @@ impl PreparedLaunch {
     }
 }
 
-pub fn prepare_launch(
+pub(crate) fn prepare_launch(
     version: &VersionProfile,
     options: LaunchOptions<'_>,
 ) -> io::Result<PreparedLaunch> {
@@ -226,10 +151,7 @@ pub fn prepare_launch(
     }
     let game_assets = prepare_assets(&assets, index_id, options.root)?;
     let mut jars = Vec::new();
-    for library in &version.libraries {
-        if !allowed(library.rules.as_deref(), platform, options.java) {
-            continue;
-        }
+    for library in launch_libraries(version, platform, options.java) {
         if let Some(artifact) = &library.downloads.artifact {
             jars.push(require_file(library_path(artifact, options.root)?)?);
         }
@@ -253,11 +175,21 @@ pub fn prepare_launch(
             extract_natives(&library_path(artifact, options.root)?, natives.path())?;
         }
     }
-    jars.push(require_file(
+    let base_jar = require_file(
         options
-            .version_dir
-            .join(format!("{}.jar", options.instance_name)),
-    )?);
+            .root
+            .join("versions")
+            .join(&version.jar)
+            .join(format!("{}.jar", version.jar)),
+    )?;
+    if !version.inherits
+        || !version.libraries.iter().any(|library| {
+            library.name.starts_with("net.minecraftforge:forge:")
+                && library.name.ends_with(":client")
+        })
+    {
+        jars.push(base_jar);
+    }
     let classpath = env::join_paths(jars)
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
     let mut fields = HashMap::<&str, OsString>::from([
@@ -304,13 +236,13 @@ pub fn prepare_launch(
         command.creation_flags(0x08000000);
     }
     if let Some(args) = &version.arguments {
+        let mut jvm = resolve_arguments(&args.jvm, platform, options.java, &fields)?;
+        if version.inherits && version.main_class == "cpw.mods.bootstraplauncher.BootstrapLauncher"
+        {
+            ignore_inherited_client(&mut jvm, &version.jar);
+        }
         command
-            .args(resolve_arguments(
-                &args.jvm,
-                platform,
-                options.java,
-                &fields,
-            )?)
+            .args(jvm)
             .arg(&version.main_class)
             .args(resolve_arguments(
                 &args.game,
@@ -335,6 +267,38 @@ pub fn prepare_launch(
         }
     }
     Ok(PreparedLaunch { command, natives })
+}
+
+fn launch_libraries<'a>(
+    version: &'a VersionProfile,
+    platform: &str,
+    java: &JavaRuntime,
+) -> Vec<&'a Library> {
+    let allowed = version
+        .libraries
+        .iter()
+        .filter(|library| allowed(library.rules.as_deref(), platform, java));
+    if !version.inherits {
+        return allowed.collect();
+    }
+    let mut seen = HashSet::new();
+    let mut selected: Vec<_> = allowed
+        .rev()
+        .filter(|library| library_key(&library.name).is_none_or(|key| seen.insert(key)))
+        .collect();
+    selected.reverse();
+    selected
+}
+
+fn library_key(name: &str) -> Option<(&str, &str, &str, &str)> {
+    let (coordinate, extension) = name.split_once('@').unwrap_or((name, "jar"));
+    let mut parts = coordinate.split(':');
+    let (group, artifact, _version) = (parts.next()?, parts.next()?, parts.next()?);
+    let classifier = parts.next().unwrap_or_default();
+    parts
+        .next()
+        .is_none()
+        .then_some((group, artifact, classifier, extension))
 }
 
 fn allowed(rules: Option<&[Rule]>, platform: &str, java: &JavaRuntime) -> bool {
@@ -392,6 +356,23 @@ fn resolve_arguments(
         }
     }
     Ok(output)
+}
+
+fn ignore_inherited_client(args: &mut [OsString], jar_id: &str) {
+    let jar = format!("{jar_id}.jar");
+    if let Some(arg) = args.iter_mut().rev().find(|arg| {
+        arg.to_str()
+            .is_some_and(|value| value.starts_with("-DignoreList="))
+    }) {
+        let ignored = arg.to_str().unwrap().trim_start_matches("-DignoreList=");
+        // BootstrapLauncher loads the patched client separately. Its list compares filenames.
+        if !ignored.split(',').any(|entry| entry == jar) {
+            if !ignored.is_empty() {
+                arg.push(",");
+            }
+            arg.push(jar);
+        }
+    }
 }
 
 fn replace_fields(mut template: &str, fields: &HashMap<&str, OsString>) -> io::Result<OsString> {
@@ -525,4 +506,24 @@ fn extract_natives(path: &Path, destination: &Path) -> io::Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bootstrap_ignore_list_contains_the_actual_client_filename_once() {
+        let mut args = [
+            OsString::from("-DignoreList=old-list"),
+            OsString::from("-DignoreList=client-extra,neoforge-21.4.161.jar"),
+        ];
+        ignore_inherited_client(&mut args, "1.21.4");
+        ignore_inherited_client(&mut args, "1.21.4");
+        assert_eq!(args[0], "-DignoreList=old-list");
+        assert_eq!(
+            args[1],
+            "-DignoreList=client-extra,neoforge-21.4.161.jar,1.21.4.jar"
+        );
+    }
 }

@@ -1,10 +1,13 @@
 use std::{
+    collections::HashMap,
     io,
     path::{Path, PathBuf},
     sync::Mutex,
 };
 
 use crate::{
+    commands::{mod_download::ModDownloadState, modrinth_pack::PackPlan},
+    core::mod_sources::mcmod::CatalogCache,
     demo::{Data, StateResource},
     launcher_config::LauncherConfig,
     local_instances,
@@ -14,6 +17,9 @@ use crate::{
 /// 后端运行时状态和启动器设置的保存位置。
 pub struct Backend {
     pub data: Mutex<Data>,
+    pub(crate) mod_downloads: Mutex<ModDownloadState>,
+    pub(crate) mod_catalog: tauri::async_runtime::Mutex<CatalogCache>,
+    pub(crate) pack_plans: Mutex<HashMap<String, PackPlan>>,
     config_dir: PathBuf,
 }
 
@@ -34,6 +40,9 @@ impl Backend {
         data.replace_instance_catalog(catalog);
         Ok(Self {
             data: Mutex::new(data),
+            mod_downloads: Mutex::default(),
+            mod_catalog: tauri::async_runtime::Mutex::default(),
+            pack_plans: Mutex::default(),
             config_dir,
         })
     }
@@ -51,7 +60,10 @@ impl Backend {
         data.ensure_settings_revision(expected_revision)?;
         config.save(&self.config_dir).map_err(|error| ApiError {
             code: "IO_ERROR".into(),
-            message: format!("无法保存启动器配置（{}）：{error}", self.config_dir.display()),
+            message: format!(
+                "无法保存启动器配置（{}）：{error}",
+                self.config_dir.display()
+            ),
             retryable: true,
             field_errors: Default::default(),
         })?;
@@ -85,11 +97,16 @@ mod tests {
         legacy["gameRoots"] = serde_json::json!(["/game/other", "/game/active"]);
         fs::write(&config_path, serde_json::to_vec(&legacy).unwrap()).unwrap();
 
-        let backend = Backend::open(temp.path().to_path_buf(), || panic!("existing config")).unwrap();
+        let backend =
+            Backend::open(temp.path().to_path_buf(), || panic!("existing config")).unwrap();
         let data = backend.data.lock().unwrap();
         assert_eq!(data.state.config.root(), "/game/active");
-        let config: serde_json::Value = serde_json::from_slice(&fs::read(config_path).unwrap()).unwrap();
-        assert_eq!(config["gameRoots"], serde_json::json!(["/game/active", "/game/other"]));
+        let config: serde_json::Value =
+            serde_json::from_slice(&fs::read(config_path).unwrap()).unwrap();
+        assert_eq!(
+            config["gameRoots"],
+            serde_json::json!(["/game/active", "/game/other"])
+        );
         assert!(config.get("root").is_none());
     }
 
@@ -115,8 +132,8 @@ mod tests {
         }
         drop(backend);
 
-        let backend = Backend::open(directory, || panic!("saved config should take precedence"))
-            .unwrap();
+        let backend =
+            Backend::open(directory, || panic!("saved config should take precedence")).unwrap();
         let data = backend.data.lock().unwrap();
         assert_eq!(data.state.config.ram, 4096);
         assert_eq!(data.state.config.root(), new_root.to_str().unwrap());
@@ -150,7 +167,9 @@ mod tests {
         let revision = data.revisions.settings;
         let mut config = data.state.config.clone();
         config.ram = 4096;
-        let error = backend.save_config(&mut data, config, revision).unwrap_err();
+        let error = backend
+            .save_config(&mut data, config, revision)
+            .unwrap_err();
         assert_eq!(error.code, "IO_ERROR");
         assert_eq!(data.state.config.ram, LauncherConfig::default().ram);
         assert_eq!(data.revisions.settings, revision);
@@ -171,7 +190,9 @@ mod tests {
         let mut config = data.state.config.clone();
         config.data_source_mode = "custom".into();
 
-        let error = backend.save_config(&mut data, config, stale_revision).unwrap_err();
+        let error = backend
+            .save_config(&mut data, config, stale_revision)
+            .unwrap_err();
         assert_eq!(error.code, "CONFLICT");
         assert_eq!(data.state.config.data_source_mode, "default");
         assert_eq!(fs::read(&path).unwrap(), saved);
