@@ -50,6 +50,10 @@
   pointer-events: none;
 }
 
+.shell-bg.is-solid {
+  background: var(--app-bg);
+}
+
 .page-host,
 .nav-dock {
   z-index: 1;

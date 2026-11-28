@@ -1,0 +1,328 @@
+/* 背景设置卡片：缩略图网格、添加虚线框与内置图片浏览器 */
+
+.wp-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  max-width: 520px;
+}
+
+.wp-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 120px;
+}
+
+.wp-thumb-wrap {
+  position: relative;
+  width: 120px;
+  height: 70px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: var(--app-side);
+  box-shadow: 0 1px 4px rgb(28 25 23 / 10%);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 120ms ease;
+}
+
+.wp-thumb-wrap:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(28 25 23 / 14%);
+}
+
+.wp-thumb-wrap.is-selected {
+  border-color: var(--app-accent);
+  box-shadow:
+    0 0 0 2px rgb(59 130 246 / 18%),
+    0 3px 10px rgb(28 25 23 / 10%);
+}
+
+.wp-thumb-btn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.wp-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 米白纯色背景预览卡片 */
+.wp-solid-swatch {
+  display: grid;
+  place-items: center;
+  background: #faf9f6;
+}
+
+.wp-solid-chip {
+  width: 44px;
+  height: 24px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #e2dcd2;
+  box-shadow:
+    0 1px 3px rgb(28 25 23 / 8%),
+    0 4px 10px rgb(28 25 23 / 7%);
+}
+
+/* 缩略图悬停操作：左下角「浏览」胶囊 + 右上角删除按钮 */
+.wp-thumb-preview {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  height: 20px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(20 24 29 / 68%);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    background-color 120ms ease;
+}
+
+.wp-thumb-preview:hover {
+  background: rgb(20 24 29 / 86%);
+}
+
+.wp-thumb-remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(20 24 29 / 68%);
+  color: #ffffff;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    background-color 120ms ease;
+}
+
+.wp-thumb-remove:hover {
+  background: #c83e36;
+}
+
+.wp-remove-icon {
+  width: 10px;
+  height: 10px;
+}
+
+.wp-thumb-wrap:hover .wp-thumb-preview,
+.wp-thumb-wrap:focus-within .wp-thumb-preview,
+.wp-thumb-wrap:hover .wp-thumb-remove,
+.wp-thumb-wrap:focus-within .wp-thumb-remove {
+  opacity: 1;
+}
+
+/* 添加按钮：虚线圆角框 + 蓝色加号 */
+.wp-add-box {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 70px;
+  padding: 0;
+  border: 1.5px dashed var(--app-line-2);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--app-accent);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.wp-add-box:hover {
+  border-color: var(--app-accent);
+  background: var(--app-accent-wash);
+  color: var(--app-accent-dark);
+}
+
+.wp-add-plus {
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.wp-label {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--app-ink-2);
+  font-size: 11.5px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 启动器内置图片浏览器 ---------- */
+
+.wp-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgb(18 22 28 / 58%);
+  backdrop-filter: blur(8px);
+  animation: modal-mask-in 150ms linear both;
+}
+
+.wp-viewer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(860px, 100%);
+  max-height: min(640px, 100%);
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  background-color: var(--app-glass-strong);
+  background-image: var(--app-glass-grain);
+  background-size: 160px 160px;
+  backdrop-filter: blur(32px) saturate(135%);
+  box-shadow: var(--shadow-dialog);
+  animation: modal-card-in 180ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+.wp-viewer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wp-viewer-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wp-viewer-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--app-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wp-viewer-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 1 1 auto;
+  min-height: 280px;
+  max-height: 410px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgb(18 22 28 / 9%);
+}
+
+.wp-viewer-image {
+  max-width: 100%;
+  max-height: 410px;
+  object-fit: contain;
+}
+
+.wp-viewer-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(20 24 29 / 52%);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.wp-viewer-nav:hover {
+  background: rgb(20 24 29 / 78%);
+}
+
+.wp-viewer-nav.is-prev {
+  left: 12px;
+}
+
+.wp-viewer-nav.is-next {
+  right: 12px;
+}
+
+.wp-viewer-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+}
+
+.wp-strip-item {
+  flex: none;
+  width: 68px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 7px;
+  overflow: hidden;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.72;
+  transition:
+    opacity 120ms ease,
+    border-color 120ms ease;
+}
+
+.wp-strip-item:hover {
+  opacity: 1;
+}
+
+.wp-strip-item.is-active {
+  border-color: var(--app-accent);
+  opacity: 1;
+}
+
+.wp-strip-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wp-viewer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wp-viewer-actions {
+  gap: 8px;
+}

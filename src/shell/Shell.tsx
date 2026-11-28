@@ -18,7 +18,9 @@ import SettingsPage from "../pages/SettingsPage";
 import TopStatus from "./TopStatusButtons";
 import { useLauncher } from "../state/launcher";
 import { useI18n } from "../i18n";
+import { useBackgroundStyle } from "./backgroundStyle";
 import { NavigationContext } from "./navigation";
+import { resolveActiveWallpaper, useWallpaper } from "./wallpaper";
 
 type PageKey = "home" | "discover" | "download" | "settings" | "account" | "instances";
 
@@ -34,6 +36,15 @@ const NAV: { key: PageKey; labelKey: string; icon: string; iconActive: string }[
 export default function Shell() {
   const { error } = useLauncher();
   const { locale, t } = useI18n();
+  const backgroundStyle = useBackgroundStyle();
+  const wallpaper = useWallpaper();
+  const activeWallpaper = resolveActiveWallpaper(wallpaper, backgroundStyle === "opaque");
+  const isSolidBg = activeWallpaper.kind === "solid";
+
+  // 同步纯米白背景标记到根节点，供不透明模式加强边界与阴影，避免与米白背景混在一起
+  useEffect(() => {
+    document.documentElement.dataset.bgSolid = isSolidBg ? "true" : "false";
+  }, [isSolidBg]);
 
   const [page, setPage] = useState<PageKey>("home");
   /** 实例管理器要直接展开的实例；undefined 表示显示「全部实例」。 */
@@ -204,7 +215,15 @@ export default function Shell() {
         <div className="glass-source">
           <div className="shell-scene">
             {/* 独立的壁纸层：铺满整窗，页面内容从它上面穿过 */}
-            <div className="shell-bg" aria-hidden="true" />
+            <div
+              className={`shell-bg${isSolidBg ? " is-solid" : ""}`}
+              style={
+                activeWallpaper.kind === "image"
+                  ? { backgroundImage: `url("${activeWallpaper.url}")` }
+                  : undefined
+              }
+              aria-hidden="true"
+            />
             <main className="page-host">
               {error.length > 0 ? <div className="backend-error">{error}</div> : null}
               <div className={stageClass}>
