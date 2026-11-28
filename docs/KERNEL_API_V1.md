@@ -3,7 +3,7 @@
 > 状态：**v1.0.0 已冻结**，P0 实现已落地（`kernel_manifest` + 本地目录加载 + `frontend.json` 校验 + `window.__MCUGL__`）。
 > 冻结含义：方法名、参数/返回形状、错误模型、加载契约在 v1 内只增不改；破坏性改动必须升 `apiVersion` 主版本并保留旧版本至少一个发布周期。
 > 目标读者：维护者、想完全重写前端的第三方作者。
-> 相关文档：[BACKEND_CONTRACT.md](BACKEND_CONTRACT.md)（方法语义）、[BACKEND_V2.md](BACKEND_V2.md)（快照/修订/错误/任务状态机）、[FRONTEND_PACKAGE.md](FRONTEND_PACKAGE.md)（`.mcuglf` 分发格式）、[DEVELOPMENT_ENVIRONMENT.md](DEVELOPMENT_ENVIRONMENT.md)（环境与排查）。
+> 相关文档：[BACKEND_CONTRACT.md](BACKEND_CONTRACT.md)（方法语义）、[BACKEND_V2.md](BACKEND_V2.md)（快照/修订/错误/任务状态机）、[FRONTEND_PACKAGE.md](FRONTEND_PACKAGE.md)（`.mcuglf` 分发格式）、[KERNEL_SDK.md](KERNEL_SDK.md)（`@mcugl/frontpack-sdk` 类型客户端）、[DEVELOPMENT_ENVIRONMENT.md](DEVELOPMENT_ENVIRONMENT.md)（环境与排查）。
 
 ## 1. 目标与非目标
 

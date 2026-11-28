@@ -15,6 +15,11 @@ import Modal from "../../components/Modal";
 import SvgIcon from "../../components/SvgIcon";
 import cubeIcon from "../../assets/icons/ui/cube.svg";
 import { setTopStatusForced, useTopStatusForced } from "../../shell/topStatusPreference";
+import {
+  setVanillaReleaseTimeShown,
+  useVanillaReleaseTimeShown,
+} from "../../shell/releaseTimePreference";
+import { setJavaArchShown, useJavaArchShown } from "../../shell/javaDisplayPreference";
 import SettingRow from "./SettingRow";
 import SettingsCard from "./SettingsCard";
 import { useSettingsData } from "./SettingsData";
@@ -38,6 +43,8 @@ function fileName(path: string): string {
 export default function DeveloperSettings({ active }: DeveloperSettingsProps) {
   const forceGames = useTopStatusForced("games");
   const forceTasks = useTopStatusForced("tasks");
+  const showReleaseTime = useVanillaReleaseTimeShown();
+  const showJavaArch = useJavaArchShown();
   const { say, statusAt } = useSettingsStatus();
   const { resourceVersions, refreshSettingsResources } = useSettingsData();
   const [log, setLog] = useState("");
@@ -220,52 +227,87 @@ export default function DeveloperSettings({ active }: DeveloperSettingsProps) {
             </button>
           }
         />
-      </SettingsCard>
-
-      <SettingsCard
-        title={
-          <>
-            前端（第三方 UI）
-          </>
-        }
-      >
-        <span className="muted">
-          导入 `.mcuglf` 包即可用别人的界面替换本启动器界面。第三方前端通过
-          mcugl.kernel/v1 访问与官方界面相同的命令，因此拥有完整的数据读写权限，只导入你信任的文件。
-          切换后点「重启前端」立即生效；如果第三方界面白屏或卡死，按 Ctrl+Alt+C
-          可强制切回官方前端，启动器不会退出。
-        </span>
-        <div className="settings-actions">
-          <button
-            type="button"
-            className="btn primary"
-            disabled={busy}
-            onClick={() => void importFrontend()}
-          >
-            导入前端包…
-          </button>
-          {activeFrontend ? (
+        <SettingRow
+          title={
+            <>
+              原版列表显示发布时分秒
+            </>
+          }
+          control={
             <button
               type="button"
-              className="btn ghost"
-              disabled={busy}
-              onClick={() => void switchFrontend(null)}
+              role="switch"
+              aria-checked={showReleaseTime}
+              aria-label="原版列表显示发布时分秒"
+              className={`switch${showReleaseTime ? " on" : ""}`}
+              onClick={() => setVanillaReleaseTimeShown(!showReleaseTime)}
             >
-              切回官方前端
+              <span className="switch-thumb" />
             </button>
-          ) : (
-            <span className="status">当前使用：官方前端</span>
-          )}
-          <button
-            type="button"
-            className="btn ghost"
-            disabled={busy}
-            onClick={() => void reload()}
-          >
-            重启前端
-          </button>
-          <span className="status">{frontendStatus}</span>
-        </div>
+          }
+        />
+        <SettingRow
+          title={
+            <>
+              显示本机Java架构
+            </>
+          }
+          control={
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showJavaArch}
+              aria-label="显示本机Java架构"
+              className={`switch${showJavaArch ? " on" : ""}`}
+              onClick={() => setJavaArchShown(!showJavaArch)}
+            >
+              <span className="switch-thumb" />
+            </button>
+          }
+        />
+      </SettingsCard>
+
+      <SettingsCard title="前端（第三方 UI）">
+        <SettingRow
+          title="第三方前端管理"
+          control={
+            <div className="setting-control">
+              <button
+                type="button"
+                className="btn primary"
+                disabled={busy}
+                onClick={() => void importFrontend()}
+              >
+                导入前端包…
+              </button>
+              {activeFrontend ? (
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={busy}
+                  onClick={() => void switchFrontend(null)}
+                >
+                  切回官方前端
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy}
+                onClick={() => void reload()}
+              >
+                重启前端
+              </button>
+            </div>
+          }
+        >
+          <span className="setting-subtitle">
+            {frontendStatus ||
+              (activeFrontend
+                ? `当前使用：${activeFrontend}（按 Ctrl+Alt+C 可强制切回官方前端）`
+                : "当前使用：官方前端；导入 .mcuglf 包可替换界面（Ctrl+Alt+C 强制切回）")}
+          </span>
+        </SettingRow>
 
         {frontends === null ? (
           <span className="muted">正在读取已安装前端…</span>
@@ -325,30 +367,32 @@ export default function DeveloperSettings({ active }: DeveloperSettingsProps) {
         )}
       </SettingsCard>
 
-      <SettingsCard
-        title={
-          <>
-            运行日志
-          </>
-        }
-      >
-        <div className="settings-actions">
-          <button type="button" className="btn primary" onClick={() => void readLog()}>
-            刷新日志
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() =>
-              void openFolderCommand("config").then((result) =>
-                say("developer:logs", result.message),
-              )
-            }
-          >
-            打开日志目录
-          </button>
-          <span className="status">{statusAt("developer:logs")}</span>
-        </div>
+      <SettingsCard title="运行日志">
+        <SettingRow
+          title="启动器日志"
+          control={
+            <div className="setting-control">
+              <button type="button" className="btn primary" onClick={() => void readLog()}>
+                刷新
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() =>
+                  void openFolderCommand("config").then((result) =>
+                    say("developer:logs", result.message),
+                  )
+                }
+              >
+                打开
+              </button>
+            </div>
+          }
+        >
+          <span className="setting-subtitle">
+            {statusAt("developer:logs") || "读取最新运行日志或打开日志所在目录"}
+          </span>
+        </SettingRow>
         <AppTextarea className="log-box" readOnly value={log} />
       </SettingsCard>
 

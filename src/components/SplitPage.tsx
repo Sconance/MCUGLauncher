@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
+import FadeScrollbar from "./FadeScrollbar";
 import SectionNav, { type NavItem } from "./SectionNav";
 import { useFadeSwap } from "../shell/fade";
 import "./SplitPage.css";
@@ -60,11 +61,14 @@ export default function SplitPage({
       </aside>
 
       <div className="split-body">
-        <div
-          ref={contentRef}
-          className={`split-content${out ? " is-out" : ""}${contentClassName ? ` ${contentClassName}` : ""}`}
-        >
-          {children(shown)}
+        <div className="fade-scroll-shell">
+          <div
+            ref={contentRef}
+            className={`split-content fade-scroll-target${out ? " is-out" : ""}${contentClassName ? ` ${contentClassName}` : ""}`}
+          >
+            {children(shown)}
+          </div>
+          <FadeScrollbar targetRef={contentRef} hidden={out} />
         </div>
         {footer}
       </div>

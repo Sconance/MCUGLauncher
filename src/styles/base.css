@@ -59,10 +59,10 @@ img {
   -webkit-user-drag: none;
 }
 
-/* 细线滚动条：对应 Theme/App.axaml 的自定义 ScrollBar 模板 */
+/* 细线滚动条：与主题蓝色系一致 */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(153 182 192 / 60%) transparent;
+  scrollbar-color: rgb(100 138 175 / 52%) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -75,7 +75,7 @@ img {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #99b6c0ca;
+  background: rgb(100 138 175 / 52%);
   border: 1px solid transparent;
   border-radius: 3px;
   background-clip: content-box;
@@ -83,12 +83,12 @@ img {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #cc8a97a3;
+  background: rgb(37 99 235 / 72%);
   background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:active {
-  background: #e07a8792;
+  background: rgb(29 78 216 / 88%);
   background-clip: content-box;
 }
 

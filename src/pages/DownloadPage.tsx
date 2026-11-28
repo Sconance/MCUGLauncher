@@ -4,6 +4,7 @@ import {
     installVanilla,
     listContentVersions,
     listLoaders,
+    listVanillaThemes,
     listVanillaVersions,
     queueContentVersion,
     searchContent,
@@ -24,7 +25,7 @@ import ActiveFilters from './download/ActiveFilters';
 import InstancePicker from './download/InstancePicker';
 import DownloadPrompts from './download/DownloadPrompts';
 import Pager from './download/Pager';
-import { LOADER_DEFS, SUPPORTED_LOADERS, versionAtLeast } from './download/loaders';
+import { formatDefaultInstanceName, LOADER_DEFS, SUPPORTED_LOADERS, versionAtLeast } from './download/loaders';
 import datapackIcon from '../assets/icons/download/datapack.svg';
 import cubeIcon from '../assets/icons/ui/cube.svg';
 import gridIcon from '../assets/icons/ui/grid.svg';
@@ -44,7 +45,13 @@ import type {
     ResourceVersionsInfo,
     VanillaVersionInfo,
 } from '../types/launcher';
-import { groupVersions } from './vanillaThemes';
+import {
+    groupVersions,
+    isAprilFoolsVersion,
+    loadCachedVanillaThemes,
+    saveCachedVanillaThemes,
+    type VanillaThemeMap,
+} from './vanillaThemes';
 import './DownloadPage.css';
 
 /** 左栏内容分区；「原版游戏」单独成组。 */
@@ -175,6 +182,7 @@ export default function DownloadPage() {
     const filterRef = useRef<HTMLDivElement>(null);
 
     const [vanilla, setVanilla] = useState<VanillaVersionInfo[]>([]);
+    const [wikiThemes, setWikiThemes] = useState<VanillaThemeMap>(() => loadCachedVanillaThemes());
     const [vanillaHint, setVanillaHint] = useState('正在读取 Mojang 版本列表…');
     /** 三个版本抽屉的开合状态，默认展开正式版 */
     const [openVanilla, setOpenVanilla] = useState<Record<string, boolean>>({ release: true });
@@ -182,7 +190,6 @@ export default function DownloadPage() {
     /** 点进版本后进入的安装页；null 表示还在版本列表 */
     const [vanillaPick, setVanillaPick] = useState<VanillaVersionInfo | null>(null);
     const [instanceName, setInstanceName] = useState('');
-    const [nameTouched, setNameTouched] = useState(false);
     const [pickVersions, setPickVersions] = useState<Record<string, string[]>>({});
     const [pickLoader, setPickLoader] = useState<Record<string, string>>({});
     const [openPick, setOpenPick] = useState<string | null>(null);
@@ -203,25 +210,42 @@ export default function DownloadPage() {
         }).catch((error) => {
             if (alive) setVanillaHint(`读取原版版本列表失败：${String(error)}`);
         });
+        void listVanillaThemes(false).then((themes) => {
+            if (!alive || Object.keys(themes).length === 0) return;
+            setWikiThemes(themes);
+            saveCachedVanillaThemes(themes);
+        }).catch(() => {
+            // Wiki 不可达时静默回退到本地缓存与内置主题表
+        });
         return () => {
             alive = false;
         };
     }, []);
 
-    /** 三个抽屉：正式版 / 快照版 / 远古版，各自按主题更新分组 */
+    /** 四个抽屉：正式版 / 快照版 / 愚人节版 / 远古版，各自按发布时间倒序并按主题更新分组 */
     const vanillaDrawers = useMemo(() => {
         const keyword = vanillaQuery.trim().toLowerCase();
+        const allReleases = vanilla.filter((item) => item.type === 'release');
         const matched = vanilla.filter((item) => item.id.toLowerCase().includes(keyword));
         return [
             { key: 'release', label: '正式版', items: matched.filter((item) => item.type === 'release') },
-            { key: 'snapshot', label: '快照版', items: matched.filter((item) => item.type === 'snapshot') },
+            {
+                key: 'snapshot',
+                label: '快照版',
+                items: matched.filter((item) => item.type === 'snapshot' && !isAprilFoolsVersion(item)),
+            },
+            {
+                key: 'april_fools',
+                label: '愚人节版',
+                items: matched.filter((item) => isAprilFoolsVersion(item)),
+            },
             {
                 key: 'old',
                 label: '远古版',
                 items: matched.filter((item) => item.type === 'old_beta' || item.type === 'old_alpha'),
             },
-        ].map((drawer) => ({ ...drawer, groups: groupVersions(drawer.items) }));
-    }, [vanilla, vanillaQuery]);
+        ].map((drawer) => ({ ...drawer, groups: groupVersions(drawer.items, wikiThemes, allReleases) }));
+    }, [vanilla, vanillaQuery, wikiThemes]);
 
     /** 整合包的版本下拉：只列正式版，按从新到旧 */
     const releaseVersions = useMemo(() => vanilla.filter((item) => item.type === 'release'), [vanilla]);
@@ -461,8 +485,7 @@ export default function DownloadPage() {
 
     /** 进入某个版本的安装页：拉取各加载器版本；默认不选加载器，直接装原版 */
     const prepareVanillaDetail = async (item: VanillaVersionInfo) => {
-        setInstanceName(item.id);
-        setNameTouched(false);
+        setInstanceName('');
         setStatus('');
         setPickLoader({});
         setPickVersions({});
@@ -481,13 +504,20 @@ export default function DownloadPage() {
         }
     };
 
-    /** 重新拉取 Mojang 版本清单 */
+    /** 重新拉取 Mojang 版本清单与 MC Wiki 主题缓存 */
     const refreshVanilla = () => {
         void listVanillaVersions().then((result) => {
             setVanilla(result);
             setVanillaHint(`已读取 ${result.length} 个正式版、快照和远古版本。`);
         }).catch((error) => {
             setVanillaHint(`读取原版版本列表失败：${String(error)}`);
+        });
+        void listVanillaThemes(true).then((themes) => {
+            if (Object.keys(themes).length === 0) return;
+            setWikiThemes(themes);
+            saveCachedVanillaThemes(themes);
+        }).catch(() => {
+            // 保留现有缓存与内置表
         });
     };
 
@@ -502,14 +532,11 @@ export default function DownloadPage() {
         runSlide(() => setVanillaPick(null), 'back');
     };
 
-    /** 实例名自动组合：版本名 + 已选加载器；手动改过就不再覆盖 */
-    useEffect(() => {
-        if (!vanillaPick || nameTouched) return;
-        const segments = LOADER_DEFS.filter((def) => pickLoader[def.key]).map(
-            (def) => `${def.label}_${pickLoader[def.key]}`,
-        );
-        setInstanceName([vanillaPick.id, ...segments].join(' - '));
-    }, [vanillaPick, pickLoader, nameTouched]);
+    /** 默认实例名：原版版本号 + 已选加载器；输入框留空时直接显示并使用该默认值 */
+    const defaultInstanceName = useMemo(
+        () => (vanillaPick ? formatDefaultInstanceName(vanillaPick.id, pickLoader) : ''),
+        [vanillaPick, pickLoader],
+    );
 
     /** 安装页的加载器抽屉：常驻的必显示（无版本时显示「无」），非常驻的有版本才显示 */
     const loaderRows = useMemo(() => {
@@ -526,6 +553,7 @@ export default function DownloadPage() {
     const submitVanillaInstance = async () => {
         if (!vanillaPick) return;
         setVanillaTaskId(null);
+        const effectiveInstanceName = (demo ? instanceName.trim() : '') || defaultInstanceName;
         const base = LOADER_DEFS.find(
             (def) => def.key !== 'optifine' && def.key !== 'liteloader' && pickLoader[def.key],
         );
@@ -539,11 +567,11 @@ export default function DownloadPage() {
                 const accepted = await installVanilla(vanillaPick.id);
                 if (!demo) setVanillaTaskId(accepted.entityIds[0] ?? null);
             }
-            setStatus(`下载请求已提交：${demo ? instanceName : vanillaPick.id}`);
+            setStatus(`下载请求已提交：${effectiveInstanceName}`);
             if (!demo) await refreshTasks();
         } catch (error) {
             setStatus(demo
-                ? `安装接口尚未接入，已记录：${instanceName}`
+                ? `安装接口尚未接入，已记录：${effectiveInstanceName}`
                 : `提交安装失败：${error instanceof Error ? error.message : String(error)}`);
         }
     };
@@ -791,11 +819,9 @@ export default function DownloadPage() {
                                         /* ---------- 版本详情：实例名 + 加载器抽屉 ---------- */
                                         <VanillaInstallPage
                                             minecraft={vanillaPick.id}
-                                            instanceName={demo ? instanceName : vanillaPick.id}
-                                            onInstanceNameChange={demo ? (name) => {
-                                                setNameTouched(true);
-                                                setInstanceName(name);
-                                            } : undefined}
+                                            instanceName={demo ? instanceName : ''}
+                                            defaultInstanceName={defaultInstanceName}
+                                            onInstanceNameChange={demo ? setInstanceName : undefined}
                                             loading={pickLoading}
                                             rows={loaderRows}
                                             pickLoader={pickLoader}

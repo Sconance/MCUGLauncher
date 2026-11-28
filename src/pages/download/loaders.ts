@@ -48,3 +48,26 @@ export function versionAtLeast(version: string, target: string): boolean {
     }
     return true;
 }
+
+/**
+ * 生成默认实例名：`<minecraftVersion>[-<Loader>_<loaderVersion>]...`
+ * 拼接顺序：mod 加载器（除 LiteLoader / OptiFine）→ LiteLoader → OptiFine。
+ */
+export function formatDefaultInstanceName(
+    minecraftVersion: string,
+    pickLoader: Record<string, string>,
+): string {
+    const labelByKey = new Map(LOADER_DEFS.map((def) => [def.key, def.label]));
+    const modLoaders = LOADER_DEFS.filter(
+        (def) => def.key !== 'liteloader' && def.key !== 'optifine',
+    ).map((def) => def.key);
+    const knownOrder = [...modLoaders, 'liteloader', 'optifine'];
+    const extraKeys = Object.keys(pickLoader).filter((key) => !knownOrder.includes(key));
+    const orderedKeys = [...modLoaders, ...extraKeys, 'liteloader', 'optifine'];
+
+    const segments = orderedKeys
+        .filter((key) => Boolean(pickLoader[key]))
+        .map((key) => `${labelByKey.get(key) ?? key}_${pickLoader[key]}`);
+
+    return [minecraftVersion, ...segments].join('-');
+}

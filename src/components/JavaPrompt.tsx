@@ -3,6 +3,7 @@ import { scanJava as scanJavaCommand } from "../api/commands/settings";
 import { AppInput } from "./AppInput";
 import Field from "./Field";
 import Modal from "./Modal";
+import { cleanJavaPath, formatJavaLabel, useJavaArchShown } from "../shell/javaDisplayPreference";
 import "./JavaPrompt.css";
 
 interface JavaPromptProps {
@@ -16,7 +17,8 @@ interface JavaPromptProps {
  * 原先独立「Java 管理」页里的扫描列表已并到这里。
  */
 export default function JavaPrompt({ initial, onCancel, onConfirm }: JavaPromptProps) {
-  const [value, setValue] = useState(initial ?? "");
+  const showJavaArch = useJavaArchShown();
+  const [value, setValue] = useState(() => cleanJavaPath(initial ?? ""));
   const [items, setItems] = useState<Awaited<ReturnType<typeof scanJavaCommand>>>([]);
   const [scanning, setScanning] = useState(false);
   const [message, setMessage] = useState("");
@@ -90,19 +92,26 @@ export default function JavaPrompt({ initial, onCancel, onConfirm }: JavaPromptP
             {items.length === 0 ? (
               <p className="muted">{scanning ? "正在查找可用的 Java…" : "还没有扫描结果。"}</p>
             ) : (
-              items.map((item) => (
-                <div className="java-prompt-option" key={item.path}>
-                  <div className="stack" style={{ gap: 2 }}>
-                    <span>{`Java ${item.major} · ${item.arch} ${item.vendor}`.trim()}</span>
-                    <span className="muted java-prompt-path">{item.path}</span>
-                    {item.error.length > 0 ? <span className="badge red">{item.error}</span> : null}
-                  </div>
-                  <span className="spacer" />
-                  <button type="button" className="btn ghost" onClick={() => setValue(item.path)}>
-                    使用
-                  </button>
-                </div>
-              ))
+              <div className="section-group java-prompt-group">
+                {items.map((item) => {
+                  const displayPath = cleanJavaPath(item.path);
+                  const selected = cleanJavaPath(value) === displayPath;
+                  return (
+                    <button
+                      type="button"
+                      key={item.path}
+                      className={`section-item java-prompt-item${selected ? " selected" : ""}`}
+                      onClick={() => setValue(displayPath)}
+                    >
+                      <div className="java-prompt-copy">
+                        <span className="java-prompt-title">{formatJavaLabel(item, showJavaArch)}</span>
+                        <span className="muted java-prompt-path">{displayPath}</span>
+                        {item.error.length > 0 ? <span className="badge red">{item.error}</span> : null}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>

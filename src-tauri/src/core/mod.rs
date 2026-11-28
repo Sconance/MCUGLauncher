@@ -14,3 +14,4 @@ pub mod mod_sources;
 pub mod neoforge;
 pub mod vanilla_download;
 pub mod vanilla_install;
+pub mod wiki_themes;

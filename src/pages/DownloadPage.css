@@ -160,6 +160,7 @@
   color: var(--app-ink-3);
   font-size: 10.5px;
   font-variant-numeric: tabular-nums;
+  white-space: pre;
 }
 
 /* ---------- 版本详情页：向左滑出、从右滑入 ---------- */

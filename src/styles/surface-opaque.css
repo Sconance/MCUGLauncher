@@ -1,0 +1,459 @@
+/*
+ * 不透明（纯净白色 + 柔和阴影，现代网页风格）背景样式与控件联动。
+ *
+ * 通过 <html data-bg-style="opaque"> 激活；默认磨砂模式（frosted）不受影响。
+ * 设计原则：
+ * 1. 移除半透明、backdrop-filter 模糊与噪点纹理；
+ * 2. 页面大面板采用极浅灰白底色，卡片、胶囊、弹层与控件采用纯净白色；
+ * 3. 仅在卡片、悬浮胶囊、弹层与交互控件上施加克制的网页级阴影与细边框，
+ *    保持清爽通透的层次感。
+ */
+
+:root[data-bg-style="opaque"] {
+  --opaque-canvas: #faf9f6;
+  --opaque-surface: #ffffff;
+  --opaque-subtle: #f2efe9;
+  --opaque-border: #eae6df;
+  --opaque-border-strong: #dcd6cc;
+
+  --opaque-shadow-xs: 0 1px 2px rgb(28 25 23 / 5%);
+  --opaque-shadow-sm:
+    0 1px 2px rgb(28 25 23 / 5%),
+    0 3px 10px rgb(28 25 23 / 4%);
+  --opaque-shadow-sm-hover:
+    0 2px 6px rgb(28 25 23 / 6%),
+    0 8px 20px rgb(28 25 23 / 7%);
+  --opaque-shadow-float:
+    0 2px 6px rgb(28 25 23 / 7%),
+    0 10px 26px rgb(28 25 23 / 11%);
+  --opaque-shadow-dialog:
+    0 6px 18px rgb(28 25 23 / 8%),
+    0 20px 48px rgb(28 25 23 / 16%);
+
+  /* 覆盖基础设计令牌 */
+  --app-bg: var(--opaque-canvas);
+  --app-side: var(--opaque-canvas);
+  --app-card: var(--opaque-surface);
+  --app-line: var(--opaque-border);
+  --app-line-2: var(--opaque-border-strong);
+
+  --app-glass: var(--opaque-surface);
+  --app-glass-strong: var(--opaque-surface);
+  --app-glass-blur: none;
+  --app-glass-grain: none;
+
+  --shadow-card: var(--opaque-shadow-sm);
+  --shadow-nav: var(--opaque-shadow-float);
+  --shadow-dialog: var(--opaque-shadow-dialog);
+}
+
+/* ---------- 外壳大圆角内容栏与顶部悬浮胶囊 ---------- */
+
+:root[data-bg-style="opaque"] .page-stage::before {
+  background-color: var(--opaque-canvas);
+  background-image: none;
+  backdrop-filter: none;
+  border: 1px solid rgb(28 25 23 / 7%);
+  box-shadow: var(--opaque-shadow-float);
+}
+
+:root[data-bg-style="opaque"] .glass-surface {
+  background-color: var(--opaque-surface);
+  background-image: none;
+  backdrop-filter: none;
+  border: 1px solid rgb(28 25 23 / 6%);
+  box-shadow: var(--opaque-shadow-float);
+}
+
+:root[data-bg-style="opaque"] .nav-indicator {
+  background: var(--opaque-subtle);
+}
+
+:root[data-bg-style="opaque"] .nav-pill .btn.topnav:hover::before {
+  background: rgb(28 25 23 / 4%);
+}
+
+/* ---------- 内容卡片与列表卡片 ---------- */
+
+:root[data-bg-style="opaque"] .card,
+:root[data-bg-style="opaque"] .dl-card,
+:root[data-bg-style="opaque"] .dl-detail,
+:root[data-bg-style="opaque"] .im-all-item,
+:root[data-bg-style="opaque"] .server-card,
+:root[data-bg-style="opaque"] .vn-drawer {
+  background-color: var(--opaque-surface);
+  background-image: none;
+  backdrop-filter: none;
+  border: 1px solid var(--opaque-border);
+  box-shadow: var(--opaque-shadow-sm);
+}
+
+:root[data-bg-style="opaque"] .dl-card:hover,
+:root[data-bg-style="opaque"] .im-all-item:hover {
+  border-color: var(--opaque-border-strong);
+  box-shadow: var(--opaque-shadow-sm-hover);
+}
+
+:root[data-bg-style="opaque"] .account-card.is-active {
+  border-color: rgb(59 130 246 / 45%);
+  box-shadow:
+    inset 0 0 0 1px rgb(59 130 246 / 22%),
+    var(--opaque-shadow-sm);
+}
+
+:root[data-bg-style="opaque"] .im-all-item.is-current {
+  border-color: var(--app-accent-soft);
+  box-shadow:
+    inset 0 0 0 1px var(--app-accent-soft),
+    var(--opaque-shadow-sm);
+}
+
+/* ---------- 弹层、下拉菜单与右上角浮窗 ---------- */
+
+:root[data-bg-style="opaque"] .modal-card,
+:root[data-bg-style="opaque"] .context-menu,
+:root[data-bg-style="opaque"] .player-picker,
+:root[data-bg-style="opaque"] .instance-picker,
+:root[data-bg-style="opaque"] .app-select-menu,
+:root[data-bg-style="opaque"] .dl-picker-pop {
+  background-color: var(--opaque-surface);
+  background-image: none;
+  backdrop-filter: none;
+  border: 1px solid var(--opaque-border);
+  box-shadow: var(--opaque-shadow-dialog);
+}
+
+:root[data-bg-style="opaque"] .top-status-item {
+  border: 1px solid var(--opaque-border);
+  background: var(--opaque-canvas);
+}
+
+:root[data-bg-style="opaque"] .top-status-action {
+  background: var(--opaque-surface);
+  border: 1px solid var(--opaque-border);
+  box-shadow: var(--opaque-shadow-xs);
+}
+
+:root[data-bg-style="opaque"] .top-status-action:hover:not(:disabled) {
+  background: var(--opaque-canvas);
+  border-color: var(--opaque-border-strong);
+}
+
+/* ---------- 按钮 ---------- */
+
+:root[data-bg-style="opaque"] .btn,
+:root[data-bg-style="opaque"] .btn.ghost {
+  background: var(--opaque-surface);
+  border-color: var(--opaque-border-strong);
+  box-shadow: var(--opaque-shadow-xs);
+  transition:
+    background-color 120ms linear,
+    color 120ms linear,
+    border-color 120ms linear,
+    box-shadow 140ms ease;
+}
+
+:root[data-bg-style="opaque"] .btn:hover:not(:disabled),
+:root[data-bg-style="opaque"] .btn.ghost:hover:not(:disabled) {
+  background: var(--app-accent-wash);
+  border-color: var(--app-accent-soft);
+  color: var(--app-accent-deep);
+}
+
+:root[data-bg-style="opaque"] .btn.primary {
+  border: 0;
+  background: var(--app-accent);
+  color: #fff;
+  box-shadow: 0 2px 6px rgb(59 130 246 / 26%);
+}
+
+:root[data-bg-style="opaque"] .btn.primary:hover:not(:disabled) {
+  background: var(--app-accent-dark);
+  color: #fff;
+  box-shadow: 0 4px 10px rgb(37 99 235 / 32%);
+}
+
+:root[data-bg-style="opaque"] .btn.primary:disabled {
+  background: #acc3d9;
+  box-shadow: none;
+}
+
+:root[data-bg-style="opaque"] .btn.soft {
+  border: 0;
+  background: var(--app-accent-tint);
+  color: var(--app-accent-deep);
+  box-shadow: none;
+}
+
+:root[data-bg-style="opaque"] .btn.soft:hover:not(:disabled) {
+  background: #cde2fc;
+}
+
+:root[data-bg-style="opaque"] .btn.link,
+:root[data-bg-style="opaque"] .btn.topnav,
+:root[data-bg-style="opaque"] .btn.icon,
+:root[data-bg-style="opaque"] .btn.avatar {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ---------- 表单控件：输入框、下拉框、开关、分段选择 ---------- */
+
+:root[data-bg-style="opaque"] .input,
+:root[data-bg-style="opaque"] .select,
+:root[data-bg-style="opaque"] .app-select-trigger {
+  background-color: var(--opaque-surface);
+  border-color: var(--opaque-border-strong);
+  box-shadow: var(--opaque-shadow-xs);
+}
+
+:root[data-bg-style="opaque"] .app-select-trigger:hover:not(:disabled) {
+  border-color: #ccc4b8;
+  background-color: var(--opaque-surface);
+}
+
+:root[data-bg-style="opaque"] .input:focus,
+:root[data-bg-style="opaque"] .select:focus,
+:root[data-bg-style="opaque"] .app-select-trigger:focus-visible,
+:root[data-bg-style="opaque"] .app-select-trigger.is-open {
+  border-color: var(--app-accent);
+  background-color: var(--opaque-surface);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 14%);
+}
+
+:root[data-bg-style="opaque"] .switch {
+  background: #e5e0d8;
+}
+
+:root[data-bg-style="opaque"] .switch:hover {
+  background: #d8d2c7;
+}
+
+:root[data-bg-style="opaque"] .switch.on {
+  background: var(--app-accent);
+}
+
+:root[data-bg-style="opaque"] .switch-thumb {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(28 25 23 / 20%);
+}
+
+:root[data-bg-style="opaque"] .segmented,
+:root[data-bg-style="opaque"] .account-view-toggle {
+  background: var(--opaque-subtle);
+}
+
+:root[data-bg-style="opaque"] .segmented-option.is-selected,
+:root[data-bg-style="opaque"] .account-view-toggle button.is-active {
+  background: var(--opaque-surface);
+  color: var(--app-accent-deep);
+  box-shadow: 0 1px 3px rgb(28 25 23 / 11%);
+}
+
+/* ---------- 左侧分区导航与标签胶囊 ---------- */
+
+:root[data-bg-style="opaque"] .section-group {
+  background: var(--opaque-surface);
+  border: 1px solid var(--opaque-border);
+  box-shadow: var(--opaque-shadow-xs);
+}
+
+:root[data-bg-style="opaque"] .section-item:hover {
+  background: var(--opaque-canvas);
+}
+
+:root[data-bg-style="opaque"] .section-item.selected {
+  background: var(--app-accent-wash);
+  color: var(--app-accent-deep);
+}
+
+:root[data-bg-style="opaque"] .section-item.selected:hover {
+  background: var(--app-accent-tint);
+}
+
+:root[data-bg-style="opaque"] .tab-pill {
+  background-color: var(--opaque-surface);
+  background-image: none;
+  backdrop-filter: none;
+  border: 1px solid var(--opaque-border);
+  box-shadow: var(--opaque-shadow-xs);
+}
+
+:root[data-bg-style="opaque"] .tab-indicator {
+  background: var(--opaque-subtle);
+}
+
+/* ---------- 进度条、设置分隔与页面内嵌块 ---------- */
+
+:root[data-bg-style="opaque"] .progress,
+:root[data-bg-style="opaque"] .top-status-track,
+:root[data-bg-style="opaque"] .launch-toast-track {
+  background: var(--opaque-subtle);
+}
+
+:root[data-bg-style="opaque"] .settings-card .setting-row + .setting-row {
+  border-top-color: var(--opaque-border);
+}
+
+:root[data-bg-style="opaque"] .java-inline-picker {
+  border-color: var(--opaque-border);
+  background: var(--opaque-canvas);
+}
+
+:root[data-bg-style="opaque"] .java-list-group {
+  background: var(--opaque-surface);
+  border: 1px solid var(--opaque-border);
+}
+
+:root[data-bg-style="opaque"] .ann-row {
+  background: var(--opaque-surface);
+  border: 1px solid var(--opaque-border);
+  box-shadow: var(--opaque-shadow-xs);
+}
+
+:root[data-bg-style="opaque"] .ann-row:hover {
+  border-color: var(--opaque-border-strong);
+  box-shadow: var(--opaque-shadow-sm);
+}
+
+/* ---------- 下载页专属控件 ---------- */
+
+:root[data-bg-style="opaque"] .dl-picker,
+:root[data-bg-style="opaque"] .dl-instance,
+:root[data-bg-style="opaque"] .dl-icon-btn,
+:root[data-bg-style="opaque"] .dl-chip,
+:root[data-bg-style="opaque"] .dl-fav,
+:root[data-bg-style="opaque"] .dl-instance-row {
+  background: var(--opaque-surface);
+  border-color: var(--opaque-border-strong);
+  box-shadow: var(--opaque-shadow-xs);
+}
+
+:root[data-bg-style="opaque"] .dl-picker:hover,
+:root[data-bg-style="opaque"] .dl-instance:hover,
+:root[data-bg-style="opaque"] .dl-icon-btn:hover,
+:root[data-bg-style="opaque"] .dl-chip:hover,
+:root[data-bg-style="opaque"] .dl-fav:hover,
+:root[data-bg-style="opaque"] .dl-instance-row:hover {
+  border-color: #ccc4b8;
+  background: var(--opaque-surface);
+  box-shadow: var(--opaque-shadow-sm);
+}
+
+:root[data-bg-style="opaque"] .dl-picker.on,
+:root[data-bg-style="opaque"] .dl-icon-btn.on,
+:root[data-bg-style="opaque"] .dl-instance-row.on {
+  border-color: var(--app-accent);
+  background: var(--app-accent-wash);
+  box-shadow: none;
+}
+
+:root[data-bg-style="opaque"] .dl-chip.on,
+:root[data-bg-style="opaque"] .dl-fav.on {
+  border-color: transparent;
+  background: var(--app-accent);
+  color: #fff;
+  box-shadow: none;
+}
+
+:root[data-bg-style="opaque"] .dl-tag {
+  border-color: var(--opaque-border);
+  background: var(--opaque-canvas);
+}
+
+/* ---------- 启动页卡片与悬浮启动区 ---------- */
+
+:root[data-bg-style="opaque"] .player-card,
+:root[data-bg-style="opaque"] .btn.instance-card {
+  background-color: var(--opaque-surface);
+  background-image: none;
+  backdrop-filter: none;
+  border: 1px solid rgb(28 25 23 / 6%);
+  box-shadow: var(--opaque-shadow-float);
+}
+
+:root[data-bg-style="opaque"] .btn.instance-card:hover {
+  background-color: var(--opaque-surface);
+  background-image: none;
+  border-color: var(--app-accent-soft);
+  box-shadow:
+    0 4px 12px rgb(28 25 23 / 9%),
+    0 14px 32px rgb(28 25 23 / 14%);
+}
+
+:root[data-bg-style="opaque"] .btn.card-action {
+  background: var(--opaque-surface);
+  border: 1px solid var(--opaque-border);
+  box-shadow:
+    0 1px 2px rgb(28 25 23 / 8%),
+    0 3px 8px rgb(28 25 23 / 8%);
+}
+
+:root[data-bg-style="opaque"] .btn.card-action:hover {
+  background: var(--app-accent-wash);
+  border-color: var(--app-accent-soft);
+  color: var(--app-accent-deep);
+  box-shadow:
+    0 2px 4px rgb(28 25 23 / 10%),
+    0 4px 10px rgb(28 25 23 / 10%);
+}
+
+:root[data-bg-style="opaque"] .launch-toast {
+  border: 1px solid var(--opaque-border);
+  background: var(--opaque-surface);
+  box-shadow: var(--opaque-shadow-float);
+}
+
+:root[data-bg-style="opaque"] .wp-viewer-card {
+  background-color: var(--opaque-surface);
+  background-image: none;
+  backdrop-filter: none;
+  border: 1px solid var(--opaque-border);
+  box-shadow: var(--opaque-shadow-dialog);
+}
+
+/*
+ * 不透明 + 米白纯色背景（data-bg-solid="true"）：
+ * 整窗底面与大面板同属纯白偏米白色系，这里适度加强描边与柔和投影，
+ * 确保大面板、悬浮胶囊、卡片与主页按钮清晰浮起，不与背景混成一片。
+ */
+:root[data-bg-style="opaque"][data-bg-solid="true"] .shell-bg.is-solid {
+  background: var(--opaque-canvas);
+}
+
+:root[data-bg-style="opaque"][data-bg-solid="true"] .page-stage::before {
+  border-color: #dfd9cf;
+  box-shadow:
+    0 2px 8px rgb(28 25 23 / 6%),
+    0 12px 32px rgb(28 25 23 / 10%);
+}
+
+:root[data-bg-style="opaque"][data-bg-solid="true"] .glass-surface,
+:root[data-bg-style="opaque"][data-bg-solid="true"] .player-card,
+:root[data-bg-style="opaque"][data-bg-solid="true"] .btn.instance-card,
+:root[data-bg-style="opaque"][data-bg-solid="true"] .launch-toast {
+  border-color: #e0dad0;
+  box-shadow:
+    0 2px 6px rgb(28 25 23 / 8%),
+    0 10px 26px rgb(28 25 23 / 12%);
+}
+
+:root[data-bg-style="opaque"][data-bg-solid="true"] .btn.instance-card:hover {
+  border-color: var(--app-accent-soft);
+  box-shadow:
+    0 4px 12px rgb(28 25 23 / 10%),
+    0 14px 32px rgb(28 25 23 / 15%);
+}
+
+:root[data-bg-style="opaque"][data-bg-solid="true"] .card,
+:root[data-bg-style="opaque"][data-bg-solid="true"] .dl-card,
+:root[data-bg-style="opaque"][data-bg-solid="true"] .dl-detail,
+:root[data-bg-style="opaque"][data-bg-solid="true"] .im-all-item,
+:root[data-bg-style="opaque"][data-bg-solid="true"] .server-card,
+:root[data-bg-style="opaque"][data-bg-solid="true"] .vn-drawer {
+  border-color: #e2dcd3;
+  box-shadow:
+    0 1px 3px rgb(28 25 23 / 6%),
+    0 4px 14px rgb(28 25 23 / 6%);
+}

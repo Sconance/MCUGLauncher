@@ -4,6 +4,7 @@ import cubeIcon from '../../assets/icons/ui/cube.svg';
 import chevronRightIcon from '../../assets/icons/ui/chevron-right.svg';
 import type { VanillaVersionInfo } from '../../types/launcher';
 import { useI18n } from '../../i18n';
+import { formatVanillaReleaseTime, useVanillaReleaseTimeShown } from '../../shell/releaseTimePreference';
 
 export interface VersionGroup {
     theme: string;
@@ -40,6 +41,7 @@ export default function VanillaVersionList({
     hint,
 }: VanillaVersionListProps) {
     const { t } = useI18n();
+    const showReleaseTime = useVanillaReleaseTimeShown();
     return (
         <div className="vn-page">
             <div className="vn-toolbar">
@@ -88,7 +90,9 @@ export default function VanillaVersionList({
                                                         >
                                                             <SvgIcon src={cubeIcon} className="section-icon" />
                                                             <span className="section-label">{item.id}</span>
-                                                            <span className="vn-date">{item.released}</span>
+                                                            <span className="vn-date">
+                                                                {formatVanillaReleaseTime(item.released, showReleaseTime)}
+                                                            </span>
                                                         </button>
                                                     ))}
                                                 </div>

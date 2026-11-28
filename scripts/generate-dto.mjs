@@ -18,6 +18,7 @@ const output = await compile({
   properties: Object.fromEntries(Object.keys(definitions).map((name) => [name, { $ref: `#/$defs/${name}` }])),
   $defs: definitions,
 }, "LauncherDTO", { bannerComment: "", style: { singleQuote: false, semi: true }, additionalProperties: false });
+
 await mkdir("src/types", { recursive: true });
 await writeFile(outputPath, header + output, "utf8");
 console.log(`Generated ${outputPath} from ${schemaFiles.join(", ")}`);

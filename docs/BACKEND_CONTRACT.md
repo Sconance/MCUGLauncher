@@ -10,6 +10,8 @@
 
 第三方前端的安装与分发格式（`.mcuglf`）、导入/切换/卸载命令以及它们各自的错误码见 [FRONTEND_PACKAGE.md](FRONTEND_PACKAGE.md)。这四个命令是宿主管理接口，不属于内核方法表。
 
+前端作者使用的 TypeScript 类型客户端见 [KERNEL_SDK.md](KERNEL_SDK.md)（`@mcugl/frontpack-sdk`）；它只固化类型与错误模型，不改变本文档定义的方法语义。
+
 DTO 的结构以 [schemas/](../schemas/) 下的领域 Schema 为单一机器可读来源；TypeScript 通过生成文件消费 Schema，Rust 通过 Typify 在编译期生成类型，本文档只描述命令语义。
 
 ## 当前演示能力限制

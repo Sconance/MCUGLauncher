@@ -7,6 +7,7 @@ import Modal from "../../components/Modal";
 import { useLauncher } from "../../state/launcher";
 import type { AnnouncementInfo } from "../../types/launcher";
 import SettingHint from "./SettingHint";
+import SettingRow from "./SettingRow";
 import SettingsCard from "./SettingsCard";
 
 interface CommunityManagementSettingsProps {
@@ -61,23 +62,30 @@ export default function CommunityManagementSettings({ active }: CommunityManagem
           </>
         }
       >
-        <p className="muted">
-          {canManage
-            ? "本机已设置管理员密钥。"
-            : "尚未设置管理员密钥；验证后即可管理推荐内容。"}
-        </p>
-        <div className="settings-actions">
-          <AppInput
-            type="password"
-            placeholder="首次输入即设置本机管理员密钥"
-            value={adminKey}
-            onChange={(event) => setAdminKey(event.target.value)}
-          />
-          <button type="button" className="btn ghost" onClick={() => void verifyAdmin()}>
-            验证
-          </button>
-        </div>
-        <p className="status">{adminStatus}</p>
+        <SettingRow
+          title="管理员密钥"
+          control={
+            <div className="setting-control">
+              <AppInput
+                className="setting-control-input"
+                type="password"
+                placeholder="首次输入即设置本机管理员密钥"
+                value={adminKey}
+                onChange={(event) => setAdminKey(event.target.value)}
+              />
+              <button type="button" className="btn ghost" onClick={() => void verifyAdmin()}>
+                验证
+              </button>
+            </div>
+          }
+        >
+          <span className="setting-subtitle">
+            {canManage
+              ? "本机已设置管理员密钥。"
+              : "尚未设置管理员密钥；验证后即可管理推荐内容。"}
+          </span>
+        </SettingRow>
+        {adminStatus ? <p className="status">{adminStatus}</p> : null}
       </SettingsCard>
 
       <SettingsCard title="当前公告">

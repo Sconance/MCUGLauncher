@@ -27,6 +27,10 @@ export const toggleBookmark = (id: string, name: string, description: string, ki
 /** 读取 Mojang 原版版本清单。 */
 export const listVanillaVersions = () => call<VanillaVersionInfo[]>("list_vanilla_versions");
 
+/** 读取中文 Minecraft Wiki 原版版本主题映射（后端自带 24 小时本地缓存）。 */
+export const listVanillaThemes = (forceRefresh = false) =>
+  call<Record<string, string>>("list_vanilla_themes", { forceRefresh });
+
 /** 安装指定原版版本。 */
 export const installVanilla = (minecraftVersion: string) =>
   call<SavedInfo>("install_vanilla", { minecraftVersion });

@@ -1,7 +1,7 @@
 # 前端包（`.mcuglf`）
 
 > 状态：P1 已实现（导入 / 列表 / 切换 / 卸载 + 打包脚本 + 设置页）。命令级权限与签名尚未实现，见第 7 节。
-> 相关文档：[KERNEL_API_V1.md](KERNEL_API_V1.md)（接口契约）、[DEVELOPMENT_ENVIRONMENT.md](DEVELOPMENT_ENVIRONMENT.md)（开发环境）。
+> 相关文档：[KERNEL_API_V1.md](KERNEL_API_V1.md)（接口契约）、[KERNEL_SDK.md](KERNEL_SDK.md)（类型 SDK）、[DEVELOPMENT_ENVIRONMENT.md](DEVELOPMENT_ENVIRONMENT.md)（开发环境）。
 
 ## 1. 它是什么
 
@@ -9,14 +9,14 @@
 
 设计取向上和 SJMCL 的 `.sjmclx` 一致：容器就是 zip，作者用任何工具都能查看、审计、重打包；启动器也接受普通 `.zip`（改后缀即可）。
 
-想从零开始写前端，用仓库里的脚手架 `mcugl-buildtool/` 生成一个可选模板的工程（尚未发布到 npm）：
+想从零开始写前端，用脚手架 `@mcugl/frontpack-buildtool` 生成一个可选模板的工程：
 
 ```powershell
-node .\mcugl-buildtool\bin\mcugl-buildtool.mjs                          # 真终端里：交互式向导
-node .\mcugl-buildtool\bin\mcugl-buildtool.mjs my-frontend            # vanilla，零构建
-node .\mcugl-buildtool\bin\mcugl-buildtool.mjs my-frontend -t simple  # 仿官方布局，极简 CSS，零构建
-node .\mcugl-buildtool\bin\mcugl-buildtool.mjs my-frontend -t vite-react
-node .\mcugl-buildtool\bin\mcugl-buildtool.mjs my-frontend -t vite-react --layout simple
+npx @mcugl/frontpack-buildtool                          # 真终端里：交互式向导
+npx @mcugl/frontpack-buildtool my-frontend              # vanilla，零构建
+npx @mcugl/frontpack-buildtool my-frontend -t simple    # 仿官方布局，极简 CSS，零构建
+npx @mcugl/frontpack-buildtool my-frontend -t vite-react
+npx @mcugl/frontpack-buildtool my-frontend -t vite-react --layout simple
 ```
 
 向导先问技术栈（vanilla / vite-react），再问界面（dev / simple），组合成 `vanilla`、`simple`、`vite-react`、`vite-react-simple` 四个模板；`-t` 也可以直接写最终模板 id。脚本可用 `--layout dev|simple` 指定界面。
