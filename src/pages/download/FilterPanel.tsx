@@ -1,34 +1,81 @@
 import type { RefObject } from 'react';
+import banIcon from '../../assets/icons/ui/ban.svg';
+import checkIcon from '../../assets/icons/ui/check.svg';
 import filterIcon from '../../assets/icons/ui/filter.svg';
 import { AppInput } from '../../components/AppInput';
 import SvgIcon from '../../components/SvgIcon';
+import { usePresence } from '../../shell/usePresence';
+import { formatTagLabel, getTagIcon } from './modIcons';
 
-interface ChipGroupProps {
+interface FilterRowGroupProps {
     title: string;
     entries: [string, number][];
-    active: string[];
-    onToggle: (value: string) => void;
-    /** 作者可能很多，横向滚动 */
-    scroll?: boolean;
+    included: string[];
+    excluded: string[];
+    onToggleInclude: (value: string) => void;
+    onToggleExclude: (value: string) => void;
+    withIcons?: boolean;
 }
 
-/** 筛选面板里的一组 chip：作者 / 运行环境 / 类别共用。 */
-function ChipGroup({ title, entries, active, onToggle, scroll }: ChipGroupProps) {
+/** Modrinth 风格的筛选行组：一行一个，支持点击选中（包含）与右侧禁止按钮（排除）。 */
+function FilterRowGroup({
+    title,
+    entries,
+    included,
+    excluded,
+    onToggleInclude,
+    onToggleExclude,
+    withIcons,
+}: FilterRowGroupProps) {
     return (
         <div className="dl-group">
             <span className="dl-group-title">{title}</span>
-            <div className={`dl-chips${scroll ? ' scroll-x' : ''}`}>
-                {entries.map(([value, count]) => (
-                    <button
-                        key={value}
-                        type="button"
-                        className={`dl-chip${active.includes(value) ? ' on' : ''}`}
-                        onClick={() => onToggle(value)}
-                    >
-                        {value}
-                        <span className="dl-chip-count">{count}</span>
-                    </button>
-                ))}
+            <div className="dl-filter-rows">
+                {entries.map(([value, count]) => {
+                    const icon = withIcons ? getTagIcon(value) : undefined;
+                    const isIncluded = included.includes(value);
+                    const isExcluded = excluded.includes(value);
+                    const label = formatTagLabel(value);
+                    return (
+                        <div
+                            key={value}
+                            className={`dl-filter-row${isIncluded ? ' is-included' : ''}${isExcluded ? ' is-excluded' : ''}`}
+                        >
+                            <button
+                                type="button"
+                                className="dl-filter-row-main"
+                                aria-pressed={isIncluded}
+                                onClick={() => onToggleInclude(value)}
+                            >
+                                {icon ? (
+                                    <span
+                                        className="dl-filter-row-icon"
+                                        style={!isExcluded && icon.color ? { color: icon.color } : undefined}
+                                    >
+                                        <SvgIcon src={icon.src} />
+                                    </span>
+                                ) : null}
+                                <span className="dl-filter-row-label">{label}</span>
+                                <span className="dl-filter-row-count">{count}</span>
+                                {isIncluded ? (
+                                    <span className="dl-filter-row-check" aria-hidden="true">
+                                        <SvgIcon src={checkIcon} />
+                                    </span>
+                                ) : null}
+                            </button>
+                            <button
+                                type="button"
+                                className="dl-filter-row-exclude"
+                                aria-label={isExcluded ? `取消排除 ${label}` : `排除 ${label}`}
+                                aria-pressed={isExcluded}
+                                title={isExcluded ? `取消排除 ${label}` : `排除 ${label}`}
+                                onClick={() => onToggleExclude(value)}
+                            >
+                                <SvgIcon src={banIcon} />
+                            </button>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
@@ -38,22 +85,22 @@ interface FilterPanelProps {
     open: boolean;
     onToggle: () => void;
     onClose: () => void;
-    /** 已选条件数量，>0 时按钮右上角显示小圆点 */
+    /** 已选条件数量（包含 + 排除），>0 时按钮右上角显示小圆点 */
     activeCount: number;
     railQuery: string;
     onRailQueryChange: (value: string) => void;
-    authorCounts: [string, number][];
     envTags: [string, number][];
+    loaderTags: [string, number][];
     kindTags: [string, number][];
     activeTags: string[];
-    activeAuthors: string[];
+    excludedTags: string[];
     onToggleTag: (tag: string) => void;
-    onToggleAuthor: (author: string) => void;
+    onToggleExcludeTag: (tag: string) => void;
     onClear: () => void;
     rootRef: RefObject<HTMLDivElement | null>;
 }
 
-/** 工具栏最右侧的筛选按钮与二级面板。 */
+/** 工具栏最右侧的筛选按钮与二级面板（Modrinth 风格：一行一个 + 滚动条 + 包含/排除）。 */
 export default function FilterPanel({
     open,
     onToggle,
@@ -61,16 +108,18 @@ export default function FilterPanel({
     activeCount,
     railQuery,
     onRailQueryChange,
-    authorCounts,
     envTags,
+    loaderTags,
     kindTags,
     activeTags,
-    activeAuthors,
+    excludedTags,
     onToggleTag,
-    onToggleAuthor,
+    onToggleExcludeTag,
     onClear,
     rootRef,
 }: FilterPanelProps) {
+    const { mounted, closing } = usePresence(open, 140);
+
     return (
         <div className="dl-filter-wrap" ref={rootRef}>
             <button
@@ -84,29 +133,48 @@ export default function FilterPanel({
                 {activeCount > 0 ? <span className="dl-filter-dot" /> : null}
             </button>
 
-            {open ? (
-                <div className="dl-filter-pop">
+            {mounted ? (
+                <div className={`dl-filter-pop${closing ? ' is-closing' : ''}`}>
                     <AppInput
-                        placeholder="筛选名称、简介、作者"
+                        placeholder="筛选名称、简介"
                         value={railQuery}
                         onChange={(event) => onRailQueryChange(event.target.value)}
                     />
 
-                    {authorCounts.length > 0 ? (
-                        <ChipGroup
-                            title="作者"
-                            entries={authorCounts}
-                            active={activeAuthors}
-                            onToggle={onToggleAuthor}
-                            scroll
-                        />
-                    ) : null}
-                    {envTags.length > 0 ? (
-                        <ChipGroup title="运行环境" entries={envTags} active={activeTags} onToggle={onToggleTag} />
-                    ) : null}
-                    {kindTags.length > 0 ? (
-                        <ChipGroup title="类别" entries={kindTags} active={activeTags} onToggle={onToggleTag} />
-                    ) : null}
+                    <div className="dl-filter-scroll">
+                        {envTags.length > 0 ? (
+                            <FilterRowGroup
+                                title="运行环境"
+                                entries={envTags}
+                                included={activeTags}
+                                excluded={excludedTags}
+                                onToggleInclude={onToggleTag}
+                                onToggleExclude={onToggleExcludeTag}
+                            />
+                        ) : null}
+                        {loaderTags.length > 0 ? (
+                            <FilterRowGroup
+                                title="加载器"
+                                entries={loaderTags}
+                                included={activeTags}
+                                excluded={excludedTags}
+                                onToggleInclude={onToggleTag}
+                                onToggleExclude={onToggleExcludeTag}
+                                withIcons
+                            />
+                        ) : null}
+                        {kindTags.length > 0 ? (
+                            <FilterRowGroup
+                                title="类别"
+                                entries={kindTags}
+                                included={activeTags}
+                                excluded={excludedTags}
+                                onToggleInclude={onToggleTag}
+                                onToggleExclude={onToggleExcludeTag}
+                                withIcons
+                            />
+                        ) : null}
+                    </div>
 
                     <div className="dl-filter-foot">
                         <button type="button" className="btn ghost" onClick={onClear}>

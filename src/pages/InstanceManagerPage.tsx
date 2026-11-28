@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { saveSettings } from "../api/commands/settings";
 import { selectInstance as selectInstanceCommand } from "../api/commands/state";
+import FadeScrollbar from "../components/FadeScrollbar";
 import SvgIcon from "../components/SvgIcon";
 import closeIcon from "../assets/icons/ui/close.svg";
 import cubeIcon from "../assets/icons/ui/cube.svg";
@@ -61,6 +62,12 @@ export default function InstanceManagerPage({ initialInstanceId }: InstanceManag
   const [active, setActive] = useState<string>(initialInstanceId ?? "roots");
   /** 右栏内容跟随 fade 后的 shown，切换才有淡出淡入 */
   const { shown, out } = useFadeSwap(active);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const isListView = shown === "roots" || shown === "all";
+
+  useLayoutEffect(() => {
+    contentRef.current?.scrollTo({ top: 0 });
+  }, [shown]);
 
   const openGameRoot = async (path: string) => {
     if (switchingRoot) return;
@@ -156,7 +163,12 @@ export default function InstanceManagerPage({ initialInstanceId }: InstanceManag
                       isClosing ? " is-closing" : ""
                     }`}
                   >
-                    <button type="button" className="im-tab-main" onClick={() => setActive(id)}>
+                    <button
+                      type="button"
+                      className="im-tab-main"
+                      title={item.displayName}
+                      onClick={() => setActive(id)}
+                    >
                       <span className="section-label">{item.displayName}</span>
                     </button>
                     {isClosing ? null : (
@@ -178,65 +190,71 @@ export default function InstanceManagerPage({ initialInstanceId }: InstanceManag
       </aside>
 
       <div className="split-body">
-        <div className={`split-content${out ? " is-out" : ""}`}>
-          {shown === "roots" ? (
-            <GameDirectoryList
-              roots={settings?.gameRoots ?? []}
-              activeRoot={settings?.root ?? ""}
-              pending={switchingRoot || !settings}
-              onOpen={(path) => void openGameRoot(path)}
-            />
-          ) : shown === "all" ? (
-            <div className="im-all">
-              <h1 className="page-title">目录内实例</h1>
-              {settings?.root ? <p className="muted im-directory-path">{settings.root}</p> : null}
-              <p className="muted">
-                {instances.length === 0
-                  ? "当前游戏目录中未找到已安装实例。"
-                  : `共 ${instances.length} 个实例 · 当前启动：${current?.displayName ?? "未选择"} · 点击实例设为当前实例并回到启动页，悬停后点右侧按钮打开它的设置。`}
-              </p>
-              <div className="im-all-list">
-                {instances.map((item) => {
-                  const isCurrent = item.id === currentId;
-                  return (
-                    <div
-                      key={item.id}
-                      className={`im-all-item${isCurrent ? " is-current" : ""}${
-                        switching === item.id ? " is-switching" : ""
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        className="im-all-main"
-                        aria-current={isCurrent}
-                        disabled={switching.length > 0}
-                        onClick={() => void chooseInstance(item)}
+        <div className="fade-scroll-shell">
+          <div
+            ref={contentRef}
+            className={`split-content${out ? " is-out" : ""}${isListView ? " fade-scroll-target im-scroll" : ""}`}
+          >
+            {shown === "roots" ? (
+              <GameDirectoryList
+                roots={settings?.gameRoots ?? []}
+                activeRoot={settings?.root ?? ""}
+                pending={switchingRoot || !settings}
+                onOpen={(path) => void openGameRoot(path)}
+              />
+            ) : shown === "all" ? (
+              <div className="im-all">
+                <h1 className="page-title">目录内实例</h1>
+                {settings?.root ? <p className="muted im-directory-path">{settings.root}</p> : null}
+                <p className="muted">
+                  {instances.length === 0
+                    ? "当前游戏目录中未找到已安装实例。"
+                    : `共 ${instances.length} 个实例 · 当前启动：${current?.displayName ?? "未选择"} · 点击实例设为当前实例并回到启动页，悬停后点右侧按钮打开它的设置。`}
+                </p>
+                <div className="im-all-list">
+                  {instances.map((item) => {
+                    const isCurrent = item.id === currentId;
+                    return (
+                      <div
+                        key={item.id}
+                        className={`im-all-item${isCurrent ? " is-current" : ""}${
+                          switching === item.id ? " is-switching" : ""
+                        }`}
                       >
-                        <SvgIcon src={cubeIcon} className="im-all-icon" />
-                        <span className="im-all-text">
-                          <span className="im-all-name">{item.displayName}</span>
-                          <span className="im-all-sub">
-                            {item.minecraft} · {item.loader}
+                        <button
+                          type="button"
+                          className="im-all-main"
+                          aria-current={isCurrent}
+                          disabled={switching.length > 0}
+                          onClick={() => void chooseInstance(item)}
+                        >
+                          <SvgIcon src={cubeIcon} className="im-all-icon" />
+                          <span className="im-all-text">
+                            <span className="im-all-name">{item.displayName}</span>
+                            <span className="im-all-sub">
+                              {item.minecraft} · {item.loader}
+                            </span>
                           </span>
-                        </span>
-                      </button>
+                        </button>
 
-                      <button
-                        type="button"
-                        className="im-all-settings"
-                        aria-label={`打开 ${item.displayName} 的实例设置`}
-                        onClick={() => openInstance(item.id)}
-                      >
-                        <SvgIcon src={gearIcon} />
-                      </button>
-                    </div>
-                  );
-                })}
+                        <button
+                          type="button"
+                          className="im-all-settings"
+                          aria-label={`打开 ${item.displayName} 的实例设置`}
+                          onClick={() => openInstance(item.id)}
+                        >
+                          <SvgIcon src={gearIcon} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ) : (
-            <InstancesPage selectedId={shown} onSelectInstance={handleInnerSelect} />
-          )}
+            ) : (
+              <InstancesPage selectedId={shown} onSelectInstance={handleInnerSelect} />
+            )}
+          </div>
+          {isListView ? <FadeScrollbar targetRef={contentRef} hidden={out} /> : null}
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { call, isDemoMode } from "../invoke";
+import { call } from "../invoke";
+import { revealInFileManager } from "../shellBridge";
 import { openFolder } from "./settings";
 
 export interface PathPickerOptions {
@@ -18,13 +18,8 @@ export const pickFolder = (options: PathPickerOptions = {}) =>
 /** 在系统文件管理器中打开或定位指定路径；演示模式或失败时回退到 open_folder。 */
 export async function openPathInExplorer(path: string, fallbackKind?: string): Promise<string> {
   const trimmed = path.trim();
-  if (!isDemoMode() && trimmed.length > 0) {
-    try {
-      await revealItemInDir(trimmed);
-      return "已在文件管理器中打开。";
-    } catch {
-      // 回退到后端目录命令
-    }
+  if (trimmed.length > 0 && (await revealInFileManager(trimmed))) {
+    return "已在文件管理器中打开。";
   }
   if (fallbackKind) {
     const result = await openFolder(fallbackKind);

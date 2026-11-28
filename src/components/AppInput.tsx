@@ -20,6 +20,7 @@ import {
 import { createPortal } from "react-dom";
 import checkIcon from "../assets/icons/ui/check.svg";
 import chevronDownIcon from "../assets/icons/ui/chevron-down.svg";
+import { usePresence } from "../shell/usePresence";
 import SvgIcon from "./SvgIcon";
 import "./AppSelect.css";
 
@@ -110,6 +111,7 @@ export function AppSelect({
   const currentValue = isControlled ? String(value ?? "") : innerValue;
 
   const [open, setOpen] = useState(false);
+  const { mounted: menuMounted, closing: menuClosing } = usePresence(open, 140);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
   const [openUp, setOpenUp] = useState(false);
@@ -275,13 +277,13 @@ export function AppSelect({
         <SvgIcon src={chevronDownIcon} className="app-select-caret" />
       </button>
 
-      {open && typeof document !== "undefined"
+      {menuMounted && typeof document !== "undefined"
         ? createPortal(
             <div
               ref={menuRef}
               id={listboxId}
               role="listbox"
-              className={`app-select-menu${openUp ? " is-up" : ""}`}
+              className={`app-select-menu${openUp ? " is-up" : ""}${menuClosing ? " is-closing" : ""}`}
               style={menuStyle}
             >
               {options.map((option, index) => {

@@ -1,0 +1,10 @@
+{
+  "identifier": "cn.mcug.official",
+  "name": "MCUG Launcher 官方界面",
+  "version": "0.1.0",
+  "kernelApi": "^1.0.0",
+  "entry": "index.html",
+  "author": "MCUG Launcher",
+  "description": "MCUG Launcher 默认官方前端包（内置）",
+  "icon": "MCUGLogo.svg"
+}

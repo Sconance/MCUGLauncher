@@ -327,6 +327,27 @@
             "type": "string"
           },
           "description": "files 字段。"
+        },
+        "gameVersions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "支持的 Minecraft 游戏版本列表。"
+        },
+        "loaders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "支持的加载器列表。"
+        },
+        "versionType": {
+          "type": "string",
+          "default": "release",
+          "description": "版本发布类型（release / beta / alpha）。"
         }
       },
       "additionalProperties": false,

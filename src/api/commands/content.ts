@@ -12,9 +12,17 @@ import type {
 export const searchContent = (category: string, query: string, game = "", loader = "") =>
   call<ContentSearchResult>("search_content", { category, query, game, loader });
 
-/** 读取项目的兼容版本与安装令牌；`requestId` 用于丢弃过期响应。 */
-export const listContentVersions = (id: string, requestId = "") =>
-  call<ResourceVersionsInfo>("list_content_versions", { id, requestId });
+/** 读取项目的兼容版本与安装令牌；`game` / `loader` 留空表示返回全部版本。 */
+export const listContentVersions = (
+  id: string,
+  options?: { requestId?: string; game?: string; loader?: string },
+) =>
+  call<ResourceVersionsInfo>("list_content_versions", {
+    id,
+    requestId: options?.requestId ?? "",
+    game: options?.game ?? "",
+    loader: options?.loader ?? "",
+  });
 
 /** 将资源版本加入下载队列；`mode` 为 instance（安装到实例）或 local（下载到目录）。 */
 export const queueContentVersion = (token: string, versionId: string, mode = "instance", path = "") =>

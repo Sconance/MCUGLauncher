@@ -85,9 +85,14 @@ const RELEASE_THEMES: Array<[RegExp, string]> = [
 const APRIL_FOOLS_SNAPSHOTS =
   /^(?:26w\d+.*|25w14craftmine|24w14potato|23w13a_or_b|22w13oneBlockAtATime|20w14infinite|3D Shareware v1\.34|1\.RV-Pre1|15w14a)$/i;
 
+/** 判断版本号字符串是否为愚人节快照版本。 */
+export function isAprilFoolsId(id: string): boolean {
+  return APRIL_FOOLS_SNAPSHOTS.test(id.trim());
+}
+
 /** 判断是否为愚人节版本。 */
 export function isAprilFoolsVersion(item: VanillaVersionInfo): boolean {
-  return item.type === "snapshot" && APRIL_FOOLS_SNAPSHOTS.test(item.id);
+  return item.type === "snapshot" && isAprilFoolsId(item.id);
 }
 
 /**
@@ -162,25 +167,35 @@ function matchReleaseTheme(version: string, wikiThemes?: VanillaThemeMap): strin
 }
 
 /**
- * 推导快照版归属的目标正式版本号：
+ * 根据版本号字符串推导快照/预发布/候选版归属的目标正式版本号：
  * 1. 带目标版本号前缀的快照/预发布/候选版（如 26.4-snapshot-1、1.21.11-rc3）直接取前缀；
- * 2. 传统周常快照（YYwWW[a-z]）按开发周期映射到对应正式版；
- * 3. 其他未收录快照按发布时间归属到其后首个正式版。
+ * 2. 传统周常快照（YYwWW[a-z]）按开发周期映射到对应正式版。
  */
-function snapshotTargetRelease(
-  item: VanillaVersionInfo,
-  releasesAsc?: Array<{ id: string; time: number }>,
-): string | null {
-  const prefixed = /^(\d+\.\d+(?:\.\d+)?)(?:[-_ ]|$)/.exec(item.id);
+export function resolveSnapshotTargetRelease(versionId: string): string | null {
+  const id = versionId.trim();
+  const prefixed = /^(\d+\.\d+(?:\.\d+)?)(?:[-_ ]|$)/.exec(id);
   if (prefixed) return prefixed[1];
 
-  const weekly = /^(\d{2})w(\d{2})/.exec(item.id);
+  const weekly = /^(\d{2})w(\d{2})/i.exec(id);
   if (weekly) {
     const code = Number.parseInt(weekly[1], 10) * 100 + Number.parseInt(weekly[2], 10);
     for (const [start, end, targetRelease] of SNAPSHOT_WEEK_TARGETS) {
       if (code >= start && code <= end) return targetRelease;
     }
   }
+  return null;
+}
+
+/**
+ * 推导快照版归属的目标正式版本号：
+ * 优先按版本号规则解析，未收录时按发布时间归属到其后首个正式版。
+ */
+function snapshotTargetRelease(
+  item: VanillaVersionInfo,
+  releasesAsc?: Array<{ id: string; time: number }>,
+): string | null {
+  const resolved = resolveSnapshotTargetRelease(item.id);
+  if (resolved) return resolved;
 
   if (releasesAsc && releasesAsc.length > 0) {
     const time = parseReleaseTime(item.released);

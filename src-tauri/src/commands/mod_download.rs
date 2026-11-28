@@ -287,6 +287,9 @@ mod tests {
                 size: 3,
                 sha1: "a9993e364706816aba3e25717850c26c9cd0d89d".into(),
             },
+            game_versions: vec!["1.21.4".into()],
+            loaders: vec!["fabric".into()],
+            version_type: "release".into(),
         };
         let destination = directory.path().join("mod.jar");
         fs::write(&destination, b"old").unwrap();

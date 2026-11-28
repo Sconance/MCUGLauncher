@@ -422,6 +422,11 @@
   transform: translateX(18px);
 }
 
+.switch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* ---------- 表单 ---------- */
 
 .input,
@@ -722,6 +727,15 @@ textarea.input {
   background-image: var(--app-glass-grain);
   background-size: 160px 160px;
   backdrop-filter: var(--app-glass-blur);
+  transform-origin: top left;
+  animation: context-menu-in 140ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+@keyframes context-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
 }
 
 .context-menu button {

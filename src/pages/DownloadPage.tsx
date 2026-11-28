@@ -25,7 +25,23 @@ import ActiveFilters from './download/ActiveFilters';
 import InstancePicker from './download/InstancePicker';
 import DownloadPrompts from './download/DownloadPrompts';
 import Pager from './download/Pager';
+import {
+    getCachedSearch,
+    getCachedVanilla,
+    getCachedVersions,
+    getCategoryQuery,
+    getRememberedDownloadFilters,
+    makeSearchCacheKey,
+    makeVersionsCacheKey,
+    setCachedSearch,
+    setCachedVanilla,
+    setCachedVersions,
+    setCategoryQuery,
+    setRememberedPackFilters,
+    setRememberedPickInstanceId,
+} from './download/searchCache';
 import { formatDefaultInstanceName, LOADER_DEFS, SUPPORTED_LOADERS, versionAtLeast } from './download/loaders';
+import { isHiddenInModFilter, isModLoaderTag } from './download/modIcons';
 import datapackIcon from '../assets/icons/download/datapack.svg';
 import cubeIcon from '../assets/icons/ui/cube.svg';
 import gridIcon from '../assets/icons/ui/grid.svg';
@@ -75,6 +91,8 @@ const SECTION_ICONS: Record<string, string> = {
 type SectionKey = 'vanilla' | (typeof SECTIONS)[number][0];
 
 const CONTENT_SECTIONS: SectionKey[] = SECTIONS.map(([key]) => key);
+/** 显式表示用户选择了「不选择实例」，区别于首次进入尚未同步主页实例的空串。 */
+const NO_INSTANCE = '__none__';
 
 /** 实例的加载器主名：`Fabric 0.16.9` → `fabric`；原版实例统一成 `vanilla` */
 function instanceLoaderKey(instance: InstanceInfo): string {
@@ -151,15 +169,30 @@ export default function DownloadPage() {
         setVanillaTaskId(null);
     }, [tasks, vanillaTaskId]);
 
+    const remembered = useMemo(() => getRememberedDownloadFilters(), []);
     const category = isContentSection ? section : 'mod';
-    const [query, setQuery] = useState('');
+    const [query, setQuery] = useState(() => getCategoryQuery('mod'));
     const [results, setResults] = useState<ContentItem[]>([]);
     const [searching, setSearching] = useState(false);
     const [selected, setSelected] = useState<ContentItem | null>(null);
     const [versions, setVersions] = useState<ResourceVersionsInfo | null>(null);
+    const [versionsLoading, setVersionsLoading] = useState(false);
+    const [versionsExiting, setVersionsExiting] = useState(false);
     const [versionsHint, setVersionsHint] = useState('尚未读取兼容版本。');
     const [versionId, setVersionId] = useState('');
     const [targetMode, setTargetMode] = useState('instance');
+    const versionReqSeq = useRef(0);
+    const searchReqSeq = useRef(0);
+    const lastSearchKeyRef = useRef('');
+    const [listWaveBatch, setListWaveBatch] = useState(0);
+    const [listExiting, setListExiting] = useState(false);
+    const resultsCountRef = useRef(0);
+    const versionsCountRef = useRef(0);
+    const dlRef = useRef<HTMLDivElement>(null);
+    const scrollAnimFrame = useRef<number | null>(null);
+
+    resultsCountRef.current = results.length;
+    versionsCountRef.current = versions?.items.length ?? 0;
 
     // Modrinth 式列表：排序 / 每页数量 / 页码 / 视图 / 侧栏筛选
     const [sort, setSort] = useState<'relevance' | 'downloads' | 'name'>('relevance');
@@ -167,23 +200,26 @@ export default function DownloadPage() {
     const [pageIndex, setPageIndex] = useState(0);
     const [view, setView] = useState<'list' | 'grid'>('list');
     /** 按哪个实例筛选内容：默认跟随主页启动实例，可在右上角切换 */
-    const [pickInstanceId, setPickInstanceId] = useState('');
+    const [pickInstanceId, setPickInstanceId] = useState(() => remembered.pickInstanceId);
     const [instanceOpen, setInstanceOpen] = useState(false);
     /** 整合包分区的版本 / 加载器筛选，空串表示不限 */
-    const [packGame, setPackGame] = useState('');
-    const [packLoader, setPackLoader] = useState('');
+    const [packGame, setPackGame] = useState(() => remembered.packGame);
+    const [packLoader, setPackLoader] = useState(() => remembered.packLoader);
     const [packGameOpen, setPackGameOpen] = useState(false);
     const [packLoaderOpen, setPackLoaderOpen] = useState(false);
     const packPickerRef = useRef<HTMLDivElement>(null);
     const [activeTags, setActiveTags] = useState<string[]>([]);
-    const [activeAuthors, setActiveAuthors] = useState<string[]>([]);
+    const [excludedTags, setExcludedTags] = useState<string[]>([]);
     const [railQuery, setRailQuery] = useState('');
     const [filterOpen, setFilterOpen] = useState(false);
     const filterRef = useRef<HTMLDivElement>(null);
 
-    const [vanilla, setVanilla] = useState<VanillaVersionInfo[]>([]);
+    const [vanilla, setVanilla] = useState<VanillaVersionInfo[]>(() => getCachedVanilla() ?? []);
     const [wikiThemes, setWikiThemes] = useState<VanillaThemeMap>(() => loadCachedVanillaThemes());
-    const [vanillaHint, setVanillaHint] = useState('正在读取 Mojang 版本列表…');
+    const [vanillaHint, setVanillaHint] = useState(() => {
+        const cached = getCachedVanilla();
+        return cached ? `已读取 ${cached.length} 个正式版、快照和远古版本。` : '正在读取 Mojang 版本列表…';
+    });
     /** 三个版本抽屉的开合状态，默认展开正式版 */
     const [openVanilla, setOpenVanilla] = useState<Record<string, boolean>>({ release: true });
     const [vanillaQuery, setVanillaQuery] = useState('');
@@ -203,13 +239,16 @@ export default function DownloadPage() {
 
     useEffect(() => {
         let alive = true;
-        void listVanillaVersions().then((vanillaResult) => {
-            if (!alive) return;
-            setVanilla(vanillaResult);
-            setVanillaHint(`已读取 ${vanillaResult.length} 个正式版、快照和远古版本。`);
-        }).catch((error) => {
-            if (alive) setVanillaHint(`读取原版版本列表失败：${String(error)}`);
-        });
+        if (!getCachedVanilla()) {
+            void listVanillaVersions().then((vanillaResult) => {
+                if (!alive) return;
+                setCachedVanilla(vanillaResult);
+                setVanilla(vanillaResult);
+                setVanillaHint(`已读取 ${vanillaResult.length} 个正式版、快照和远古版本。`);
+            }).catch((error) => {
+                if (alive) setVanillaHint(`读取原版版本列表失败：${String(error)}`);
+            });
+        }
         void listVanillaThemes(false).then((themes) => {
             if (!alive || Object.keys(themes).length === 0) return;
             setWikiThemes(themes);
@@ -251,12 +290,18 @@ export default function DownloadPage() {
     const releaseVersions = useMemo(() => vanilla.filter((item) => item.type === 'release'), [vanilla]);
 
     const currentInstance = instanceCatalog?.items.find((item) => item.id === overview?.selectedInstanceId);
-    /** 当前用于筛选内容的实例：没手动切过就跟着主页启动实例 */
-    const contentInstance = instanceCatalog?.items.find((item) => item.id === pickInstanceId) ?? currentInstance;
+    /** 当前用于筛选内容的实例：用户显式选「不选择实例」时为 undefined；未手动切过时跟随主页启动实例 */
+    const contentInstance =
+        pickInstanceId === NO_INSTANCE
+            ? undefined
+            : instanceCatalog?.items.find((item) => item.id === pickInstanceId) ?? currentInstance;
 
     useEffect(() => {
         if (pickInstanceId.length > 0) return;
-        if (overview?.selectedInstanceId) setPickInstanceId(overview.selectedInstanceId);
+        if (overview?.selectedInstanceId) {
+            setPickInstanceId(overview.selectedInstanceId);
+            setRememberedPickInstanceId(overview.selectedInstanceId);
+        }
     }, [overview?.selectedInstanceId, pickInstanceId]);
 
     /** 运行环境类标签单独成组，其余标签归到“类别”。 */
@@ -264,56 +309,95 @@ export default function DownloadPage() {
 
     const tagCounts = useMemo(() => {
         const counter = new Map<string, number>();
-        results.forEach((item) => item.tags.forEach((tag) => counter.set(tag, (counter.get(tag) ?? 0) + 1)));
+        results.forEach((item) =>
+            item.tags.forEach((tag) => {
+                if (category === 'mod' && isHiddenInModFilter(tag)) return;
+                counter.set(tag, (counter.get(tag) ?? 0) + 1);
+            }),
+        );
         return [...counter.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-    }, [results]);
+    }, [results, category]);
     const envTags = tagCounts.filter(([tag]) => ENV_TAGS.includes(tag));
-    const kindTags = tagCounts.filter(([tag]) => !ENV_TAGS.includes(tag));
-
-    const authorCounts = useMemo(() => {
-        const counter = new Map<string, number>();
-        results.forEach((item) => {
-            if (item.author.length > 0) counter.set(item.author, (counter.get(item.author) ?? 0) + 1);
-        });
-        return [...counter.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-    }, [results]);
+    const loaderTags = tagCounts.filter(([tag]) => !ENV_TAGS.includes(tag) && isModLoaderTag(tag));
+    const kindTags = tagCounts.filter(([tag]) => !ENV_TAGS.includes(tag) && !isModLoaderTag(tag));
 
     const filteredResults = useMemo(() => {
         const keyword = railQuery.trim().toLowerCase();
+        const includeLoaders = activeTags.filter((tag) => isModLoaderTag(tag));
+        const includeOthers = activeTags.filter((tag) => !isModLoaderTag(tag));
         const rows = results.filter((item) => {
-            const tagsOk = activeTags.every((tag) => item.tags.includes(tag));
-            const authorsOk = activeAuthors.length === 0 || activeAuthors.includes(item.author);
+            const loadersOk =
+                includeLoaders.length === 0 || includeLoaders.some((tag) => item.tags.includes(tag));
+            const othersOk = includeOthers.every((tag) => item.tags.includes(tag));
+            const excludedOk = excludedTags.every((tag) => !item.tags.includes(tag));
             const keywordOk =
                 keyword.length === 0 ||
                 [item.name, item.description, item.author].some((field) => field.toLowerCase().includes(keyword));
-            return tagsOk && authorsOk && keywordOk;
+            return loadersOk && othersOk && excludedOk && keywordOk;
         });
         if (sort === 'downloads') rows.sort((a, b) => downloadWeight(b.downloads) - downloadWeight(a.downloads));
         else if (sort === 'name') rows.sort((a, b) => a.name.localeCompare(b.name));
         return rows;
-    }, [results, activeTags, activeAuthors, railQuery, sort]);
+    }, [results, activeTags, excludedTags, railQuery, sort]);
 
     const resultPageCount = Math.max(1, Math.ceil(filteredResults.length / pageSize));
     const resultPage = Math.min(pageIndex, resultPageCount - 1);
     const visibleResults = filteredResults.slice(resultPage * pageSize, resultPage * pageSize + pageSize);
 
+    /** 平滑缓动回顶（easeOutCubic，约 320ms），遵循系统减少动态偏好 */
+    const smoothScrollToTop = () => {
+        const scroller = dlRef.current?.closest('.split-content');
+        if (!scroller) return;
+        if (scrollAnimFrame.current !== null) {
+            window.cancelAnimationFrame(scrollAnimFrame.current);
+            scrollAnimFrame.current = null;
+        }
+        const startTop = scroller.scrollTop;
+        if (startTop <= 1) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            scroller.scrollTo({ top: 0 });
+            return;
+        }
+        const duration = Math.min(380, Math.max(220, startTop * 0.28));
+        const startTime = performance.now();
+        const step = (now: number) => {
+            const elapsed = now - startTime;
+            const t = Math.min(1, elapsed / duration);
+            const eased = 1 - Math.pow(1 - t, 3);
+            scroller.scrollTop = startTop * (1 - eased);
+            if (t < 1) {
+                scrollAnimFrame.current = window.requestAnimationFrame(step);
+            } else {
+                scrollAnimFrame.current = null;
+            }
+        };
+        scrollAnimFrame.current = window.requestAnimationFrame(step);
+    };
+
+    const handlePageChange = (nextPage: number) => {
+        setPageIndex(nextPage);
+        smoothScrollToTop();
+    };
+
     const toggleTag = (tag: string) => {
+        setExcludedTags((current) => current.filter((entry) => entry !== tag));
         setActiveTags((current) =>
             current.includes(tag) ? current.filter((entry) => entry !== tag) : [...current, tag],
         );
         setPageIndex(0);
     };
 
-    const toggleAuthor = (author: string) => {
-        setActiveAuthors((current) =>
-            current.includes(author) ? current.filter((entry) => entry !== author) : [...current, author],
+    const toggleExcludeTag = (tag: string) => {
+        setActiveTags((current) => current.filter((entry) => entry !== tag));
+        setExcludedTags((current) =>
+            current.includes(tag) ? current.filter((entry) => entry !== tag) : [...current, tag],
         );
         setPageIndex(0);
     };
 
     const clearFilters = () => {
         setActiveTags([]);
-        setActiveAuthors([]);
+        setExcludedTags([]);
         setRailQuery('');
         setPageIndex(0);
     };
@@ -330,56 +414,115 @@ export default function DownloadPage() {
         setSection(key as SectionKey);
     };
 
-    /** 选实例：关掉弹层、记住它，并立刻用新实例的版本 / 加载器重搜当前分区 */
+    /** 选实例：关掉弹层、记住它（空串表示「不选择实例」），条件变化时优先命中缓存或重搜 */
     const chooseInstance = (id: string) => {
         setInstanceOpen(false);
-        setPickInstanceId(id);
+        const storedId = id.length === 0 ? NO_INSTANCE : id;
+        setPickInstanceId(storedId);
+        setRememberedPickInstanceId(storedId);
         if (!CONTENT_SECTIONS.includes(section)) return;
-        const next = instanceCatalog?.items.find((item) => item.id === id);
-        void search(section, query, contentFilter(section, next, { game: packGame, loader: packLoader }));
+        const next = id.length === 0 ? undefined : instanceCatalog?.items.find((item) => item.id === id);
+        void search(section, query, contentFilter(section, next, { game: packGame, loader: packLoader }), false);
     };
 
-    /** 整合包分区：选游戏版本后按「版本 + 当前加载器」重搜 */
+    /** 整合包分区：选游戏版本后按「版本 + 当前加载器」查缓存或重搜 */
     const choosePackGame = (game: string) => {
         setPackGameOpen(false);
         setPackGame(game);
+        setRememberedPackFilters(game, packLoader);
         if (section !== 'modpack') return;
-        void search('modpack', query, contentFilter('modpack', contentInstance, { game, loader: packLoader }));
+        void search('modpack', query, contentFilter('modpack', contentInstance, { game, loader: packLoader }), false);
     };
 
-    /** 整合包分区：选加载器后按「当前版本 + 加载器」重搜 */
+    /** 整合包分区：选加载器后按「当前版本 + 加载器」查缓存或重搜 */
     const choosePackLoader = (loader: string) => {
         setPackLoaderOpen(false);
         setPackLoader(loader);
+        setRememberedPackFilters(packGame, loader);
         if (section !== 'modpack') return;
-        void search('modpack', query, contentFilter('modpack', contentInstance, { game: packGame, loader }));
+        void search('modpack', query, contentFilter('modpack', contentInstance, { game: packGame, loader }), false);
     };
 
-    /** SplitPage 换好内容后调用：内容分区立刻按新分类搜一次。 */
+    /** SplitPage 换好内容后调用：恢复该分区自己的搜索词并优先命中缓存，条件未变不自动刷新。 */
     const handleShownChange = (shown: string) => {
         if (!CONTENT_SECTIONS.includes(shown as SectionKey)) return;
-        void search(shown, query);
+        const nextQuery = getCategoryQuery(shown);
+        setQuery(nextQuery);
+        void search(shown, nextQuery, undefined, false);
     };
 
     const search = async (
         nextCategory: string = category,
         nextQuery: string = query,
         preset?: { game: string; loader: string },
+        force = false,
     ) => {
+        const filter = preset ?? contentFilter(nextCategory, contentInstance, { game: packGame, loader: packLoader });
+        const cacheKey = makeSearchCacheKey(nextCategory, nextQuery, filter.game, filter.loader);
+        setCategoryQuery(nextCategory, nextQuery);
+
+        // 非强制刷新且当前展示的正是同一组搜索过滤条件：保持现状不自动刷新
+        if (!force && lastSearchKeyRef.current === cacheKey && !selected) {
+            return;
+        }
+
+        // 非强制刷新时命中同条件缓存：直接恢复列表，不发起网络请求
+        if (!force) {
+            const cached = getCachedSearch(cacheKey);
+            if (cached) {
+                searchReqSeq.current += 1;
+                lastSearchKeyRef.current = cacheKey;
+                setSelected(null);
+                setVersions(null);
+                setListExiting(false);
+                setSearching(false);
+                setResults(cached.items);
+                setListWaveBatch((n) => n + 1);
+                setPageIndex(0);
+                setActiveTags([]);
+                setExcludedTags([]);
+                setStatus(cached.status);
+                return;
+            }
+        }
+
+        const seq = ++searchReqSeq.current;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const shouldExit = !reducedMotion && !selected && resultsCountRef.current > 0;
+        const exitMs = shouldExit ? Math.min(340, 200 + Math.min(resultsCountRef.current, 8) * 16) : 0;
+
         setSelected(null);
         setVersions(null);
+        setStatus('正在搜索 Modrinth…');
+
+        // 发起搜索请求与退场动画并行：不额外拉长等待时间
+        const requestPromise = searchContent(nextCategory, nextQuery.trim(), filter.game, filter.loader);
+
+        if (shouldExit) {
+            setListExiting(true);
+            await new Promise<void>((resolve) => {
+                window.setTimeout(resolve, exitMs);
+            });
+            if (seq !== searchReqSeq.current) return;
+        }
+
+        setListExiting(false);
         setSearching(true);
         setResults([]);
         setPageIndex(0);
         setActiveTags([]);
-        setActiveAuthors([]);
-        setStatus('正在搜索 Modrinth…');
-        const filter = preset ?? contentFilter(nextCategory, contentInstance, { game: packGame, loader: packLoader });
-        const result = await searchContent(nextCategory, nextQuery.trim(), filter.game, filter.loader);
+        setExcludedTags([]);
+
+        const result = await requestPromise;
+        if (seq !== searchReqSeq.current) return;
+        const scope = [filter.game, filter.loader].filter((value) => value.length > 0).join(' · ');
+        const nextStatus = `搜索完成，${scope.length > 0 ? `${scope} · ` : ''}共 ${result.items.length} 项。`;
+        setCachedSearch(cacheKey, { items: result.items, status: nextStatus });
+        lastSearchKeyRef.current = cacheKey;
         setSearching(false);
         setResults(result.items);
-        const scope = [filter.game, filter.loader].filter((value) => value.length > 0).join(' · ');
-        setStatus(`搜索完成，${scope.length > 0 ? `${scope} · ` : ''}共 ${result.items.length} 项。`);
+        setListWaveBatch((n) => n + 1);
+        setStatus(nextStatus);
     };
 
     // 点击筛选面板以外的地方收起它
@@ -423,9 +566,10 @@ export default function DownloadPage() {
     const showDetail = (item: ContentItem) => {
         setSelected(item);
         setVersions(null);
-        setVersionsHint('尚未读取兼容版本。');
+        setVersionsHint('正在读取兼容版本…');
         setVersionId('');
-        setTargetMode('instance');
+        setTargetMode(contentInstance ? 'instance' : 'local');
+        void loadVersions(item);
     };
 
     /** 列表 → 详情：旧列表向左滑出，详情从右侧滑入 */
@@ -434,12 +578,76 @@ export default function DownloadPage() {
     /** 详情 → 列表：反向滑回 */
     const closeContentDetail = () => runSlide(() => setSelected(null), 'back');
 
-    const loadVersions = async (item: ContentItem) => {
+    const loadVersions = async (item: ContentItem, force = false) => {
+        const seq = ++versionReqSeq.current;
+        const filter = contentFilter(category, contentInstance, { game: packGame, loader: packLoader });
+        const cacheKey = makeVersionsCacheKey(item.id, filter.game, filter.loader);
+        const applyResult = (result: ResourceVersionsInfo) => {
+            setVersions(result);
+            setVersionId(result.items[0]?.id ?? '');
+            if (contentInstance) {
+                setVersionsHint(
+                    result.items.length > 0
+                        ? `仅显示兼容 ${result.game} · ${result.loader} 的版本，共 ${result.items.length} 个`
+                        : `未找到兼容 ${result.game} · ${result.loader} 的版本。`,
+                );
+            } else {
+                setVersionsHint(
+                    result.items.length > 0
+                        ? `未选择实例 · 共 ${result.items.length} 个版本，已按游戏版本与加载器分类`
+                        : '暂无可下载的版本。',
+                );
+            }
+        };
+
+        if (!force) {
+            const cached = getCachedVersions(cacheKey);
+            if (cached) {
+                setVersionsExiting(false);
+                setVersionsLoading(false);
+                applyResult(cached);
+                return;
+            }
+        }
+
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const shouldExit = !reducedMotion && versionsCountRef.current > 0;
+        const exitMs = shouldExit ? 260 : 0;
+
+        setVersionsLoading(true);
         setVersionsHint('正在读取兼容版本…');
-        const result = await listContentVersions(item.id);
-        setVersions(result);
-        setVersionId(result.items[0]?.id ?? '');
-        setVersionsHint(`${result.game} · ${result.loader} · ${result.items.length} 个兼容版本`);
+
+        const requestPromise = listContentVersions(item.id, {
+            requestId: `${item.id}-${seq}`,
+            game: filter.game,
+            loader: filter.loader,
+        });
+
+        if (shouldExit) {
+            setVersionsExiting(true);
+            await new Promise<void>((resolve) => {
+                window.setTimeout(resolve, exitMs);
+            });
+            if (seq !== versionReqSeq.current) return;
+            setVersionsExiting(false);
+            setVersions(null);
+        }
+
+        try {
+            const result = await requestPromise;
+            if (seq !== versionReqSeq.current) return;
+            setCachedVersions(cacheKey, result);
+            applyResult(result);
+        } catch (error) {
+            if (seq !== versionReqSeq.current) return;
+            setVersions(null);
+            setVersionsHint(error instanceof Error ? error.message : '读取版本失败。');
+        } finally {
+            if (seq === versionReqSeq.current) {
+                setVersionsExiting(false);
+                setVersionsLoading(false);
+            }
+        }
     };
 
     const queueDownload = async () => {
@@ -447,7 +655,7 @@ export default function DownloadPage() {
             setStatus('请选择资源版本。');
             return;
         }
-        const localOnly = category === 'modpack' || category === 'datapack';
+        const localOnly = !contentInstance || category === 'modpack' || category === 'datapack';
         if (localOnly || targetMode === 'local') {
             setPrompt('download');
             return;
@@ -479,6 +687,9 @@ export default function DownloadPage() {
     useEffect(
         () => () => {
             slideTimers.current.forEach((timer) => window.clearTimeout(timer));
+            if (scrollAnimFrame.current !== null) {
+                window.cancelAnimationFrame(scrollAnimFrame.current);
+            }
         },
         [],
     );
@@ -507,6 +718,7 @@ export default function DownloadPage() {
     /** 重新拉取 Mojang 版本清单与 MC Wiki 主题缓存 */
     const refreshVanilla = () => {
         void listVanillaVersions().then((result) => {
+            setCachedVanilla(result);
             setVanilla(result);
             setVanillaHint(`已读取 ${result.length} 个正式版、快照和远古版本。`);
         }).catch((error) => {
@@ -617,7 +829,7 @@ export default function DownloadPage() {
                     return (
                         <>
                             {tab === 'search' ? (
-                                <div className="dl">
+                                <div className="dl" ref={dlRef}>
                                     <div
                                         className={`dl-swap vd-swap${
                                             slideOut === 'left'
@@ -631,14 +843,21 @@ export default function DownloadPage() {
                                             <ContentDetail
                                                 item={selected}
                                                 categoryLabel={t(CATEGORY_LABELS[category] ?? 'download.list')}
+                                                scopedInstance={contentInstance}
                                                 versions={versions}
+                                                versionsLoading={versionsLoading}
+                                                versionsExiting={versionsExiting}
                                                 versionsHint={versionsHint}
                                                 versionId={versionId}
                                                 onVersionChange={setVersionId}
                                                 targetMode={targetMode}
                                                 onTargetModeChange={setTargetMode}
-                                                localOnly={viewCategory === 'modpack' || viewCategory === 'datapack'}
-                                                onLoadVersions={() => void loadVersions(selected)}
+                                                localOnly={
+                                                    !contentInstance ||
+                                                    viewCategory === 'modpack' ||
+                                                    viewCategory === 'datapack'
+                                                }
+                                                onLoadVersions={() => void loadVersions(selected, true)}
                                                 onDownload={() => void queueDownload()}
                                                 onBack={closeContentDetail}
                                             />
@@ -698,12 +917,12 @@ export default function DownloadPage() {
                                                             </span>
                                                             <span className="dl-instance-text">
                                                                 <span className="dl-instance-name">
-                                                                    {contentInstance?.displayName ?? '选择实例'}
+                                                                    {contentInstance?.displayName ?? '不选择实例'}
                                                                 </span>
                                                                 <span className="dl-instance-sub">
                                                                     {contentInstance
                                                                         ? `${contentInstance.minecraft} · ${contentInstance.loader}`
-                                                                        : '未选择实例'}
+                                                                        : '不按实例筛选'}
                                                                 </span>
                                                             </span>
                                                         </button>
@@ -730,19 +949,19 @@ export default function DownloadPage() {
                                                         open={filterOpen}
                                                         onToggle={() => setFilterOpen((current) => !current)}
                                                         onClose={() => setFilterOpen(false)}
-                                                        activeCount={activeTags.length + activeAuthors.length}
+                                                        activeCount={activeTags.length + excludedTags.length}
                                                         railQuery={railQuery}
                                                         onRailQueryChange={(value) => {
                                                             setRailQuery(value);
                                                             setPageIndex(0);
                                                         }}
-                                                        authorCounts={authorCounts}
                                                         envTags={envTags}
+                                                        loaderTags={loaderTags}
                                                         kindTags={kindTags}
                                                         activeTags={activeTags}
-                                                        activeAuthors={activeAuthors}
+                                                        excludedTags={excludedTags}
                                                         onToggleTag={toggleTag}
-                                                        onToggleAuthor={toggleAuthor}
+                                                        onToggleExcludeTag={toggleExcludeTag}
                                                         onClear={clearFilters}
                                                         rootRef={filterRef}
                                                     />
@@ -755,16 +974,19 @@ export default function DownloadPage() {
                                                         ),
                                                     })}
                                                     value={query}
-                                                    onChange={setQuery}
-                                                    onSubmit={() => void search()}
+                                                    onChange={(value) => {
+                                                        setQuery(value);
+                                                        setCategoryQuery(viewCategory, value);
+                                                    }}
+                                                    onSubmit={() => void search(viewCategory, query, undefined, true)}
                                                 />
 
-                                                {activeTags.length + activeAuthors.length > 0 ? (
+                                                {activeTags.length + excludedTags.length > 0 ? (
                                                     <ActiveFilters
                                                         tags={activeTags}
-                                                        authors={activeAuthors}
+                                                        excludedTags={excludedTags}
                                                         onRemoveTag={toggleTag}
-                                                        onRemoveAuthor={toggleAuthor}
+                                                        onRemoveExcludedTag={toggleExcludeTag}
                                                         onClear={clearFilters}
                                                     />
                                                 ) : null}
@@ -780,11 +1002,15 @@ export default function DownloadPage() {
                                                     </p>
                                                 ) : null}
 
-                                                <div className={`dl-list${view === 'grid' ? ' grid' : ''}`}>
-                                                    {visibleResults.map((item) => (
+                                                <div
+                                                    key={`${listWaveBatch}::${resultPage}::${view}::${sort}::${activeTags.join(',')}::${excludedTags.join(',')}`}
+                                                    className={`dl-list${view === 'grid' ? ' grid' : ''}${listExiting ? ' is-exiting' : ''}`}
+                                                >
+                                                    {visibleResults.map((item, index) => (
                                                         <ContentCard
                                                             key={item.id}
                                                             item={item}
+                                                            waveIndex={index}
                                                             bookmarked={
                                                                 bookmarks?.some(
                                                                     (favorite) => favorite.id === item.id,
@@ -800,7 +1026,7 @@ export default function DownloadPage() {
                                                     <Pager
                                                         page={resultPage}
                                                         pageCount={resultPageCount}
-                                                        onPageChange={setPageIndex}
+                                                        onPageChange={handlePageChange}
                                                     />
                                                 ) : null}
                                             </>
@@ -884,14 +1110,15 @@ export default function DownloadPage() {
                     })}
                     hint={
                         category === 'mod'
-                            ? '只显示与该实例的游戏版本、加载器匹配的模组。'
+                            ? '选择实例后仅显示兼容该实例游戏版本与加载器的模组；不选择实例时按版本与加载器分类浏览。'
                             : category === 'shader'
                                 ? '光影包按实例区分 Iris / OptiFine 来源。'
                                 : '资源包与数据包与加载器无关，不按实例筛选。'
                     }
                     instances={instanceCatalog?.items ?? []}
-                    activeId={contentInstance?.id}
+                    activeId={contentInstance?.id ?? ''}
                     homeId={overview?.selectedInstanceId ?? undefined}
+                    allowNone
                     onPick={chooseInstance}
                     onClose={() => setInstanceOpen(false)}
                 />

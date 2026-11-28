@@ -15,11 +15,11 @@ import {
 import { launchGame } from "../api/commands/launch";
 import { openFolder as openFolderCommand } from "../api/commands/settings";
 import { selectInstance as selectInstanceCommand } from "../api/commands/state";
-import Field from "../components/Field";
-import { AppInput, AppSelect, AppTextarea } from "../components/AppInput";
+import { AppInput, AppSelect } from "../components/AppInput";
 import PathPrompt from "../components/PathPrompt";
 import { LIMITS } from "../constants";
 import { useFadeSwap } from "../shell/fade";
+import { cleanJavaPath } from "../shell/javaDisplayPreference";
 import { useLauncher } from "../state/launcher";
 import type {
   ContentUpdatePreviewInfo,
@@ -28,23 +28,10 @@ import type {
   LaunchOptionsInfo,
   UninstallPreviewInfo,
 } from "../types/launcher";
+import InstanceLaunchSettings, { type InstanceLaunchForm } from "./instances/InstanceLaunchSettings";
 import "./InstancesPage.css";
 
-interface LaunchForm {
-  displayName: string;
-  java: string;
-  autoMemory: boolean;
-  ram: string;
-  width: string;
-  height: string;
-  fullScreen: boolean;
-  autoChinese: boolean;
-  windowTitle: string;
-  server: string;
-  jvmArguments: string;
-}
-
-const EMPTY_FORM: LaunchForm = {
+const EMPTY_FORM: InstanceLaunchForm = {
   displayName: "",
   java: "",
   autoMemory: true,
@@ -101,7 +88,7 @@ export default function InstancesPage({ selectedId, onSelectInstance }: Instance
   const [status, setStatus] = useState("");
   const [options, setOptions] = useState<LaunchOptionsInfo | null>(null);
   const [optionsStatus, setOptionsStatus] = useState("");
-  const [form, setForm] = useState<LaunchForm>(EMPTY_FORM);
+  const [form, setForm] = useState<InstanceLaunchForm>(EMPTY_FORM);
   const [inherit, setInherit] = useState(false);
   const [uninstall, setUninstall] = useState<UninstallPreviewInfo | null>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -132,7 +119,7 @@ export default function InstancesPage({ selectedId, onSelectInstance }: Instance
     setInherit(info.inherited);
     setForm({
       displayName: info.displayName.length > 0 ? info.displayName : instanceId,
-      java: info.settings.java,
+      java: cleanJavaPath(info.settings.java),
       autoMemory: info.settings.autoMemory,
       ram: String(info.settings.ramMb),
       width: String(info.settings.width),
@@ -294,10 +281,6 @@ export default function InstancesPage({ selectedId, onSelectInstance }: Instance
 
   const instances = instanceCatalog ? validInstances(instanceCatalog.items) : [];
   const current = instances.find((item) => item.id === selected);
-  const inheritHint = inherit
-    ? "当前继承全局启动设置；取消勾选后可保存独立设置。"
-    : "当前使用独立设置；勾选“继承”并保存会恢复全局设置。";
-  const disabled = inherit;
 
   return (
     <div className="subpage">
@@ -419,122 +402,17 @@ export default function InstancesPage({ selectedId, onSelectInstance }: Instance
         ) : null}
 
         {shownTab === "launch" ? (
-          <section className="card instance-card">
-            <div className="instance-scroll">
-              <div className="stack" style={{ gap: 10, paddingTop: 8 }}>
-                <Field label="实例显示名">
-                  <AppInput placeholder="1–120 个字符"
-                    value={form.displayName}
-                    onChange={(event) => setForm({ ...form, displayName: event.target.value })}
-                  />
-                </Field>
-                <label className="checkbox">
-                  <input
-                    type="checkbox"
-                    checked={inherit}
-                    onChange={(event) => setInherit(event.target.checked)}
-                  />
-                  继承全局启动设置
-                </label>
-                <p className="muted">{inheritHint}</p>
-
-                <Field label="Java 路径（留空自动选择）">
-                  <div className="row" style={{ gap: 8 }}>
-                    <AppInput placeholder="留空自动选择"
-                      value={form.java}
-                      disabled={disabled}
-                      onChange={(event) => setForm({ ...form, java: event.target.value })}
-                    />
-                    <button type="button" className="btn ghost" disabled={disabled} onClick={() => setJavaPrompt(true)}>
-                      选择
-                    </button>
-                  </div>
-                </Field>
-
-                <div className="launch-numbers">
-                  <label className="checkbox">
-                    <input
-                      type="checkbox"
-                      checked={form.autoMemory}
-                      disabled={disabled}
-                      onChange={(event) => setForm({ ...form, autoMemory: event.target.checked })}
-                    />
-                    自动分配内存
-                  </label>
-                  <Field label="内存 MB">
-                    <AppInput value={form.ram}
-                      disabled={disabled}
-                      onChange={(event) => setForm({ ...form, ram: event.target.value })}
-                    />
-                  </Field>
-                  <Field label="游戏窗口宽">
-                    <AppInput value={form.width}
-                      disabled={disabled}
-                      onChange={(event) => setForm({ ...form, width: event.target.value })}
-                    />
-                  </Field>
-                  <Field label="游戏窗口高">
-                    <AppInput value={form.height}
-                      disabled={disabled}
-                      onChange={(event) => setForm({ ...form, height: event.target.value })}
-                    />
-                  </Field>
-                </div>
-
-                <label className="checkbox">
-                  <input
-                    type="checkbox"
-                    checked={form.fullScreen}
-                    disabled={disabled}
-                    onChange={(event) => setForm({ ...form, fullScreen: event.target.checked })}
-                  />
-                  全屏启动
-                </label>
-                <label className="checkbox">
-                  <input
-                    type="checkbox"
-                    checked={form.autoChinese}
-                    disabled={disabled}
-                    onChange={(event) => setForm({ ...form, autoChinese: event.target.checked })}
-                  />
-                  自动设置简体中文（仅缺少语言选项时）
-                </label>
-
-                <Field label="窗口标题">
-                  <AppInput placeholder="可留空"
-                    value={form.windowTitle}
-                    disabled={disabled}
-                    onChange={(event) => setForm({ ...form, windowTitle: event.target.value })}
-                  />
-                </Field>
-                <Field label="自动进入服务器">
-                  <AppInput placeholder="可留空，例如 play.example.com"
-                    value={form.server}
-                    disabled={disabled}
-                    onChange={(event) => setForm({ ...form, server: event.target.value })}
-                  />
-                </Field>
-                <Field label="额外 JVM 参数" hint="只接受 - 开头的参数；内存请使用上方设置">
-                  <AppTextarea
-                    rows={3}
-                    value={form.jvmArguments}
-                    disabled={disabled}
-                    onChange={(event) => setForm({ ...form, jvmArguments: event.target.value })}
-                  />
-                </Field>
-
-                <div className="row" style={{ gap: 10 }}>
-                  <button type="button" className="btn primary" onClick={() => void saveOptions()}>
-                    保存此实例设置
-                  </button>
-                  <button type="button" className="btn ghost" onClick={() => void loadOptions(selected)}>
-                    重新读取
-                  </button>
-                  <span className="status">{optionsStatus}</span>
-                </div>
-              </div>
-            </div>
-          </section>
+          <InstanceLaunchSettings
+            form={form}
+            inherit={inherit}
+            optionsStatus={optionsStatus}
+            onFormChange={setForm}
+            onInheritChange={setInherit}
+            onStatusChange={setOptionsStatus}
+            onSave={() => void saveOptions()}
+            onReload={() => void loadOptions(selected)}
+            onFallbackPickJava={() => setJavaPrompt(true)}
+          />
         ) : null}
 
         {shownTab === "maintenance" ? (

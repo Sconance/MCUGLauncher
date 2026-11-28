@@ -87,6 +87,15 @@
   animation-name: app-select-pop-up;
 }
 
+.app-select-menu.is-closing {
+  pointer-events: none;
+  animation: app-select-pop-out 135ms ease-in both;
+}
+
+.app-select-menu.is-up.is-closing {
+  animation-name: app-select-pop-out-up;
+}
+
 .app-select-option {
   display: flex;
   align-items: center;
@@ -168,8 +177,23 @@
   }
 }
 
+@keyframes app-select-pop-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.975);
+  }
+}
+
+@keyframes app-select-pop-out-up {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.975);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .app-select-menu {
+  .app-select-menu,
+  .app-select-menu.is-closing {
     animation: none;
   }
   .app-select-caret {

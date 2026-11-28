@@ -11,6 +11,12 @@ pub(crate) const PROJECT_PREFIX: &str = "modrinth:";
 struct Version {
     id: String,
     name: String,
+    #[serde(default)]
+    game_versions: Vec<String>,
+    #[serde(default)]
+    loaders: Vec<String>,
+    #[serde(default)]
+    version_type: Option<String>,
     files: Vec<VersionFile>,
 }
 
@@ -84,6 +90,12 @@ pub(crate) async fn versions(
                 id: format!("{PROJECT_PREFIX}{}", version.id),
                 name: version.name,
                 file,
+                game_versions: version.game_versions,
+                loaders: version.loaders,
+                version_type: version
+                    .version_type
+                    .filter(|value| !value.is_empty())
+                    .unwrap_or_else(|| "release".into()),
             })
         })
         .collect())

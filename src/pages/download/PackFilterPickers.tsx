@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import chevronDownIcon from '../../assets/icons/ui/chevron-down.svg';
 import SvgIcon from '../../components/SvgIcon';
+import { usePresence } from '../../shell/usePresence';
 
 /** 整合包右上角「加载器选择」的可选项，空字符串表示不限 */
 const PACK_LOADERS: [string, string][] = [
@@ -39,6 +40,8 @@ export default function PackFilterPickers({
     rootRef,
 }: PackFilterPickersProps) {
     const loaderLabel = PACK_LOADERS.find(([value]) => value === loader)?.[1] ?? loader;
+    const gamePop = usePresence(gameOpen, 140);
+    const loaderPop = usePresence(loaderOpen, 140);
     return (
         <div className="dl-pickers" ref={rootRef}>
             <div className="dl-picker-wrap">
@@ -52,8 +55,8 @@ export default function PackFilterPickers({
                     <span className="dl-picker-value">{game.length > 0 ? game : '全部'}</span>
                     <SvgIcon src={chevronDownIcon} className="dl-picker-caret" />
                 </button>
-                {gameOpen ? (
-                    <div className="dl-picker-pop">
+                {gamePop.mounted ? (
+                    <div className={`dl-picker-pop${gamePop.closing ? ' is-closing' : ''}`}>
                         <button
                             type="button"
                             className={`dl-picker-item${game.length === 0 ? ' on' : ''}`}
@@ -86,8 +89,8 @@ export default function PackFilterPickers({
                     <span className="dl-picker-value">{loader.length > 0 ? loaderLabel : '全部'}</span>
                     <SvgIcon src={chevronDownIcon} className="dl-picker-caret" />
                 </button>
-                {loaderOpen ? (
-                    <div className="dl-picker-pop">
+                {loaderPop.mounted ? (
+                    <div className={`dl-picker-pop${loaderPop.closing ? ' is-closing' : ''}`}>
                         {PACK_LOADERS.map(([value, label]) => (
                             <button
                                 key={value}

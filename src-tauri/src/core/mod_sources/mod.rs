@@ -44,6 +44,9 @@ pub(crate) struct ModVersion {
     pub id: String,
     pub name: String,
     pub file: ModFile,
+    pub game_versions: Vec<String>,
+    pub loaders: Vec<String>,
+    pub version_type: String,
 }
 
 /// 优先查询 Modrinth，百科提供 CurseForge 且已配置密钥时可回退。

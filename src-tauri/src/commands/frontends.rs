@@ -147,7 +147,7 @@ pub fn use_frontend(
         frontends::resolve_active(backend.config_dir(), identifier).map_err(|message| {
             api_error(
                 "VALIDATION_ERROR",
-                format!("这个前端无法加载：{message}"),
+                format!("这个前端包无法加载：{message}"),
                 false,
             )
         })?;
@@ -156,7 +156,7 @@ pub fn use_frontend(
     config.frontend = identifier;
     backend.save_config(&mut data, config, expected_revision)?;
     Ok(SavedInfo::changed(
-        "前端已切换，点「重启前端」立即生效（或重启启动器）。",
+        "前端包已切换，点「重启前端包」立即生效（或重启启动器）。",
         vec![ResourceKeyInfo {
             kind: "settings".into(),
             instance_id: None,
@@ -177,7 +177,7 @@ pub fn reload_frontend(app: AppHandle, backend: State<'_, Backend>) -> Result<Sa
     let next = crate::resolve_selected_frontend(&config_dir, selected).map_err(|message| {
         api_error(
             "VALIDATION_ERROR",
-            format!("这个前端无法加载：{message}"),
+            format!("这个前端包无法加载：{message}"),
             false,
         )
     })?;
@@ -189,7 +189,7 @@ pub fn reload_frontend(app: AppHandle, backend: State<'_, Backend>) -> Result<Sa
                 frontend.manifest.name, frontend.manifest.version
             )
         })
-        .unwrap_or_else(|| "官方前端".to_string());
+        .unwrap_or_else(|| "官方前端包".to_string());
 
     let handle = app;
     // 先让这次调用的响应回到页面，再重建窗口；否则页面会在拿到结果前被销毁，
@@ -202,20 +202,20 @@ pub fn reload_frontend(app: AppHandle, backend: State<'_, Backend>) -> Result<Sa
         if let Err(error) = crate::switch_frontend(&handle, next) {
             crate::report_warning(
                 &handle,
-                "无法重启前端",
+                "无法重启前端包",
                 &format!("{error}\n\n可以关闭启动器后重新打开。"),
             );
         }
     });
 
     Ok(SavedInfo::changed(
-        format!("正在重启前端：{label}…"),
+        format!("正在重启前端包：{label}…"),
         Vec::new(),
         Vec::new(),
     ))
 }
 
-/// 移除已安装的前端；`version` 为空时移除全部版本。
+/// 移除已安装的前端包；`version` 为空时移除全部版本。
 #[tauri::command]
 pub fn remove_frontend(
     backend: State<'_, Backend>,
@@ -228,7 +228,7 @@ pub fn remove_frontend(
     if !removed {
         return Err(api_error(
             "NOT_FOUND",
-            format!("前端 {identifier} 不在已安装列表里。"),
+            format!("前端包 {identifier} 不在已安装列表里。"),
             false,
         ));
     }
@@ -243,7 +243,7 @@ pub fn remove_frontend(
         config.frontend = None;
         backend.save_config(&mut data, config, expected_revision)?;
         return Ok(SavedInfo::changed(
-            "前端已移除，并切回官方前端；点「重启前端」立即生效。",
+            "前端包已移除，并切回官方前端包；点「重启前端包」立即生效。",
             vec![ResourceKeyInfo {
                 kind: "settings".into(),
                 instance_id: None,
@@ -251,5 +251,5 @@ pub fn remove_frontend(
             Vec::new(),
         ));
     }
-    Ok(SavedInfo::changed("前端已移除。", Vec::new(), Vec::new()))
+    Ok(SavedInfo::changed("前端包已移除。", Vec::new(), Vec::new()))
 }

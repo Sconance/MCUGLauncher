@@ -7,6 +7,7 @@ import AppearanceSettings from "./settings/AppearanceSettings";
 import CommunityManagementSettings from "./settings/CommunityManagementSettings";
 import CommunitySettings from "./settings/CommunitySettings";
 import DeveloperSettings from "./settings/DeveloperSettings";
+import ExtensionsSettings from "./settings/ExtensionsSettings";
 import LaunchSettings from "./settings/LaunchSettings";
 import MaintenanceSettings from "./settings/MaintenanceSettings";
 import { SettingsDataProvider } from "./settings/SettingsData";
@@ -15,12 +16,14 @@ import navAnnouncement from "../assets/icons/nav/nav-announcement.svg";
 import navAppearance from "../assets/icons/nav/nav-appearance.svg";
 import navCommunity from "../assets/icons/nav/nav-community.svg";
 import navDeveloper from "../assets/icons/nav/nav-developer.svg";
+import navExtensions from "../assets/icons/nav/nav-extensions.svg";
 import navLaunch from "../assets/icons/nav/nav-launch.svg";
 import navRecovery from "../assets/icons/nav/nav-recovery.svg";
 import "./SettingsPage.css";
 
 type SectionKey =
   | "launch"
+  | "extensions"
   | "community"
   | "communityManage"
   | "appearance"
@@ -32,6 +35,7 @@ const NAV_GROUPS: NavItem[][] = [
   [
     { key: "appearance", label: "外观", icon: navAppearance },
     { key: "launch", label: "启动", icon: navLaunch },
+    { key: "extensions", label: "扩展", icon: navExtensions },
   ],
   [
     { key: "community", label: "社区", icon: navCommunity },
@@ -77,6 +81,7 @@ export default function SettingsPage() {
         {(shown) => (
           <>
             <LaunchSettings active={shown === "launch"} />
+            <ExtensionsSettings active={shown === "extensions"} />
             <CommunitySettings active={shown === "community"} />
             <CommunityManagementSettings active={shown === "communityManage"} />
             <AppearanceSettings active={shown === "appearance"} />

@@ -459,6 +459,11 @@
   width: 12px;
   height: 12px;
   color: var(--app-ink-3);
+  transition: transform 180ms ease;
+}
+
+.dl-picker.on .dl-picker-caret {
+  transform: rotate(180deg);
 }
 
 /* 下拉面板：版本列表较长，限高滚动 */
@@ -477,6 +482,13 @@
   background: #fff;
   box-shadow: var(--shadow-dialog);
   overflow-y: auto;
+  transform-origin: top right;
+  animation: dl-pop-in 160ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+.dl-picker-pop.is-closing {
+  pointer-events: none;
+  animation: dl-pop-out 135ms ease-in both;
 }
 
 .dl-picker-item {
@@ -701,15 +713,189 @@
   display: flex;
   flex-direction: column;
   gap: 9px;
-  width: 300px;
+  width: 280px;
   padding: 12px;
   border-radius: 12px;
   background: #fff;
   box-shadow: var(--shadow-dialog);
+  transform-origin: top right;
+  animation: dl-pop-in 160ms cubic-bezier(0.22, 0.88, 0.3, 1) both;
+}
+
+.dl-filter-pop.is-closing {
+  pointer-events: none;
+  animation: dl-pop-out 135ms ease-in both;
+}
+
+@keyframes dl-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.965);
+  }
+}
+
+@keyframes dl-pop-out {
+  to {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.965);
+  }
 }
 
 .dl-filter-pop .input {
   width: 100%;
+}
+
+.dl-filter-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Modrinth 风格筛选行：一行一个，左侧主按钮支持选择（绿色勾），右侧圆形按钮支持排除 */
+.dl-filter-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dl-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dl-filter-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.dl-filter-row-main:hover {
+  background: rgb(20 30 42 / 5%);
+  color: var(--app-ink);
+}
+
+.dl-filter-row.is-included .dl-filter-row-main {
+  background: rgb(22 163 74 / 10%);
+  color: var(--app-ink);
+  font-weight: 600;
+}
+
+.dl-filter-row.is-excluded .dl-filter-row-main {
+  background: var(--app-red-bg);
+  color: var(--app-red);
+}
+
+.dl-filter-row.is-excluded .dl-filter-row-label {
+  text-decoration: line-through;
+}
+
+.dl-filter-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.dl-filter-row-icon .svg-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.dl-filter-row-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dl-filter-row-count {
+  flex: none;
+  font-size: 10.5px;
+  color: var(--app-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.dl-filter-row-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: #16a34a;
+}
+
+.dl-filter-row-check .svg-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.dl-filter-row-exclude {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-ink-3);
+  opacity: 0.45;
+  cursor: pointer;
+  transition:
+    opacity 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.dl-filter-row:hover .dl-filter-row-exclude,
+.dl-filter-row:focus-within .dl-filter-row-exclude,
+.dl-filter-row.is-excluded .dl-filter-row-exclude {
+  opacity: 1;
+}
+
+.dl-filter-row-exclude:hover {
+  background: var(--app-red-bg);
+  color: var(--app-red);
+}
+
+.dl-filter-row.is-excluded .dl-filter-row-exclude {
+  background: var(--app-red);
+  color: #ffffff;
+}
+
+.dl-filter-row-exclude .svg-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.dl-active-chip.is-excluded {
+  background: var(--app-red-bg);
+  color: var(--app-red);
+}
+
+.dl-active-ban {
+  width: 12px;
+  height: 12px;
 }
 
 .dl-filter-foot {
@@ -951,10 +1137,14 @@
   font-size: 26px;
 }
 
+.dl-icon:has(> img) {
+  background: transparent;
+}
+
 .dl-icon img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .dl-card-main {
@@ -1016,6 +1206,7 @@
 .dl-tag {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   height: 21px;
   padding: 0 8px;
   border: 1px solid rgb(20 30 42 / 9%);
@@ -1023,6 +1214,30 @@
   background: rgb(255 255 255 / 70%);
   color: var(--app-ink-2);
   font-size: 11px;
+}
+
+.dl-tag-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.dl-tag-icon .svg-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.dl-ver-group-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.dl-ver-group-icon .svg-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .dl-tag.more {
@@ -1173,7 +1388,264 @@
 
 .dl-detail-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.dl-detail-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* ---------- 模组版本：PCL2 风格大版本药丸条 + 加载器/版本折叠抽屉 ---------- */
+
+.dl-ver-explorer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dl-ver-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 56%);
+}
+
+.dl-ver-pill {
+  height: 26px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-accent-dark);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.dl-ver-pill:hover {
+  background: var(--app-accent-wash);
+  color: var(--app-accent-deep);
+}
+
+.dl-ver-pill.is-active {
+  background: var(--app-accent);
+  color: #ffffff;
+}
+
+.dl-ver-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 2px 4px 2px 2px;
+}
+
+.dl-ver-group {
+  flex: none;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 58%);
+  overflow: hidden;
+  transition: border-color 120ms ease;
+}
+
+.dl-ver-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--app-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.dl-ver-group-head:hover {
+  background: rgb(20 30 42 / 4%);
+}
+
+.dl-ver-group-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--app-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dl-ver-group-count {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(20 30 42 / 7%);
+  color: var(--app-ink-3);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.dl-ver-group-caret {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--app-ink-3);
+  transition: transform 160ms ease;
+}
+
+.dl-ver-group.is-open .dl-ver-group-caret {
+  transform: rotate(180deg);
+}
+
+.dl-ver-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 200ms cubic-bezier(0.22, 0.88, 0.3, 1),
+    opacity 160ms ease;
+}
+
+.dl-ver-collapse.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.dl-ver-collapse-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.dl-ver-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px 8px;
+  border-top: 1px solid rgb(20 30 42 / 6%);
+}
+
+.dl-ver-row {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--app-ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 110ms ease,
+    color 110ms ease;
+}
+
+.dl-ver-row:hover {
+  background: rgb(20 30 42 / 5%);
+}
+
+.dl-ver-row.is-selected {
+  background: var(--app-accent-tint);
+  color: var(--app-accent-deep);
+}
+
+.dl-ver-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dl-ver-row-name {
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dl-ver-row-file {
+  font-size: 10.5px;
+  color: var(--app-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dl-ver-row.is-selected .dl-ver-row-file {
+  color: var(--app-accent-dark);
+}
+
+/* ---------- 搜索结果 / 翻页 / 版本列表：自上而下波状级联显现 ---------- */
+
+@keyframes dl-wave-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.988);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dl-wave-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(14px) scale(0.988);
+  }
+}
+
+.dl-wave-item {
+  --wave-index: 0;
+  animation: dl-wave-reveal 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--wave-index, 0) * 30ms);
+}
+
+.is-exiting .dl-wave-item {
+  pointer-events: none;
+  animation: dl-wave-exit 220ms cubic-bezier(0.4, 0, 1, 1) both;
+  animation-delay: calc(var(--wave-index, 0) * 18ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dl-wave-item,
+  .is-exiting .dl-wave-item,
+  .dl-filter-pop,
+  .dl-filter-pop.is-closing,
+  .dl-picker-pop,
+  .dl-picker-pop.is-closing {
+    animation: none;
+  }
+
+  .dl-ver-collapse,
+  .dl-picker-caret {
+    transition: none;
+  }
 }
 
 .dl-close {

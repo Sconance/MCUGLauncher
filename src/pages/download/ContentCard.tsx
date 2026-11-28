@@ -1,19 +1,31 @@
+import type { CSSProperties } from 'react';
 import downloadIcon from '../../assets/icons/ui/download.svg';
 import SvgIcon from '../../components/SvgIcon';
 import type { ContentItem } from '../../types/launcher';
+import { formatTagLabel, getTagIcon } from './modIcons';
 
 interface ContentCardProps {
     item: ContentItem;
     bookmarked: boolean;
+    /** 列表中的序号，用于自上而下波状显现的错峰延迟 */
+    waveIndex?: number;
     onOpen: () => void;
     onToggleBookmark: () => void;
 }
 
 /** 列表 / 网格里的一张资源卡：整卡可点进详情，收藏按钮单独拦事件。 */
-export default function ContentCard({ item, bookmarked, onOpen, onToggleBookmark }: ContentCardProps) {
+export default function ContentCard({
+    item,
+    bookmarked,
+    waveIndex = 0,
+    onOpen,
+    onToggleBookmark,
+}: ContentCardProps) {
+    const waveStyle = { '--wave-index': Math.min(waveIndex, 12) } as CSSProperties;
     return (
         <article
-            className="dl-card"
+            className="dl-card dl-wave-item"
+            style={waveStyle}
             role="button"
             tabIndex={0}
             onClick={onOpen}
@@ -45,11 +57,19 @@ export default function ContentCard({ item, bookmarked, onOpen, onToggleBookmark
                 <p className="dl-desc">{item.description}</p>
                 {item.tags.length > 0 ? (
                     <div className="dl-tags">
-                        {item.tags.slice(0, 3).map((tag) => (
-                            <span key={tag} className="dl-tag">
-                                {tag}
-                            </span>
-                        ))}
+                        {item.tags.slice(0, 3).map((tag) => {
+                            const icon = getTagIcon(tag);
+                            return (
+                                <span key={tag} className="dl-tag">
+                                    {icon ? (
+                                        <span className="dl-tag-icon" style={icon.color ? { color: icon.color } : undefined}>
+                                            <SvgIcon src={icon.src} />
+                                        </span>
+                                    ) : null}
+                                    {formatTagLabel(tag)}
+                                </span>
+                            );
+                        })}
                         {item.tags.length > 3 ? <span className="dl-tag more">+{item.tags.length - 3}</span> : null}
                     </div>
                 ) : null}

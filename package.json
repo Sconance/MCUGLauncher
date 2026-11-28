@@ -11,7 +11,9 @@
     "dto:generate": "node scripts/split-schemas.mjs && node scripts/annotate-schemas.mjs && node scripts/generate-dto.mjs",
     "dto:check": "npm run dto:generate && git diff --exit-code -- src/types/generated.ts",
     "sdk:check": "node scripts/check-sdk.mjs",
+    "frontend:audit": "node scripts/audit-official-frontend.mjs",
     "frontend:pack": "node scripts/pack-frontend.mjs examples/third-party-frontend",
+    "frontend:pack:official": "npm run build && node scripts/pack-frontend.mjs dist",
     "preview": "vite preview",
     "tauri": "tauri"
   },

@@ -120,6 +120,9 @@ pub async fn list_content_versions(
             id: version.id.clone(),
             name: version.name.clone(),
             files: vec![version.file.filename.clone()],
+            game_versions: version.game_versions.clone(),
+            loaders: version.loaders.clone(),
+            version_type: version.version_type.clone(),
         })
         .collect();
     let token = if versions.is_empty() {

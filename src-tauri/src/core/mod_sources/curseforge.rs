@@ -25,6 +25,10 @@ struct File {
     file_name: String,
     file_length: u64,
     download_url: Option<String>,
+    #[serde(default)]
+    game_versions: Vec<String>,
+    #[serde(default)]
+    release_type: Option<u8>,
     hashes: Vec<FileHash>,
 }
 
@@ -101,6 +105,24 @@ pub(super) async fn versions(
             {
                 return None;
             }
+            let mut parsed_games = Vec::new();
+            let mut parsed_loaders = Vec::new();
+            for entry in file.game_versions {
+                let lower = entry.trim().to_ascii_lowercase();
+                if matches!(
+                    lower.as_str(),
+                    "fabric" | "forge" | "neoforge" | "quilt" | "liteloader" | "rift"
+                ) {
+                    parsed_loaders.push(lower);
+                } else if entry.chars().next().is_some_and(|ch| ch.is_ascii_digit()) {
+                    parsed_games.push(entry);
+                }
+            }
+            let version_type = match file.release_type {
+                Some(2) => "beta",
+                Some(3) => "alpha",
+                _ => "release",
+            };
             Some(ModVersion {
                 id: format!("curseforge:{}", file.id),
                 name: file.display_name,
@@ -110,6 +132,9 @@ pub(super) async fn versions(
                     size: file.file_length,
                     sha1,
                 },
+                game_versions: parsed_games,
+                loaders: parsed_loaders,
+                version_type: version_type.into(),
             })
         })
         .collect())

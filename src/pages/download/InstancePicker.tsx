@@ -8,10 +8,12 @@ interface InstancePickerProps {
     title: string;
     hint: string;
     instances: InstanceInfo[];
-    /** 当前筛选用的实例 */
+    /** 当前筛选用的实例；空串或 undefined 表示「不选择实例」 */
     activeId?: string;
     /** 主页启动实例，会打一个「主页启动」标签 */
     homeId?: string;
+    /** 是否在第一项提供「不选择实例」选项 */
+    allowNone?: boolean;
     onPick: (id: string) => void;
     onClose: () => void;
 }
@@ -23,15 +25,39 @@ export default function InstancePicker({
     instances,
     activeId,
     homeId,
+    allowNone = false,
     onPick,
     onClose,
 }: InstancePickerProps) {
+    const noneActive = !activeId;
+
     return (
         <Modal title={title} onClose={onClose} dismissOnOverlay width={420}>
             {(close) => (
                 <>
                     <p className="muted dl-instance-hint">{hint}</p>
                     <div className="dl-instance-list">
+                        {allowNone ? (
+                            <button
+                                type="button"
+                                className={`dl-instance-row${noneActive ? ' on' : ''}`}
+                                onClick={() => close(() => onPick(''))}
+                            >
+                                <span className="dl-instance-icon" aria-hidden="true">
+                                    <SvgIcon src={cubeIcon} />
+                                </span>
+                                <span className="dl-instance-text">
+                                    <span className="dl-instance-name">不选择实例</span>
+                                    <span className="dl-instance-sub">
+                                        不限版本与加载器，在详情页按版本和加载器分类浏览
+                                    </span>
+                                </span>
+                                {noneActive ? (
+                                    <SvgIcon src={checkIcon} className="dl-instance-check" />
+                                ) : null}
+                            </button>
+                        ) : null}
+
                         {instances.map((item) => {
                             const active = item.id === activeId;
                             const home = item.id === homeId;

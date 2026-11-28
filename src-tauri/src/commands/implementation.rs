@@ -924,20 +924,44 @@ pub(super) fn list_demo_content_versions(
         .find(|item| item.id == id)
         .map(|item| item.name.clone())
         .unwrap_or_else(|| id.clone());
-    let versions = ["1.21.1", "1.20.6", "1.20.1"]
+    let target_game = game.as_deref().unwrap_or_default().trim();
+    let target_loader = loader.as_deref().unwrap_or_default().trim().to_ascii_lowercase();
+    let sample = [
+        ("1.21.4", "fabric", "release"),
+        ("1.21.4", "neoforge", "release"),
+        ("1.21.4", "neoforge", "beta"),
+        ("1.21.1", "fabric", "release"),
+        ("1.20.1", "forge", "release"),
+    ];
+    let versions = sample
         .into_iter()
         .enumerate()
-        .map(|(index, version)| ResourceVersionInfo {
+        .filter(|(_, (mc, ld, _))| {
+            (target_game.is_empty() || *mc == target_game)
+                && (target_loader.is_empty() || *ld == target_loader)
+        })
+        .map(|(index, (version, ld, vtype))| ResourceVersionInfo {
             id: format!("{id}-{index}"),
-            name: format!("{name} {version}"),
-            files: vec![format!("{id}-{version}.jar")],
+            name: format!("{name} {version} ({ld})"),
+            files: vec![format!("{id}-{version}-{ld}.jar")],
+            game_versions: vec![version.into()],
+            loaders: vec![ld.into()],
+            version_type: vtype.into(),
         })
         .collect();
     ResourceVersionsInfo {
         request_id: request_id.unwrap_or_else(|| id.clone()),
         token: format!("token-{id}"),
-        game: game.unwrap_or_else(|| "1.21.1".into()),
-        loader: loader.unwrap_or_else(|| "Fabric".into()),
+        game: if target_game.is_empty() {
+            "不限游戏版本".into()
+        } else {
+            target_game.into()
+        },
+        loader: if target_loader.is_empty() {
+            "不限加载器".into()
+        } else {
+            target_loader
+        },
         items: versions,
     }
 }

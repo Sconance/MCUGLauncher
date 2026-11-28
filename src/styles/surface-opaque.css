@@ -362,6 +362,17 @@
   background: var(--opaque-canvas);
 }
 
+:root[data-bg-style="opaque"] .dl-ver-filter-bar,
+:root[data-bg-style="opaque"] .dl-ver-group {
+  border-color: var(--opaque-border);
+  background: var(--opaque-surface);
+  box-shadow: var(--opaque-shadow-xs);
+}
+
+:root[data-bg-style="opaque"] .dl-ver-group-body {
+  border-top-color: var(--opaque-border);
+}
+
 /* ---------- 启动页卡片与悬浮启动区 ---------- */
 
 :root[data-bg-style="opaque"] .player-card,

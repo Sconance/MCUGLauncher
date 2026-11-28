@@ -37,6 +37,12 @@
   height: 10px;
 }
 
+/* 右栏「游戏目录 / 目录内实例」列表滚动容器 */
+.im-scroll {
+  overflow-y: auto;
+  padding: 2px 12px 12px 2px;
+}
+
 /* 右栏「全部实例」列表 */
 .im-all {
   display: flex;
@@ -171,8 +177,11 @@
 }
 
 .im-all-name {
+  overflow: hidden;
   font-size: 13px;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .im-all-sub {
@@ -228,13 +237,18 @@
 .im-tab {
   display: flex;
   align-items: center;
+  gap: 4px;
+  min-width: 0;
   padding: 0;
   cursor: default;
 }
 
 .im-tab-main {
-  flex: 1;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
   padding: 7px 0 7px 9px;
   border: 0;
   border-radius: 8px 0 0 8px;
@@ -245,6 +259,15 @@
   cursor: pointer;
 }
 
+.im-tab-main .section-label {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .im-close {
+  flex: none;
   margin-right: 6px;
 }

@@ -365,6 +365,18 @@ export interface ResourceVersionInfo {
    * files 字段。
    */
   files: string[];
+  /**
+   * 支持的 Minecraft 游戏版本列表。
+   */
+  gameVersions?: string[];
+  /**
+   * 支持的加载器列表。
+   */
+  loaders?: string[];
+  /**
+   * 版本发布类型（release / beta / alpha）。
+   */
+  versionType?: string;
 }
 /**
  * ResourceVersionsInfo：通过 Tauri 命令在前后端之间传输的数据对象。
